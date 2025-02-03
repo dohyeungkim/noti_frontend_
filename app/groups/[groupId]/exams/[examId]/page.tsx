@@ -62,7 +62,7 @@ export default function ProblemsPage() {
             .map((exam: { children: any[]; name: string }) => {
               const filteredProblems = exam.children.filter((problem) =>
                 problem.name.toLowerCase().includes(searchTerm.toLowerCase())
-              );
+  );
 
               if (filteredProblems.length > 0) {
                 expandedNodes.add(group.name);
