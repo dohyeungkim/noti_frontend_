@@ -21,7 +21,7 @@ export default function GroupsPage() {
   };
 
   return (
-    <div style={{ padding: "2rem", backgroundColor: "#f9f9f9", minHeight: "100vh", margin: "2rem" }}>
+<div style={{ padding: "2rem", backgroundColor: "#f9f9f9", minHeight: "100vh", margin: "2rem" }}>
       {/* 헤더 */}
       <header style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "center", marginBottom: "1rem" }}>🌳 서연님의 그룹</h1>

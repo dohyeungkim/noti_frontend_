@@ -1,6 +1,7 @@
 'use client';
 
 import { problems } from '@/data/problems';
+import { testExams } from '@/data/testmode'; // 시험 데이터 추가
 import { useParams, useRouter } from 'next/navigation';
 
 export default function ProblemDetailPage() {
@@ -11,15 +12,18 @@ export default function ProblemDetailPage() {
         problemId: string;
     };
 
-    // 디버깅용 로그 추가
+    // 현재 문제 가져오기
+    const problem = problems.find((p) => p.problemId === problemId);
+
+    // 시험 모드 여부 확인 (현재 문제의 `examId`가 `testExams`에 포함되는지 체크)
+    const isTestMode = testExams.some((test) => test.examId === examId);
+
+    // 디버깅 로그 추가
     console.log('groupId:', groupId);
     console.log('examId:', examId);
     console.log('problemId:', problemId);
-
-    const problem = problems.find((p) => p.problemId === problemId);
-
-    // 문제 데이터 확인
     console.log('problem:', problem);
+    console.log('isTestMode:', isTestMode);
 
     if (!problem) {
         return (
@@ -44,11 +48,40 @@ export default function ProblemDetailPage() {
             <header style={{ marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>{problem.title}</h1>
                 <p>{problem.examName}</p>
+
+                {isTestMode && (
+                    <span style={{
+                        backgroundColor: 'red',
+                        color: 'white',
+                        padding: '5px 10px',
+                        borderRadius: '5px',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold'
+                    }}>
+                        시험 모드 🚨
+                    </span>
+                )}
             </header>
 
             <section style={{ marginBottom: '2rem' }}>
-                <h2>문제</h2>
+                <h2>문제 설명</h2>
                 <p>{problem.description}</p>
+            </section>
+
+            <section style={{ marginBottom: '2rem' }}>
+                <h3>입력 예시</h3>
+                <pre style={{
+                    backgroundColor: '#f5f5f5',
+                    padding: '1rem',
+                    borderRadius: '5px'
+                }}>{problem.input}</pre>
+
+                <h3>출력 예시</h3>
+                <pre style={{
+                    backgroundColor: '#f5f5f5',
+                    padding: '1rem',
+                    borderRadius: '5px'
+                }}>{problem.output}</pre>
             </section>
 
             <footer style={{ display: 'flex', justifyContent: 'flex-end' }}>

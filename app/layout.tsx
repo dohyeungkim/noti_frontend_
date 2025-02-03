@@ -6,6 +6,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
             <head>
+            <script src="https://kit.fontawesome.com/def66b134a.js" crossOrigin="anonymous"></script>
                 <meta charSet="UTF-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <title>My App</title>
