@@ -5,6 +5,9 @@ import ProblemList from "@/components/ProblemPage/ProblemList";
 import Modal from "@/components/ProblemPage/Modal_makeProblem";
 import { problems } from "@/data/problems";
 import { groups } from "@/data/groups";
+import { testExams } from "@/data/testmode";
+
+
 // 문제 데이터를 트리 구조로 변환하는 함수
 const buildTree = (problems: any[]) => {
   const tree: any = {};
@@ -45,6 +48,9 @@ export default function ProblemsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProblems, setSelectedProblems] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const isTestMode = (examId: string) => testExams.some((test: { examId: string; }) => test.examId === examId);
+  
 
   // 현재 문제 필터링
   const filteredProblems = problems.filter((problem) => problem.examId === examId);

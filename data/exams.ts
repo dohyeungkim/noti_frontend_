@@ -1,4 +1,6 @@
 export const exams = [
+    { examId: 'MY00', groupId: 'MY', name: '무제', description: '.', startDate: '2025-06-01' },
+
     // 컴퓨터 구조 문제지
     { examId: 'CA00', groupId: 'CA', name: '컴퓨터 구조 문제지 1번', description: 'CPU 문제', startDate: '2025-06-01' },
     { examId: 'CA01', groupId: 'CA', name: '컴퓨터 구조 문제지 2번', description: '메모리 구조 문제', startDate: '2025-06-02' },

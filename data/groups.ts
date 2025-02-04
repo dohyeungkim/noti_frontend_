@@ -1,4 +1,6 @@
 export const groups = [
+    { name: '나의 그룹', professor: '한서연', semester: '2023-2', groupId: 'MY', students: 0 },
+
     { name: '컴퓨터 구조', professor: '한서연', semester: '2023-2', groupId: 'CA', students: 21 },
     { name: '자료구조', professor: '한서연', semester: '2025-2', groupId: 'DS', students: 21 },
     { name: '머신러닝', professor: '한서연', semester: '2025-1', groupId: 'ML', students: 21 },

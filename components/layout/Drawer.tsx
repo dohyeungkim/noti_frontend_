@@ -1,25 +1,20 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
-import { faHouse } from "@fortawesome/free-solid-svg-icons";
-import { faScroll } from "@fortawesome/free-solid-svg-icons";
-import { faUsers } from "@fortawesome/free-solid-svg-icons/faUsers";
-import { faPen } from "@fortawesome/free-solid-svg-icons";
-import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faMagnifyingGlass, faHouse, faScroll, faUsers, faPen, faEnvelope, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
-export default function Drawer() {
-  const [isOpen, setIsOpen] = useState(false); //기본 사이드 바는 닫힌 상태
+// ✅ Props 타입 정의
+interface DrawerProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+}
 
+export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
   const toggleDrawer = () => {
     setIsOpen(!isOpen);
   };
 
   const openDrawer = () => {
-    //사이드 바 열면 오픈 상태를 true로 설정
     if (!isOpen) {
       setIsOpen(true);
     }
@@ -28,21 +23,14 @@ export default function Drawer() {
   return (
     <>
       {/* Drawer */}
-      <div
-        className={`drawer ${isOpen ? "open" : "closed"}`}
-        onClick={!isOpen ? openDrawer : undefined}
-      >
+      <div className={`drawer ${isOpen ? "open" : "closed"}`} onClick={!isOpen ? openDrawer : undefined}>
         {/* Profile Section */}
         <div className="profile-section">
           <button className="toggle-button" onClick={toggleDrawer}>
             👤
           </button>
           {isOpen && <p>Hello, 서연 한!</p>}
-          <button
-            className="sideButton"
-            onClick={() => setIsOpen(false)}
-            style={{ marginLeft: "auto" }}
-          >
+          <button className="sideButton" onClick={() => setIsOpen(false)} style={{ marginLeft: "auto" }}>
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
         </div>
@@ -51,86 +39,46 @@ export default function Drawer() {
         <div className="content">
           <ul>
             <li>
-              <Link
-                href="/search"
-                style={{
-                  textDecoration: "none",
-                  color: "rgb(88, 88, 88)",
-                }}
-              >
+              <Link href="/search">
                 <FontAwesomeIcon icon={faMagnifyingGlass} />
                 &nbsp;{isOpen && " 검색"}
               </Link>
             </li>
             <li>
-              <Link
-                href="/"
-                style={{
-                  textDecoration: "none",
-                  color: "rgb(88, 88, 88)",
-                }}
-              >
+              <Link href="/">
                 <FontAwesomeIcon icon={faHouse} /> &nbsp;
                 {isOpen && "나의 페이지"}
               </Link>
             </li>
             <li>
-              <Link
-                className="icon"
-                href="/solved"
-                style={{
-                  textDecoration: "none",
-                  color: "rgb(88, 88, 88)",
-                }}
-              >
+              <Link href="/solved">
                 <FontAwesomeIcon icon={faScroll} />
                 &nbsp;{isOpen && " 내가 푼 문제 모음"}
               </Link>
             </li>
             <li>
-              <Link
-                className="icon"
-                href="/groups"
-                style={{
-                  textDecoration: "none",
-                  color: "rgb(88, 88, 88)",
-                }}
-              >
+              <Link href="/groups">
                 <FontAwesomeIcon icon={faUsers} />
                 &nbsp;
                 {isOpen && " 나의 그룹"}
               </Link>
             </li>
             <li>
-              <Link
-                className="icon"
-                href="/my-questions"
-                style={{
-                  textDecoration: "none",
-                  color: "rgb(88, 88, 88)",
-                }}
-              >
+              <Link href="/my-questions">
                 <FontAwesomeIcon icon={faPen} />
                 &nbsp;&nbsp;
                 {isOpen && " 문제 등록하기"}
               </Link>
             </li>
             <li>
-              <Link
-                className="icon"
-                href="/notifications"
-                style={{
-                  textDecoration: "none",
-                  color: "rgb(88, 88, 88)",
-                }}
-              >
+              <Link href="/notifications">
                 <FontAwesomeIcon icon={faEnvelope} />
                 &nbsp; &nbsp;{isOpen && "알림함"}
               </Link>
             </li>
           </ul>
 
-          {/* 사이드 바 닫으면 여기서부턴 이제 사이드바에 안 보이도록 숨겨야됨 */}
+          {/* 사이드 바 닫으면 숨김 */}
           <p className="p">즐겨찾는 그룹</p>
           <p>
             <s>추후에 추가 예정</s>
@@ -164,20 +112,12 @@ export default function Drawer() {
           border-bottom-right-radius: 20px;
         }
 
-        .drawer.closed {
-          cursor: pointer;
-        }
-
         .profile-section {
           display: flex;
           align-items: center;
           padding: 0.5rem;
           background: rgb(179, 179, 179);
           color: rgb(64, 64, 64);
-        }
-
-        .profile-section p {
-          margin-left: 0.5rem;
         }
 
         .toggle-button {
@@ -206,34 +146,16 @@ export default function Drawer() {
 
         ul li a {
           text-decoration: none;
-          color: #0070f3;
+          color:rgb(90, 90, 90);
           display: flex;
           align-items: center;
-        }
-
-        ul li span {
-          font-size: 1.2rem;
-        }
-
-        .noto-sans-kr-<uniquifier > {
-          font-family: "Noto Sans KR", serif;
-          font-optical-sizing: auto;
-          font-weight: <weight>;
-          font-style: normal;
-        }
-
-        .p {
-          color: grey;
-          font-size: 12px;
         }
 
         .sideButton {
           color: grey;
           border: 0;
-          float: right;
           background-color: transparent;
           cursor: pointer;
-          visibility: ${isOpen ? "default" : "hidden"};
         }
       `}</style>
     </>

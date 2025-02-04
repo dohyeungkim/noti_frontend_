@@ -2,7 +2,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { groups } from "../../data/groups";
-import { isOpen } from "../../components/layout/Drawer";
 
 export default function GroupsPage() {
   const router = useRouter();
@@ -27,7 +26,7 @@ export default function GroupsPage() {
         padding: "2rem",
         backgroundColor: "#f9f9f9",
         minHeight: "100vh",
-        marginLeft: "3.8rem", //왼쪽만 안 겹치게 마진 넣어주기
+       // marginLeft: "3.8rem", //왼쪽만 안 겹치게 마진 넣어주기
       }}
     >
       {/* 헤더 */}
