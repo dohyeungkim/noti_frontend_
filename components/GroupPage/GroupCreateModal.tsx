@@ -1,6 +1,8 @@
 //그룹 생성하기의 모달창
 
 interface GroupCreateModalProps {
+  className?: string;
+
     isOpen: boolean;
     onClose: () => void;
     groupName: string;

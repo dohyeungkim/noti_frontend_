@@ -4,6 +4,7 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 interface OpenModalButtonProps {
   onClick: () => void;
   label: string;
+  className?: string;
 }
 
 export default function OpenModalButton({

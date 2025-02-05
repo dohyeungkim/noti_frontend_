@@ -18,7 +18,6 @@ export default function GroupsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("제목순");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
-  
 
   // ✅ 모달 상태 추가
   const [groupName, setGroupName] = useState("");
@@ -54,31 +53,29 @@ export default function GroupsPage() {
   //   currentPage * itemsPerPage
   // );
   // const totalItems = totalPages * itemsPerPage;  // ✅ 변환하여 넘김
-  
 
   // ✅ 페이지네이션 추가
   const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
   const itemsPerPage = 9; // 한 페이지당 표시할 항목 수
   const totalItems = sortedGroups.length; // ✅ 전체 항목 개수를 직접 사용
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage)); // ✅ 최소 1페이지 보장
-  
+
   const paginatedGroups = sortedGroups.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
-
 
   return (
-
     // 제목
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
-      <PageHeader title="🏡 서연님의 그룹" />
-{/* 생성하기 버튼 */}
+      <PageHeader className="animate-slide-in" />
+
+      {/* 생성하기 버튼 */}
       <div className="flex items-center gap-2 justify-end">
         <OpenModalButton
           onClick={() => setIsModalOpen(true)}
           label="그룹 생성하기"
+          className="transition transform hover:scale-105 hover:bg-gray-600 duration-200"
         />
       </div>
 
@@ -88,10 +85,11 @@ export default function GroupsPage() {
           <SearchBar
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+             className="animate-fade-in"
           />
         </div>
-        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
-        <SortButton onSortChange={setSortOrder} />
+        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in"/>
+        <SortButton onSortChange={setSortOrder} className="animate-fade-in"/>
       </div>
 
       <h2 className="text-2xl font-bold mb-4 m-2 pt-4">나의 그룹</h2>
@@ -99,9 +97,9 @@ export default function GroupsPage() {
 
       {/* ✅ 선택된 보기 방식에 따라 컴포넌트 사용 */}
       {viewMode === "gallery" ? (
-        <GroupList groups={paginatedGroups} />
+        <GroupList groups={paginatedGroups} className="animate-fade-in-up"/>
       ) : (
-        <GroupTable groups={paginatedGroups} />
+        <GroupTable groups={paginatedGroups} className="animate-fade-in-up" />
       )}
 
       {/* 모달창 */}
@@ -120,16 +118,18 @@ export default function GroupsPage() {
         setYear={setYear}
         semester="1"
         setSemester={setSemester}
+        className="animate-fade-in"
+
       />
 
-<Pagination 
-  totalItems={totalItems}  // ✅ 정확한 전체 항목 수 전달
-  itemsPerPage={itemsPerPage}
-  currentPage={currentPage}
-  setCurrentPage={setCurrentPage}
-/>
+      <Pagination
+        totalItems={totalItems} // ✅ 정확한 전체 항목 수 전달
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        className="animate-fade-in"
 
-
+      />
     </div>
   );
 }

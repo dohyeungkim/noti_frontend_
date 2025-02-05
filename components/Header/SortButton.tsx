@@ -5,6 +5,8 @@ import { faSort } from "@fortawesome/free-solid-svg-icons";
 
 // ✅ Props 타입 설정
 interface SortButtonProps {
+  className?: string;
+
   onSortChange: (sortOrder: string) => void; // 정렬 변경 핸들러
 }
 

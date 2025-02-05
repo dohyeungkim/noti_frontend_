@@ -1,12 +1,15 @@
 import { useRouter } from "next/navigation";
 
 interface GroupListProps {
+  className?: string;
+
   groups: {
     name: string;
     groupId: string;
     students: number;
     professor: string;
     semester: string;
+
   }[];
 }
 

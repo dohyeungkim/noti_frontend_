@@ -1,4 +1,6 @@
 interface PaginationProps {
+  className?: string;
+
   totalItems: number;  // 전체 항목 수
   itemsPerPage?: number; // 한 페이지당 표시할 항목 수 (기본값: 9)
   currentPage: number;

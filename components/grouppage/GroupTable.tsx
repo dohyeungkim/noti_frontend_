@@ -1,6 +1,8 @@
 import { useRouter } from "next/navigation";
 
 interface GroupTableProps {
+  className?: string;
+
   groups: {
     name: string;
     groupId: string;

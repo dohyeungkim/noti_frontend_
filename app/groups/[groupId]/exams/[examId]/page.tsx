@@ -111,13 +111,13 @@ export default function ProblemsPage() {
     );
   };
 
-    // ✅ 검색어 필터링
-    const filteredGroups = groups.filter((group) =>
-      group.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  // ✅ 검색어 필터링
+  const filteredGroups = groups.filter((group) =>
+    group.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-   // ✅ 정렬 적용
-   const sortedGroups = [...filteredGroups].sort((a, b) => {
+  // ✅ 정렬 적용
+  const sortedGroups = [...filteredGroups].sort((a, b) => {
     if (sortOrder === "제목순") {
       return a.name.localeCompare(b.name);
     } else {
@@ -128,24 +128,22 @@ export default function ProblemsPage() {
     }
   });
 
-
-
   // ✅ 페이지네이션 추가
   const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
   const itemsPerPage = 9; // 한 페이지당 표시할 항목 수
   const totalItems = sortedGroups.length; // ✅ 전체 항목 개수를 직접 사용
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage)); // ✅ 최소 1페이지 보장
-  
+
   const paginatedGroups = sortedGroups.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-   // ✅ 변환하여 넘김
+  // ✅ 변환하여 넘김
 
   return (
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
       {/* 헤더 */}
-      <PageHeader title={`📂 문제지:  ${examId}`} />
+      <PageHeader />
 
       {/* 문제추가버튼 */}
       <div className="flex items-center gap-2 justify-end">
@@ -173,19 +171,29 @@ export default function ProblemsPage() {
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
       {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
-     {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
-{viewMode === "gallery" ? (
-  <ProblemGallery problems={filteredProblems} groupId={groupId} examId={examId} handleSelectProblem={handleSelectProblem} />
-) : (
-  <ProblemTable problems={filteredProblems} groupId={groupId} examId={examId} handleSelectProblem={handleSelectProblem} />
-)}
+      {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
+      {viewMode === "gallery" ? (
+        <ProblemGallery
+          problems={filteredProblems}
+          groupId={groupId}
+          examId={examId}
+          handleSelectProblem={handleSelectProblem}
+        />
+      ) : (
+        <ProblemTable
+          problems={filteredProblems}
+          groupId={groupId}
+          examId={examId}
+          handleSelectProblem={handleSelectProblem}
+        />
+      )}
 
-<Pagination 
-  totalItems={totalItems}  // ✅ 정확한 전체 항목 수 전달
-  itemsPerPage={itemsPerPage}
-  currentPage={currentPage}
-  setCurrentPage={setCurrentPage}
-/>
+      <Pagination
+        totalItems={totalItems} // ✅ 정확한 전체 항목 수 전달
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+      />
 
       {/* 문제 추가 모달 */}
       <Modal

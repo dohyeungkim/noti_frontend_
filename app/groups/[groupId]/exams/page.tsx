@@ -60,34 +60,22 @@ export default function ExamsPage() {
     }
   });
 
-  // // ✅ 페이지네이션 추가
-  // const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
-  // const itemsPerPage = 10; // 한 페이지당 표시할 그룹 수
-
-  // // ✅ 페이지네이션 적용
-  // const totalPages = Math.ceil(sortedGroups.length / itemsPerPage);
-  // const paginatedGroups = sortedGroups.slice(
-  //   (currentPage - 1) * itemsPerPage,
-  //   currentPage * itemsPerPage
-  // );
-  // const totalItems = totalPages * itemsPerPage;  // ✅ 변환하여 넘김
   // ✅ 페이지네이션 추가
   const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
   const itemsPerPage = 9; // 한 페이지당 표시할 항목 수
   const totalItems = sortedGroups.length; // ✅ 전체 항목 개수를 직접 사용
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage)); // ✅ 최소 1페이지 보장
-  
+
   const paginatedGroups = sortedGroups.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  
-  return (
 
+  return (
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
       {/* 헤더 */}
-      <PageHeader title={`🏡 ${myGroup ? myGroup.name : ""}`} />
-     
+      <PageHeader />
+
       {/* 문제지 생성버튼 */}
       <div className="flex items-center gap-2 justify-end">
         <OpenModalButton
@@ -127,12 +115,12 @@ export default function ExamsPage() {
         />
       )}
 
-  <Pagination 
-    totalItems={totalItems}  // ✅ 정확한 전체 항목 수 전달
-    itemsPerPage={itemsPerPage}
-    currentPage={currentPage}
-    setCurrentPage={setCurrentPage}
-  />
+      <Pagination
+        totalItems={totalItems} // ✅ 정확한 전체 항목 수 전달
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+      />
 
       {/* ✅ 모달을 외부 파일에서 가져와 사용 */}
       <ExamCreateModal

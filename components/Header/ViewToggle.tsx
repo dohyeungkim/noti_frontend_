@@ -2,6 +2,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTableCells, faList } from "@fortawesome/free-solid-svg-icons";
 
 interface ViewToggleProps {
+  className?: string;
+
   viewMode: "gallery" | "table";
   setViewMode: (mode: "gallery" | "table") => void;
 }
