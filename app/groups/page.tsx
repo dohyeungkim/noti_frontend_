@@ -6,12 +6,13 @@ import SearchBar from "@/components/SearchBar";
 import SortButton from "@/components/SortButton";
 import OpenModalButton from "@/components/OpenModalButton";
 import PageHeader from "@/components/PageHeader";
+import GroupCreateModal from "@/components/GroupCreateModal";
 
 export default function GroupsPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("title");
+  const [sortOrder, setSortOrder] = useState("제목순"); // 기본 정렬 방식 설정
 
   // ✅ 상태 추가
   const [groupName, setGroupName] = useState("");
@@ -25,29 +26,45 @@ export default function GroupsPage() {
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  //✅ 정렬 방식에 따라 그룹 데이터 정렬
+  const sortedGroups = [...groups].sort((a, b) => {
+    if (sortOrder === "제목순") {
+      return a.name.localeCompare(b.name); // 이름(제목)순 정렬 (오름차순)
+    } else {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // 최신 생성일순 정렬 (내림차순)
+    }
+  });
+
   return (
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
       <PageHeader title="🏡 서연님의 그룹" />
-
-      {/* 검색바 */}
-      <div className="flex justify-between items-center mb-4">
-        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-
-        {/* 정렬 & 그룹 생성 버튼 */}
-        <div className="flex items-center gap-2">
-          <SortButton onClick={() => setSortOrder("title")} label="제목순" />
-
-          <OpenModalButton
-            onClick={() => setIsModalOpen(true)}
-            label="그룹 생성하기"
+      <div className="flex items-center gap-2 justify-end">
+        <OpenModalButton
+          onClick={() => setIsModalOpen(true)}
+          label="그룹 생성하기"
+        />
+      </div>
+      {/* 검색바 컨테이너 */}
+      <div className="flex items-center gap-4 mb-4 w-full">
+        {/* 검색바 (남는 공간 전부 차지) */}
+        <div className="flex-grow min-w-0">
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
           />
+        </div>
+
+        {/* 정렬 버튼 */}
+        <div className="flex items-center gap-2">
+          <SortButton onSortChange={setSortOrder} />
         </div>
       </div>
 
       {/* 카드 생성 */}
-      <h2 className="text-xl font-bold mb-4">나의 그룹</h2>
+      <h2 className="text-xl font-bold mb-4 m-2 pt-4">나의 그룹</h2>
+      <hr className="border-t border-gray-300 my-4 m-2" />
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 m-2">
         {filteredGroups.map((group) => (
           <div
             key={group.groupId}
@@ -69,102 +86,23 @@ export default function GroupsPage() {
         ))}
       </section>
 
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-          onClick={() => setIsModalOpen(false)}
-        >
-          <div
-            className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">그룹 생성하기</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-600 hover:text-black text-2xl"
-              >
-                ❌
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <label className="flex flex-col">
-                그룹 이름
-                <input
-                  type="text"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md mt-1"
-                />
-              </label>
-              <label className="flex flex-col">
-                그룹 번호
-                <input
-                  type="text"
-                  value={groupNumber}
-                  onChange={(e) => setGroupNumber(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md mt-1"
-                />
-              </label>
-              <label className="flex flex-col">
-                초대 코드
-                <input
-                  type="text"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md mt-1"
-                />
-              </label>
-
-              <div className="flex items-center gap-2">
-                <label className="flex flex-col flex-1">
-                  인원 제한
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={maxStudents}
-                      onChange={(e) => setMaxStudents(e.target.value)}
-                      className="p-2 border border-gray-300 rounded-md w-full mt-1"
-                    />
-                    <span className="mt-1">명</span>
-                  </div>
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="flex flex-col flex-1">
-                  연도
-                  <input
-                    type="number"
-                    value={year}
-                    onChange={(e) => setYear(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md w-full mt-1"
-                  />
-                </label>
-                <span className="mt-6">년</span>
-                <label className="flex flex-col flex-1">
-                  학기
-                  <input
-                    type="number"
-                    value={semester}
-                    onChange={(e) => setSemester(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md w-full mt-1"
-                  />
-                </label>
-                <span className="mt-6">학기</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="mt-6 w-full bg-black text-white py-3 rounded-md text-lg cursor-pointer"
-            >
-              그룹 생성하기
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 모달창 불러오기 */}
+      <GroupCreateModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        groupName={groupName}
+        setGroupName={setGroupName}
+        groupNumber={groupNumber}
+        setGroupNumber={setGroupNumber}
+        inviteCode={inviteCode}
+        setInviteCode={setInviteCode}
+        maxStudents={maxStudents}
+        setMaxStudents={setMaxStudents}
+        year={year}
+        setYear={setYear}
+        semester={semester}
+        setSemester={setSemester}
+      />
     </div>
   );
 }

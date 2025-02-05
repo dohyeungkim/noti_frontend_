@@ -6,9 +6,16 @@ interface SearchBarProps {
   setSearchQuery: (query: string) => void;
 }
 
-export default function SearchBar({ searchQuery, setSearchQuery }: SearchBarProps) {
+export default function SearchBar({
+  searchQuery,
+  setSearchQuery,
+}: SearchBarProps) {
   return (
-    <div className="flex items-center border border-gray-300 rounded-md px-4 py-2 w-full max-w-md">
+    <div
+      className="flex items-center border border-gray-300 rounded-lg m-2 px-4 py-1.5 w-full 
+          flex-grow min-w-0 max-w-none
+          transition-all duration-300 ease-in-out"
+    >
       <FontAwesomeIcon icon={faSearch} className="text-gray-500" />
       <input
         type="text"

@@ -3,14 +3,19 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 
 interface OpenModalButtonProps {
   onClick: () => void;
-  label: string; // 버튼 텍스트 (예: "그룹 생성하기", "문제 생성하기")
+  label: string;
 }
 
-export default function OpenModalButton({ onClick, label }: OpenModalButtonProps) {
+export default function OpenModalButton({
+  onClick,
+  label,
+}: OpenModalButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center bg-black text-white px-4 py-2 rounded-md text-lg cursor-pointer"
+      className="flex items-center bg-black text-white px-4 py-1.5 rounded-xl m-2 text-md cursor-pointer
+      hover:bg-gray-500 transition-all duration-200 ease-in-out
+      active:scale-95"
     >
       <FontAwesomeIcon icon={faPlus} className="mr-2" />
       {label}
