@@ -6,10 +6,14 @@ import Modal from "@/components/ProblemPage/Modal_makeProblem";
 import { problems } from "@/data/problems";
 import { groups } from "@/data/groups";
 import { testExams } from "@/data/testmode";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch } from "@fortawesome/free-solid-svg-icons";
-import { faSort } from "@fortawesome/free-solid-svg-icons/faSort";
-import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
+
+import PageHeader from "@/components/Header/PageHeader";
+import SearchBar from "@/components/Header/SearchBar";
+import SortButton from "@/components/Header/SortButton";
+import ViewToggle from "@/components/Header/ViewToggle";
+import OpenModalButton from "@/components/Header/OpenModalButton";
+import ProblemGallery from "@/components/ProblemPage/ProblemGallery";
+import ProblemTable from "@/components/ProblemPage/ProblemTable";
 
 // 문제 데이터를 트리 구조로 변환하는 함수
 const buildTree = (problems: any[]) => {
@@ -100,51 +104,52 @@ export default function ProblemsPage() {
         : [...prev, problemId]
     );
   };
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("제목순");
+  const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
   return (
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
       {/* 헤더 */}
-      <header className="flex flex-col items-center mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          📂 문제지: {examId}
-        </h1>
-      </header>
-      <div className="flex justify-between items-center mb-6">
-        {/* 검색바 */}
-        <div className="flex items-center border border-gray-300 rounded-md px-4 py-2 w-full max-w-md">
-          <FontAwesomeIcon icon={faSearch} className="text-gray-500" />
-          <input
-            type="text"
-            placeholder="그룹 검색..."
-            // value={searchQuery}
-            // onChange={(e) => setSearchQuery(e.target.value)}
-            className="ml-2 w-full outline-none bg-transparent"
-          />
-        </div>
+      <PageHeader title={`📂  ${examId}`} />
 
-        {/* 정렬 & 그룹 생성 버튼 */}
-        <div className="flex gap-2 flex-shrink-0">
-          <button className="border border-gray-300 rounded-md px-4 py-2">
-            <FontAwesomeIcon icon={faSort} className="mr-2" />
-            제목순
-          </button>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-black text-white px-4 py-2 rounded-md text-lg cursor-pointer"
-          >
-            + 문제 추가하기
-          </button>
-        </div>
+      {/* 생성하기 버튼 */}
+      <div className="flex items-center gap-2 justify-end">
+        <OpenModalButton
+          onClick={() => setIsModalOpen(true)}
+          label="문제지 생성하기"
+        />
       </div>
 
-      {/* ✅ 일반 페이지 문제 리스트 */}
-      <ProblemList
-        problems={filteredProblems}
-        groupId={groupId}
-        examId={examId}
-        handleSelectProblem={handleSelectProblem}
-      />
+      <div className="flex justify-between items-center mb-6">
+        {/* 검색바 */}
+        <div className="flex items-center gap-4 mb-4 w-full">
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+          <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+          <SortButton onSortChange={setSortOrder} />
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold mb-4 m-2 pt-4">나의 문제지</h2>
+      <hr className="border-b-1 border-gray-300 my-4 m-2" />
+
+      {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
+      {viewMode === "gallery" ? (
+        <ProblemGallery
+          problems={filteredProblems}
+          groupId={groupId}
+          examId={examId}
+          handleSelectProblem={handleSelectProblem}
+        />
+      ) : (
+        <ProblemTable
+          problems={filteredProblems}
+          groupId={groupId}
+          examId={examId}
+          handleSelectProblem={handleSelectProblem}
+        />
+      )}
 
       {/* 문제 추가 모달 */}
       <Modal

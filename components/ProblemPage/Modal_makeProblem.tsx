@@ -88,6 +88,14 @@ const Modal = ({
               </ul>
             </div>
           </div>
+
+            {/* 문제지 생성 버튼 */}
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="mt-4 w-full bg-black text-white py-3 rounded-md text-lg cursor-pointer"
+            >
+              문제 추가하기
+            </button>
         </div>
       </div>
     )

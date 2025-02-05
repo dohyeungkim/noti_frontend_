@@ -56,9 +56,11 @@ export default function GroupsPage() {
   );
 
   return (
+
+    // 제목
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
       <PageHeader title="🏡 서연님의 그룹" />
-
+{/* 생성하기 버튼 */}
       <div className="flex items-center gap-2 justify-end">
         <OpenModalButton
           onClick={() => setIsModalOpen(true)}
