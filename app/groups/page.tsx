@@ -7,14 +7,18 @@ import SortButton from "@/components/SortButton";
 import OpenModalButton from "@/components/OpenModalButton";
 import PageHeader from "@/components/PageHeader";
 import GroupCreateModal from "@/components/GroupCreateModal";
+import ViewToggle from "@/components/ViewToggle";
+import GroupList from "@/components/grouppage/GroupList"; // ✅ 추가
+import GroupTable from "@/components/grouppage/GroupTable"; // ✅ 추가
 
 export default function GroupsPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("제목순"); // 기본 정렬 방식 설정
+  const [sortOrder, setSortOrder] = useState("제목순");
+  const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
 
-  // ✅ 상태 추가
+  // ✅ 모달 상태 추가
   const [groupName, setGroupName] = useState("");
   const [groupNumber, setGroupNumber] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -22,71 +26,47 @@ export default function GroupsPage() {
   const [year, setYear] = useState("2025");
   const [semester, setSemester] = useState("1");
 
+  // ✅ 검색어 필터링
   const filteredGroups = groups.filter((group) =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  //✅ 정렬 방식에 따라 그룹 데이터 정렬
-  const sortedGroups = [...groups].sort((a, b) => {
+  // ✅ 정렬 적용
+  const sortedGroups = [...filteredGroups].sort((a, b) => {
     if (sortOrder === "제목순") {
-      return a.name.localeCompare(b.name); // 이름(제목)순 정렬 (오름차순)
+      return a.name.localeCompare(b.name);
     } else {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // 최신 생성일순 정렬 (내림차순)
+      return (
+        new Date(b.createdAt || "1970-01-01").getTime() -
+        new Date(a.createdAt || "1970-01-01").getTime()
+      );
     }
   });
 
   return (
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
       <PageHeader title="🏡 서연님의 그룹" />
+
       <div className="flex items-center gap-2 justify-end">
-        <OpenModalButton
-          onClick={() => setIsModalOpen(true)}
-          label="그룹 생성하기"
-        />
+        <OpenModalButton onClick={() => setIsModalOpen(true)} label="그룹 생성하기" />
       </div>
-      {/* 검색바 컨테이너 */}
+
+      {/* 검색바 & 정렬 버튼 & 보기 방식 토글 */}
       <div className="flex items-center gap-4 mb-4 w-full">
-        {/* 검색바 (남는 공간 전부 차지) */}
         <div className="flex-grow min-w-0">
-          <SearchBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         </div>
-
-        {/* 정렬 버튼 */}
-        <div className="flex items-center gap-2">
-          <SortButton onSortChange={setSortOrder} />
-        </div>
+        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+        <SortButton onSortChange={setSortOrder} />
       </div>
 
-      {/* 카드 생성 */}
       <h2 className="text-xl font-bold mb-4 m-2 pt-4">나의 그룹</h2>
       <hr className="border-t border-gray-300 my-4 m-2" />
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 m-2">
-        {filteredGroups.map((group) => (
-          <div
-            key={group.groupId}
-            onClick={() => router.push(`/groups/${group.groupId}/exams`)}
-            className="relative bg-white border border-gray-300 rounded-lg p-6 cursor-pointer shadow-md transition-transform duration-200 hover:scale-105 hover:shadow-lg"
-          >
-            <h2 className="text-xl font-semibold mb-2">{group.name}</h2>
-            <p className="mb-1 text-gray-600">그룹 번호: {group.groupId}</p>
-            <p className="mb-1 text-gray-600">수강생: {group.students}명</p>
-            <div className="absolute top-4 right-4 w-3 h-3 bg-black rounded-full"></div>
-            <div className="flex justify-between items-center text-gray-700 text-sm font-semibold mt-2">
-              <span>교수: {group.professor}</span>
-              <span>{group.semester}</span>
-            </div>
-            <button className="mt-4 w-full bg-black text-white py-2 rounded-md text-lg cursor-pointer">
-              들어가기
-            </button>
-          </div>
-        ))}
-      </section>
+      {/* ✅ 선택된 보기 방식에 따라 컴포넌트 사용 */}
+      {viewMode === "gallery" ? <GroupList groups={sortedGroups} /> : <GroupTable groups={sortedGroups} />}
 
-      {/* 모달창 불러오기 */}
+      {/* 모달창 */}
       <GroupCreateModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
