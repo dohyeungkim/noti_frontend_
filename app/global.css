@@ -1,8 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import '@fontsource/inter/index.css';
 
 body {
+  @apply font-inter;
+
     @apply bg-[#f9f9f9]; /* Tailwind 클래스 */
     overflow-x: hidden; /* 일반 CSS */
   }
