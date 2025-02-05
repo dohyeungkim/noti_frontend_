@@ -13,21 +13,41 @@ const TreeNode = ({ node, selectedProblems, onSelect, expandedNodes }: TreeNodeP
   const isSelected = selectedProblems.includes(node.problemId);
 
   return (
-    <li style={{ listStyleType: "none", marginLeft: node.type === "folder" ? "10px" : "25px" }}>
+    <li className={`ml-${node.type === "folder" ? "2" : "6"} list-none`}>
       {node.type === "folder" ? (
-        <div onClick={() => setIsOpen(!isOpen)} style={{ cursor: "pointer", padding: "5px", borderRadius: "5px", backgroundColor: isOpen ? "#e6e6e6" : "transparent" }}>
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className={`cursor-pointer px-3 py-2 rounded-md transition duration-200 ${
+            isOpen ? "bg-gray-200" : "hover:bg-gray-100"
+          }`}
+        >
           {isOpen ? "📂" : "📁"} {node.name}
         </div>
       ) : (
-        <div style={{ padding: "5px", cursor: "pointer", backgroundColor: isSelected ? "#d1e7fd" : "transparent", borderRadius: "5px" }}>
-          <input type="checkbox" checked={isSelected} onChange={() => onSelect(node.problemId)} style={{ marginRight: "0.5rem" }} />
+        <div
+          className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition duration-200 ${
+            isSelected ? "bg-blue-100" : "hover:bg-gray-100"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onSelect(node.problemId)}
+            className="mr-2 cursor-pointer"
+          />
           📄 {node.name}
         </div>
       )}
       {isOpen && node.children && (
-        <ul style={{ paddingLeft: "15px" }}>
+        <ul className="pl-4">
           {node.children.map((child: any, index: number) => (
-            <TreeNode key={index} node={child} selectedProblems={selectedProblems} onSelect={onSelect} expandedNodes={expandedNodes} />
+            <TreeNode
+              key={index}
+              node={child}
+              selectedProblems={selectedProblems}
+              onSelect={onSelect}
+              expandedNodes={expandedNodes}
+            />
           ))}
         </ul>
       )}

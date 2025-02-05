@@ -12,15 +12,26 @@ const ProblemList = ({ problems, groupId, examId, handleSelectProblem }: Problem
   const router = useRouter();
 
   return (
-    <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "1rem" }}>
+    <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {problems.map((problem) => (
-        <div key={problem.problemId} className="problem-card" style={{ backgroundColor: "white", border: "1px solid #ddd", borderRadius: "10px", padding: "1.5rem", cursor: "pointer", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", transition: "transform 0.2s" }}
+        <div
+          key={problem.problemId}
+          className="relative bg-white border border-gray-300 p-6 rounded-lg shadow-md transition-transform duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
           onClick={() => handleSelectProblem(problem.problemId)}
         >
-          <h2 style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>{problem.title}</h2>
-          <p style={{ margin: "0.5rem 0", color: "#555" }}>{problem.description}</p>
-          <button onClick={() => router.push(`/groups/${groupId}/exams/${examId}/problems/${problem.problemId}`)}
-            style={{ marginTop: "1rem", padding: "0.5rem", backgroundColor: "black", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", width: "100%", textAlign: "center", fontSize: "1rem" }}>
+          <h2 className="text-xl font-semibold">{problem.title}</h2>
+          <p className="text-gray-600 text-sm">{problem.description}</p>
+
+          {/* 오른쪽 상단 점 표시 */}
+          <div className="absolute top-4 right-4 w-3 h-3 bg-black rounded-full"></div>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/groups/${groupId}/exams/${examId}/problems/${problem.problemId}`);
+            }}
+            className="mt-4 w-full bg-black text-white py-2 rounded-md text-lg cursor-pointer"
+          >
             풀기
           </button>
         </div>

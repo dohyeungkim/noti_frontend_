@@ -1,163 +1,104 @@
 "use client";
-import Link from "next/link";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMagnifyingGlass, faHouse, faScroll, faUsers, faPen, faEnvelope, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
-// ✅ Props 타입 정의
+import Link from "next/link";
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowLeft,
+  faHouse,
+  faMagnifyingGlass,
+  faScroll,
+  faUsers,
+  faPen,
+  faEnvelope,
+} from "@fortawesome/free-solid-svg-icons";
+
 interface DrawerProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
 
 export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const toggleDrawer = () => {
-    setIsOpen(!isOpen);
+    setIsOpen(!drawerOpen);
   };
 
   const openDrawer = () => {
-    if (!isOpen) {
-      setIsOpen(true);
+    if (!drawerOpen) {
+      setDrawerOpen(true);
     }
   };
 
   return (
     <>
       {/* Drawer */}
-      <div className={`drawer ${isOpen ? "open" : "closed"}`} onClick={!isOpen ? openDrawer : undefined}>
+      <div
+        className={`fixed top-0 left-0 h-full bg-gray-200 shadow-lg overflow-hidden rounded-r-2xl transition-all duration-300 z-[1000]
+          ${isOpen ? "w-64 md:w-64 sm:w-52" : "w-16 sm:w-14 md:w-16"}`}
+        onClick={!isOpen ? openDrawer : undefined}
+      >
         {/* Profile Section */}
-        <div className="profile-section">
-          <button className="toggle-button" onClick={toggleDrawer}>
-            👤
-          </button>
-          {isOpen && <p>Hello, 서연 한!</p>}
-          <button className="sideButton" onClick={() => setIsOpen(false)} style={{ marginLeft: "auto" }}>
+        <div className="flex items-center p-3 bg-gray-200 text-gray-700">
+          <button className="text-lg cursor-pointer bg-transparent border-none">👤</button>
+          <p className={`ml-2 ${isOpen ? "block" : "hidden"}`}>Hello, 서연 한!</p>
+          <button
+            className={`ml-auto ${isOpen ? "block" : "hidden"}`}
+            onClick={() => setIsOpen(false)}
+          >
             <FontAwesomeIcon icon={faArrowLeft} />
           </button>
         </div>
 
         {/* Navigation Links */}
-        <div className="content">
-          <ul>
-            <li>
-              <Link href="/search">
-                <FontAwesomeIcon icon={faMagnifyingGlass} />
-                &nbsp;{isOpen && " 검색"}
-              </Link>
-            </li>
-            <li>
-              <Link href="/">
-                <FontAwesomeIcon icon={faHouse} /> &nbsp;
-                {isOpen && "나의 페이지"}
-              </Link>
-            </li>
-            <li>
-              <Link href="/solved">
-                <FontAwesomeIcon icon={faScroll} />
-                &nbsp;{isOpen && " 내가 푼 문제 모음"}
-              </Link>
-            </li>
-            <li>
-              <Link href="/groups">
-                <FontAwesomeIcon icon={faUsers} />
-                &nbsp;
-                {isOpen && " 나의 그룹"}
-              </Link>
-            </li>
-            <li>
-              <Link href="/my-questions">
-                <FontAwesomeIcon icon={faPen} />
-                &nbsp;&nbsp;
-                {isOpen && " 문제 등록하기"}
-              </Link>
-            </li>
-            <li>
-              <Link href="/notifications">
-                <FontAwesomeIcon icon={faEnvelope} />
-                &nbsp; &nbsp;{isOpen && "알림함"}
-              </Link>
-            </li>
+        <div className="p-4">
+          <ul className="list-none p-0">
+            {[
+              { href: "/search", icon: faMagnifyingGlass, text: " 검색" },
+              { href: "/", icon: faHouse, text: " 나의 페이지" },
+              { href: "/solved", icon: faScroll, text: " 내가 푼 문제 모음" },
+              { href: "/groups", icon: faUsers, text: " 나의 그룹" },
+              { href: "/my-questions", icon: faPen, text: " 문제 등록하기" },
+              { href: "/notifications", icon: faEnvelope, text: " 알림함" },
+            ].map(({ href, icon, text }) => (
+              <li key={href} className="my-4 flex items-center gap-2">
+                <Link href={href} className="no-underline text-gray-700 flex items-center">
+                  <button className="border-none bg-transparent text-lg cursor-pointer">
+                    <FontAwesomeIcon icon={icon} />
+                  </button>
+                  <span className={`ml-2 ${isOpen ? "inline-block" : "hidden"}`}>{text}</span>
+                </Link>
+              </li>
+            ))}
           </ul>
 
-          {/* 사이드 바 닫으면 숨김 */}
-          <p className="p">즐겨찾는 그룹</p>
-          <p>
-            <s>추후에 추가 예정</s>
-          </p>
-          <p className="p">즐겨찾는 문제지</p>
-          <p>
-            <s>추후에 추가 예정</s>
-          </p>
-          <p className="p">나의 문제지</p>
-          <p>
-            <s>추후에 추가 예정</s>
-          </p>
+          {/* 사이드 바 닫으면 여기서부터 안 보이도록 숨김 */}
+          <div className={`${isOpen ? "block" : "hidden"}`}>
+            <p className="text-gray-500 text-sm">즐겨찾는 그룹</p>
+            <p>
+              <s>추후에 추가 예정</s>
+            </p>
+            <p className="text-gray-500 text-sm">즐겨찾는 문제지</p>
+            <p>
+              <s>추후에 추가 예정</s>
+            </p>
+            <p className="text-gray-500 text-sm">나의 문제지</p>
+            <p>
+              <s>추후에 추가 예정</s>
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Styles */}
-      <style jsx>{`
-        .drawer {
-          position: fixed;
-          top: 0;
-          left: 0;
-          height: 100%;
-          width: ${isOpen ? "250px" : "60px"};
-          background: rgb(179, 179, 179);
-          transition: width 0.3s ease-in-out;
-          z-index: 1000;
-          box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-          overflow: hidden;
-          cursor: ${isOpen ? "default" : "pointer"};
-          border-top-right-radius: 20px;
-          border-bottom-right-radius: 20px;
-        }
-
-        .profile-section {
-          display: flex;
-          align-items: center;
-          padding: 0.5rem;
-          background: rgb(179, 179, 179);
-          color: rgb(64, 64, 64);
-        }
-
-        .toggle-button {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 1.8rem;
-          cursor: pointer;
-        }
-
-        .content {
-          padding: 1rem;
-        }
-
-        ul {
-          list-style: none;
-          padding: 0;
-        }
-
-        ul li {
-          margin: 1rem 0;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        ul li a {
-          text-decoration: none;
-          color:rgb(90, 90, 90);
-          display: flex;
-          align-items: center;
-        }
-
-        .sideButton {
-          color: grey;
-          border: 0;
-          background-color: transparent;
-          cursor: pointer;
-        }
-      `}</style>
+      {/* 사이드바 열기 버튼 */}
+      <button
+        className={`absolute top-[10px] left-[70px] bg-gray-100 text-black rounded-full w-[25px] h-[25px] text-lg cursor-pointer
+          ${isOpen ? "hidden" : "block"}`}
+        onClick={toggleDrawer}
+      >
+        ➡️
+      </button>
     </>
   );
 }

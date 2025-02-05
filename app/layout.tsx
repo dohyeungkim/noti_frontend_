@@ -1,4 +1,5 @@
 "use client";
+import "./global.css"; // CSS 불러오기
 import { useState } from "react";
 import Drawer from "../components/layout/Drawer";
 import ExamSidebar from "../components/layout/ExamSidebar";
@@ -17,8 +18,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <title>My App</title>
       </head>
       <body>
-        <div className="container">
-          {/* 왼쪽 Drawer */}
+      <div className="container 
+  w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] xl:w-[70vw] 
+  min-w-[1100px] max-w-[1600px] mx-auto bg-[#f9f9f9]0">
+      {/* 왼쪽 Drawer */}
           <Drawer isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />
 
           {/* 메인 콘텐츠 */}
@@ -42,13 +45,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         .main-content {
           flex: 1;
-          padding: 20px;
+          //padding: 20px;
           transition: margin 0.4s ease-in-out, width 0.4s ease-in-out;
         }
 
         /* 왼쪽 Drawer가 열릴 때 */
         .drawer-open {
-          margin-left: 250px;
+         margin-left: 250px;
+         //margin-left: 160px;
         }
 
         /* 오른쪽 ExamSidebar가 열릴 때 */
