@@ -1,20 +1,4 @@
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faSort } from "@fortawesome/free-solid-svg-icons";
 
-// // ✅ 올바른 Props 타입 설정
-// interface SortButtonProps {
-//   onClick: () => void;
-//   label: string;
-// }
-
-// export default function SortButton({ onClick, label }: SortButtonProps) {
-//   return (
-//     <button className="flex items-center border border-gray-300 rounded-md px-4 py-2 m-2" onClick={onClick}>
-//       <FontAwesomeIcon icon={faSort} className="mr-2" />
-//       {label}
-//     </button>
-//   );
-// }
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSort } from "@fortawesome/free-solid-svg-icons";
@@ -37,7 +21,9 @@ export default function SortButton({ onSortChange }: SortButtonProps) {
   return (
     <button
       className="flex border border-gray-300 rounded-lg m-2 px-4 py-1.5 min-w-[120px] 
-               hover:bg-gray-100 active:scale-95 transition-all duration-300 ease-in-out"
+               hover:bg-gray-100 active:scale-95 transition-all duration-500 ease-in-out
+               focus:ring-2 focus:ring-gray-300
+               "
       onClick={toggleSortOrder}
     >
       <div className="flex w-full items-center justify-between">
