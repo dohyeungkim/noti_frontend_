@@ -11,6 +11,7 @@ export const problems = [
             input: '1 2',
             output: '3',
             difficulty: '하',
+            createdAt: '2022-05-05' 
         },
         {
             problemId: 'CA00-02',
@@ -22,6 +23,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '중',
+            createdAt: '2022-05-05' 
+
         },
         {
             problemId: 'CA00-03',
@@ -33,6 +36,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '상',
+            createdAt: '2022-05-05' 
+
         },
         {
             problemId: 'CA00-04',
@@ -44,6 +49,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '중',
+            createdAt: '2022-05-05' 
+
         },
         {
             problemId: 'CA00-05',
@@ -55,6 +62,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '하',
+            createdAt: '2022-05-05' 
+
         },
         {
             problemId: 'DS00-01',
@@ -66,6 +75,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '하',
+            createdAt: '2022-05-05' 
+
         },
         {
             problemId: 'DS00-02',
@@ -77,6 +88,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '중',
+            createdAt: '2022-05-05' 
+
         },
         {
             problemId: 'DS00-03',
@@ -88,6 +101,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '상',
+            createdAt: '2022-05-05' 
+
         },
         {
             problemId: 'DS00-04',
@@ -99,6 +114,8 @@ export const problems = [
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',
             difficulty: '중',
+            createdAt: '2022-05-05' 
+
         },
        
 //나의문제 끝
@@ -114,6 +131,8 @@ export const problems = [
         input: '1 2',
         output: '3',
         difficulty: '하',
+        createdAt: '2022-05-05' 
+
     },
     
     
@@ -128,6 +147,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '중',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'CA00-03',
@@ -140,6 +161,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '상',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'CA00-04',
@@ -152,6 +175,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '중',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'CA00-05',
@@ -162,6 +187,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '하',
+        createdAt: '2022-05-05' 
+
     },
 
     // DS00 문제
@@ -176,6 +203,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '하',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'DS00-02',
@@ -187,6 +216,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '중',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'DS00-03',
@@ -199,6 +230,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '상',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'DS00-04',
@@ -211,6 +244,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '중',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'DS00-05',
@@ -223,6 +258,8 @@ export const problems = [
         input: '예시 입력 데이터',
         output: '예시 출력 데이터',
         difficulty: '하',
+        createdAt: '2022-05-05' 
+
     },
 
     // 추가 문제
@@ -238,6 +275,8 @@ export const problems = [
         input: '2\nOOXXOXXOOO\nOOXXOOXXOO',
         output: '10\n9',
         difficulty: '보통',
+        createdAt: '2022-05-05' 
+
     },
     {
         problemId: 'DS01-0001',
@@ -250,5 +289,7 @@ export const problems = [
         input: '5\n1 2 3 4 5',
         output: '5 4 3 2 1',
         difficulty: '쉬움',
+        createdAt: '2022-05-05' 
+
     },
 ];

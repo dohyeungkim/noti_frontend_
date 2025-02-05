@@ -173,12 +173,21 @@ export default function ProblemsPage() {
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
       {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
-     {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
-{viewMode === "gallery" ? (
-  <ProblemGallery problems={filteredProblems} groupId={groupId} examId={examId} handleSelectProblem={handleSelectProblem} />
-) : (
-  <ProblemTable problems={filteredProblems} groupId={groupId} examId={examId} handleSelectProblem={handleSelectProblem} />
-)}
+      {viewMode === "gallery" ? (
+        <ProblemGallery
+          problems={problems}
+          groupId={groupId}
+          examId={examId}
+          handleSelectProblem={handleSelectProblem}
+        />
+      ) : (
+        <ProblemTable
+          problems={problems}
+          groupId={groupId}
+          examId={examId}
+          handleSelectProblem={handleSelectProblem}
+        />
+      )}
 
 <Pagination 
   totalItems={totalItems}  // ✅ 정확한 전체 항목 수 전달

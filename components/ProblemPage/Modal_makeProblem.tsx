@@ -88,6 +88,9 @@ const Modal = ({
               </ul>
             </div>
           </div>
+          <button  className="mt-6 w-full bg-black text-white py-3 rounded-md text-lg cursor-pointer">
+            그룹 생성하기
+          </button>
         </div>
       </div>
     )

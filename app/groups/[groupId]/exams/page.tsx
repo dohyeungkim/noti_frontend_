@@ -60,21 +60,34 @@ export default function ExamsPage() {
     }
   });
 
+  // // ✅ 페이지네이션 추가
+  // const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
+  // const itemsPerPage = 10; // 한 페이지당 표시할 그룹 수
+
+  // // ✅ 페이지네이션 적용
+  // const totalPages = Math.ceil(sortedGroups.length / itemsPerPage);
+  // const paginatedGroups = sortedGroups.slice(
+  //   (currentPage - 1) * itemsPerPage,
+  //   currentPage * itemsPerPage
+  // );
+  // const totalItems = totalPages * itemsPerPage;  // ✅ 변환하여 넘김
   // ✅ 페이지네이션 추가
   const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
-  const itemsPerPage = 10; // 한 페이지당 표시할 그룹 수
-
-  // ✅ 페이지네이션 적용
-  const totalPages = Math.ceil(sortedGroups.length / itemsPerPage);
+  const itemsPerPage = 9; // 한 페이지당 표시할 항목 수
+  const totalItems = sortedGroups.length; // ✅ 전체 항목 개수를 직접 사용
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage)); // ✅ 최소 1페이지 보장
+  
   const paginatedGroups = sortedGroups.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
+  
   return (
-    // <div className="p-8 bg-gray-100 min-h-screen ml-[4rem]">
+
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
       <PageHeader title={`🏡 ${myGroup ? myGroup.name : ""}`} />
+     
+      {/* 문제지 생성버튼 */}
       <div className="flex items-center gap-2 justify-end">
         <OpenModalButton
           onClick={() => setIsModalOpen(true)}
@@ -82,12 +95,8 @@ export default function ExamsPage() {
         />
       </div>
 
-      <h2 className="text-2xl font-bold mb-4 m-2 pt-4">나의 문제지</h2>
-      <hr className="border-b-1 border-gray-300 my-4 m-2" />
-
       {/* 검색바 & 정렬 버튼 & 보기 방식 토글 */}
-
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center gap-4 mb-4 w-full">
         {/* 검색바 */}
         <div className="flex items-center gap-4 mb-4 w-full">
           <div className="flex-grow min-w-0">
@@ -100,18 +109,29 @@ export default function ExamsPage() {
           <SortButton onSortChange={setSortOrder} />
         </div>
       </div>
+      <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
+      <hr className="border-b-1 border-gray-300 my-4 m-2" />
+
       {viewMode === "gallery" ? (
-        <ExamGallery exams={filteredExams} handleEnterExam={handleEnterExam} isTestMode={isTestMode} />
+        <ExamGallery
+          exams={filteredExams}
+          handleEnterExam={handleEnterExam}
+          isTestMode={isTestMode}
+        />
       ) : (
-        <ExamTable exams={filteredExams} handleEnterExam={handleEnterExam} isTestMode={isTestMode} />
+        <ExamTable
+          exams={filteredExams}
+          handleEnterExam={handleEnterExam}
+          isTestMode={isTestMode}
+        />
       )}
 
-      {/* ✅ 페이지네이션 추가 */}
-      <Pagination
-        totalPages={totalPages}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-      />
+  <Pagination 
+    totalItems={totalItems}  // ✅ 정확한 전체 항목 수 전달
+    itemsPerPage={itemsPerPage}
+    currentPage={currentPage}
+    setCurrentPage={setCurrentPage}
+  />
 
       {/* 모달 */}
       {isModalOpen && (

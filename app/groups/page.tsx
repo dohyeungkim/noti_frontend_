@@ -18,6 +18,7 @@ export default function GroupsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("제목순");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
+  
 
   // ✅ 모달 상태 추가
   const [groupName, setGroupName] = useState("");
@@ -27,9 +28,7 @@ export default function GroupsPage() {
   const [year, setYear] = useState("2025");
   const [semester, setSemester] = useState("1");
 
-  // ✅ 페이지네이션 추가
-  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
-  const itemsPerPage = 10; // 한 페이지당 표시할 그룹 수
+  // const itemsPerPage = 10; // 한 페이지당 표시할 그룹 수
 
   // ✅ 검색어 필터링
   const filteredGroups = groups.filter((group) =>
@@ -48,12 +47,27 @@ export default function GroupsPage() {
     }
   });
 
-  // ✅ 페이지네이션 적용
-  const totalPages = Math.ceil(sortedGroups.length / itemsPerPage);
+  // // ✅ 페이지네이션 적용
+  // const totalPages = Math.ceil(sortedGroups.length / itemsPerPage);
+  // const paginatedGroups = sortedGroups.slice(
+  //   (currentPage - 1) * itemsPerPage,
+  //   currentPage * itemsPerPage
+  // );
+  // const totalItems = totalPages * itemsPerPage;  // ✅ 변환하여 넘김
+  
+
+  // ✅ 페이지네이션 추가
+  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
+  const itemsPerPage = 9; // 한 페이지당 표시할 항목 수
+  const totalItems = sortedGroups.length; // ✅ 전체 항목 개수를 직접 사용
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage)); // ✅ 최소 1페이지 보장
+  
   const paginatedGroups = sortedGroups.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  
+
 
   return (
     <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
@@ -106,12 +120,14 @@ export default function GroupsPage() {
         setSemester={setSemester}
       />
 
-      {/* ✅ 페이지네이션 추가 */}
-      <Pagination
-        totalPages={totalPages}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-      />
+<Pagination 
+  totalItems={totalItems}  // ✅ 정확한 전체 항목 수 전달
+  itemsPerPage={itemsPerPage}
+  currentPage={currentPage}
+  setCurrentPage={setCurrentPage}
+/>
+
+
     </div>
   );
 }
