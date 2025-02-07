@@ -12,8 +12,8 @@ interface ExamTableProps {
 export default function ExamTable({ exams, handleEnterExam, isTestMode }: ExamTableProps) {
   return (
     <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-full bg-transparent border-collapse">
-        <thead>
+        <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">
+        <thead className="bg-gray-200">
           <tr className="border-b-4 border-gray-200  text-gray-800">
             <th className="p-4 text-left text-lg font-semibold">문제지 이름</th>
             <th className="p-4 text-left text-lg font-semibold">설명</th>

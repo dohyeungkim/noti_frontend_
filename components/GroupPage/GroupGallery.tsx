@@ -9,16 +9,18 @@ interface GroupListProps {
     students: number;
     professor: string;
     semester: string;
-
   }[];
 }
 
 export default function GroupList({ groups }: GroupListProps) {
   const router = useRouter();
 
+  // ✅ "MY" 그룹 제외한 그룹만 필터링
+  const filteredGroups = groups.filter((group) => group.groupId !== "MY");
+
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 m-2">
-      {groups.map((group) => (
+      {filteredGroups.map((group) => (
         <div
           key={group.groupId}
           onClick={() => router.push(`/groups/${group.groupId}/exams`)}

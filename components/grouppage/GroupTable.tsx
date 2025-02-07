@@ -14,12 +14,15 @@ interface GroupTableProps {
 
 export default function GroupTable({ groups }: GroupTableProps) {
   const router = useRouter();
+  
+  // ✅ "MY" 그룹 제외한 그룹만 필터링
+  const filteredGroups = groups.filter((group) => group.groupId !== "MY");
 
   return (
     <div className="w-full overflow-x-auto">
-      <table className="w-full table-auto bg-transparent border-collapse m-2">
-        <thead>
-          <tr className="border-b-4 border-gray-200 text-gray-800">
+        <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">
+        <thead className="bg-gray-200">
+        <tr className="border-b-4 border-gray-200 text-gray-800">
             <th className="p-4 text-left text-lg font-semibold">그룹 이름</th>
             <th className="p-4 text-left text-lg font-semibold">그룹 번호</th>
             <th className="p-4 text-left text-lg font-semibold">수강생 수</th>
@@ -28,8 +31,8 @@ export default function GroupTable({ groups }: GroupTableProps) {
           </tr>
         </thead>
         <tbody>
-          {groups.length > 0 ? (
-            groups.map((group) => (
+          {filteredGroups.length > 0 ? (
+            filteredGroups.map((group) => (
               <tr
                 key={group.groupId}
                 className="hover:bg-gray-100 transition-colors duration-200 border-b border-gray-300 cursor-pointer"

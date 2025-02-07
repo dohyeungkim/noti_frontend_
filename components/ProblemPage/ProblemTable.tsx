@@ -13,8 +13,8 @@ const ProblemTable = ({ problems, groupId, examId, handleSelectProblem }: Proble
 
   return (
     <div className="w-full overflow-x-auto">
-      <table className="w-full table-auto bg-transparent border-collapse m-2">
-        <thead>
+        <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">
+        <thead className="bg-gray-200">
           <tr className="border-b-4 border-gray-200 text-gray-800">
             <th className="p-4 text-left text-lg font-semibold">문제 제목</th>
             <th className="p-4 text-left text-lg font-semibold">설명</th>

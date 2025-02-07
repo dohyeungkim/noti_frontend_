@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function ViewQuestionPage() {
   const router = useRouter();
@@ -61,101 +62,90 @@ export default function ViewQuestionPage() {
   };
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "800px", margin: "0 auto" }}>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>문제 보기</h1>
+    <motion.div
+      className="bg-[#f9f9f9] min-h-screen flex justify-center items-center p-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="bg-white shadow-lg rounded-3xl p-8 max-w-lg w-full">
+        <h1 className="text-2xl font-bold mb-4 text-center text-gray-700">
+          ✏️ 문제 보기
+        </h1>
 
-      {loading ? (
-        <p>로딩 중...</p>
-      ) : (
-        <div>
-          {isEditing ? (
-            // ✅ 수정 모드 (입력 폼)
-            <form onSubmit={handleUpdate}>
-              <div style={{ marginBottom: "1rem" }}>
-                <label>문제 제목</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="문제 제목을 입력하세요"
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    border: "1px solid #ddd",
-                    borderRadius: "5px",
-                    marginTop: "0.5rem",
-                  }}
-                />
+        {loading ? (
+          <p className="text-center text-gray-500">로딩 중...</p>
+        ) : (
+          <motion.div
+            key={isEditing ? "edit" : "view"} // 수정 모드 전환 애니메이션 적용
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {isEditing ? (
+              // ✅ 수정 모드 (입력 폼)
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div>
+                  <label className="text-gray-600 font-medium">문제 제목</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="문제 제목을 입력하세요"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-gray-600 font-medium">문제 설명</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="문제 설명을 입력하세요"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
+                  ></textarea>
+                </div>
+
+                <div className="flex justify-between">
+                  <button
+                    type="submit"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-full shadow-md transition-all duration-200 hover:bg-blue-600 active:scale-95"
+                  >
+                    저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="bg-gray-400 text-white px-4 py-2 rounded-full shadow-md transition-all duration-200 hover:bg-gray-500 active:scale-95"
+                  >
+                    취소
+                  </button>
+                </div>
+              </form>
+            ) : (
+              // ✅ 일반 보기 모드 (텍스트 출력)
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    {title}
+                  </h2>
+                </div>
+                <div>
+                  <p className="text-gray-600">{description}</p>
+                </div>
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-orange-500 text-white px-6 py-2 rounded-full shadow-md transition-all duration-200 hover:bg-orange-600 active:scale-95"
+                  >
+                    수정하기
+                  </button>
+                </div>
               </div>
-
-              <div style={{ marginBottom: "1rem" }}>
-                <label>문제 설명</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="문제 설명을 입력하세요"
-                  style={{
-                    width: "100%",
-                    height: "150px",
-                    padding: "0.5rem",
-                    border: "1px solid #ddd",
-                    borderRadius: "5px",
-                    marginTop: "0.5rem",
-                  }}
-                ></textarea>
-              </div>
-
-              <button
-                type="submit"
-                style={{
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "blue",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                저장
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)} // ❌ 수정 취소
-                style={{
-                  marginLeft: "1rem",
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "gray",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                취소
-              </button>
-            </form>
-          ) : (
-            // ✅ 일반 보기 모드 (텍스트 출력)
-            <div>
-              <h2>{title}</h2>
-              <p>{description}</p>
-              <button
-                onClick={() => setIsEditing(true)} // ✏️ 수정 모드 활성화
-                style={{
-                  padding: "0.5rem 1rem",
-                  backgroundColor: "orange",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                수정하기
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+            )}
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
   );
 }
