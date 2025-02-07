@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { problems } from "@/data/problems";
 import { testExams } from "@/data/testmode";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { groups } from "@/data/groups";
 import { exams } from "@/data/exams";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,7 +26,28 @@ export default function WriteCodePage() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
 
-  
+// 🔥 강력한 복붙 차단
+  useEffect(() => {
+    if (isTestMode) {
+      const blockEvent = (e: ClipboardEvent | Event) => {
+        e.preventDefault();
+        e.stopImmediatePropagation(); // Monaco Editor 내부 이벤트까지 차단
+      };
+
+      document.addEventListener("copy", blockEvent, true);
+      document.addEventListener("cut", blockEvent, true);
+      document.addEventListener("paste", blockEvent, true);
+      document.addEventListener("contextmenu", blockEvent, true);
+
+      return () => {
+        document.removeEventListener("copy", blockEvent, true);
+        document.removeEventListener("cut", blockEvent, true);
+        document.removeEventListener("paste", blockEvent, true);
+        document.removeEventListener("contextmenu", blockEvent, true);
+      };
+    }
+  }, [isTestMode]);
+
   const SqlQueryEditor = () => {
     return <Editor height='100%' />
   }
@@ -86,20 +107,29 @@ export default function WriteCodePage() {
             </div>
           </div>
           <div className="border-b-2 border-black my-2"></div>
-          <div className="flex-1 border rounded-lg p-3 font-mono text-sm overflow-auto">
-            <textarea
+          <div
+            className="flex-1 border rounded-lg p-3 font-mono text-sm overflow-auto"
+            onBeforeInput={(e: any) => {
+              if (isTestMode && e.inputType === "insertFromPaste") {
+                e.preventDefault();
+                setTimeout(() => setCode(""), 10); // 🔥 붙여넣기 후 코드 비우기
+              }
+            }}
+          >           {/* Monaco Editor */}
+            <Editor
+              height="100%"
+              language={language} // 선택한 언어 반영
+              theme="tomorrow"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="여기에 코드를 작성하세요..."
+              onChange={(value: string | undefined) => setCode(value || "")}
               className="w-full h-full resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onPaste={(e) => isTestMode && e.preventDefault()}
-              onCopy={(e) => isTestMode && e.preventDefault()}
-              onCut={(e) => isTestMode && e.preventDefault()}
-              onContextMenu={(e) => isTestMode && e.preventDefault()}
-              onKeyDown={(e) => {
-                if (isTestMode && (e.ctrlKey || e.metaKey) && ["c", "v", "x", "a", "u", "i"].includes(e.key)) {
-                  e.preventDefault();
-                }
+              options={{
+                fontSize: 15,
+                minimap: { enabled: false },
+                scrollbar: { vertical: "auto", horizontal: "auto" },
+                wordWrap: "on",
+                readOnly: false, // Monaco Editor는 읽기 전용이 아님
+                handlePaste: false, // 내부적으로도 붙여넣기 방지
               }}
             />
           </div>
