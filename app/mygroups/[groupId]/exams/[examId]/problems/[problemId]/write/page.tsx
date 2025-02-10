@@ -1,6 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation"; // ✅ next/navigation 사용!
 import { useParams } from "next/navigation";
+
+
+
+
 import { problems } from "@/data/problems";
 import { testExams } from "@/data/testmode";
 import { useState } from "react";
@@ -9,13 +14,15 @@ import { exams } from "@/data/exams";
 import { motion, AnimatePresence } from "framer-motion";
 import PageHeader from "@/components/Header/PageHeader";
 import Editor from '@monaco-editor/react'
+import router from "next/router";
 
 export default function WriteCodePage() {
   const { problemId, examId } = useParams() as {
     problemId: string;
     examId: string;
   };
-
+  const router = useRouter();
+  const { groupId } = useParams();
   const [isExpanded, setIsExpanded] = useState(true);
 
   const problem = problems.find((p) => p.problemId === problemId && p.examId === examId);
@@ -39,9 +46,18 @@ export default function WriteCodePage() {
     );
   }
 
+
   const handleSubmit = () => {
-    alert(`제출된 코드:\n${code}\n선택된 언어: ${language}`);
-  };
+    console.log("📌 이동할 경로:", `/mygroups/${groupId}/exams/${examId}/problems/${problemId}/result`);
+
+    // ✅ 값이 정상적으로 들어오는지 확인!
+    if (!groupId || !examId || !problemId) {
+      console.error("❌ 오류: 필요한 값이 없습니다!", { groupId, examId, problemId });
+      return;
+    }
+
+    router.push(`/mygroups/${groupId}/exams/${examId}/problems/${problemId}/result`);
+  }
 
   return (
     //<div className="w-full h-screen overflow-hidden flex flex-col p-6">

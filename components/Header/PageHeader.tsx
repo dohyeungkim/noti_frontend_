@@ -95,7 +95,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
         {group && (
           <>
             {" > "}
-            <Link href={`/groups/${group.groupId}`} className="hover:underline">
+            <Link href={`/mygroups/${groupId}`} className="hover:underline">
               📚 {group.name}
             </Link>
           </>
@@ -104,7 +104,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
           <>
             {" > "}
             <Link
-              href={`/groups/${groupId}/exams/${exam.examId}`}
+              href={`/mygroups/${groupId}/exams/${exam.examId}`}
               className="hover:underline"
             >
               📄 {exam.name}
@@ -115,7 +115,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
           <>
             {" > "}
             <Link
-              href={`/groups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
+              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
               className="hover:underline"
             >
               ✏️ {problem.title}
