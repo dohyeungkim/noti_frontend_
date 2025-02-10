@@ -140,7 +140,7 @@ export default function MyQuestionsPage() {
                 <p className="text-gray-400 text-sm">{item.paper}</p>
                 <div className="flex justify-between items-center mt-4">
                   <button
-                    onClick={() => router.push(`/my-questions/view/${item.id}`)}
+                    onClick={() => router.push(`/registered-problems/view/${item.id}`)}
                     className="text-blue-500 hover:underline"
                   >
                     <FontAwesomeIcon icon={faEye} className="mr-1" />
@@ -185,7 +185,7 @@ export default function MyQuestionsPage() {
                   <td className="p-3 text-center">
                     <button
                       onClick={() =>
-                        router.push(`/my-questions/view/${item.id}`)
+                        router.push(`/registered-problems/view/${item.id}`)
                       }
                       className="text-blue-500 hover:underline mx-2"
                     >

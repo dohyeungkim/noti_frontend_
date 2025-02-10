@@ -25,6 +25,43 @@ export default function NewQuestionPage() {
   const addInputOutputPair = () => {
     setInputs([...inputs, { input: "", output: "" }]);
   };
+  // ✅ 문제 등록 API 호출
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const questionData = {
+      name: title,
+      description,
+      testcase: JSON.stringify(inputs),
+    };
+
+    try {
+      const response = await fetch("http://210.115.227.15:8000/api/problems", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(questionData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert("문제가 성공적으로 등록되었습니다!");
+        console.log("등록된 문제:", data);
+
+        // 입력 필드 초기화
+        setTitle("");
+        setDescription("");
+        setInputs([{ input: "", output: "" }]);
+      } else {
+        console.error("문제 등록 실패:", response.statusText);
+        alert("문제 등록에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("에러 발생:", error);
+      alert("서버와의 통신 중 에러가 발생했습니다.");
+    }
+  };
 
   // ✅ 입력/출력 쌍 삭제 (최소 1개 유지)
   const removeInputOutputPair = (index: number) => {
@@ -43,7 +80,8 @@ export default function NewQuestionPage() {
     >
       <div className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full">
         <PageHeader className="animate-slide-in mb-6" />
-        <hr className="border-gray-300 pb-10" />
+
+       
 
         <motion.form
           className="space-y-6"
@@ -97,7 +135,9 @@ export default function NewQuestionPage() {
 
           {/* 🔹 입출력 쌍 등록 */}
           <div>
-            <label className="text-gray-600 font-medium text-lg">입출력 쌍 등록</label>
+            <label className="text-gray-600 font-medium text-lg">
+              입출력 쌍 등록
+            </label>
             <table className="w-full border-collapse bg-white shadow-md rounded-xl overflow-hidden mt-2">
               <thead className="bg-gray-100">
                 <tr>
@@ -170,6 +210,7 @@ export default function NewQuestionPage() {
             </button>
             <button
               type="submit"
+              onClick={handleSubmit}
               className="bg-black text-white px-6 py-2 rounded-full shadow-md transition-all duration-200 hover:bg-gray-800 active:scale-95"
             >
               🚀 등록하기
