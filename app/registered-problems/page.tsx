@@ -120,6 +120,7 @@ export default function MyQuestionsPage() {
       {/* 문제 목록 */}
       <h2 className="text-2xl font-bold mb-4 m-2 pt-4">나의 문제</h2>
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
+      
       {/* 🔹 갤러리 뷰 */}
       {viewMode === "gallery" ? (
         <motion.div

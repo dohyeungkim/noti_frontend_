@@ -24,7 +24,6 @@ export default function FeedbackPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-4">📝 {feedback.title} - 피드백</h1>
 <PageHeader></PageHeader>
       {/* ✅ 정답 */}
       <div className="p-4 border rounded-lg bg-green-100">

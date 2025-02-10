@@ -61,8 +61,10 @@ export default function PageHeader({ className }: PageHeaderProps) {
       title = loading ? "⏳ 로딩 중..." : `✏️ ${questionTitle || "문제 보기"}`;
     else if (pathname.startsWith("/registered-problems/edit/"))
       title = "🛠 문제 수정";
+  } else if (pathname.startsWith("/mypage")) {
+    title = "🚀 서연님의 페이지";
   } else if (pathname.startsWith("/solved-problems")) {
-    title = "📖 내가 푼 문제 모음";
+    title = "🔥 내가 푼 문제 모음";
   } else if (pathname.startsWith("/feedback")) {
     title = "📖 피드백 보기";
   } else {
@@ -81,14 +83,18 @@ export default function PageHeader({ className }: PageHeaderProps) {
     >
       {/* 🔹 Breadcrumb (경로 표시) */}
       <nav className="text-gray-500 text-sm mb-2">
-        <Link href="/mygroups" className="hover:underline">
-          🏡 서연님의 그룹
-        </Link>
-
+        {/* ✅ 내가 푼 문제 모음 */}
+        {pathname.startsWith("/mypage") && (
+          <>
+            <Link href="/mypage" className="hover:underline">
+            🚀 서연님의 페이지
+            </Link>
+          </>
+        )}
+  
         {/* ✅ 내가 등록한 문제들 */}
         {pathname.startsWith("/registered-problems") && (
           <>
-            {" > "}
             <Link href="/registered-problems" className="hover:underline">
               📌 내가 등록한 문제들
             </Link>
@@ -102,16 +108,22 @@ export default function PageHeader({ className }: PageHeaderProps) {
         )}
 
         {/* ✅ 내가 푼 문제 모음 */}
-        {pathname.startsWith("/mysolved-problems") && (
+        {pathname.startsWith("/solved-problems") && (
           <>
-            {" > "}
             <Link href="/mysolved-problems" className="hover:underline">
-              📖 내가 푼 문제 모음
+             🔥 내가 푼 문제 모음
             </Link>
           </>
         )}
 
         {/* ✅ 그룹 > 시험 > 문제 경로 추가 */}
+        {pathname.startsWith("/mygroups") && (
+            <>
+            <Link href={"/mygroups"} className="hover:underline">
+             🏡 나의 그룹
+            </Link>
+          </>
+        )}
         {group && (
           <>
             {" > "}
