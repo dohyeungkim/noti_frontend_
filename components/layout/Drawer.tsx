@@ -77,7 +77,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
                 filteredGroups.map((group) => (
                   <Link
                     key={group.groupId}
-                    href={`/mygroups/${group.groupId}/exams`}
+                    href={`/mygroups/${group.groupId}`}
                     className="block text-gray-700 text-sm hover:text-white transition-all duration-200 pl-2 pt-1"
                   >
                   🏡  {group.name}

@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -49,14 +51,16 @@ export default function PageHeader({ className }: PageHeaderProps) {
   const problem = problems.find((p) => p.problemId === problemId);
 
   // ✅ 현재 페이지에 따라 동적 제목 설정
-  let title = "🏡 서연님의 그룹들"; // 기본값
+  let title = "🏡 나의 페이지"; // 기본값
 
   if (pathname.startsWith("/registered-problems")) {
     if (pathname === "/registered-problems") title = "📌 내가 등록한 문제들";
-    else if (pathname === "/registered-problems/create") title = "📝 문제 등록";
+    else if (pathname === "/registered-problems/create") title = "📝 문제 등록하기";
     else if (pathname.startsWith("/registered-problems/view/"))
       title = loading ? "⏳ 로딩 중..." : `✏️ ${questionTitle || "문제 보기"}`;
     else if (pathname.startsWith("/registered-problems/edit/")) title = "🛠 문제 수정";
+  } else if (pathname.startsWith("/mysolved-problems")) {
+    title = "📖 내가 푼 문제 모음";
   } else {
     title = problem
       ? `✏️ ${problem.title}`
@@ -64,20 +68,18 @@ export default function PageHeader({ className }: PageHeaderProps) {
       ? `📄 ${exam.name}`
       : group
       ? `📚 ${group.name}`
-      : "🏡 서연님의 그룹들";
+      : "🏡 서연님의 그룹";
   }
 
   return (
-    <header
-      className={`flex flex-col items-start w-full mb-6 ${className || ""}`}
-    >
+    <header className={`flex flex-col items-start w-full mb-6 ${className || ""}`}>
       {/* 🔹 Breadcrumb (경로 표시) */}
       <nav className="text-gray-500 text-sm mb-2">
-        <Link href="/" className="hover:underline">
-          🏠 홈
+        <Link href="/mygroups" className="hover:underline">
+          🏡 서연님의 그룹
         </Link>
 
-        {/* ✅ 내 문제 보기 관련 경로 */}
+        {/* ✅ 내가 등록한 문제들 */}
         {pathname.startsWith("/registered-problems") && (
           <>
             {" > "}
@@ -87,7 +89,17 @@ export default function PageHeader({ className }: PageHeaderProps) {
             {pathname.startsWith("/registered-problems/view/") &&
               ` > ✏️ ${questionTitle || "문제 보기"}`}
             {pathname.startsWith("/registered-problems/edit/") && " > 🛠 문제 수정"}
-            {pathname === "/registered-problems/create" && " > 📝 문제 등록"}
+            {pathname === "/registered-problems/create" && " > 📝 문제 등록하기"}
+          </>
+        )}
+
+        {/* ✅ 내가 푼 문제 모음 */}
+        {pathname.startsWith("/mysolved-problems") && (
+          <>
+            {" > "}
+            <Link href="/mysolved-problems" className="hover:underline">
+              📖 내가 푼 문제 모음
+            </Link>
           </>
         )}
 
@@ -103,10 +115,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
         {exam && (
           <>
             {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${exam.examId}`}
-              className="hover:underline"
-            >
+            <Link href={`/mygroups/${groupId}/exams/${exam.examId}`} className="hover:underline">
               📄 {exam.name}
             </Link>
           </>
@@ -114,10 +123,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
         {problem && (
           <>
             {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
-              className="hover:underline"
-            >
+            <Link href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`} className="hover:underline">
               ✏️ {problem.title}
             </Link>
           </>

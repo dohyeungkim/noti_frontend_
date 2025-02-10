@@ -1,8 +1,8 @@
 "use client";
 import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
-import { exams } from "../../../../data/exams";
-import { testExams } from "../../../../data/testmode";
+import { exams } from "@/data/exams";
+import { testExams } from "@/data/testmode";
 import { groups } from "@/data/groups";
 import PageHeader from "@/components/Header/PageHeader";
 import OpenModalButton from "@/components/Header/OpenModalButton";
