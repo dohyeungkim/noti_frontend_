@@ -11,11 +11,7 @@ export default function NewQuestionPage() {
   const [inputs, setInputs] = useState([{ input: "", output: "" }]);
 
   // ✅ 테스트 케이스 입력 변경 핸들러
-  const handleInputChange = (
-    index: number,
-    field: "input" | "output",
-    value: string
-  ) => {
+  const handleInputChange = (index: number, field: "input" | "output", value: string) => {
     const newInputs = [...inputs];
     newInputs[index][field] = value;
     setInputs(newInputs);
@@ -41,18 +37,26 @@ export default function NewQuestionPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full">
+      <motion.div
+        className="bg-white shadow-lg rounded-2xl p-8 max-w-3xl w-full"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
         <PageHeader className="animate-slide-in mb-6" />
-        <hr className="border-gray-300 pb-10" />
+        <motion.hr className="border-gray-300 pb-10" initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 0.5 }} />
 
         <motion.form
           className="space-y-6"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0, y: 10 },
+            visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
+          }}
         >
           {/* 🔹 문제 제목 */}
-          <div>
+          <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
             <label className="text-gray-600 font-medium">문제 제목</label>
             <input
               type="text"
@@ -61,10 +65,10 @@ export default function NewQuestionPage() {
               placeholder="문제 제목을 입력하세요"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
+          </motion.div>
 
           {/* 🔹 문제 설명 */}
-          <div>
+          <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
             <label className="text-gray-600 font-medium">문제 설명</label>
             <textarea
               value={description}
@@ -72,31 +76,12 @@ export default function NewQuestionPage() {
               placeholder="문제 설명을 입력하세요"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
             ></textarea>
-          </div>
+          </motion.div>
 
-          <hr className="border-gray-300" />
-
-          {/* 🔹 입출력 설명 */}
-          <div>
-            <label className="text-gray-600 font-medium">입력 설명</label>
-            <textarea
-              placeholder="입력 조건을 설명하세요."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
-            ></textarea>
-          </div>
-
-          <div>
-            <label className="text-gray-600 font-medium">출력 설명</label>
-            <textarea
-              placeholder="출력 조건을 설명하세요."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
-            ></textarea>
-          </div>
-
-          <hr className="border-gray-300" />
+          <motion.hr className="border-gray-300" initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 0.5 }} />
 
           {/* 🔹 입출력 쌍 등록 */}
-          <div>
+          <motion.div>
             <label className="text-gray-600 font-medium text-lg">입출력 쌍 등록</label>
             <table className="w-full border-collapse bg-white shadow-md rounded-xl overflow-hidden mt-2">
               <thead className="bg-gray-100">
@@ -115,6 +100,7 @@ export default function NewQuestionPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
+                    exit={{ opacity: 0, y: -10 }}
                   >
                     <td className="p-3 text-center">{index + 1}</td>
                     <td className="p-3">
@@ -122,9 +108,7 @@ export default function NewQuestionPage() {
                         type="text"
                         placeholder="입력값"
                         value={pair.input}
-                        onChange={(e) =>
-                          handleInputChange(index, "input", e.target.value)
-                        }
+                        onChange={(e) => handleInputChange(index, "input", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </td>
@@ -133,50 +117,49 @@ export default function NewQuestionPage() {
                         type="text"
                         placeholder="출력값"
                         value={pair.output}
-                        onChange={(e) =>
-                          handleInputChange(index, "output", e.target.value)
-                        }
+                        onChange={(e) => handleInputChange(index, "output", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </td>
                     <td className="p-3 text-center">
-                      <button
+                      <motion.button
                         type="button"
                         onClick={() => removeInputOutputPair(index)}
-                        className={`px-3 py-2 rounded-lg shadow-md active:scale-95 ${
-                          inputs.length > 1
-                            ? "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        className={`px-3 py-2 rounded-lg shadow-md ${
+                          inputs.length > 1 ? "bg-red-500 text-white hover:bg-red-600" : "bg-gray-300 text-gray-500"
                         }`}
                         disabled={inputs.length === 1}
+                        whileTap={{ scale: 0.9 }}
                       >
                         ✖
-                      </button>
+                      </motion.button>
                     </td>
                   </motion.tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </motion.div>
 
           {/* 🔹 추가 & 등록 버튼 */}
-          <div className="flex justify-between mt-6">
-            <button
+          <motion.div className="flex justify-between mt-6">
+            <motion.button
               type="button"
               onClick={addInputOutputPair}
-              className="bg-green-500 text-white px-4 py-2 rounded-full shadow-md transition-all duration-200 hover:bg-green-600 active:scale-95"
+              className="bg-green-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-green-600 active:scale-95"
+              whileTap={{ scale: 0.95 }}
             >
               + 다음 쌍 등록하기
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               type="submit"
-              className="bg-black text-white px-6 py-2 rounded-full shadow-md transition-all duration-200 hover:bg-gray-800 active:scale-95"
+              className="bg-black text-white px-6 py-2 rounded-full shadow-md hover:bg-gray-800 active:scale-95"
+              whileTap={{ scale: 0.95 }}
             >
               🚀 등록하기
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </motion.form>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

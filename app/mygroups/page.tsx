@@ -1,6 +1,7 @@
 "use client";
-import { useRouter } from "next/navigation";
+
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { groups } from "../../data/groups";
 import SearchBar from "@/components/Header/SearchBar";
 import SortButton from "@/components/Header/SortButton";
@@ -8,12 +9,11 @@ import OpenModalButton from "@/components/Header/OpenModalButton";
 import PageHeader from "@/components/Header/PageHeader";
 import GroupCreateModal from "@/components/GroupPage/GroupCreateModal";
 import ViewToggle from "@/components/Header/ViewToggle";
-import GroupList from "@/components/GroupPage/GroupGallery"; // ✅ 추가
-import GroupTable from "@/components/GroupPage/GroupTable"; // ✅ 추가
-import Pagination from "@/components/Header/Pagination"; // ✅ 추가
+import GroupList from "@/components/GroupPage/GroupGallery";
+import GroupTable from "@/components/GroupPage/GroupTable";
+import Pagination from "@/components/Header/Pagination";
 
 export default function GroupsPage() {
- // const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("제목순");
@@ -26,8 +26,6 @@ export default function GroupsPage() {
   const [maxStudents, setMaxStudents] = useState("");
   const [year, setYear] = useState("2025");
   const [semester, setSemester] = useState("1");
-
-  // const itemsPerPage = 10; // 한 페이지당 표시할 그룹 수
 
   // ✅ 검색어 필터링
   const filteredGroups = groups.filter((group) =>
@@ -46,19 +44,11 @@ export default function GroupsPage() {
     }
   });
 
-  // // ✅ 페이지네이션 적용
-  // const totalPages = Math.ceil(sortedGroups.length / itemsPerPage);
-  // const paginatedGroups = sortedGroups.slice(
-  //   (currentPage - 1) * itemsPerPage,
-  //   currentPage * itemsPerPage
-  // );
-  // const totalItems = totalPages * itemsPerPage;  // ✅ 변환하여 넘김
-
   // ✅ 페이지네이션 추가
-  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
-  const itemsPerPage = 9; // 한 페이지당 표시할 항목 수
-  const totalItems = sortedGroups.length; // ✅ 전체 항목 개수를 직접 사용
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage)); // ✅ 최소 1페이지 보장
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+  const totalItems = sortedGroups.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
   const paginatedGroups = sortedGroups.slice(
     (currentPage - 1) * itemsPerPage,
@@ -66,41 +56,74 @@ export default function GroupsPage() {
   );
 
   return (
-    // 제목
-    <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
+    <motion.div
+      className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <PageHeader className="animate-slide-in" />
 
       {/* 생성하기 버튼 */}
-      <div className="flex items-center gap-2 justify-end">
+      <motion.div
+        className="flex items-center gap-2 justify-end"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
         <OpenModalButton
           onClick={() => setIsModalOpen(true)}
           label="그룹 생성하기"
           className="transition transform hover:scale-105 hover:bg-gray-600 duration-200"
         />
-      </div>
+      </motion.div>
 
       {/* 검색바 & 정렬 버튼 & 보기 방식 토글 */}
-      <div className="flex items-center gap-4 mb-4 w-full">
+      <motion.div
+        className="flex items-center gap-4 mb-4 w-full"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
         <div className="flex-grow min-w-0">
           <SearchBar
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-             className="animate-fade-in"
+            className="animate-fade-in"
           />
         </div>
-        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in"/>
-        <SortButton onSortChange={setSortOrder} className="animate-fade-in"/>
-      </div>
+        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in" />
+        <SortButton onSortChange={setSortOrder} className="animate-fade-in" />
+      </motion.div>
 
-      <h2 className="text-2xl font-bold mb-4 m-2 pt-4">나의 그룹</h2>
-      <hr className="border-b-1 border-gray-300 my-4 m-2" />
+      <motion.h2
+        className="text-2xl font-bold mb-4 m-2 pt-4"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
+        나의 그룹
+      </motion.h2>
+      <motion.hr
+        className="border-b-1 border-gray-300 my-4 m-2"
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      />
 
-      {/* ✅ 선택된 보기 방식에 따라 컴포넌트 사용 */}
-      {viewMode === "gallery" ? (
-        <GroupList groups={paginatedGroups} className="animate-fade-in-up"/>
-      ) : (
-        <GroupTable groups={paginatedGroups} className="animate-fade-in-up" />
-      )}
+      {/* ✅ 선택된 보기 방식에 따라 애니메이션 적용 */}
+      <motion.div
+        key={viewMode}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
+      >
+        {viewMode === "gallery" ? (
+          <GroupList groups={paginatedGroups} className="animate-fade-in-up" />
+        ) : (
+          <GroupTable groups={paginatedGroups} className="animate-fade-in-up" />
+        )}
+      </motion.div>
 
       {/* 모달창 */}
       <GroupCreateModal
@@ -119,17 +142,23 @@ export default function GroupsPage() {
         semester="1"
         setSemester={setSemester}
         className="animate-fade-in"
-
       />
 
-      {/* <Pagination
-        totalItems={totalItems} // ✅ 정확한 전체 항목 수 전달
-        itemsPerPage={itemsPerPage}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        className="animate-fade-in"
-
-      /> */}
-    </div>
+      {/* 페이지네이션 추가 */}
+      <motion.div
+        className="mt-6"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.5 }}
+      >
+        <Pagination
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          className="animate-fade-in"
+        />
+      </motion.div>
+    </motion.div>
   );
 }

@@ -1,5 +1,3 @@
-
-
 // 문제별 상태를 저장하는 데이터
 export const problemStatus: Record<string, "맞음" | "틀림" | "푸는 중"> = {
     "CA00-01": "맞음",

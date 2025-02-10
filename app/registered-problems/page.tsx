@@ -92,12 +92,20 @@ export default function MyQuestionsPage() {
   };
 
   return (
-    <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
-      {/* 페이지 헤더 */}
+<motion.div
+      className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >      {/* 페이지 헤더 */}
       <PageHeader className="animate-slide-in" />
         {/* 생성하기 버튼 */}
-      <div className="flex items-center gap-2 justify-end">
-        <button
+        <motion.div
+        className="flex items-center gap-2 justify-end"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >        <button
           onClick={handleNavigate}
           className="flex items-center bg-black text-white px-4 py-1.5 rounded-xl m-2 text-md cursor-pointer
           hover:bg-gray-500 transition-all duration-200 ease-in-out
@@ -105,30 +113,46 @@ export default function MyQuestionsPage() {
           <FontAwesomeIcon icon={faPlus} className="mr-2" />
           문제 만들기
         </button>
-      </div>
+        </motion.div>
 
       {/* 버튼 영역 */}
-      <div className="flex items-center gap-4 mb-4 w-full">
-      <div className="flex-grow min-w-0">
+      <motion.div
+        className="flex items-center gap-4 mb-4 w-full"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >      <div className="flex-grow min-w-0">
         <SearchBar searchQuery={search} setSearchQuery={setSearch} />
         </div>
         {/* 보기 방식 & 정렬 버튼 */}
           <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
           <SortButton onSortChange={() => {}} />
-      </div>
+          </motion.div>
 
       {/* 문제 목록 */}
-      <h2 className="text-2xl font-bold mb-4 m-2 pt-4">나의 문제</h2>
-      <hr className="border-b-1 border-gray-300 my-4 m-2" />
+      <motion.h2
+        className="text-2xl font-bold mb-4 m-2 pt-4"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >나의 문제</motion.h2>
+<motion.hr
+        className="border-b-1 border-gray-300 my-4 m-2"
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      />
+
       
+            
       {/* 🔹 갤러리 뷰 */}
       {viewMode === "gallery" ? (
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+          transition={{ duration: 0.3, delay: 0.4 }}
+          >
           {filteredData.length > 0 ? (
             filteredData.map((item) => (
               <motion.div
@@ -211,6 +235,6 @@ export default function MyQuestionsPage() {
           </tbody>
         </table>
       )}
-    </div>
+    </motion.div>
   );
 }

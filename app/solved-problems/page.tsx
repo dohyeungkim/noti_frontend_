@@ -56,23 +56,51 @@ export default function MySolvedProblems() {
   };
 
   return (
-    <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
-      <PageHeader className="animate-slide-in mb-6" />
+    <motion.div
+    className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >           <PageHeader className="animate-slide-in" />
+  
 
       {/* 🔍 검색, 보기 방식 변경, 정렬 버튼 */}
-      <div className="flex items-center gap-4 mb-6 w-full">
-        <div className="flex-grow min-w-0">
-          <SearchBar searchQuery={search} setSearchQuery={setSearch} />
+      <motion.div
+        className="flex items-center gap-4 mb-4 w-full"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >        <div className="flex-grow min-w-0">
+          <SearchBar searchQuery={search} setSearchQuery={setSearch}             className="animate-fade-in"
+          />
         </div>
-        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
-        <SortButton onSortChange={() => {}} />
-      </div>
+        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in"/>
+        <SortButton onSortChange={() => {}} className="animate-fade-in" />
+        </motion.div>
 
       {/* 문제 목록 */}
-      <h2 className="text-2xl font-bold mb-4 m-2 pt-4">푼 문제</h2>
-      <hr className="border-b-1 border-gray-300 my-4 m-2" />
+      <motion.h2
+        className="text-2xl font-bold mb-4 m-2 pt-4"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >푼 문제      </motion.h2>
 
+ <motion.hr
+        className="border-b-1 border-gray-300 my-4 m-2"
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      />
       {/* 📌 문제 목록 */}
+
+
+      <motion.div
+        key={viewMode}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
+      >
       {filteredProblems.length === 0 ? (
         <p className="text-gray-500 text-center text-lg mt-10">
           검색된 문제가 없습니다. 🧐
@@ -149,6 +177,6 @@ export default function MySolvedProblems() {
           </table>
         </motion.div>
       )}
-    </div>
+    </motion.div></motion.div>
   );
 }
