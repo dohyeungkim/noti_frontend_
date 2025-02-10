@@ -92,7 +92,11 @@ export default function GroupsPage() {
             className="animate-fade-in"
           />
         </div>
-        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in" />
+        <ViewToggle
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          className="animate-fade-in"
+        />
         <SortButton onSortChange={setSortOrder} className="animate-fade-in" />
       </motion.div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
+import PageHeader from "@/components/Header/PageHeader";
 
 export default function ViewQuestionPage() {
   const router = useRouter();
@@ -11,8 +12,10 @@ export default function ViewQuestionPage() {
   // 🔹 문제 데이터 상태
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [isEditing, setIsEditing] = useState(false); // ✅ 수정 모드 상태
+  const [testcase, setTestcase] = useState<{ input: string; output: string }[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+
 
   // ✅ 기존 문제 데이터 불러오기
   useEffect(() => {
@@ -24,18 +27,29 @@ export default function ViewQuestionPage() {
         if (!response.ok) throw new Error("문제를 불러오지 못했습니다.");
 
         const data = await response.json();
-        setTitle(data.name);
-        setDescription(data.description);
+        setTitle(data.name || "제목 없음");
+        setDescription(data.description || "설명이 없습니다.");
+
+        // ✅ `testcase`가 배열인지 확인하고, 없으면 빈 배열로 설정
+        if (Array.isArray(data.testcase)) {
+          setTestcase(data.testcase);
+        } else {
+          setTestcase([]);
+        }
+
         setLoading(false);
       } catch (error) {
         console.error("문제 가져오기 오류:", error);
         alert("문제를 불러오는 데 실패했습니다.");
-        router.push("/my-questions"); // 실패하면 목록 페이지로 이동
+        router.push("/my-questions");
       }
     };
 
     if (id) fetchQuestion();
   }, [id, router]);
+
+
+   
 
   // ✅ 문제 수정 요청 (PUT 요청)
   const handleUpdate = async (e: React.FormEvent) => {
@@ -63,15 +77,14 @@ export default function ViewQuestionPage() {
 
   return (
     <motion.div
-      className="bg-[#f9f9f9] min-h-screen flex justify-center items-center p-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="bg-white shadow-lg rounded-3xl p-8 max-w-lg w-full">
-        <h1 className="text-2xl font-bold mb-4 text-center text-gray-700">
-          ✏️ 문제 보기
-        </h1>
+    className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >         <div className="w-full max-w-5xl px-6">
+           {/* 헤더 */}
+      <PageHeader className="animate-slide-in" />
+   
 
         {loading ? (
           <p className="text-center text-gray-500">로딩 중...</p>
@@ -125,14 +138,43 @@ export default function ViewQuestionPage() {
             ) : (
               // ✅ 일반 보기 모드 (텍스트 출력)
               <div className="space-y-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800">
+                <motion.div>
+                <h2 className="text-xl font-semibold mb-2">
                     {title}
                   </h2>
-                </div>
+                </motion.div>
                 <div>
-                  <p className="text-gray-600">{description}</p>
+                <p className="text-gray-700">{description}</p>
                 </div>
+
+                 {/* ✅ 입출력 예제 테이블 */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"
+              >
+                {/* 입력 예제 */}
+                <section className="border p-4 rounded-md bg-white shadow-md">
+                  <h3 className="text-lg font-semibold mb-2">입력 예제</h3>
+                  <pre className="border p-4 rounded-md bg-gray-100 font-mono text-sm mt-2 overflow-auto max-h-[200px]">
+                    {testcase.length > 0
+                      ? testcase.map((tc) => tc.input.replace(/, /g, "\n")).join("\n\n")
+                      : "입력 예제가 없습니다."}
+                  </pre>
+                </section>
+
+                {/* 출력 예제 */}
+                <section className="border p-4 rounded-md bg-white shadow-md">
+                  <h3 className="text-lg font-semibold mb-2">출력 예제</h3>
+                  <pre className="border p-4 rounded-md bg-gray-100 font-mono text-sm mt-2 overflow-auto max-h-[200px]">
+                    {testcase.length > 0
+                      ? testcase.map((tc) => tc.output).join("\n\n")
+                      : "출력 예제가 없습니다."}
+                  </pre>
+                </section>
+              </motion.div>
+                
                 <div className="flex justify-center mt-4">
                   <button
                     onClick={() => setIsEditing(true)}
@@ -146,6 +188,6 @@ export default function ViewQuestionPage() {
           </motion.div>
         )}
       </div>
-    </motion.div>
+      </motion.div>
   );
 }

@@ -12,7 +12,8 @@ import SortButton from "@/components/Header/SortButton";
 import Pagination from "@/components/Header/Pagination";
 import ExamGallery from "@/components/ExamPage/ExamGallery";
 import ExamTable from "@/components/ExamPage/ExamTable";
-import ExamCreateModal from "@/components/ExamPage/ExamModal"; // ✅ 모달 import
+import ExamCreateModal from "@/components/ExamPage/ExamModal";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ExamsPage() {
   const { groupId } = useParams() as { groupId: string };
@@ -41,102 +42,148 @@ export default function ExamsPage() {
     router.push(`/mygroups/${groupId}/exams/${examId}`);
   };
 
-  const myGroup = groups.find((group) => group.groupId === groupId);
-
-  // ✅ 검색어 필터링
-  const filteredGroups = groups.filter((group) =>
-    group.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // ✅ 정렬 적용
-  const sortedGroups = [...filteredGroups].sort((a, b) => {
-    if (sortOrder === "제목순") {
-      return a.name.localeCompare(b.name);
-    } else {
-      return (
-        new Date(b.createdAt || "1970-01-01").getTime() -
-        new Date(a.createdAt || "1970-01-01").getTime()
-      );
-    }
-  });
-
-  // ✅ 페이지네이션 추가
-  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지 상태 추가
-  const itemsPerPage = 9; // 한 페이지당 표시할 항목 수
-  const totalItems = sortedGroups.length; // ✅ 전체 항목 개수를 직접 사용
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage)); // ✅ 최소 1페이지 보장
-
-  const paginatedGroups = sortedGroups.slice(
+  // ✅ 페이지네이션 관련 설정
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+  const totalItems = filteredExams.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedExams = filteredExams.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   return (
-    <div className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8">
-      {/* 헤더 */}
-      <PageHeader />
+    <motion.div
+          className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <PageHeader className="animate-slide-in" />
 
-      {/* 문제지 생성버튼 */}
-      <div className="flex items-center gap-2 justify-end">
+      {/* 문제지 생성 버튼 */}
+      <motion.div
+        className="flex items-center gap-2 justify-end"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
         <OpenModalButton
           onClick={() => setIsModalOpen(true)}
           label="문제지 생성하기"
         />
-      </div>
+      </motion.div>
 
-      {/* 검색바 & 정렬 버튼 & 보기 방식 토글 */}
-      <div className="flex items-center gap-4 mb-4 w-full">
-        {/* 검색바 */}
-        <div className="flex items-center gap-4 mb-4 w-full">
-          <div className="flex-grow min-w-0">
-            <SearchBar
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-            />
-          </div>
+      {/* 검색 & 정렬 & 보기 방식 변경 */}
+      <motion.div
+        className="flex items-center gap-4 mb-4 w-full"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <motion.div className="flex-grow min-w-0" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        </motion.div>
+        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
           <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+        </motion.div>
+        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
           <SortButton onSortChange={setSortOrder} />
-        </div>
-      </div>
-      <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
-      <hr className="border-b-1 border-gray-300 my-4 m-2" />
+        </motion.div>
+      </motion.div>
 
-      {viewMode === "gallery" ? (
-        <ExamGallery
-          exams={filteredExams}
-          handleEnterExam={handleEnterExam}
-          isTestMode={isTestMode}
-        />
-      ) : (
-        <ExamTable
-          exams={filteredExams}
-          handleEnterExam={handleEnterExam}
-          isTestMode={isTestMode}
-        />
-      )}
+      {/* 문제지 목록 */}
+      <motion.h2
+        className="text-2xl font-bold mb-4 m-2 pt-4"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >나의 문제지      </motion.h2>
 
-      <Pagination
-        totalItems={totalItems} // ✅ 정확한 전체 항목 수 전달
-        itemsPerPage={itemsPerPage}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
+<motion.hr
+        className="border-b-1 border-gray-300 my-4 m-2"
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
       />
 
-      {/* ✅ 모달을 외부 파일에서 가져와 사용 */}
-      <ExamCreateModal
-        isModalOpen={isModalOpen}
-        setIsModalOpen={setIsModalOpen}
-        examName={examName}
-        setExamName={setExamName}
-        examId={examId}
-        setExamId={setExamId}
-        examDescription={examDescription}
-        setExamDescription={setExamDescription}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
-      />
-    </div>
+<motion.div
+        key={viewMode}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
+      >        {viewMode === "gallery" ? (
+          <motion.div
+            key="gallery"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ExamGallery
+              exams={paginatedExams}
+              handleEnterExam={handleEnterExam}
+              isTestMode={isTestMode}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="table"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ExamTable
+              exams={paginatedExams}
+              handleEnterExam={handleEnterExam}
+              isTestMode={isTestMode}
+            />
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* 페이지네이션 */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Pagination
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+        />
+      </motion.div>
+
+      {/* 모달 */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            key="modal"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ExamCreateModal
+              isModalOpen={isModalOpen}
+              setIsModalOpen={setIsModalOpen}
+              examName={examName}
+              setExamName={setExamName}
+              examId={examId}
+              setExamId={setExamId}
+              examDescription={examDescription}
+              setExamDescription={setExamDescription}
+              startDate={startDate}
+              setStartDate={setStartDate}
+              endDate={endDate}
+              setEndDate={setEndDate}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
