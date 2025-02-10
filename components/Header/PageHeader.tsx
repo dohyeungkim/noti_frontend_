@@ -55,12 +55,16 @@ export default function PageHeader({ className }: PageHeaderProps) {
 
   if (pathname.startsWith("/registered-problems")) {
     if (pathname === "/registered-problems") title = "📌 내가 등록한 문제들";
-    else if (pathname === "/registered-problems/create") title = "📝 문제 등록하기";
+    else if (pathname === "/registered-problems/create")
+      title = "📝 문제 등록하기";
     else if (pathname.startsWith("/registered-problems/view/"))
       title = loading ? "⏳ 로딩 중..." : `✏️ ${questionTitle || "문제 보기"}`;
-    else if (pathname.startsWith("/registered-problems/edit/")) title = "🛠 문제 수정";
-  } else if (pathname.startsWith("/mysolved-problems")) {
+    else if (pathname.startsWith("/registered-problems/edit/"))
+      title = "🛠 문제 수정";
+  } else if (pathname.startsWith("/solved-problems")) {
     title = "📖 내가 푼 문제 모음";
+  } else if (pathname.startsWith("/feedback")) {
+    title = "📖 피드백 보기";
   } else {
     title = problem
       ? `✏️ ${problem.title}`
@@ -72,7 +76,9 @@ export default function PageHeader({ className }: PageHeaderProps) {
   }
 
   return (
-    <header className={`flex flex-col items-start w-full mb-6 ${className || ""}`}>
+    <header
+      className={`flex flex-col items-start w-full mb-6 ${className || ""}`}
+    >
       {/* 🔹 Breadcrumb (경로 표시) */}
       <nav className="text-gray-500 text-sm mb-2">
         <Link href="/mygroups" className="hover:underline">
@@ -88,8 +94,10 @@ export default function PageHeader({ className }: PageHeaderProps) {
             </Link>
             {pathname.startsWith("/registered-problems/view/") &&
               ` > ✏️ ${questionTitle || "문제 보기"}`}
-            {pathname.startsWith("/registered-problems/edit/") && " > 🛠 문제 수정"}
-            {pathname === "/registered-problems/create" && " > 📝 문제 등록하기"}
+            {pathname.startsWith("/registered-problems/edit/") &&
+              " > 🛠 문제 수정"}
+            {pathname === "/registered-problems/create" &&
+              " > 📝 문제 등록하기"}
           </>
         )}
 
@@ -115,7 +123,10 @@ export default function PageHeader({ className }: PageHeaderProps) {
         {exam && (
           <>
             {" > "}
-            <Link href={`/mygroups/${groupId}/exams/${exam.examId}`} className="hover:underline">
+            <Link
+              href={`/mygroups/${groupId}/exams/${exam.examId}`}
+              className="hover:underline"
+            >
               📄 {exam.name}
             </Link>
           </>
@@ -123,7 +134,10 @@ export default function PageHeader({ className }: PageHeaderProps) {
         {problem && (
           <>
             {" > "}
-            <Link href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`} className="hover:underline">
+            <Link
+              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
+              className="hover:underline"
+            >
               ✏️ {problem.title}
             </Link>
           </>

@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { feedbackData, Feedback } from "@/data/feedbackdata"; // ✅ 타입 가져오기
 import { useEffect, useState } from "react";
+import PageHeader from "@/components/Header/PageHeader";
 
 export default function FeedbackPage() {
   const { id } = useParams();
@@ -24,7 +25,7 @@ export default function FeedbackPage() {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-4">📝 {feedback.title} - 피드백</h1>
-
+<PageHeader></PageHeader>
       {/* ✅ 정답 */}
       <div className="p-4 border rounded-lg bg-green-100">
         <h2 className="text-xl font-semibold">✅ 정답</h2>

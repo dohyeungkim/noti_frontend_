@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/Header/PageHeader";
 import { problems } from "@/data/problems";
 import { problemStatus } from "@/data/problemstatus";
 import Link from "next/link";
@@ -21,8 +22,7 @@ export default function MySolvedProblems() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-4">✅ 내가 푼 문제들</h1>
-
+<PageHeader></PageHeader>
       {/* 🔍 검색 */}
       <input
         type="text"
