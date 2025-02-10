@@ -28,7 +28,7 @@ const ProblemList = ({ problems, groupId, examId, handleSelectProblem }: Problem
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/groups/${groupId}/exams/${examId}/problems/${problem.problemId}`);
+              router.push(`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`);
             }}
             className="mt-4 w-full bg-black text-white py-2 rounded-md text-lg cursor-pointer"
           >

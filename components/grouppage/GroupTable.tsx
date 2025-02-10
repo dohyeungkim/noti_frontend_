@@ -36,7 +36,7 @@ export default function GroupTable({ groups }: GroupTableProps) {
               <tr
                 key={group.groupId}
                 className="hover:bg-gray-100 transition-colors duration-200 border-b border-gray-300 cursor-pointer"
-                onClick={() => router.push(`/groups/${group.groupId}/exams`)}
+                onClick={() => router.push(`/mygroups/${group.groupId}/exams`)}
               >
                 <td className="p-4 text-left text-gray-800">{group.name}</td>
                 <td className="p-4 text-left text-gray-600">{group.groupId}</td>

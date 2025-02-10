@@ -38,7 +38,7 @@ export default function ExamsPage() {
     testExams.some((test) => test.examId === examId);
 
   const handleEnterExam = (examId: string) => {
-    router.push(`/groups/${groupId}/exams/${examId}`);
+    router.push(`/mygroups/${groupId}/exams/${examId}`);
   };
 
   const myGroup = groups.find((group) => group.groupId === groupId);

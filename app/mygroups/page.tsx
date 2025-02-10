@@ -13,7 +13,7 @@ import GroupTable from "@/components/GroupPage/GroupTable"; // ✅ 추가
 import Pagination from "@/components/Header/Pagination"; // ✅ 추가
 
 export default function GroupsPage() {
-  const router = useRouter();
+ // const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("제목순");
@@ -122,14 +122,14 @@ export default function GroupsPage() {
 
       />
 
-      <Pagination
+      {/* <Pagination
         totalItems={totalItems} // ✅ 정확한 전체 항목 수 전달
         itemsPerPage={itemsPerPage}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         className="animate-fade-in"
 
-      />
+      /> */}
     </div>
   );
 }

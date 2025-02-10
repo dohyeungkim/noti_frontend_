@@ -30,7 +30,7 @@ export default function ProblemDetailPage() {
 
   const handleNavigate = () => {
     router.push(
-      `/groups/${groupId}/exams/${examId}/problems/${problemId}/write`
+      `/mygroups/${groupId}/exams/${examId}/problems/${problemId}/write`
     );
   };
 

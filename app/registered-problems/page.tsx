@@ -65,7 +65,7 @@ export default function MyQuestionsPage() {
 
   // 🔹 문제 등록 페이지로 이동
   const handleNavigate = () => {
-    router.push("my-questions/create");
+    router.push("registered-problems/create");
   };
 
   // ✅ 문제 삭제 함수 (DELETE 요청)

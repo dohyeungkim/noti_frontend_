@@ -31,7 +31,7 @@ const ProblemGallery = ({ problems, groupId, examId, handleSelectProblem }: Prob
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/groups/${groupId}/exams/${examId}/problems/${problem.problemId}`);
+              router.push(`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`);
             }}
             className="mt-4 w-full bg-gray-800 text-white py-2 rounded-xl text-lg font-semibold 
                        transition-all duration-300 ease-in-out hover:bg-gray-700 active:scale-95"

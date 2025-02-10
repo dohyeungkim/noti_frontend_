@@ -23,7 +23,7 @@ export default function GroupList({ groups }: GroupListProps) {
       {filteredGroups.map((group) => (
         <div
           key={group.groupId}
-          onClick={() => router.push(`/groups/${group.groupId}/exams`)}
+          onClick={() => router.push(`/mygroups/${group.groupId}/exams`)}
           className="relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer 
                      shadow-md transition-all duration-300 ease-in-out 
                      hover:-translate-y-1 hover:shadow-lg hover:border-gray-300"
