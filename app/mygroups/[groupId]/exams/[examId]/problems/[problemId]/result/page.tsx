@@ -2,6 +2,8 @@
 
 import { useParams } from "next/navigation";
 import { submissions } from "@/data/submissions"; // ✅ 제출 데이터
+import PageHeader from "@/components/Header/PageHeader";
+import { motion } from "framer-motion";
 
 export default function SubmissionPage() {
   const { problemId } = useParams();
@@ -16,9 +18,15 @@ export default function SubmissionPage() {
   );
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      <h1 className="text-3xl font-bold mb-4">🎯 제출 현황</h1>
+<motion.div
+      className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >      {/* <h1 className="text-3xl font-bold mb-4">🎯 제출 현황</h1> */}
+      <PageHeader className="animate-slide-in" />
 
+      
       {filteredSubmissions.length === 0 ? (
         <p className="text-xl text-gray-500">제출 내역이 없습니다.</p>
       ) : (
@@ -61,11 +69,11 @@ export default function SubmissionPage() {
       )}
 
       <button
-        onClick={() => window.location.href = "/my-solved"}
+        onClick={() => window.location.href = "/feedback/{id}"}
         className="mt-6 bg-gray-500 text-white px-4 py-2 rounded-lg"
       >
-        내 문제 모음으로 돌아가기
+        피드백 보기
       </button>
-    </div>
+      </motion.div>
   );
 }
