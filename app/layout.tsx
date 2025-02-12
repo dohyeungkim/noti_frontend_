@@ -4,11 +4,16 @@ import { useState } from "react";
 import Drawer from "../components/layout/Drawer";
 import ExamSidebar from "../components/layout/ExamSidebar";
 import { useExamMode } from "../hooks/useExamMode";
+import { usePathname } from "next/navigation"; // 경로 가져오기
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const { isExamMode, groupId, examId } = useExamMode();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isExamSidebarOpen, setIsExamSidebarOpen] = useState(false);
+
+  // 로그인 페이지 경로
+  const isLoginPage = pathname === "/login";
 
   return (
     <html lang="en">
@@ -18,23 +23,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <title>My App</title>
       </head>
       <body>
-      <div className="container 
-  w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] xl:w-[70vw] 
-  min-w-[1100px] max-w-[1600px] mx-auto bg-[#f9f9f9]0">
-      {/* 왼쪽 Drawer */}
-          <Drawer isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />
+        {!isLoginPage ? (
+          <div
+            className="container 
+            w-[90vw] sm:w-[85vw] md:w-[80vw] lg:w-[75vw] xl:w-[70vw] 
+            min-w-[1100px] max-w-[1600px] mx-auto bg-[#f9f9f9]">
+            {/* 왼쪽 Drawer */}
+            <Drawer isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />
 
-          {/* 메인 콘텐츠 */}
-          <main className={`main-content ${isDrawerOpen ? "drawer-open" : ""} ${isExamSidebarOpen ? "exam-open" : ""}`}>
-            {children}
-          </main>
+            {/* 메인 콘텐츠 */}
+            <main
+              className={`main-content ${isDrawerOpen ? "drawer-open" : ""} ${
+                isExamSidebarOpen ? "exam-open" : ""
+              }`}>
+              {children}
+            </main>
 
-          {/* 시험 모드 사이드바 */}
-          {isExamMode && <ExamSidebar groupId={groupId ?? "default-group"} examId={examId ?? "default-exam"} isOpen={isExamSidebarOpen} setIsOpen={setIsExamSidebarOpen} />}
-        </div>
+            {/* 시험 모드 사이드바 */}
+            {isExamMode && (
+              <ExamSidebar
+                groupId={groupId ?? "default-group"}
+                examId={examId ?? "default-exam"}
+                isOpen={isExamSidebarOpen}
+                setIsOpen={setIsExamSidebarOpen}
+              />
+            )}
+          </div>
+        ) : (
+          // 로그인 페이지의 경우 레이아웃 없이 children만 출력
+          <>{children}</>
+        )}
       </body>
 
-      {/* 스타일 추가 */}
       <style jsx>{`
         .container {
           display: flex;
@@ -45,14 +65,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         .main-content {
           flex: 1;
-          //padding: 20px;
           transition: margin 0.4s ease-in-out, width 0.4s ease-in-out;
         }
 
         /* 왼쪽 Drawer가 열릴 때 */
         .drawer-open {
-         margin-left: 250px;
-         //margin-left: 160px;
+          margin-left: 250px;
         }
 
         /* 오른쪽 ExamSidebar가 열릴 때 */
