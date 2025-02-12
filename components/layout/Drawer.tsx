@@ -51,13 +51,13 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
             {[
              // { href: "/search", icon: faMagnifyingGlass, text: " 검색" },
               { href: "/mypage", icon: faHouse, text: " 나의 페이지" },
-              { href: "/solved-problems", icon: faScroll, text: " 내가 푼 문제 모음" },
               { href: "/mygroups", icon: faUsers, text: " 나의 그룹" },
+              { href: "/solved-problems", icon: faScroll, text: " 내가 푼 문제 모음" },
               { href: "/registered-problems", icon: faPen, text: " 내가 등록한 문제들" },
             //  { href: "/notifications", icon: faEnvelope, text: " 알림함" },
             ].map(({ href, icon, text }) => (
               <li key={href} className="my-4 flex items-center gap-2 ">
-                <Link href={href} className="no-underline text-gray-700 flex items-center hover:text-white">
+                <Link href={href} className="no-underline text-gray-700 flex items-center hover:text-black">
                   <button className="border-none bg-transparent text-lg cursor-pointer">
                     <FontAwesomeIcon icon={icon} />
                   </button>
@@ -78,7 +78,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
                   <Link
                     key={group.groupId}
                     href={`/mygroups/${group.groupId}`}
-                    className="block text-gray-700 text-sm hover:text-white transition-all duration-200 pl-2 pt-1"
+                    className="block text-gray-700 text-sm hover:text-black transition-all duration-200 pl-2 pt-1"
                   >
                   🏡  {group.name}
                   </Link>
