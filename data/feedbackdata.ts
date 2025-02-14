@@ -5,7 +5,9 @@ export interface Feedback {
   goodPoints: string;
   improvementPoints: string;
   similarMistakes: string[]; // 🔹 배열 형태 명확히 지정
-  comments: { user: string; text: string }[]; // 🔹 객체 배열 타입 지정
+  comments: {
+    date: ReactNode; user: string; text: string 
+}[]; // 🔹 객체 배열 타입 지정
 }
 
 // ✅ 실제 피드백 데이터 적용
