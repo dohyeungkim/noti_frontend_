@@ -1,4 +1,15 @@
-
+interface Problems {
+    problemId: string;
+    groupId: string;
+    examId: string;
+    examName: string;
+    title: string;
+    description: string;
+    input: string;
+    output: string;
+    difficulty: string;
+    createdAt: string
+} 
 export const problems = [
         // MY문제
         {

@@ -73,7 +73,7 @@ export default function FeedbackWithSubmissionPage() {
 
 {/* 사이드바 */}
       <motion.div
-        className={`fixed top-1/4 right-0 h-full  border-gray-400 shadow-lg transition-all duration-300 ${
+        className={`fixed right-0 h-full  border-gray-400 shadow-lg transition-all duration-300 ${
           isSidebarOpen ? "w-1/3" : "w-0"
         }`}
         initial={{ x: 500 }}
@@ -241,8 +241,8 @@ export default function FeedbackWithSubmissionPage() {
           </motion.button>
         </div>
 
-        <motion.hr
-          className="border-b-1 border-gray-300 mb-4 "
+        <motion.div
+          className="border-b-2 border-gray-400 mb-4"
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: 0.5 }}
