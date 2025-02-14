@@ -148,7 +148,7 @@ export default function GroupsPage() {
         className="animate-fade-in"
       />
 
-      {/* 페이지네이션 추가 */}
+      {/* 페이지네이션 추가
       <motion.div
         className="mt-6"
         initial={{ opacity: 0, y: 10 }}
@@ -162,7 +162,7 @@ export default function GroupsPage() {
           setCurrentPage={setCurrentPage}
           className="animate-fade-in"
         />
-      </motion.div>
+      </motion.div> */}
     </motion.div>
   );
 }

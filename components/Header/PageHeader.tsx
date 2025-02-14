@@ -68,6 +68,11 @@ export default function PageHeader({ className }: PageHeaderProps) {
   } else if (pathname.startsWith("/feedback")) {
     title = "📖 피드백 보기";
   } else {
+    if(pathname.endsWith("/result")){
+      title = '✔️ 채점 결과'
+    }else if(pathname.endsWith("/write")){
+      title = '✔️ 문제 풀기'
+    }else{
     title = problem
       ? `✏️ ${problem.title}`
       : exam
@@ -75,6 +80,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
       : group
       ? `📚 ${group.name}`
       : "🏡 서연님의 그룹";
+    }
   }
 
   return (
@@ -108,16 +114,8 @@ export default function PageHeader({ className }: PageHeaderProps) {
         )}
 
         {/* ✅ 내가 푼 문제 모음 */}
-        {pathname.startsWith("/solved-problems") && (
-          <>
-            <Link href="/mysolved-problems" className="hover:underline">
-             🔥 내가 푼 문제 모음
-            </Link>
-          </>
-        )}
-
-        {/* ✅ 그룹 > 시험 > 문제 경로 추가 */}
-        {pathname.startsWith("/mygroups") && (
+         {/* ✅ 그룹 > 시험 > 문제 경로 추가 */}
+         {pathname.endsWith("/mygroups") && (
             <>
             <Link href={"/mygroups"} className="hover:underline">
              🏡 나의 그룹
@@ -151,6 +149,28 @@ export default function PageHeader({ className }: PageHeaderProps) {
               className="hover:underline"
             >
               ✏️ {problem.title}
+            </Link>
+          </>
+        )}
+        {problem && (
+          <>
+            {" > "}
+            <Link
+              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}/solve`}
+              className="hover:underline"
+            >
+              🖍️ 문제 풀기
+            </Link>
+          </>
+        )}
+        {problem && (
+          <>
+            {" > "}
+            <Link
+              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}/result`}
+              className="hover:underline"
+            >
+              ✔️ 채점 결과
             </Link>
           </>
         )}

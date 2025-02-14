@@ -171,7 +171,6 @@ export default function ProblemsPage() {
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
       {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
-      {/* 선택된 보기 방식에 따라 다르게 렌더링 */}
       {viewMode === "gallery" ? (
         <ProblemGallery
           problems={filteredProblems}
