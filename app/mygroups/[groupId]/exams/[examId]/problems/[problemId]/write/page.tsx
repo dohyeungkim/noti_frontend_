@@ -10,9 +10,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageHeader from "@/components/Header/PageHeader";
 
 export default function WriteCodePage() {
-  const { problemId, examId } = useParams() as {
+  const { problemId, examId, recordId } = useParams() as {
     problemId: string;
     examId: string;
+    recordId: string
   };
   const router = useRouter();
   const { groupId } = useParams();

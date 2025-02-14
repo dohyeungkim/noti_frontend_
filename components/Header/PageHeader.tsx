@@ -6,17 +6,19 @@ import Link from "next/link";
 import { groups } from "@/data/groups";
 import { exams } from "@/data/exams";
 import { problems } from "@/data/problems";
+import { solvedProblems } from "@/data/solvedProblems";
 
 interface PageHeaderProps {
   className?: string;
 }
 
 export default function PageHeader({ className }: PageHeaderProps) {
-  const { groupId, examId, problemId, id } = useParams() as {
+  const { groupId, examId, problemId, id, recordId } = useParams() as {
     groupId?: string;
     examId?: string;
     problemId?: string;
     id?: string; // ✅ /registered-problems/view/[id]에서 문제 ID
+    recordId?: string
   };
 
   const pathname = usePathname(); // ✅ 현재 URL 가져오기
@@ -90,90 +92,78 @@ export default function PageHeader({ className }: PageHeaderProps) {
       {/* 🔹 Breadcrumb (경로 표시) */}
       <nav className="text-gray-500 text-sm mb-2">
         {/* ✅ 내가 푼 문제 모음 */}
-        {pathname.startsWith("/mypage") && (
-          <>
-            <Link href="/mypage" className="hover:underline">
-            🚀 서연님의 페이지
-            </Link>
-          </>
-        )}
-  
-        {/* ✅ 내가 등록한 문제들 */}
-        {pathname.startsWith("/registered-problems") && (
-          <>
-            <Link href="/registered-problems" className="hover:underline">
-              📌 내가 등록한 문제들
-            </Link>
-            {pathname.startsWith("/registered-problems/view/") &&
-              ` > ✏️ ${questionTitle || "문제 보기"}`}
-            {pathname.startsWith("/registered-problems/edit/") &&
-              " > 🛠 문제 수정"}
-            {pathname === "/registered-problems/create" &&
-              " > 📝 문제 등록하기"}
-          </>
-        )}
+       {/* ✅ 그룹 > 시험 > 문제 경로 추가 */}
+{pathname.startsWith("/mygroups") && (
+  <>
+    <Link href={"/mygroups"} className="hover:underline">
+      🏡 나의 그룹
+    </Link>
+  </>
+)}
+{group && (
+  <>
+    {" > "}
+    <Link href={`/mygroups/${groupId}`} className="hover:underline">
+      📚 {group.name}
+    </Link>
+  </>
+)}
+{exam && (
+  <>
+    {" > "}
+    <Link
+      href={`/mygroups/${groupId}/exams/${exam.examId}`}
+      className="hover:underline"
+    >
+      📄 {exam.name}
+    </Link>
+  </>
+)}
+{problem && (
+  <>
+    {" > "}
+    <Link
+      href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
+      className="hover:underline"
+    >
+      ✏️ {problem.title}
+    </Link>
+  </>
+)}
+{pathname.includes("/write") && problem?.problemId && (
+  <>
+    {" > "}
+    <Link
+      href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}/write`}
+      className="hover:underline"
+    >
+      🖍️ 문제 풀기
+    </Link>
+  </>
+)}
+{pathname.includes("/result") && problem?.problemId && (
+  <>
+    {" > "}
+    <Link
+      href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}/result`}
+      className="hover:underline"
+    >
+      📊 전체 채점 결과
+    </Link>
+  </>
+)}
+{pathname.includes("/write") && pathname.includes("/result") && problem?.problemId && recordId && (
+  <>
+    {" > "}
+    <Link
+      href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}/write/${recordId}/result`}
+      className="hover:underline"
+    >
+      ✔️ 개인 채점 결과
+    </Link>
+  </>
+)}
 
-        {/* ✅ 내가 푼 문제 모음 */}
-         {/* ✅ 그룹 > 시험 > 문제 경로 추가 */}
-         {pathname.endsWith("/mygroups") && (
-            <>
-            <Link href={"/mygroups"} className="hover:underline">
-             🏡 나의 그룹
-            </Link>
-          </>
-        )}
-        {group && (
-          <>
-            {" > "}
-            <Link href={`/mygroups/${groupId}`} className="hover:underline">
-              📚 {group.name}
-            </Link>
-          </>
-        )}
-        {exam && (
-          <>
-            {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${exam.examId}`}
-              className="hover:underline"
-            >
-              📄 {exam.name}
-            </Link>
-          </>
-        )}
-        {problem && (
-          <>
-            {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
-              className="hover:underline"
-            >
-              ✏️ {problem.title}
-            </Link>
-          </>
-        )}
-        {problem && (
-          <>
-            {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}/solve`}
-              className="hover:underline"
-            >
-              🖍️ 문제 풀기
-            </Link>
-          </>
-        )}
-        {problem && (
-          <>
-            {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}/result`}
-              className="hover:underline"
-            >
-              ✔️ 채점 결과
-            </Link>
-          </>
-        )}
       </nav>
 
       {/* 🔹 페이지 제목 (자동 설정 + 이모티콘 추가) */}
