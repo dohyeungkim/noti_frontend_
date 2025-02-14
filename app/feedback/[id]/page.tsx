@@ -69,7 +69,12 @@ export default function FeedbackWithSubmissionPage() {
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <PageHeader />
-
+      <button className="flex items-end bg-black text-white px-4 py-1.5 rounded-xl m-2 text-md cursor-pointer
+      hover:bg-gray-500 transition-all duration-200 ease-in-out
+      active:scale-95 ml-auto"
+      onClick={() => router.push(`/feedback/${problemId}/codelog`)}>
+  나의 코드 보기
+</button>
 
 {/* 사이드바 */}
       <motion.div
