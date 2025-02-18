@@ -24,32 +24,15 @@ export default function ExamsClient() {
   const [sortOrder, setSortOrder] = useState("제목순");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
 
-  const [examName, setExamName] = useState("머신러닝");
-  const [examId, setExamId] = useState("ML12");
-  const [examDescription, setExamDescription] = useState("");
-  const [startDate, setStartDate] = useState("2025-12-31 00:00");
-  const [endDate, setEndDate] = useState("2025-12-31 00:00");
-
-  const filteredExams = workbook
-    .filter((workbook) => workbook.group_id === groupId)
-    .filter((workbook) =>
-      workbook.workbook_name.toLowerCase().includes(searchQuery.toLowerCase())
+  // 문제지 필터링
+  const filteredworkbooks = workbook
+    .filter((wb) => wb.group_id === groupId) // ✅ 그룹 ID 필터링
+    .filter((wb) =>
+      wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const isTestMode = (examId: string) =>
-    testExams.some((test) => test.examId === examId);
-
-  const handleEnterExam = (examId: string) => {
-    router.push(`/mygroups/${groupId}/exams/${examId}`);
-  };
-
-  const filteredworkbooks = workbook
-  .filter((wb) => wb.group_id === groupId) // ✅ 그룹 ID 필터링 추가
-  .filter((wb) =>
-    wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const sortedworkbook = [...filteredworkbooks].sort((a, b) => {
+  // 문제지 정렬
+  const sortedworkbooks = [...filteredworkbooks].sort((a, b) => {
     if (sortOrder === "제목순") {
       return a.workbook_name.localeCompare(b.workbook_name);
     } else if (sortOrder === "생성일순") {
@@ -60,15 +43,29 @@ export default function ExamsClient() {
     }
     return 0;
   });
-  
 
-  const formattedworkbook = sortedworkbook.map((workbook) => ({
+  // ✅ 문제지 데이터 변환
+  const formattedworkbooks = sortedworkbooks.map((workbook) => ({
     workbook_id: workbook.workbook_id,
     group_id: workbook.group_id,
     workbook_name: workbook.workbook_name,
     description: workbook.description,
     creation_date: workbook.creation_date,
   }));
+
+  // ✅ 시험 데이터 필터링
+  const formattedExams = testExams.filter((exam) =>
+    formattedworkbooks.some((wb) => wb.workbook_id === exam.examId)
+  );
+
+  // ✅ 해당 문제지가 시험 모드인지 확인
+  const isTestMode = (workbookId: string) =>
+    testExams.some((test) => test.examId === workbookId);
+
+  // ✅ 문제지를 클릭하면 시험으로 이동
+  const handleEnterExam = (examId: string) => {
+    router.push(`/mygroups/${groupId}/exams/${examId}`);
+  };
 
   return (
     <motion.div>
@@ -95,23 +92,13 @@ export default function ExamsClient() {
           visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
         }}
       >
-        <motion.div
-          className="flex-grow min-w-0"
-          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-        >
-          <SearchBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
+        <motion.div className="flex-grow min-w-0" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         </motion.div>
-        <motion.div
-          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-        >
+        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
           <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         </motion.div>
-        <motion.div
-          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-        >
+        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
           <SortButton onSortChange={setSortOrder} />
         </motion.div>
       </motion.div>
@@ -120,23 +107,18 @@ export default function ExamsClient() {
       <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
-      <motion.div
-        key={viewMode}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >
+      <motion.div key={viewMode} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }}>
         {viewMode === "gallery" ? (
           <ExamGallery
-            exams={formattedworkbook}
+            workbooks={formattedworkbooks} // ✅ 문제지 데이터 전달
+            exams={formattedExams}        // ✅ 시험 데이터 전달
             handleEnterExam={handleEnterExam}
-            isTestMode={isTestMode}
           />
         ) : (
           <ExamTable
-            exams={formattedworkbook}
+            workbooks={formattedworkbooks} // ✅ 문제지 데이터 전달
+            exams={formattedExams}        // ✅ 시험 데이터 전달
             handleEnterExam={handleEnterExam}
-            isTestMode={isTestMode}
           />
         )}
       </motion.div>
@@ -147,12 +129,10 @@ export default function ExamsClient() {
           <ExamCreateModal
             isModalOpen={isModalOpen}
             setIsModalOpen={setIsModalOpen}
-            WorkBookName={examName}
-            setWorkBookName={setExamName}
-           
-            WorkBookDescription={examDescription}
-            setWorkBookDescription={setExamDescription}
-           
+            WorkBookName={""}
+            setWorkBookName={() => {}}
+            WorkBookDescription={""}
+            setWorkBookDescription={() => {}}
           />
         )}
       </AnimatePresence>
