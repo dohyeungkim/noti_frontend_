@@ -1,11 +1,5 @@
-import PageHeader from "@/components/layout/PageHeader";
-import ExamsClient from "./ExamClient";
+import ExamsClient from "@/components/ExamPage/ExamClient";
 
 export default function ExamsPage() {
-  
-  return (   
-         
-<ExamsClient />
-
-);
+  return <ExamsClient />;
 }

@@ -6,7 +6,11 @@ import { motion } from "framer-motion";
 import { problems } from "@/data/problems";
 import { testExams } from "@/data/testmode";
 
-export default function ProblemDetail({ params }: { params: { groupId: string; examId: string; problemId: string } }) {
+export default function ProblemDetail({
+  params,
+}: {
+  params: { groupId: string; examId: string; problemId: string };
+}) {
   const router = useRouter();
   const { groupId, examId, problemId } = params;
 
@@ -17,9 +21,7 @@ export default function ProblemDetail({ params }: { params: { groupId: string; e
     return (
       <div className="p-8 text-center">
         <h1 className="text-2xl font-bold">문제를 찾을 수 없습니다</h1>
-        <p className="text-gray-600">
-          잘못된 경로로 접근했거나 문제가 삭제되었습니다.
-        </p>
+        <p className="text-gray-600">잘못된 경로로 접근했거나 문제가 삭제되었습니다.</p>
       </div>
     );
   }
@@ -37,8 +39,7 @@ export default function ProblemDetail({ params }: { params: { groupId: string; e
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-semibold"
-          >
+            className="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-semibold">
             시험 모드 🚨
           </motion.span>
         )}
@@ -48,8 +49,7 @@ export default function ProblemDetail({ params }: { params: { groupId: string; e
           whileTap={{ scale: 0.95 }}
           className="flex items-center bg-black text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
           hover:bg-gray-500 transition-all duration-200 ease-in-out
-          active:scale-95"
-        >
+          active:scale-95">
           문제 풀기
         </motion.button>
       </div>
@@ -59,8 +59,7 @@ export default function ProblemDetail({ params }: { params: { groupId: string; e
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="mt-6 border p-4 rounded-md bg-gray-100 shadow-md"
-      >
+        className="mt-6 border p-4 rounded-md bg-gray-100 shadow-md">
         <h2 className="text-xl font-semibold mb-2">문제</h2>
         <p className="text-gray-700">{problem.description}</p>
       </motion.section>
@@ -70,8 +69,7 @@ export default function ProblemDetail({ params }: { params: { groupId: string; e
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6"
-      >
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
         {/* 입력 */}
         <section className="border p-4 rounded-md bg-white shadow-md">
           <h3 className="text-lg font-semibold mb-2">입력</h3>

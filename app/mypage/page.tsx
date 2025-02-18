@@ -1,10 +1,5 @@
-import PageHeader from "@/components/layout/PageHeader";
-import MyPage from "./myPageClient";
+import MyPage from "@/components/MainPage/MyPage";
 
 export default function MySolvedProblemsPage() {
-  return (
- 
-             <MyPage />  
-  
-    );
+  return <MyPage />;
 }

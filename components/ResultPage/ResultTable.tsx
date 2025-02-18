@@ -1,7 +1,6 @@
 // mygroups/[groupId]/exams/[examId]/problems/[problemId]/result/ResultTable.tsx
 "use client";
 
-import { useParams } from "next/navigation";
 import { submissions } from "@/data/submissions";
 import PageHeader from "@/components/layout/PageHeader";
 import { motion } from "framer-motion";
@@ -27,8 +26,7 @@ export default function ResultTable({ problemId }: { problemId: string }) {
       className="mt-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+      transition={{ duration: 0.3 }}>
       <PageHeader className="animate-slide-in" />
 
       {filteredSubmissions.length === 0 ? (
@@ -39,8 +37,7 @@ export default function ResultTable({ problemId }: { problemId: string }) {
             className="flex items-center gap-4 mb-4 w-full"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
+            transition={{ duration: 0.3, delay: 0.2 }}>
             <motion.div className="flex-grow min-w-0">
               <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             </motion.div>
@@ -76,8 +73,7 @@ export default function ResultTable({ problemId }: { problemId: string }) {
                         : submission.result === "Wrong Answer"
                         ? "text-red-500"
                         : "text-gray-500"
-                    }`}
-                  >
+                    }`}>
                     {submission.result === "Accepted"
                       ? "맞았습니다"
                       : submission.result === "Wrong Answer"

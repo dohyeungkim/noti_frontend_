@@ -1,10 +1,5 @@
-import PageHeader from "@/components/layout/PageHeader";
-import MySolvedProblemsClient from "./SolvedClient";
+import MySolved from "@/components/MySolvedProblemPage/MySolved";
 
 export default function MySolvedProblems() {
-  return (
-   
-             <MySolvedProblemsClient />  
-  
-    );
+  return <MySolved />;
 }

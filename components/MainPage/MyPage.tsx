@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
-import PageHeader from "@/components/layout/PageHeader";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 
@@ -59,8 +57,7 @@ export default function MyPage() {
         className="text-2xl font-bold mb-4"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
+        transition={{ duration: 0.3, delay: 0.1 }}>
         📌 추천 문제
       </motion.h2>
       <motion.hr
@@ -74,14 +71,12 @@ export default function MyPage() {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
+        transition={{ duration: 0.3, delay: 0.2 }}>
         {problems.map((problem, index) => (
           <motion.div
             key={index}
             className="p-5 border rounded-xl shadow bg-white transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
-            whileHover={{ scale: 1.02 }}
-          >
+            whileHover={{ scale: 1.02 }}>
             <h3 className="text-lg font-semibold text-gray-800">{problem.title}</h3>
             <p className="text-gray-500 text-sm">{problem.category}</p>
             <p className="text-gray-700 mt-1">{problem.description}</p>
@@ -98,8 +93,7 @@ export default function MyPage() {
         className="text-2xl font-bold mt-10 mb-4"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >
+        transition={{ duration: 0.3, delay: 0.3 }}>
         📊 학습 진행 상황
       </motion.h2>
       <motion.hr
@@ -112,12 +106,9 @@ export default function MyPage() {
         className="w-full lg:w-2/3 mx-auto"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
-      >
+        transition={{ duration: 0.3, delay: 0.4 }}>
         <Bar data={data} />
       </motion.div>
-
-      
     </motion.div>
   );
 }
