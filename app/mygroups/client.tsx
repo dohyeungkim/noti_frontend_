@@ -37,17 +37,20 @@ export default function GroupsClient() {
     group.group_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ✅ 정렬 적용
   const sortedGroups = [...filteredGroups].sort((a, b) => {
     if (sortOrder === "제목순") {
       return a.group_name.localeCompare(b.group_name);
-    } else {
+    } else if (sortOrder === "생성일순") {
       return (
         new Date(b.createdAt || "1970-01-01").getTime() -
         new Date(a.createdAt || "1970-01-01").getTime()
       );
+    } else if (sortOrder === "공개순") {
+      return a.group_owner === b.group_owner ? 0 : a.group_owner ? -1 : 1;
     }
+    return 0;
   });
+  
 
   const formattedGroups = sortedGroups.map(group => ({
     group_name: group.group_name,

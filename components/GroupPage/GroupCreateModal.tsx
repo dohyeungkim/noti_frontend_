@@ -68,7 +68,7 @@ export default function GroupCreateModal({
               console.log("✅ 그룹 생성 버튼 클릭됨!"); // ✅ 실행 확인용 로그 추가
               onCreate(); // 그룹 생성 함수 실행
             }}
-            className="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-900 transition"
+            className="w-full bg-gray-800 text-white py-2 rounded-lg hover:bg-gray-900 transition"
           >
             그룹 생성하기
           </button>

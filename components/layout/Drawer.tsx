@@ -77,13 +77,13 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
                   <Link
                     key={group.group_id}
                     href={`/mygroups/${group.group_id}`}
-                    className="block text-gray-700 text-sm hover:text-black transition-all duration-200 pl-2 pt-1"
+                    className="block text-gray-900 text-sm hover:text-black transition-all duration-200 pl-2 pt-1"
                   >
-                    🏡 <span className="text-gray-500">{group.group_name}</span>
+                    🏡 <span className="text-gray-700">{group.group_name}</span>
                   </Link>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm">등록된 그룹이 없습니다.</p>
+                <p className="text-gray-700 text-sm">등록된 그룹이 없습니다.</p>
               )}
             </div>
 

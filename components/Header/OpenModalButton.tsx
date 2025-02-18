@@ -14,7 +14,7 @@ export default function OpenModalButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center bg-black text-white px-4 py-1.5 rounded-xl m-2 text-md cursor-pointer
+      className="flex items-center bg-gray-800 text-white px-4 py-1.5 rounded-xl m-2 text-md cursor-pointer
       hover:bg-gray-500 transition-all duration-200 ease-in-out
       active:scale-95"
     >
