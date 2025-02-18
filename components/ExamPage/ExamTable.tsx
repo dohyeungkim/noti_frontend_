@@ -1,9 +1,10 @@
 interface ExamTableProps {
   exams: {
-    examId: string;
-    name: string;
-    description: string;
-    startDate: string;
+    workbook_id: string;
+    group_id: string;
+    workbook_name: string;
+    description:string;
+    creation_date: string
   }[];
   handleEnterExam: (examId: string) => void;
   isTestMode: (examId: string) => boolean;
@@ -26,15 +27,15 @@ export default function ExamTable({ exams, handleEnterExam, isTestMode }: ExamTa
           {exams.length > 0 ? (
             exams.map((exam) => (
               <tr
-                key={exam.examId}
+                key={exam.workbook_id}
                 className="hover:bg-gray-100 transition-colors duration-200 border-b border-gray-300 cursor-pointer"
-                onClick={() => handleEnterExam(exam.examId)}
+                onClick={() => handleEnterExam(exam.workbook_id)}
               >
-                <td className="p-4 text-left text-gray-800">{exam.name}</td>
+                <td className="p-4 text-left text-gray-800">{exam.workbook_id}</td>
                 <td className="p-4 text-left text-gray-600">{exam.description}</td>
-                <td className="p-4 text-left text-gray-500">{exam.startDate}</td>
+                <td className="p-4 text-left text-gray-500">{exam.creation_date}</td>
                 <td className="p-4 text-center">
-                  {isTestMode(exam.examId) ? (
+                  {isTestMode(exam.workbook_id) ? (
                     <span className="text-red-500 font-bold text-sm bg-red-100 px-3 py-1 rounded-md">
                       🔥 진행 중
                     </span>

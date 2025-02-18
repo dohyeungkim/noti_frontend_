@@ -2,15 +2,13 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
-import { exams } from "@/data/exams";
+import { workbook } from "@/data/exams";
 import { testExams } from "@/data/testmode";
 
-import PageHeader from "@/components/layout/PageHeader";
 import OpenModalButton from "@/components/Header/OpenModalButton";
 import SearchBar from "@/components/Header/SearchBar";
 import ViewToggle from "@/components/Header/ViewToggle";
 import SortButton from "@/components/Header/SortButton";
-import Pagination from "@/components/Header/Pagination";
 import ExamGallery from "@/components/ExamPage/ExamGallery";
 import ExamTable from "@/components/ExamPage/ExamTable";
 import ExamCreateModal from "@/components/ExamPage/ExamModal";
@@ -32,10 +30,10 @@ export default function ExamsClient() {
   const [startDate, setStartDate] = useState("2025-12-31 00:00");
   const [endDate, setEndDate] = useState("2025-12-31 00:00");
 
-  const filteredExams = exams
-    .filter((exam) => exam.groupId === groupId)
-    .filter((exam) =>
-      exam.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredExams = workbook
+    .filter((workbook) => workbook.group_id === groupId)
+    .filter((workbook) =>
+      workbook.workbook_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
   const isTestMode = (examId: string) =>
@@ -45,23 +43,35 @@ export default function ExamsClient() {
     router.push(`/mygroups/${groupId}/exams/${examId}`);
   };
 
-  // 페이지네이션 설정
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
-  const totalItems = filteredExams.length;
-  const paginatedExams = filteredExams.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  const filteredworkbooks = workbook
+  .filter((wb) => wb.group_id === groupId) // ✅ 그룹 ID 필터링 추가
+  .filter((wb) =>
+    wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  return (
-    <motion.div
-      // className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
-      // initial={{ opacity: 0, y: 20 }}
-      // animate={{ opacity: 1, y: 0 }}
-      // transition={{ duration: 0.3 }}
-    >
+  const sortedworkbook = [...filteredworkbooks].sort((a, b) => {
+    if (sortOrder === "제목순") {
+      return a.workbook_name.localeCompare(b.workbook_name);
+    } else if (sortOrder === "생성일순") {
+      return (
+        new Date(b.creation_date ?? "1970-01-01").getTime() - 
+        new Date(a.creation_date ?? "1970-01-01").getTime()
+      );
+    }
+    return 0;
+  });
+  
 
+  const formattedworkbook = sortedworkbook.map((workbook) => ({
+    workbook_id: workbook.workbook_id,
+    group_id: workbook.group_id,
+    workbook_name: workbook.workbook_name,
+    description: workbook.description,
+    creation_date: workbook.creation_date,
+  }));
+
+  return (
+    <motion.div>
       {/* 문제지 생성 버튼 */}
       <motion.div
         className="flex items-center gap-2 justify-end"
@@ -85,13 +95,23 @@ export default function ExamsClient() {
           visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
         }}
       >
-        <motion.div className="flex-grow min-w-0" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <motion.div
+          className="flex-grow min-w-0"
+          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+        >
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
         </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+        <motion.div
+          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+        >
           <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+        <motion.div
+          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+        >
           <SortButton onSortChange={setSortOrder} />
         </motion.div>
       </motion.div>
@@ -108,31 +128,17 @@ export default function ExamsClient() {
       >
         {viewMode === "gallery" ? (
           <ExamGallery
-            exams={paginatedExams}
+            exams={formattedworkbook}
             handleEnterExam={handleEnterExam}
             isTestMode={isTestMode}
           />
         ) : (
           <ExamTable
-            exams={paginatedExams}
+            exams={formattedworkbook}
             handleEnterExam={handleEnterExam}
             isTestMode={isTestMode}
           />
         )}
-      </motion.div>
-
-      {/* 페이지네이션 */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Pagination
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-        />
       </motion.div>
 
       {/* 모달 */}
@@ -141,16 +147,12 @@ export default function ExamsClient() {
           <ExamCreateModal
             isModalOpen={isModalOpen}
             setIsModalOpen={setIsModalOpen}
-            examName={examName}
-            setExamName={setExamName}
-            examId={examId}
-            setExamId={setExamId}
-            examDescription={examDescription}
-            setExamDescription={setExamDescription}
-            startDate={startDate}
-            setStartDate={setStartDate}
-            endDate={endDate}
-            setEndDate={setEndDate}
+            WorkBookName={examName}
+            setWorkBookName={setExamName}
+           
+            WorkBookDescription={examDescription}
+            setWorkBookDescription={setExamDescription}
+           
           />
         )}
       </AnimatePresence>

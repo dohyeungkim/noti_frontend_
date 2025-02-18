@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { groups } from "@/data/groups";
-import { exams } from "@/data/exams";
+import { workbook } from "@/data/exams";
 import { problems } from "@/data/problems";
 import { solvedProblems } from "@/data/solvedProblems";
 
@@ -49,7 +49,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
 
   // ✅ 기존 그룹/시험/문제 데이터 찾기
   const group = groups.find((g) => g.group_id === groupId);
-  const exam = exams.find((e) => e.examId === examId);
+  const exam = workbook.find((e) => e.workbook_id === examId);
   const problem = problems.find((p) => p.problemId === problemId);
 
   // ✅ 현재 페이지에 따라 동적 제목 설정
@@ -78,7 +78,7 @@ export default function PageHeader({ className }: PageHeaderProps) {
       title = problem
         ? `✏️ ${problem.title}`
         : exam
-        ? `📄 ${exam.name}`
+        ? `📄 ${exam.workbook_name}`
         : group
         ? `📚 ${group.group_name}`
         : "🏡 서연님의 그룹";
@@ -112,10 +112,10 @@ export default function PageHeader({ className }: PageHeaderProps) {
           <>
             {" > "}
             <Link
-              href={`/mygroups/${groupId}/exams/${exam.examId}`}
+              href={`/mygroups/${groupId}/exams/${exam.workbook_id}`}
               className="hover:underline"
             >
-              📄 {exam.name}
+              📄 {exam.workbook_name}
             </Link>
           </>
         )}

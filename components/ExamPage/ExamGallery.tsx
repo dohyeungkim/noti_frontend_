@@ -1,10 +1,11 @@
 import ExamCard from "@/components/ExamPage/ExamCard"; 
 interface ExamGalleryProps {
   exams: {
-    examId: string;
-    name: string;
-    description: string;
-    startDate: string;
+    workbook_id: string;
+    group_id: string;
+    workbook_name: string;
+    description:string;
+    creation_date: string
   }[];
   handleEnterExam: (examId: string) => void;
   isTestMode: (examId: string) => boolean;
@@ -16,10 +17,10 @@ export default function ExamGallery({ exams, handleEnterExam, isTestMode }: Exam
       {exams.length > 0 ? (
         exams.map((exam) => (
           <ExamCard
-            key={exam.examId}
+            key={exam.workbook_id}
             exam={exam}
-            isTestMode={isTestMode(exam.examId)}
-            onClick={() => handleEnterExam(exam.examId)}
+            isTestMode={isTestMode(exam.workbook_id)}
+            onClick={() => handleEnterExam(exam.workbook_id)}
           />
         ))
       ) : (

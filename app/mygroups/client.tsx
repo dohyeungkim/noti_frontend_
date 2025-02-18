@@ -42,8 +42,8 @@ export default function GroupsClient() {
       return a.group_name.localeCompare(b.group_name);
     } else if (sortOrder === "생성일순") {
       return (
-        new Date(b.createdAt || "1970-01-01").getTime() -
-        new Date(a.createdAt || "1970-01-01").getTime()
+        new Date(b.createdAt ?? "1970-01-01").getTime() - 
+        new Date(a.createdAt ?? "1970-01-01").getTime()
       );
     } else if (sortOrder === "공개순") {
       return a.group_owner === b.group_owner ? 0 : a.group_owner ? -1 : 1;

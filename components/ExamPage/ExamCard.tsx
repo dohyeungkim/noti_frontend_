@@ -1,9 +1,10 @@
 interface ExamCardProps {
   exam: {
-    examId: string;
-    name: string;
-    description: string;
-    startDate: string;
+    workbook_id: string;
+    group_id: string;
+    workbook_name: string;
+    description:string;
+    creation_date: string
   };
   isTestMode: boolean;
   onClick: () => void;
@@ -26,10 +27,10 @@ export default function ExamCard({ exam, isTestMode, onClick }: ExamCardProps) {
       )}
 
       <h2 className="text-xl font-semibold flex items-center gap-2 text-gray-800">
-        📄 {exam.name}
+        📄 {exam.workbook_name}
       </h2>
       <p className="text-gray-600 text-sm">{exam.description}</p>
-      <p className="text-gray-500 text-sm mt-1">📅 {exam.startDate}</p>
+      <p className="text-gray-500 text-sm mt-1">📅 {exam.creation_date}</p>
 
       <button
         className="mt-5 w-full bg-gray-800 text-white py-2 rounded-xl text-lg font-semibold 
