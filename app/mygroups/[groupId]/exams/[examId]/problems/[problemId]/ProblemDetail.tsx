@@ -3,7 +3,6 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import PageHeader from "@/components/Header/PageHeader";
 import { problems } from "@/data/problems";
 import { testExams } from "@/data/testmode";
 

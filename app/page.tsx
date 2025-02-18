@@ -1,4 +1,3 @@
-"use client";
 
 // app/page.tsx (또는 app/page.js)
 import { redirect } from "next/navigation";

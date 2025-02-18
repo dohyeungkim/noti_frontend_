@@ -6,9 +6,9 @@ import WriteEditor from "./WriteEditors"; // ✅ 현재 폴더 안에 있는 경
 // 코드창이 줄어들었땅
 export default function WritePage({ params }: { params: { problemId: string; examId: string; groupId: string } }) {
   return (
-    <div  className="bg-[#f9f9f9] h-screen overflow-hidden flex flex-col ml-[3.8rem] p-8 pb-20">
+    <div  >
     {/* 헤더 영역 */}
-    <PageHeader />
+   
       <WriteEditor problemId={params.problemId} examId={params.examId} groupId={params.groupId} />
     </div>
   );
