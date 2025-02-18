@@ -5,7 +5,7 @@ interface ProblemGalleryProps {
   problems: any[];
   groupId: string;
   examId: string;
-  handleSelectProblem: (problemId: string) => void;
+  handleSelectProblem: React.Dispatch<React.SetStateAction<string[]>>; // ✅ 올바른 타입 적용
 }
 
 const ProblemGallery = ({ problems, groupId, examId, handleSelectProblem }: ProblemGalleryProps) => {

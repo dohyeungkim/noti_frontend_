@@ -1,9 +1,10 @@
 "use client";
+
 import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
-import { exams } from "../../../../data/exams";
-import { testExams } from "../../../../data/testmode";
-import { groups } from "@/data/groups";
+import { exams } from "@/data/exams";
+import { testExams } from "@/data/testmode";
+
 import PageHeader from "@/components/Header/PageHeader";
 import OpenModalButton from "@/components/Header/OpenModalButton";
 import SearchBar from "@/components/Header/SearchBar";
@@ -15,9 +16,11 @@ import ExamTable from "@/components/ExamPage/ExamTable";
 import ExamCreateModal from "@/components/ExamPage/ExamModal";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function ExamsPage() {
+export default function ExamsClient() {
   const { groupId } = useParams() as { groupId: string };
   const router = useRouter();
+
+  // 상태 관리
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("제목순");
@@ -42,11 +45,10 @@ export default function ExamsPage() {
     router.push(`/mygroups/${groupId}/exams/${examId}`);
   };
 
-  // ✅ 페이지네이션 관련 설정
+  // 페이지네이션 설정
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
   const totalItems = filteredExams.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const paginatedExams = filteredExams.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -54,19 +56,18 @@ export default function ExamsPage() {
 
   return (
     <motion.div
-          className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <PageHeader className="animate-slide-in" />
+      // className="bg-[#f9f9f9] min-h-screen ml-[3.8rem] p-8"
+      // initial={{ opacity: 0, y: 20 }}
+      // animate={{ opacity: 1, y: 0 }}
+      // transition={{ duration: 0.3 }}
+    >
 
       {/* 문제지 생성 버튼 */}
       <motion.div
         className="flex items-center gap-2 justify-end"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}
       >
         <OpenModalButton
           onClick={() => setIsModalOpen(true)}
@@ -77,9 +78,12 @@ export default function ExamsPage() {
       {/* 검색 & 정렬 & 보기 방식 변경 */}
       <motion.div
         className="flex items-center gap-4 mb-4 w-full"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0, y: -10 },
+          visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
+        }}
       >
         <motion.div className="flex-grow min-w-0" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
@@ -93,53 +97,27 @@ export default function ExamsPage() {
       </motion.div>
 
       {/* 문제지 목록 */}
-      <motion.h2
-        className="text-2xl font-bold mb-4 m-2 pt-4"
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >나의 문제지      </motion.h2>
+      <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
+      <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
-<motion.hr
-        className="border-b-1 border-gray-300 my-4 m-2"
-        initial={{ opacity: 0, scaleX: 0 }}
-        animate={{ opacity: 1, scaleX: 1 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      />
-
-<motion.div
+      <motion.div
         key={viewMode}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
-      >        {viewMode === "gallery" ? (
-          <motion.div
-            key="gallery"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ExamGallery
-              exams={paginatedExams}
-              handleEnterExam={handleEnterExam}
-              isTestMode={isTestMode}
-            />
-          </motion.div>
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
+        {viewMode === "gallery" ? (
+          <ExamGallery
+            exams={paginatedExams}
+            handleEnterExam={handleEnterExam}
+            isTestMode={isTestMode}
+          />
         ) : (
-          <motion.div
-            key="table"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ExamTable
-              exams={paginatedExams}
-              handleEnterExam={handleEnterExam}
-              isTestMode={isTestMode}
-            />
-          </motion.div>
+          <ExamTable
+            exams={paginatedExams}
+            handleEnterExam={handleEnterExam}
+            isTestMode={isTestMode}
+          />
         )}
       </motion.div>
 
@@ -160,28 +138,20 @@ export default function ExamsPage() {
       {/* 모달 */}
       <AnimatePresence>
         {isModalOpen && (
-          <motion.div
-            key="modal"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ExamCreateModal
-              isModalOpen={isModalOpen}
-              setIsModalOpen={setIsModalOpen}
-              examName={examName}
-              setExamName={setExamName}
-              examId={examId}
-              setExamId={setExamId}
-              examDescription={examDescription}
-              setExamDescription={setExamDescription}
-              startDate={startDate}
-              setStartDate={setStartDate}
-              endDate={endDate}
-              setEndDate={setEndDate}
-            />
-          </motion.div>
+          <ExamCreateModal
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
+            examName={examName}
+            setExamName={setExamName}
+            examId={examId}
+            setExamId={setExamId}
+            examDescription={examDescription}
+            setExamDescription={setExamDescription}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+          />
         )}
       </AnimatePresence>
     </motion.div>
