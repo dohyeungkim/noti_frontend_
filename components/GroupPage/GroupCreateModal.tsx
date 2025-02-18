@@ -1,99 +1,102 @@
-//그룹 생성하기의 모달창
+import { useState } from "react";
 
 interface GroupCreateModalProps {
-  className?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  groupName: string;
+  setGroupName: (value: string) => void;
+  isPublic: boolean;
+  setIsPublic: (value: boolean) => void;
 
-    isOpen: boolean;
-    onClose: () => void;
-    groupName: string;
-    setGroupName: (value: string) => void;
-    groupNumber: string;
-    setGroupNumber: (value: string) => void;
-    inviteCode: string;
-    setInviteCode: (value: string) => void;
-    maxStudents: string;
-    setMaxStudents: (value: string) => void;
-    year: string;
-    setYear: (value: string) => void;
-    semester: string;
-    setSemester: (value: string) => void;
-  }
-  
-  export default function GroupCreateModal({
-    isOpen,
-    onClose,
-    groupName,
-    setGroupName,
-    groupNumber,
-    setGroupNumber,
-    inviteCode,
-    setInviteCode,
-    maxStudents,
-    setMaxStudents,
-    year,
-    setYear,
-    semester,
-    setSemester,
-  }: GroupCreateModalProps) {
-    if (!isOpen) return null;
-  
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" onClick={onClose}>
-        <div className="bg-white p-6 rounded-lg w-full max-w-lg shadow-lg relative" onClick={(e) => e.stopPropagation()}>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">그룹 생성하기</h2>
-            <button onClick={onClose} className="text-gray-600 hover:text-black text-2xl">❌</button>
+  onCreate: () => void; // ✅ 그룹 생성 함수 추가
+}
+
+
+export default function GroupCreateModal({
+  isOpen,
+  onClose,
+  groupName,
+  setGroupName,
+  isPublic,
+  setIsPublic,
+  onCreate, // ✅ 그룹 생성 함수
+}: GroupCreateModalProps) {
+  if (!isOpen) return null; // 모달이 닫혀 있으면 렌더링하지 않음
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 헤더 */}
+        <div className="flex justify-between items-center border-b pb-4">
+          <h2 className="text-lg font-semibold">그룹 생성하기</h2>
+          <button
+            onClick={onClose}
+            className="text-red-500 hover:text-red-700 text-2xl"
+          >
+            ✖
+          </button>
+        </div>
+
+        {/* 입력 필드 */}
+        <div className="flex flex-col gap-3 mt-4">
+          <InputField value={groupName} setValue={setGroupName} placeholder="그룹 이름" />
+
+          {/* 공개/비공개 선택 */}
+          <div className="flex justify-between items-center border border-gray-300 p-2 rounded-lg">
+            <span className="text-sm text-gray-600">그룹 상태</span>
+            <button
+              onClick={() => setIsPublic(!isPublic)}
+              className={`px-4 py-1 rounded-lg text-sm transition ${
+                isPublic ? "bg-gray-800 text-white" : "bg-gray-400 text-gray-800"
+              }`}
+            >
+              {isPublic ? "공개" : "비공개"}
+            </button>
           </div>
-  
-          <div className="flex flex-col gap-4">
-            <label className="flex flex-col">
-              그룹 이름
-              <input type="text" value={groupName} onChange={(e) => setGroupName(e.target.value)}
-                     className="p-2 border border-gray-300 rounded-md mt-1" />
-            </label>
-            <label className="flex flex-col">
-              그룹 번호
-              <input type="text" value={groupNumber} onChange={(e) => setGroupNumber(e.target.value)}
-                     className="p-2 border border-gray-300 rounded-md mt-1" />
-            </label>
-            <label className="flex flex-col">
-              초대 코드
-              <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)}
-                     className="p-2 border border-gray-300 rounded-md mt-1" />
-            </label>
-  
-            <div className="flex items-center gap-2">
-              <label className="flex flex-col flex-1">
-                인원 제한
-                <div className="flex items-center gap-2">
-                  <input type="number" value={maxStudents} onChange={(e) => setMaxStudents(e.target.value)}
-                         className="p-2 border border-gray-300 rounded-md w-full mt-1" />
-                  <span className="mt-1">명</span>
-                </div>
-              </label>
-            </div>
-  
-            <div className="flex items-center gap-2">
-              <label className="flex flex-col flex-1">
-                연도
-                <input type="number" value={year} onChange={(e) => setYear(e.target.value)}
-                       className="p-2 border border-gray-300 rounded-md w-full mt-1" />
-              </label>
-              <span className="mt-6">년</span>
-              <label className="flex flex-col flex-1">
-                학기
-                <input type="number" value={semester} onChange={(e) => setSemester(e.target.value)}
-                       className="p-2 border border-gray-300 rounded-md w-full mt-1" />
-              </label>
-              <span className="mt-6">학기</span>
-            </div>
-          </div>
-  
-          <button onClick={onClose} className="mt-6 w-full bg-black text-white py-3 rounded-md text-lg cursor-pointer">
+        </div>
+
+        {/* ✅ 그룹 생성 버튼 */}
+        <div className="mt-6">
+          <button
+            onClick={() => {
+              console.log("✅ 그룹 생성 버튼 클릭됨!"); // ✅ 실행 확인용 로그 추가
+              onCreate(); // 그룹 생성 함수 실행
+            }}
+            className="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-900 transition"
+          >
             그룹 생성하기
           </button>
         </div>
       </div>
-    );
-  }
-  
+    </div>
+  );
+}
+
+// 입력 필드 컴포넌트 추가
+function InputField({
+  value,
+  setValue,
+  placeholder,
+  type = "text",
+}: {
+  value: string;
+  setValue: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      placeholder={placeholder}
+      className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:outline-none transition text-gray-700"
+    />
+  );
+}

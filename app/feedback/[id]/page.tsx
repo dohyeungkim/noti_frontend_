@@ -3,7 +3,7 @@
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 
 import { groups } from "@/data/groups";
 import { problems } from "@/data/problems";

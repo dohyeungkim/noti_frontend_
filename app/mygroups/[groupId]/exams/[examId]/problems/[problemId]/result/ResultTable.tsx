@@ -3,7 +3,7 @@
 
 import { useParams } from "next/navigation";
 import { submissions } from "@/data/submissions";
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { motion } from "framer-motion";
 import SearchBar from "@/components/Header/SearchBar";
 import { useState } from "react";

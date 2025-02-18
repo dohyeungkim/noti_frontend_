@@ -2,47 +2,60 @@ import { useRouter } from "next/navigation";
 
 interface GroupTableProps {
   className?: string;
-
   groups: {
-    name: string;
-    groupId: string;
-    students: number;
-    professor: string;
-    semester: string;
+    group_name: string;
+    group_owner: string;
+    group_state: boolean;
+    group_id: string;
+    member_count: number;
+    createdAt: string;
   }[];
 }
 
 export default function GroupTable({ groups }: GroupTableProps) {
   const router = useRouter();
-  
+
   // ✅ "MY" 그룹 제외한 그룹만 필터링
-  const filteredGroups = groups.filter((group) => group.groupId !== "MY");
+  const filteredGroups = groups.filter((group) => group.group_id !== "MY");
 
   return (
     <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">
+      <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">
         <thead className="bg-gray-200">
-        <tr className="border-b-4 border-gray-200 text-gray-800">
+          <tr className="border-b-4 border-gray-200 text-gray-800">
             <th className="p-4 text-left text-lg font-semibold">그룹 이름</th>
             <th className="p-4 text-left text-lg font-semibold">그룹 번호</th>
             <th className="p-4 text-left text-lg font-semibold">수강생 수</th>
-            <th className="p-4 text-left text-lg font-semibold">교수</th>
-            <th className="p-4 text-left text-lg font-semibold">학기</th>
+            <th className="p-4 text-left text-lg font-semibold">그룹장</th>
+            <th className="p-4 text-left text-lg font-semibold">공개 여부</th>
           </tr>
         </thead>
         <tbody>
           {filteredGroups.length > 0 ? (
             filteredGroups.map((group) => (
               <tr
-                key={group.groupId}
-                className="hover:bg-gray-100 transition-colors duration-200 border-b border-gray-300 cursor-pointer"
-                onClick={() => router.push(`/mygroups/${group.groupId}`)}
+                key={group.group_id}
+                className={`transition-colors duration-200 border-b border-gray-300
+                            ${
+                              group.group_state
+                                ? "hover:bg-gray-100 cursor-pointer" // ✅ 활성 그룹 (클릭 가능)
+                                : "bg-gray-100 text-gray-500 cursor-not-allowed" // ✅ 비활성 그룹 (클릭 불가)
+                            }`}
+                onClick={() => group.group_state && router.push(`/mygroups/${group.group_id}`)}
               >
-                <td className="p-4 text-left text-gray-800">{group.name}</td>
-                <td className="p-4 text-left text-gray-600">{group.groupId}</td>
-                <td className="p-4 text-left text-gray-600">{group.students}명</td>
-                <td className="p-4 text-left text-gray-600">{group.professor}</td>
-                <td className="p-4 text-left text-gray-500">{group.semester}</td>
+                <td className="p-4 text-left">{group.group_name}</td>
+                <td className="p-4 text-left">{group.group_id}</td>
+                <td className="p-4 text-left">{group.member_count}명</td>
+                <td className="p-4 text-left">{group.group_owner}</td>
+                <td className={`p-4 text-left font-semibold 
+                                ${
+                                  group.group_state
+                                    ? "text-green-500"
+                                    : "text-gray-500"
+                                }`}
+                >
+                  {group.group_state ? "공개" : "비공개"}
+                </td>
               </tr>
             ))
           ) : (

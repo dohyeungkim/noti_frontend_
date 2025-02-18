@@ -1,6 +1,6 @@
 "use client";
 
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { useState } from "react";
 import { motion } from "framer-motion";
 

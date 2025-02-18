@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 
@@ -51,9 +51,7 @@ export default function MyPage() {
   }));
 
   return (
-    <motion.div
-     
-    >
+    <motion.div>
       {/* 🏠 환영 메시지 */}
 
       {/* 🔥 추천 문제 */}

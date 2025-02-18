@@ -7,7 +7,7 @@ import Modal from "@/components/ProblemPage/Modal_makeProblem";
 import { problems } from "@/data/problems";
 import { groups } from "@/data/groups";
 import { testExams } from "@/data/testmode";
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import OpenModalButton from "@/components/Header/OpenModalButton";
 import SearchBar from "@/components/Header/SearchBar";
 import ViewToggle from "@/components/Header/ViewToggle";

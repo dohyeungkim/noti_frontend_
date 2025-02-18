@@ -1,4 +1,4 @@
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import ExamsClient from "./ExamClient";
 
 export default function ExamsPage() {

@@ -1,5 +1,5 @@
 // mygroups/[groupId]/exams/[examId]/problems/[problemId]/write/page.tsx
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import WriteEditor from "./WriteEditors"; // ✅ 현재 폴더 안에 있는 경우
 
 

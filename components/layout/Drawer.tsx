@@ -21,7 +21,7 @@ interface DrawerProps {
 
 export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
   // ✅ "MY" 그룹 제외한 나의 그룹 목록 설정
-  const filteredGroups = dummyGroups.filter((group) => group.groupId !== "MY");
+  const filteredGroups = dummyGroups.filter((group) => group.group_id !== "MY");
 
   return (
     <>
@@ -76,11 +76,11 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               {filteredGroups.length > 0 ? (
                 filteredGroups.map((group) => (
                   <Link
-                    key={group.groupId}
-                    href={`/mygroups/${group.groupId}`}
+                    key={group.group_id}
+                    href={`/mygroups/${group.group_id}`}
                     className="block text-gray-700 text-sm hover:text-black transition-all duration-200 pl-2 pt-1"
                   >
-                  🏡  {group.name}
+                  🏡  {group.group_name}
                   </Link>
                 ))
               ) : (

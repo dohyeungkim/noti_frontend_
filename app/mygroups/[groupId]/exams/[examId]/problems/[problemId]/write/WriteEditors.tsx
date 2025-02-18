@@ -4,7 +4,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import { problems } from "@/data/problems";
 import { testExams } from "@/data/testmode";
 

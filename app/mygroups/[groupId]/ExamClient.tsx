@@ -5,7 +5,7 @@ import { useState } from "react";
 import { exams } from "@/data/exams";
 import { testExams } from "@/data/testmode";
 
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import OpenModalButton from "@/components/Header/OpenModalButton";
 import SearchBar from "@/components/Header/SearchBar";
 import ViewToggle from "@/components/Header/ViewToggle";

@@ -1,4 +1,4 @@
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import CreatePage from "./createClient";
 
 export default function MyQuestionsPageClient() {

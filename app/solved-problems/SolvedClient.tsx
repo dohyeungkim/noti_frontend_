@@ -1,6 +1,6 @@
 "use client";
 
-import PageHeader from "@/components/Header/PageHeader";
+import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/Header/SearchBar";
 import SortButton from "@/components/Header/SortButton";
 import ViewToggle from "@/components/Header/ViewToggle";

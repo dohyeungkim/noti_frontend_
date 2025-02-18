@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { python } from '@codemirror/lang-python';
-import PageHeader from '@/components/Header/PageHeader';
+import PageHeader from '@/components/layout/PageHeader';
 import { motion } from 'framer-motion';
 
 export default function CodeComparison() {
