@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { groups } from "@/data/groups";
-import { exams } from "@/data/exams";
+import { workbook } from "@/data/workbook";
 import { problems } from "@/data/problems";
 import { solvedProblems } from "@/data/solvedProblems";
 
@@ -48,42 +48,43 @@ export default function PageHeader({ className }: PageHeaderProps) {
   }, [id]);
 
   // ✅ 기존 그룹/시험/문제 데이터 찾기
-  const group = groups.find((g) => g.group_id === groupId);
-  const exam = exams.find((e) => e.examId === examId);
-  const problem = problems.find((p) => p.problemId === problemId);
+const group = groups.find((g) => g.group_id === groupId);
+const selectedWorkbook = workbook.find((w) => w.workbook_id === examId);
+const problem = problems.find((p) => p.problemId === problemId);
 
-  // ✅ 현재 페이지에 따라 동적 제목 설정
-  let title = "🏡 나의 페이지"; // 기본값
+// ✅ 현재 페이지에 따라 동적 제목 설정
+let title = "🏡 나의 페이지"; // 기본값
 
-  if (pathname.startsWith("/registered-problems")) {
-    if (pathname === "/registered-problems") title = "📌 내가 등록한 문제들";
-    else if (pathname === "/registered-problems/create")
-      title = "📝 문제 등록하기";
-    else if (pathname.startsWith("/registered-problems/view/"))
-      title = loading ? "⏳ 로딩 중..." : `✏️ ${questionTitle || "문제 보기"}`;
-    else if (pathname.startsWith("/registered-problems/edit/"))
-      title = "🛠 문제 수정";
-  } else if (pathname.startsWith("/mypage")) {
-    title = "🚀 서연님의 페이지";
-  } else if (pathname.startsWith("/solved-problems")) {
-    title = "🔥 내가 푼 문제 모음";
-  } else if (pathname.startsWith("/feedback")) {
-    title = "📖 피드백 보기";
+if (pathname.startsWith("/registered-problems")) {
+  if (pathname === "/registered-problems") title = "📌 내가 등록한 문제들";
+  else if (pathname === "/registered-problems/create")
+    title = "📝 문제 등록하기";
+  else if (pathname.startsWith("/registered-problems/view/"))
+    title = loading ? "⏳ 로딩 중..." : `✏️ ${questionTitle || "문제 보기"}`;
+  else if (pathname.startsWith("/registered-problems/edit/"))
+    title = "🛠 문제 수정";
+} else if (pathname.startsWith("/mypage")) {
+  title = "🚀 서연님의 페이지";
+} else if (pathname.startsWith("/solved-problems")) {
+  title = "🔥 내가 푼 문제 모음";
+} else if (pathname.startsWith("/feedback")) {
+  title = "📖 피드백 보기";
+} else {
+  if (pathname.endsWith("/result")) {
+    title = "✔️ 채점 결과";
+  } else if (pathname.endsWith("/write")) {
+    title = "✔️ 문제 풀기";
   } else {
-    if (pathname.endsWith("/result")) {
-      title = "✔️ 채점 결과";
-    } else if (pathname.endsWith("/write")) {
-      title = "✔️ 문제 풀기";
-    } else {
-      title = problem
-        ? `✏️ ${problem.title}`
-        : exam
-        ? `📄 ${exam.name}`
-        : group
-        ? `📚 ${group.group_name}`
-        : "🏡 서연님의 그룹";
-    }
+    title = problem
+      ? `✏️ ${problem.title}`
+      : selectedWorkbook
+      ? `📄 ${selectedWorkbook.workbook_name}`
+      : group
+      ? `📚 ${group.group_name}`
+      : "🏡 서연님의 그룹";
   }
+}
+
 
   return (
     <header
@@ -91,45 +92,43 @@ export default function PageHeader({ className }: PageHeaderProps) {
     >
       {/* 🔹 Breadcrumb (경로 표시) */}
       <nav className="text-gray-500 text-sm mb-2">
-        {/* ✅ 내가 푼 문제 모음 */}
-        {/* ✅ 그룹 > 시험 > 문제 경로 추가 */}
-        {pathname.startsWith("/mygroups") && (
-          <>
-            <Link href={"/mygroups"} className="hover:underline">
-              🏡 나의 그룹
-            </Link>
-          </>
-        )}
-        {group && (
-          <>
-            {" > "}
-            <Link href={`/mygroups/${groupId}`} className="hover:underline">
-              📚 {group.group_name}
-            </Link>
-          </>
-        )}
-        {exam && (
-          <>
-            {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${exam.examId}`}
-              className="hover:underline"
-            >
-              📄 {exam.name}
-            </Link>
-          </>
-        )}
-        {problem && (
-          <>
-            {" > "}
-            <Link
-              href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
-              className="hover:underline"
-            >
-              ✏️ {problem.title}
-            </Link>
-          </>
-        )}
+  {pathname.startsWith("/mygroups") && (
+    <>
+      <Link href={"/mygroups"} className="hover:underline">
+        🏡 나의 그룹
+      </Link>
+    </>
+  )}
+  {group && (
+    <>
+      {" > "}
+      <Link href={`/mygroups/${groupId}`} className="hover:underline">
+        📚 {group.group_name}
+      </Link>
+    </>
+  )}
+  {selectedWorkbook && (
+    <>
+      {" > "}
+      <Link
+        href={`/mygroups/${groupId}/exams/${selectedWorkbook.workbook_id}`}
+        className="hover:underline"
+      >
+        📄 {selectedWorkbook.workbook_name}
+      </Link>
+    </>
+  )}
+  {problem && (
+    <>
+      {" > "}
+      <Link
+        href={`/mygroups/${groupId}/exams/${examId}/problems/${problem.problemId}`}
+        className="hover:underline"
+      >
+        ✏️ {problem.title}
+      </Link>
+    </>
+  )}
         {pathname.includes("/write") && problem?.problemId && (
           <>
             {" > "}
