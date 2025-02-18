@@ -2,7 +2,7 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
-import { workbook } from "@/data/exams";
+import { workbook } from "@/data/workbook";
 import { testExams } from "@/data/testmode";
 
 import OpenModalButton from "@/components/Header/OpenModalButton";

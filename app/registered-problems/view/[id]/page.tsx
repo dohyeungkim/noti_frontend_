@@ -1,10 +1,5 @@
-import PageHeader from "@/components/layout/PageHeader";
-import ViewQuestionPage from "./viewClient";
+import MyRegisteredProblemView from "@/components/MyRegisteredProblemPage/MyRegisteredProblemView";
 
 export default function ViewQuestionPageClient() {
-  return (
-    
-             <ViewQuestionPage />
-  
-    );
+  return <MyRegisteredProblemView />;
 }

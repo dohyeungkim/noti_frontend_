@@ -1,8 +1,5 @@
-// mygroups/[groupId]/exams/[examId]/problems/[problemId]/result/page.tsx
-import ResultTable from "./ResultTable";
+import ResultTable from "@/components/ResultPage/ResultTable";
 
 export default function ResultPage({ params }: { params: { problemId: string } }) {
-  return (
-      <ResultTable problemId={params.problemId} />
-  );
+  return <ResultTable problemId={params.problemId} />;
 }

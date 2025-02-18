@@ -1,11 +1,5 @@
-// mygroups/[groupId]/exams/[examId]/page.tsx
-import PageHeader from "@/components/layout/PageHeader";
-import ExamDetail from "./problemsDetail";
+import ExamDetail from "@/components/ProblemPage/ProblemStructure";
 
 export default function ExamPage({ params }: { params: { groupId: string; examId: string } }) {
-  return (
-   
-
-      <ExamDetail params={params} />
-  );
+  return <ExamDetail params={params} />;
 }

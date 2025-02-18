@@ -1,10 +1,5 @@
-import PageHeader from "@/components/layout/PageHeader";
-import MyQuestionsPage from "./registeredPage";
+import MyRegisteredProblem from "@/components/MyRegisteredProblemPage/MyRegisteredProblem";
 
-export default function MyQuestionsPageClient() {
-  return (
-   
-             <MyQuestionsPage/>  
-  
-    );
+export default function MyRegisteredProblemPage() {
+  return <MyRegisteredProblem />;
 }
