@@ -5,6 +5,7 @@ interface ExamTableProps {
     workbook_id: string;
     group_id: string;
     workbook_name: string;
+    problem_cnt: number;
     description: string;
     creation_date: string;
   }[];
@@ -44,6 +45,7 @@ export default function ExamTable({ workbooks, exams, handleEnterExam }: ExamTab
           <tr className="border-b-4 border-gray-300 text-gray-800">
             <th className="p-4 text-left text-lg font-semibold">문제지 이름</th>
             <th className="p-4 text-left text-lg font-semibold">문제지 설명</th>
+            <th className="p-4 text-left text-lg font-semibold">문제 수</th>
             <th className="p-4 text-left text-lg font-semibold">생성일</th>
             <th className="p-4 text-center text-lg font-semibold">들어가기</th>
           </tr>
@@ -85,7 +87,10 @@ export default function ExamTable({ workbooks, exams, handleEnterExam }: ExamTab
                 >
                   <td className="p-4 text-left text-gray-800 font-medium">📄 {workbook.workbook_name}</td>
                   <td className="p-4 text-left text-gray-600">{workbook.description}</td>
+                  <td className="p-4 text-left text-gray-500">{workbook.problem_cnt}개</td>
+
                   <td className="p-4 text-left text-gray-500">📅 {formatShortDate(workbook.creation_date)}</td>
+                  
                   <td className="p-4 text-center">
                     <button
                       className={`w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95

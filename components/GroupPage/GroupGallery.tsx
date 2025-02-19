@@ -22,22 +22,16 @@ export default function GroupList({ groups }: GroupListProps) {
       {filteredGroups.map((group) => (
         <div
           key={group.group_id}
-          onClick={() => group.group_state && router.push(`/mygroups/${group.group_id}`)}
-          className={`relative border border-gray-200 rounded-2xl p-6 cursor-pointer 
+          onClick={() => router.push(`/mygroups/${group.group_id}`)} // ✅ 공개 & 비공개 그룹 모두 이동 가능
+          className="relative border border-gray-200 rounded-2xl p-6 cursor-pointer 
                       shadow-md transition-all duration-300 ease-in-out
                       hover:-translate-y-1 hover:shadow-lg hover:border-gray-300 
-                      ${
-                        group.group_state
-                          ? "bg-white text-gray-800" // ✅ 활성 상태
-                          : "bg-gray-100 text-gray-500 cursor-not-allowed" // ✅ 비활성 상태 (연한 회색)
-                      }`}
+                      bg-white text-gray-800" // ✅ 모든 그룹 스타일 동일
         >
           {/* 우측 상단의 상태 배지 */}
           <div
             className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold 
-                        ${
-                          group.group_state ? "bg-green-500 text-white" : "bg-gray-400 text-white"
-                        }`}
+                        ${group.group_state ? "bg-green-500 text-white" : "bg-gray-400 text-white"}`}
           >
             {group.group_state ? "공개" : "비공개"}
           </div>
@@ -51,13 +45,7 @@ export default function GroupList({ groups }: GroupListProps) {
           </div>
 
           <button
-            className={`mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95
-                        ${
-                          group.group_state
-                            ? "bg-gray-800 text-white hover:bg-gray-700"
-                            : "bg-gray-400 text-gray-700 cursor-not-allowed"
-                        }`}
-            disabled={!group.group_state} // ✅ 비활성 그룹일 때 버튼 클릭 불가능
+            className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-gray-800 text-white hover:bg-gray-700"
           >
             그룹 페이지 →
           </button>

@@ -64,136 +64,174 @@ export default function NewRegisteredProblem() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-2 mt-20">문제 등록</h2>
-      <div className="border-t border-gray-300 my-4"></div>
-      {/* 🔹 문제 제목 입력 */}
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="문제 제목"
-        className="w-full px-4 py-2 border rounded-md"
-      />
+      <div>
+        <div>
+          <h2 className="text-xl font-bold mb-2 mt-20">문제 작성</h2>
+          <div className="border-t border-gray-300 my-4"></div>
+          {/* 🔹 문제 제목 입력 */}
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="문제 제목"
+            className="w-full px-4 py-2 border rounded-md"
+          />
+          {/* 🔹 Notion 스타일 문제 설명 */}
+          <div className="border rounded-md mt-2 bg-white ">
+            {/* 🔹 툴바 (아이콘 상태 변화 추가) */}
+            <div className="flex flex-wrap items-center gap-2 border-b p-2">
+              {/* 기본 스타일 버튼 (활성화 상태 변경) */}
+              <button
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={`toolbar-icon ${
+                  editor.isActive("bold") ? "text-black " : "text-gray-500"
+                }`}
+              >
+                <Bold size={18} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={`toolbar-icon ${
+                  editor.isActive("italic") ? "text-black" : "text-gray-500"
+                }`}
+              >
+                <Italic size={18} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleStrike().run()}
+                className={`toolbar-icon ${
+                  editor.isActive("strike") ? "text-black " : "text-gray-500"
+                }`}
+              >
+                <Strikethrough size={18} />
+              </button>
 
-      {/* 🔹 Notion 스타일 문제 설명 */}
-      <div className="border rounded-md mt-2 bg-white">
-        {/* 🔹 툴바 (아이콘 상태 변화 추가) */}
-        <div className="flex flex-wrap items-center gap-2 border-b p-2">
-          {/* 기본 스타일 버튼 (활성화 상태 변경) */}
-          <button
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`toolbar-icon ${
-              editor.isActive("bold") ? "text-black " : "text-gray-500"
-            }`}
-          >
-            <Bold size={18} />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`toolbar-icon ${
-              editor.isActive("italic") ? "text-black" : "text-gray-500"
-            }`}
-          >
-            <Italic size={18} />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={`toolbar-icon ${
-              editor.isActive("strike") ? "text-black " : "text-gray-500"
-            }`}
-          >
-            <Strikethrough size={18} />
-          </button>
+              {/* 제목 크기 */}
+              <button
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 1 }).run()
+                }
+                className={`toolbar-icon ${
+                  editor.isActive("heading", { level: 1 })
+                    ? "text-black"
+                    : "text-gray-500"
+                }`}
+              >
+                H1
+              </button>
+              <button
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 2 }).run()
+                }
+                className={`toolbar-icon ${
+                  editor.isActive("heading", { level: 2 })
+                    ? "text-black"
+                    : "text-gray-500"
+                }`}
+              >
+                H2
+              </button>
+              <button
+                onClick={() =>
+                  editor.chain().focus().toggleHeading({ level: 3 }).run()
+                }
+                className={`toolbar-icon ${
+                  editor.isActive("heading", { level: 3 })
+                    ? "text-black"
+                    : "text-gray-500"
+                }`}
+              >
+                H3
+              </button>
 
-          {/* 제목 크기 */}
-          <button
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-            className={`toolbar-icon ${
-              editor.isActive("heading", { level: 1 })
-                ? "text-black"
-                : "text-gray-500"
-            }`}
-          >
-            H1
-          </button>
-          <button
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-            className={`toolbar-icon ${
-              editor.isActive("heading", { level: 2 })
-                ? "text-black"
-                : "text-gray-500"
-            }`}
-          >
-            H2
-          </button>
-          <button
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 3 }).run()
-            }
-            className={`toolbar-icon ${
-              editor.isActive("heading", { level: 3 })
-                ? "text-black"
-                : "text-gray-500"
-            }`}
-          >
-            H3
-          </button>
+              {/* 리스트 */}
+              <button
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                className={`toolbar-icon ${
+                  editor.isActive("bulletList") ? "text-black" : "text-gray-500"
+                }`}
+              >
+                <List size={18} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                className={`toolbar-icon ${
+                  editor.isActive("orderedList")
+                    ? "text-black "
+                    : "text-gray-500"
+                }`}
+              >
+                <ListOrdered size={18} />
+              </button>
 
-          {/* 리스트 */}
-          <button
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`toolbar-icon ${
-              editor.isActive("bulletList") ? "text-black" : "text-gray-500"
-            }`}
-          >
-            <List size={18} />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`toolbar-icon ${
-              editor.isActive("orderedList") ? "text-black " : "text-gray-500"
-            }`}
-          >
-            <ListOrdered size={18} />
-          </button>
+              {/* 코드 블록 & 가로선 */}
+              <button
+                onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                className={`toolbar-icon ${
+                  editor.isActive("codeBlock") ? "text-black" : "text-gray-500"
+                }`}
+              >
+                <Code size={18} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                className="toolbar-icon"
+              >
+                <Minus size={18} />
+              </button>
 
-          {/* 코드 블록 & 가로선 */}
-          <button
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className={`toolbar-icon ${
-              editor.isActive("codeBlock") ? "text-black" : "text-gray-500"
-            }`}
-          >
-            <Code size={18} />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            className="toolbar-icon"
-          >
-            <Minus size={18} />
-          </button>
+              {/* 🔹 툴바에 이미지 업로드 버튼 추가 */}
+              <div className=" p-2 flex gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={addLocalImage}
+                  className="hidden"
+                  id="imageUpload"
+                />
+                <label htmlFor="imageUpload" className="cursor-pointer">
+                  <ImageIcon size={18} className="text-gray-500" />
+                </label>
+              </div>
+              {/* ✅ 스타일 추가 (드래그 핸들) */}
 
-          {/* 🔹 툴바에 이미지 업로드 버튼 추가 */}
-          <div className=" p-2 flex gap-2">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={addLocalImage}
-              className="hidden"
-              id="imageUpload"
+              {/* 🔹 형광펜 5가지 색상 (선택된 색상 강조) */}
+              <div className="flex gap-1 ml-3">
+                {["#FFD1DC", "#C1E1C1", "#FFF9C4", "#CBE6FF", "#E6D6FF"].map(
+                  (color) => (
+                    <button
+                      key={color}
+                      onClick={() =>
+                        editor.chain().focus().toggleHighlight({ color }).run()
+                      }
+                      className={`highlight-btn`}
+                      style={{
+                        backgroundColor: color,
+                        border: editor.isActive("highlight", { color })
+                          ? "2px solid black"
+                          : "1px solid #ccc",
+                      }}
+                    />
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* 🔹 스타일 직접 적용 (글자 크기 & 리스트) */}
+            <EditorContent
+              editor={editor}
+              className="p-4 min-h-[400px] max-h-[calc(100vh-30px)] w-full resize-none text-black selection:bg-gray-200 editor-content overflow-y-auto pb-8"
             />
-            <label htmlFor="imageUpload" className="cursor-pointer">
-              <ImageIcon size={18} className="text-gray-500" />
-            </label>
           </div>
-          {/* ✅ 스타일 추가 (드래그 핸들) */}
-          <style>
-            {`
-          .resizable-image-wrapper {
+        </div>
+      </div>
+
+
+
+
+      <style>
+        {`
+ .resizable-image-wrapper {
             display: inline-block;
             position: relative;
             max-width: 100%; /* 부모 요소보다 커지지 않도록 */
@@ -216,109 +254,7 @@ export default function NewRegisteredProblem() {
             cursor: nwse-resize;
             border: 2px solid white;
           }
-        `}
-          </style>
 
-          {/* 🔹 형광펜 5가지 색상 (선택된 색상 강조) */}
-          <div className="flex gap-1 ml-3">
-            {["#FFD1DC", "#C1E1C1", "#FFF9C4", "#CBE6FF", "#E6D6FF"].map(
-              (color) => (
-                <button
-                  key={color}
-                  onClick={() =>
-                    editor.chain().focus().toggleHighlight({ color }).run()
-                  }
-                  className={`highlight-btn`}
-                  style={{
-                    backgroundColor: color,
-                    border: editor.isActive("highlight", { color })
-                      ? "2px solid black"
-                      : "1px solid #ccc",
-                  }}
-                />
-              )
-            )}
-          </div>
-        </div>
-
-        {/* 🔹 스타일 직접 적용 (글자 크기 & 리스트) */}
-        <EditorContent
-          editor={editor}
-          className="p-4 h-60 text-black selection: editor-content"
-        />
-        
-      </div>
-      <div className="mt-6">
-        <label className="text-gray-600 font-medium text-lg">입출력 예제</label>
-        <table className="w-full border-collapse bg-white shadow-md rounded-xl mt-2">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3 text-left w-12">#</th>
-              <th className="p-3 text-left">입력값</th>
-              <th className="p-3 text-left">출력값</th>
-              <th className="p-3 text-center w-16">삭제</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inputs.map((pair, index) => (
-              <tr key={index} className="border-t">
-                <td className="p-3 text-center">{index + 1}</td>
-                <td className="p-3">
-                  <input
-                    type="text"
-                    placeholder="입력값"
-                    value={pair.input}
-                    onChange={(e) => {
-                      const newInputs = [...inputs];
-                      newInputs[index].input = e.target.value;
-                      setInputs(newInputs);
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </td>
-                <td className="p-3">
-                  <input
-                    type="text"
-                    placeholder="출력값"
-                    value={pair.output}
-                    onChange={(e) => {
-                      const newInputs = [...inputs];
-                      newInputs[index].output = e.target.value;
-                      setInputs(newInputs);
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </td>
-                <td className="p-3 text-center">
-                  <button
-                    onClick={() =>
-                      setInputs(inputs.filter((_, i) => i !== index))
-                    }
-                    className="bg-red-500 text-white px-3 py-2 rounded-lg"
-                  >
-                    ✖
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 🔹 추가 & 등록 버튼 */}
-      <div className="flex justify-between mt-6">
-        <button
-          onClick={() => setInputs([...inputs, { input: "", output: "" }])}
-          className="bg-green-500 text-white px-4 py-2 rounded-full"
-        >
-          + 추가
-        </button>
-        <button className="bg-black text-white px-6 py-2 rounded-full">
-          🚀 등록하기
-        </button>
-      </div>
-      <style>
-          {`
           .ProseMirror {
             outline: none; /* 포커스 시 파란 테두리 제거 */
             min-height: 150px;
@@ -364,7 +300,7 @@ export default function NewRegisteredProblem() {
               transform: scale(1.1);
             }
           `}
-        </style>
+      </style>
     </div>
   );
 }

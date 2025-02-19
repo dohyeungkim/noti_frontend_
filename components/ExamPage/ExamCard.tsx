@@ -5,6 +5,7 @@ interface ExamCardProps {
     workbook_id: string;
     group_id: string;
     workbook_name: string;
+    problem_cnt: number;
     description: string;
     creation_date: string;
   };
@@ -91,11 +92,12 @@ export default function ExamCard({ workbook, exam, onClick }: ExamCardProps) {
       )}
 
       {/* ✅ 카드 컨텐츠 */}
-      <div className="flex flex-col items-start gap-3">
+      <div>
       <h2 className="text-xl font-semibold mb-2">
           📄 {workbook.workbook_name}
         </h2>
         <p className="mb-1">{workbook.description}</p>
+        <p className="mb-1">문제 수: {workbook.problem_cnt}개</p>
         <p className="mb-1">📅 생성일: {formatShortDate(workbook.creation_date)}</p>
       </div>
 

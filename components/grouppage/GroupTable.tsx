@@ -35,24 +35,15 @@ export default function GroupTable({ groups }: GroupTableProps) {
             filteredGroups.map((group) => (
               <tr
                 key={group.group_id}
-                className={`transition-colors duration-200 border-b border-gray-300
-                            ${
-                              group.group_state
-                                ? "hover:bg-gray-100 cursor-pointer" // ✅ 활성 그룹 (클릭 가능)
-                                : "bg-gray-100 text-gray-500 cursor-not-allowed" // ✅ 비활성 그룹 (클릭 불가)
-                            }`}
-                onClick={() => group.group_state && router.push(`/mygroups/${group.group_id}`)}
+                className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
+                onClick={() => router.push(`/mygroups/${group.group_id}`)} // ✅ 공개 & 비공개 그룹 모두 이동 가능
               >
                 <td className="p-4 text-left">{group.group_name}</td>
                 <td className="p-4 text-left">{group.group_id}</td>
                 <td className="p-4 text-left">{group.member_count}명</td>
                 <td className="p-4 text-left">{group.group_owner}</td>
                 <td className={`p-4 text-left font-semibold 
-                                ${
-                                  group.group_state
-                                    ? "text-green-500"
-                                    : "text-gray-500"
-                                }`}
+                                ${group.group_state ? "text-green-500" : "text-gray-500"}`}
                 >
                   {group.group_state ? "공개" : "비공개"}
                 </td>

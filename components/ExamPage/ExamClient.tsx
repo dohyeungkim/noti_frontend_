@@ -37,7 +37,7 @@ export default function ExamsClient() {
       return a.workbook_name.localeCompare(b.workbook_name);
     } else if (sortOrder === "생성일순") {
       return (
-        new Date(b.creation_date ?? "1970-01-01").getTime() - 
+        new Date(b.creation_date ?? "1970-01-01").getTime() -
         new Date(a.creation_date ?? "1970-01-01").getTime()
       );
     }
@@ -49,6 +49,8 @@ export default function ExamsClient() {
     workbook_id: workbook.workbook_id,
     group_id: workbook.group_id,
     workbook_name: workbook.workbook_name,
+    problem_cnt: workbook.problem_cnt,
+
     description: workbook.description,
     creation_date: workbook.creation_date,
   }));
@@ -92,13 +94,23 @@ export default function ExamsClient() {
           visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
         }}
       >
-        <motion.div className="flex-grow min-w-0" variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <motion.div
+          className="flex-grow min-w-0"
+          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+        >
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
         </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+        <motion.div
+          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+        >
           <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+        <motion.div
+          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+        >
           <SortButton onSortChange={setSortOrder} />
         </motion.div>
       </motion.div>
@@ -107,17 +119,22 @@ export default function ExamsClient() {
       <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
-      <motion.div key={viewMode} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }}>
+      <motion.div
+        key={viewMode}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
         {viewMode === "gallery" ? (
           <ExamGallery
             workbooks={formattedworkbooks} // ✅ 문제지 데이터 전달
-            exams={formattedExams}        // ✅ 시험 데이터 전달
+            exams={formattedExams} // ✅ 시험 데이터 전달
             handleEnterExam={handleEnterExam}
           />
         ) : (
           <ExamTable
             workbooks={formattedworkbooks} // ✅ 문제지 데이터 전달
-            exams={formattedExams}        // ✅ 시험 데이터 전달
+            exams={formattedExams} // ✅ 시험 데이터 전달
             handleEnterExam={handleEnterExam}
           />
         )}

@@ -88,7 +88,7 @@ if (pathname.startsWith("/registered-problems")) {
 
   return (
     <header
-      className={`flex flex-col items-start w-full mb-6 ${className || ""}`}
+      className={`flex flex-col items-start w-full mb-6 mt-10 ${className || ""}`}
     >
       {/* 🔹 Breadcrumb (경로 표시) */}
       <nav className="text-gray-500 text-sm mb-2">

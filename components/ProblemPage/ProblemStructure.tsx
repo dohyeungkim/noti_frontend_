@@ -13,6 +13,7 @@ import SortButton from "@/components/Header/SortButton";
 import ProblemGallery from "@/components/ProblemPage/ProblemGallery";
 import ProblemTable from "@/components/ProblemPage/ProblemTable";
 import Pagination from "@/components/Header/Pagination";
+import { motion } from "framer-motion";
 
 // 문제 데이터를 트리 구조로 변환하는 함수
 const buildTree = (problems: any[]) => {
@@ -66,12 +67,17 @@ export default function ProblemStructure({
   const treeData = buildTree(problems);
 
   // 현재 문제 필터링
-  const filteredProblems = problems.filter((problem) => problem.examId === examId);
+  const filteredProblems = problems.filter(
+    (problem) => problem.examId === examId
+  );
 
   // ✅ 정렬 적용
-  const sortedProblems = [...filteredProblems].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedProblems = [...filteredProblems].sort((a, b) =>
+    a.title.localeCompare(b.title)
+  );
 
-  const isTestMode = (examId: string) => testExams.some((test) => test.examId === examId);
+  const isTestMode = (examId: string) =>
+    testExams.some((test) => test.examId === examId);
   // 검색 시 자동으로 펼쳐질 노드 저장
   const expandedNodes = new Set<string>();
 
@@ -101,7 +107,9 @@ export default function ProblemStructure({
   // 문제 선택 핸들러 (여러 개 선택 가능)
   const handleSelectProblem = (problemId: string) => {
     setSelectedProblems((prev) =>
-      prev.includes(problemId) ? prev.filter((id) => id !== problemId) : [...prev, problemId]
+      prev.includes(problemId)
+        ? prev.filter((id) => id !== problemId)
+        : [...prev, problemId]
     );
   };
   // ✅ 페이지네이션 추가
@@ -118,16 +126,32 @@ export default function ProblemStructure({
   return (
     <>
       {/* 문제 추가 버튼 */}
-      <div className="flex items-center gap-2 justify-end">
-        <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제 추가하기" />
-      </div>
+      <motion.div
+        className="flex items-center gap-2 justify-end"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <OpenModalButton
+          onClick={() => setIsModalOpen(true)}
+          label="문제 추가하기"
+        />
+      </motion.div>
 
       {/* 검색바 & 정렬 버튼 & 보기 방식 토글 */}
-      <div className="flex items-center gap-4 mb-4 w-full">
-        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <motion.div
+        className="flex items-center gap-4 mb-4 w-full"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0, y: -10 },
+          visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
+        }}
+      >
+        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />{" "}
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         <SortButton onSortChange={setSortOrder} />
-      </div>
+      </motion.div>
 
       <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
       <hr className="border-b-1 border-gray-300 my-4 m-2" />

@@ -5,6 +5,7 @@ interface ExamGalleryProps {
     workbook_id: string;
     group_id: string;
     workbook_name: string;
+    problem_cnt: number;
     description: string;
     creation_date: string;
   }[];
