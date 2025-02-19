@@ -19,6 +19,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { ResizableImage } from "./ResizableImage";
+import { motion } from "framer-motion";
 
 // ✅ 문제 등록 폼 (툴바 포함)
 export default function NewRegisteredProblem() {
@@ -64,11 +65,24 @@ export default function NewRegisteredProblem() {
 
   return (
     <div>
-      <div>
-
-        {/* 작성칸 */}
-        <div>
-          <h2 className="text-xl font-bold mb-2 mt-20">문제 작성</h2>
+      <motion.div
+        className="flex items-center gap-2 justify-end"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        {" "}
+        <button
+          className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
+      hover:bg-gray-500 transition-all duration-200 ease-in-out
+      active:scale-95"
+        >
+          🚀 등록하기
+        </button>
+      </motion.div>
+      <div className="grid grid-cols-3 gap-6 w-full">
+        <div className="col-span-2">
+          <h2 className="text-xl font-bold mb-2 ">문제 등록</h2>
           <div className="border-t border-gray-300 my-4"></div>
           {/* 🔹 문제 제목 입력 */}
           <input
@@ -78,8 +92,9 @@ export default function NewRegisteredProblem() {
             placeholder="문제 제목"
             className="w-full px-4 py-2 border rounded-md"
           />
+
           {/* 🔹 Notion 스타일 문제 설명 */}
-          <div className="border rounded-md mt-2 bg-white ">
+          <div className="border rounded-md mt-2 bg-white">
             {/* 🔹 툴바 (아이콘 상태 변화 추가) */}
             <div className="flex flex-wrap items-center gap-2 border-b p-2">
               {/* 기본 스타일 버튼 (활성화 상태 변경) */}
@@ -195,7 +210,6 @@ export default function NewRegisteredProblem() {
                   <ImageIcon size={18} className="text-gray-500" />
                 </label>
               </div>
-              {/* ✅ 스타일 추가 (드래그 핸들) */}
 
               {/* 🔹 형광펜 5가지 색상 (선택된 색상 강조) */}
               <div className="flex gap-1 ml-3">
@@ -222,16 +236,82 @@ export default function NewRegisteredProblem() {
             {/* 🔹 스타일 직접 적용 (글자 크기 & 리스트) */}
             <EditorContent
               editor={editor}
-              className="p-4 min-h-[400px] max-h-[calc(100vh-30px)] w-full resize-none text-black selection:bg-gray-200 editor-content overflow-y-auto pb-8"
+              className="p-4 h-[500px] min-h-[500px] max-h-[500px] w-full text-black editor-content overflow-y-auto rounded-md"
             />
+          </div>
+        </div>
+        <div className="col-span-1">
+          <h2 className="text-xl font-bold mb-2 "> 입출력 예제</h2>
+          <div className="border-t border-gray-300 my-4"></div>
+          <table className="w-full border-collapse bg-white shadow-md rounded-xl mt-2">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-3 text-left w-12">#</th>
+                <th className="p-3 text-left">입력값</th>
+                <th className="p-3 text-left">출력값</th>
+                <th className="p-3 text-center w-16">삭제</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inputs.map((pair, index) => (
+                <tr key={index} className="border-t">
+                  <td className="p-3 text-center">{index + 1}</td>
+                  <td className="p-3">
+                    <input
+                      type="text"
+                      placeholder="입력값"
+                      value={pair.input}
+                      onChange={(e) => {
+                        const newInputs = [...inputs];
+                        newInputs[index].input = e.target.value;
+                        setInputs(newInputs);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </td>
+                  <td className="p-3">
+                    <input
+                      type="text"
+                      placeholder="출력값"
+                      value={pair.output}
+                      onChange={(e) => {
+                        const newInputs = [...inputs];
+                        newInputs[index].output = e.target.value;
+                        setInputs(newInputs);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </td>
+                  <td className="p-3 text-center">
+                    <button
+                      onClick={() =>
+                        setInputs(inputs.filter((_, i) => i !== index))
+                      }
+                      className="bg-red-500 text-white px-3 py-2 rounded-lg"
+                    >
+                      ✖
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>{" "}
+          {/* 🔹 추가 & 등록 버튼 */}
+          <div className="flex justify-between mt-6">
+            <button
+              onClick={() => setInputs([...inputs, { input: "", output: "" }])}
+              className="bg-green-500 text-white px-4 py-2 rounded-full"
+            >
+              + 추가
+            </button>
           </div>
         </div>
       </div>
 
-
+      {/* ✅ 스타일 추가 (드래그 핸들) */}
       <style>
         {`
- .resizable-image-wrapper {
+          .resizable-image-wrapper {
             display: inline-block;
             position: relative;
             max-width: 100%; /* 부모 요소보다 커지지 않도록 */
@@ -254,7 +334,7 @@ export default function NewRegisteredProblem() {
             cursor: nwse-resize;
             border: 2px solid white;
           }
-
+      
           .ProseMirror {
             outline: none; /* 포커스 시 파란 테두리 제거 */
             min-height: 150px;
