@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { groups } from "../../data/groups";
+import { allGroups } from "../../data/groups"; // allGroups 사용
 import SearchBar from "@/components/Header/SearchBar";
 import SortButton from "@/components/Header/SortButton";
 import OpenModalButton from "@/components/Header/OpenModalButton";
@@ -32,8 +32,11 @@ export default function GroupsClient() {
     setIsModalOpen(false); // 모달 닫기
   };
 
+  // ✅ is_member가 true인 그룹만 필터링
+  const myGroups = allGroups.filter(group => group.is_members);
+
   // ✅ 검색어 필터링
-  const filteredGroups = groups.filter((group) =>
+  const filteredGroups = myGroups.filter((group) =>
     group.group_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -50,7 +53,6 @@ export default function GroupsClient() {
     }
     return 0;
   });
-  
 
   const formattedGroups = sortedGroups.map(group => ({
     group_name: group.group_name,
@@ -59,6 +61,10 @@ export default function GroupsClient() {
     group_id: group.group_id,
     member_count: group.member_count,
     createdAt: group.createdAt,
+    is_members: group.is_members, // ✅ 현재 사용자가 해당 그룹의 멤버인지 확인
+    group_private_state: group.group_private_state, // ✅ 공개 여부 추가
+
+
   }));
 
   return (
@@ -122,7 +128,7 @@ export default function GroupsClient() {
         transition={{ duration: 0.3, delay: 0.4 }}
       >
         {viewMode === "gallery" ? (
-          <GroupList groups={formattedGroups}  />
+          <GroupList groups={formattedGroups} />
         ) : (
           <GroupTable groups={formattedGroups} className="animate-fade-in-up" />
         )}
@@ -137,7 +143,6 @@ export default function GroupsClient() {
         isPublic={isPublic}
         setIsPublic={setIsPublic}
         onCreate={handleCreateGroup}
-       
       />
     </div>
   );
