@@ -65,6 +65,8 @@ export default function NewRegisteredProblem() {
   return (
     <div>
       <div>
+
+        {/* 작성칸 */}
         <div>
           <h2 className="text-xl font-bold mb-2 mt-20">문제 작성</h2>
           <div className="border-t border-gray-300 my-4"></div>
@@ -225,8 +227,6 @@ export default function NewRegisteredProblem() {
           </div>
         </div>
       </div>
-
-
 
 
       <style>
