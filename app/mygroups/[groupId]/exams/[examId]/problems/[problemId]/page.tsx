@@ -1,14 +1,9 @@
-// mygroups/[groupId]/exams/[examId]/problems/[problemId]/page.tsx
-import ProblemDetail from "@/components/ProblemPage/ProblemDetail";
+import ProblemDetail from "@/components/ProblemPage/SelectProblem/ProblemDetail";
 
-export default function ProblemPage({
-  params,
-}: {
-  params: { groupId: string; examId: string; problemId: string };
-}) {
+export default function ProblemPage() {
   return (
     <div className="w-full max-w-5xl px-6">
-      <ProblemDetail params={params} />
+      <ProblemDetail />
     </div>
   );
 }

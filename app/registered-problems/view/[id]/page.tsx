@@ -1,5 +1,5 @@
-import MyRegisteredProblemView from "@/components/MyRegisteredProblemPage/MyRegisteredProblemView";
+import MyRegisteredProblem from "@/components/MyRegisteredProblemPage/NewRegisteredProblem";
 
 export default function ViewQuestionPageClient() {
-  return <MyRegisteredProblemView />;
+  return <MyRegisteredProblem />;
 }

@@ -1,18 +1,23 @@
 "use client";
-import { useEffect, useState } from "react";
-import Drawer from "@/components/layout/Drawer";
 
-export default function DrawerWrapper() {
+import { useEffect, useState } from "react";
+import Drawer from "./Drawer";
+
+export default function DrawerWrapper({
+  onToggle,
+}: {
+  onToggle: (open: boolean) => void;
+}) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // ✅ 사이드바가 열릴 때 body에 class 추가
   useEffect(() => {
+    onToggle(isDrawerOpen);
     if (isDrawerOpen) {
       document.body.classList.add("drawer-open");
     } else {
       document.body.classList.remove("drawer-open");
     }
-  }, [isDrawerOpen]);
+  }, [isDrawerOpen, onToggle]);
 
   return <Drawer isOpen={isDrawerOpen} setIsOpen={setIsDrawerOpen} />;
 }

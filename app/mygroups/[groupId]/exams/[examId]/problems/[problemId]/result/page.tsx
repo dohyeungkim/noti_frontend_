@@ -1,5 +1,13 @@
-import ResultTable from "@/components/ResultPage/ResultTable";
+import SubmissionPageClient from "@/components/WriteCodePage/SubmissionPageClient";
 
-export default function ResultPage({ params }: { params: { problemId: string } }) {
-  return <ResultTable problemId={params.problemId} />;
+export default function SubmissionPage({
+  params,
+}: {
+  params: { groupId: string; examId: string; problemId: string };
+}) {
+  return (
+    <div className="w-full max-w-5xl px-6">
+      <SubmissionPageClient params={params}/>
+    </div>
+  );
 }

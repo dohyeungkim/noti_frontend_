@@ -1,4 +1,4 @@
-import NewRegisteredProblem from "../../../components/MyRegisteredProblemPage/NewRegisteredProblem";
+import NewRegisteredProblem from "@/components/MyRegisteredProblemPage/NewRegisteredProblem";
 
 export default function MyQuestionsPageClient() {
   return (

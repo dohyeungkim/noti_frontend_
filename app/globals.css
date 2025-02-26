@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import '@fontsource/inter/index.css';
+
+body {
+  @apply font-inter;
+  @apply bg-[#f9f9f9];
+  overflow-x: hidden;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  transition: all 0.4s ease-in-out;
+}
+
+/* 전체 레이아웃을 Flexbox로 변경 */
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  transition: margin 0.4s ease-in-out, width 0.4s ease-in-out;
+}
+
+/* 왼쪽 Drawer */
+.drawer {
+  width: 60px; /* ✨ 항상 최소 60px 유지 */
+  transition: width 0.4s ease-in-out;
+}
+
+body.drawer-open .drawer {
+  width: 250px; /* ✨ 사이드바 펼쳐질 때 */
+}
+
+/* 오른쪽 ExamSidebar */
+.exam-sidebar {
+  width: 30px; /* ✨ 기본적으로 최소 30px 유지 */
+  transition: width 0.4s ease-in-out;
+}
+
+body.exam-open .exam-sidebar {
+  width: 280px;
+}
+
+/* 메인 콘텐츠 */
+.main-content {
+  flex-grow: 1;
+  margin-left: 60px;  /* ✨ 기본적으로 60px 마진 유지 */
+  margin-right: 30px; /* ✨ 기본적으로 30px 마진 유지 */
+  transition: margin 0.4s ease-in-out, width 0.4s ease-in-out;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  padding: 20px 0;
+}
+
+
+/* 사이드바가 열릴 때 자연스럽게 조정 */
+body.drawer-open .main-content {
+  margin-left: 250px; /* Drawer가 열릴 때 */
+}
+
+body.exam-open .main-content {
+  margin-right: 280px; /* ExamSidebar가 열릴 때 */
+}
+
+body.drawer-open.exam-open .main-content {
+  margin-left: 250px;
+  margin-right: 280px;
+}
+
+/* ✅ 전체 테이블 스타일 */
+.ProseMirror table {
+  width: 100%;
+  border-collapse: collapse !important; /* ✅ 셀 테두리 겹치도록 설정 */
+  margin-top: 12px !important;
+  border: 2px solid #d4d4d4 !important; /* ✅ 부드러운 회색 테두리 */
+  border-radius: 12px !important; /* ✅ 전체만 둥글게 */
+  overflow: hidden !important;
+  background-color: #f9f9f9 !important; /* ✅ 따뜻한 무채색 배경 */
+}
+
+/* ✅ 헤더 스타일 (위쪽 모서리 둥글게) */
+.ProseMirror th {
+  background-color: #f1f1f1 !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  color: #333 !important;
+  padding: 14px !important;
+  border-bottom: 1.5px solid #d4d4d4 !important;
+}
+
+/* ✅ 내부 셀 스타일 (모서리 둥글지 않게) */
+.ProseMirror td {
+  background-color: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  padding: 12px !important;
+  text-align: left !important;
+  font-size: 1rem !important;
+  color: #444 !important;
+  transition: background 0.2s ease-in-out !important;
+  border-radius: 0 !important; /* ✅ 내부 셀은 네모 형태 유지 */
+}
+
+/* ✅ 강조된 셀 (제목 스타일) */
+.ProseMirror td[data-header="true"] {
+  background-color: #e7e7e7 !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  color: #222 !important;
+}
+
+/* ✅ 마우스 오버 효과 */
+.ProseMirror td:hover {
+  background-color: #f5f5f5 !important;
+}
+
+/* ✅ 테이블 전체 둥글게 조정 */
+.ProseMirror tr:first-child th:first-child {
+  border-top-left-radius: 12px !important; /* ✅ 왼쪽 위 모서리 둥글게 */
+}
+.ProseMirror tr:first-child th:last-child {
+  border-top-right-radius: 12px !important; /* ✅ 오른쪽 위 모서리 둥글게 */
+}
+.ProseMirror tr:last-child td:first-child {
+  border-bottom-left-radius: 12px !important; /* ✅ 왼쪽 아래 모서리 둥글게 */
+}
+.ProseMirror tr:last-child td:last-child {
+  border-bottom-right-radius: 12px !important; /* ✅ 오른쪽 아래 모서리 둥글게 */
+}

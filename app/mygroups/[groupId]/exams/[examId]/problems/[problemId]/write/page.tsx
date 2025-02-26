@@ -1,16 +1,13 @@
-import WriteEditor from "@/components/ProblemPage/WriteEditors";
+import WriteCodePageClient from "@/components/WriteCodePage/WriteCodePageClient";
 
-// 코드창이 줄어들었땅
-export default function WritePage({
+export default function WriteCodePage({
   params,
 }: {
-  params: { problemId: string; examId: string; groupId: string };
+  params: { groupId: string; examId: string; problemId: string };
 }) {
   return (
-    <div>
-      {/* 헤더 영역 */}
-
-      <WriteEditor problemId={params.problemId} examId={params.examId} groupId={params.groupId} />
+    <div className="w-full max-w-5xl px-6">
+      <WriteCodePageClient params={params}/>
     </div>
   );
 }

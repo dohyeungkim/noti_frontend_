@@ -1,6 +1,8 @@
-import SearchBar from "@/components/Header/SearchBar";
-import SortButton from "@/components/Header/SortButton";
-import ViewToggle from "@/components/Header/ViewToggle";
+"use client";
+
+import SearchBar from "@/components/ui/SearchBar";
+import SortButton from "@/components/ui/SortButton";
+import ViewToggle from "@/components/ui/ViewToggle";
 
 interface ExamControlsProps {
   searchQuery: string;
@@ -14,10 +16,9 @@ interface ExamControlsProps {
 export default function ExamControls({
   searchQuery,
   setSearchQuery,
-  sortOrder,
   setSortOrder,
   viewMode,
-  setViewMode
+  setViewMode,
 }: ExamControlsProps) {
   return (
     <div className="flex items-center gap-4 mb-4">

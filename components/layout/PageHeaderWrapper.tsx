@@ -1,7 +1,7 @@
 "use client";
 
-import PageHeader from "@/components/layout/PageHeader";
+import Mysol from "./LayoutHeader/Mysol";
 
 export default function PageHeaderWrapper() {
-  return <PageHeader />;
+  return <Mysol />;
 }

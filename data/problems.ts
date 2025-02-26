@@ -90,11 +90,11 @@ export const problems = [
 
         },
         {
-            problemId: 'DS00-02',
-            groupId: 'MY',
-            examId: 'MY00',
+            problemId: 'DS00-02',//
+            groupId: 'MY',//
+            examId: 'MY00',//
             examName: '자료구조 문제지',
-            title: '스택과 큐 비교',
+            title: '스택과 큐 비교',//
             description: '스택과 큐의 차이점을 설명하세요.',
             input: '예시 입력 데이터',
             output: '예시 출력 데이터',

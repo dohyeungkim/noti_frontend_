@@ -1,158 +1,174 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useState } from "react";
-import { workbook } from "@/data/workbook";
-import { testExams } from "@/data/testmode";
+import { useCallback, useEffect, useState } from "react";
 
-import OpenModalButton from "@/components/Header/OpenModalButton";
-import SearchBar from "@/components/Header/SearchBar";
-import ViewToggle from "@/components/Header/ViewToggle";
-import SortButton from "@/components/Header/SortButton";
 import ExamGallery from "@/components/ExamPage/ExamGallery";
 import ExamTable from "@/components/ExamPage/ExamTable";
-import ExamCreateModal from "@/components/ExamPage/ExamModal";
-import { motion, AnimatePresence } from "framer-motion";
+import WorkBookCreateModal from "./ExamModal";
+import { AnimatePresence, motion } from "framer-motion";
+// import SortButton from "../ui/SortButton";
+import ViewToggle from "../ui/ViewToggle";
+import SearchBar from "../ui/SearchBar";
+import OpenModalButton from "../ui/OpenModalButton";
+import { useAuth } from "@/stores/auth";
+import { group_api, workbook_api } from "@/lib/api";
+
+interface WorkbookType {
+  workbook_id: number;
+  group_id: number;
+  workbook_name: string;
+  problem_cnt: number;
+  description: string;
+  creation_date: string;
+}
 
 export default function ExamsClient() {
-  const { groupId } = useParams() as { groupId: string };
   const router = useRouter();
+  const { userName } = useAuth();
+  const { groupId } = useParams() as {
+    groupId: string;
+  };
 
-  // 상태 관리
+  const [workbooks, setWorkbooks] = useState<WorkbookType[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [workBookName, setWorkBookName] = useState("");
+  const [workBookDescription, setWorkBookDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("제목순");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
+  const [filteredWorkbooks, setFilteredWorkbooks] = useState<WorkbookType[]>([]);
+  const [refresh, setRefresh] = useState(false);
 
-  // 문제지 필터링
-  const filteredworkbooks = workbook
-    .filter((wb) => wb.group_id === groupId) // ✅ 그룹 ID 필터링
-    .filter((wb) =>
-      wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  // 그룹장의 유저명 저장 (해당 그룹의 그룹장 ID를 저장)
+  const [groupOwner, setGroupOwner] = useState<string | null>(null);
 
-  // 문제지 정렬
-  const sortedworkbooks = [...filteredworkbooks].sort((a, b) => {
-    if (sortOrder === "제목순") {
-      return a.workbook_name.localeCompare(b.workbook_name);
-    } else if (sortOrder === "생성일순") {
-      return (
-        new Date(b.creation_date ?? "1970-01-01").getTime() -
-        new Date(a.creation_date ?? "1970-01-01").getTime()
-      );
+  // 그룹장인지 확인하는 함수
+  const isGroupOwner = userName === groupOwner;
+
+  // 문제지 가져오기 (useCallback 적용)
+  const fetchWorkbooks = useCallback(async () => {
+    try {
+      const data = await workbook_api.workbook_get(Number(groupId));
+      setWorkbooks(data);
+    } catch (error) {
+      console.error("문제지 데이터를 가져오는 데 실패했습니다:", error);
     }
-    return 0;
-  });
+  }, [groupId]);
 
-  // ✅ 문제지 데이터 변환
-  const formattedworkbooks = sortedworkbooks.map((workbook) => ({
-    workbook_id: workbook.workbook_id,
-    group_id: workbook.group_id,
-    workbook_name: workbook.workbook_name,
-    problem_cnt: workbook.problem_cnt,
-
-    description: workbook.description,
-    creation_date: workbook.creation_date,
-  }));
-
-  // ✅ 시험 데이터 필터링
-  const formattedExams = testExams.filter((exam) =>
-    formattedworkbooks.some((wb) => wb.workbook_id === exam.examId)
-  );
-
-  // ✅ 해당 문제지가 시험 모드인지 확인
-  const isTestMode = (workbookId: string) =>
-    testExams.some((test) => test.examId === workbookId);
-
-  // ✅ 문제지를 클릭하면 시험으로 이동
   const handleEnterExam = (examId: string) => {
     router.push(`/mygroups/${groupId}/exams/${examId}`);
   };
 
+  const handleClick = () => {
+    router.push(`/manage/${groupId}`);
+  };
+
+  // 그룹장 정보 가져오기 (useCallback 적용)
+  const fetchMyOwner = useCallback(async () => {
+    try {
+      const data = await group_api.my_group_get();
+      const currentGroup = data.find(
+        (group: { group_id: number }) => group.group_id === Number(groupId)
+      );
+      setGroupOwner(currentGroup?.group_owner || null);
+    } catch (error) {
+      console.error("그룹장 불러오기 중 오류:", error);
+    }
+  }, [groupId]);
+
+ 
+
+  useEffect(() => {
+    const filteredWorkbooksdata = workbooks
+      .filter((wb) => wb.group_id === Number(groupId))
+      .filter((wb) => wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    setFilteredWorkbooks(filteredWorkbooksdata);
+  }, [searchQuery, workbooks, groupId]);
+
+  useEffect(() => {
+    if (!groupId) return;
+    fetchWorkbooks();
+    fetchMyOwner();
+  }, [refresh, groupId, fetchWorkbooks, fetchMyOwner]);
+
   return (
-    <motion.div>
-      {/* 문제지 생성 버튼 */}
-      <motion.div
-        className="flex items-center gap-2 justify-end"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <OpenModalButton
-          onClick={() => setIsModalOpen(true)}
-          label="문제지 생성하기"
-        />
-      </motion.div>
-
-      {/* 검색 & 정렬 & 보기 방식 변경 */}
-      <motion.div
-        className="flex items-center gap-4 mb-4 w-full"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: { opacity: 0, y: -10 },
-          visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
-        }}
-      >
+    <div>
+      <motion.div>
+        <div>
+          {/* ✅ 문제지 생성 버튼 (그룹장일 때만 활성화) */}
+          <motion.div
+            className="flex items-center gap-2 justify-end"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}>
+            {isGroupOwner && (
+              <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제지 생성하기" />
+            )}
+            {isGroupOwner && (<button
+              className="bg-gray-800 text-white px-4 py-1.5 rounded-xl text-md cursor-pointer
+      hover:bg-gray-500 transition-all duration-200 ease-in-out
+      active:scale-95"
+              onClick={handleClick}>
+              ⚙️ 설정
+            </button>
+          )}
+          </motion.div>
+        </div>
+        {/* 검색 & 정렬 & 보기 방식 변경 */}
         <motion.div
-          className="flex-grow min-w-0"
-          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-        >
-          <SearchBar
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
+          className="flex items-center gap-4 mb-4 w-full"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0, y: -10 },
+            visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
+          }}>
+          <motion.div
+            className="flex-grow min-w-0"
+            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+            <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          </motion.div>
+          <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+            <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+          </motion.div>
+          <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+            {/* <SortButton onSortChange={setSortOrder} /> */}
+          </motion.div>
         </motion.div>
+
+        {/* 문제지 목록 */}
+        <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
+        <hr className="border-b-1 border-gray-300 my-4 m-2" />
+
         <motion.div
-          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-        >
-          <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+          key={viewMode}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}>
+          {viewMode === "gallery" ? (
+            <ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+          ) : (
+            <ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+          )}
         </motion.div>
-        <motion.div
-          variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-        >
-          <SortButton onSortChange={setSortOrder} />
-        </motion.div>
+
+        {/* 모달 */}
+        <AnimatePresence>
+          {isModalOpen && (
+            <WorkBookCreateModal
+              isModalOpen={isModalOpen}
+              setIsModalOpen={setIsModalOpen}
+              WorkBookName={workBookName}
+              setWorkBookName={setWorkBookName}
+              WorkBookDescription={workBookDescription}
+              setWorkBookDescription={setWorkBookDescription}
+              group_id={Number(groupId)}
+              refresh={refresh}
+              setRefresh={setRefresh}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
-
-      {/* 문제지 목록 */}
-      <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제지</h2>
-      <hr className="border-b-1 border-gray-300 my-4 m-2" />
-
-      <motion.div
-        key={viewMode}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >
-        {viewMode === "gallery" ? (
-          <ExamGallery
-            workbooks={formattedworkbooks} // ✅ 문제지 데이터 전달
-            exams={formattedExams} // ✅ 시험 데이터 전달
-            handleEnterExam={handleEnterExam}
-          />
-        ) : (
-          <ExamTable
-            workbooks={formattedworkbooks} // ✅ 문제지 데이터 전달
-            exams={formattedExams} // ✅ 시험 데이터 전달
-            handleEnterExam={handleEnterExam}
-          />
-        )}
-      </motion.div>
-
-      {/* 모달 */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <ExamCreateModal
-            isModalOpen={isModalOpen}
-            setIsModalOpen={setIsModalOpen}
-            WorkBookName={""}
-            setWorkBookName={() => {}}
-            WorkBookDescription={""}
-            setWorkBookDescription={() => {}}
-          />
-        )}
-      </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

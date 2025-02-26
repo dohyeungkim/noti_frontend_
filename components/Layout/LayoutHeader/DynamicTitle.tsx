@@ -1,0 +1,93 @@
+"use client";
+
+interface DynamicTitleProps {
+  pathname: string;
+  userName?: string;
+  problem?: { title: string };
+  exam?: { workbook_name: string };
+  group?: { group_name: string };
+}
+
+function getTitle(
+  pathname: string,
+  userName?: string,
+  problem?: { title: string },
+  exam?: { workbook_name: string },
+  group?: { group_name: string }
+): string {
+  //홈
+  if (pathname.startsWith("/mypage")) {
+    return `🚀 ${userName || "사용자"}님의 페이지`;
+  }
+
+  //내가 푼 문제 모음 !!!
+  if (pathname.startsWith("/solved-problems")) {
+    return "🔥 내가 푼 문제 모음";
+  }
+
+  //내가 등록한 문제들
+  if (pathname.startsWith("/registered-problems")) {
+    switch (true) {
+      case pathname === "/registered-problems":
+        return "📌 내가 등록한 문제들";
+      case pathname === "/registered-problems/create":
+        return "📝 문제 등록하기";
+      case pathname.startsWith("/registered-problems/edit"):
+        return "🛠 문제 수정하기";
+      default:
+        break;
+    }
+  }
+
+  if (pathname.startsWith("/feedback")) {
+    return "📖 피드백 보기";
+  }
+
+  if (pathname.endsWith("/result")) {
+    return "🏆 제출 기록 보기";
+  }
+
+  if (pathname.endsWith("/write")) {
+    return "🔥 도전하기";
+  }
+
+  console.log("Debug:", { pathname, userName, problem, exam, group });
+  const segments = pathname.split("/").filter(Boolean);
+
+  // 각 세그먼트를 기반으로 적절한 제목 결정
+  if (segments[0] === "mygroups") {
+    switch (segments.length) {
+      case 2: // 그룹 레벨
+        return `📚 ${group?.group_name || "나의 그룹"}`;
+      case 4: // 시험 레벨 (예: /mygroups/7/exams/5)
+        return `📄 ${exam?.workbook_name || "나의 문제지"}`;
+      case 6: // 문제 레벨 (예: /mygroups/7/exams/5/problems/4)
+        return `✏️ ${problem?.title || "나의 문제"}`;
+      case 8: // 결과 레벨 (예: /mygroups/7/exams/5/problems/4/result)
+        return segments[6] === "result"
+          ? `📖 ${problem?.title || "문제 결과"} 문제의 피드백`
+          : "🏡 나의 페이지";
+      default:
+        return "🏡 나의 그룹들";
+    }
+  }
+
+  // 기본 제목
+  return "🏡 나의 페이지";
+}
+
+export default function DynamicTitle({
+  pathname,
+  userName,
+  problem,
+  exam,
+  group,
+}: DynamicTitleProps) {
+  const title = getTitle(pathname, userName, problem, exam, group);
+
+  return (
+<h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold flex justify-start items-start gap-2 sm:pt-4 md:pt-6 lg:pt-8 xl:pt-10">
+{title}
+    </h1>
+  );
+}
