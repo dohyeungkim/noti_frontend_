@@ -55,7 +55,7 @@ export default function ProblemStructure({
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [numericGroupId, numericExamId, refresh]);
+  }, [numericGroupId, numericExamId]);
 
   useEffect(() => {
     fetchProblems();

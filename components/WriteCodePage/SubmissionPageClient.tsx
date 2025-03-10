@@ -1,32 +1,57 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import SearchBar from "@/components/ui/SearchBar";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { solve_api } from "@/lib/api";
 
-export default function SubmissionPageClient({ params }) {
-  const { problemId } = useParams();
+interface Submission {
+  solve_id: number;
+  group_id: number;
+  workbook_id: number;
+  problem_id: number;
+  problem_name: string;
+  user_id: string;
+  passed: boolean;
+  code_language: string;
+  code_len: number;
+  timestamp: string;
+}
+
+export default function SubmissionPageClient({
+  params,
+}: {
+  params: { groupId: string; examId: string; problemId: string };
+}) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const router = useRouter();
-  const [submissions, setSubmissions] = useState([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const { groupId, examId, problemId } = params; // params에서 직접 구조 분해 할당
+
+  // `useMemo`로 캐싱하여 불필요한 재연산 방지
+  const numericGroupId = useMemo(() => Number(groupId), [groupId]);
+  const numericExamId = useMemo(() => Number(examId), [examId]);
+  const numericProblemId = useMemo(() => Number(problemId), [problemId]);
 
   const fetchSubmissions = useCallback(async () => {
     try {
-      //문제에 대한 제출결과 다 가져온 다음에 그룹/문제지 로 필터링
-      const res = await solve_api.solve_get_by_problem_id(Number(params.problemId));
-      setSubmissions(res.filter((p)=> p.group_id === Number(params.groupId) && p.workbook_id === Number(params.examId)));
+      //문제에 대한 제출결과 다 가져온 다음에 그룹/문제지로 필터링
+      const res = await solve_api.solve_get_by_problem_id(numericProblemId);
+      setSubmissions(
+        res.filter(
+          (p: Submission) => p.group_id === numericGroupId && p.workbook_id === numericExamId
+        )
+      );
       console.log(res);
     } catch (error) {
       console.error("제출 내역을 불러오는 중 오류 발생:", error);
     }
-  }, [params.problemId]); 
+  }, [numericGroupId, numericExamId, numericProblemId]);
 
   useEffect(() => {
     fetchSubmissions();
-  }, [fetchSubmissions]); 
+  }, [fetchSubmissions]);
 
   // ✅ 'YY.MM.DD' 형식으로 날짜 변환
   const formatShortDate = (dateString: string) => {
@@ -51,8 +76,7 @@ export default function SubmissionPageClient({ params }) {
       className="flex flex-col gap-4"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.2 }}
-    >
+      transition={{ delay: 0.2 }}>
       {submissions.length === 0 ? (
         <p className="text-xl text-gray-500 text-center">제출 내역이 없습니다.</p>
       ) : (
@@ -61,8 +85,7 @@ export default function SubmissionPageClient({ params }) {
             className="flex items-center gap-4 mb-4 w-full mt-10"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
+            transition={{ duration: 0.3, delay: 0.2 }}>
             {/* 검색 바 */}
             <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
@@ -88,26 +111,28 @@ export default function SubmissionPageClient({ params }) {
               <tbody>
                 {submissions.map((submission) => (
                   <tr
-                    key={submission.id}
+                    key={submission.solve_id}
                     className="border-b hover:bg-gray-50 transition cursor-pointer"
-                    onClick={() => handleRowClick(submission.solve_id)}
-                  >
+                    onClick={() => handleRowClick(submission.solve_id)}>
                     <td className="px-4 py-3 text-center">{submission.solve_id}</td>
                     <td className="px-4 py-3 text-center">{submission.problem_id}</td>
-                    <td className="px-4 py-3 text-center">{submission.problem_name.length > 10 ? `${submission.problem_name.slice(0,10)}...` : submission.problem_name}</td>
+                    <td className="px-4 py-3 text-center">
+                      {submission.problem_name.length > 10
+                        ? `${submission.problem_name.slice(0, 10)}...`
+                        : submission.problem_name}
+                    </td>
                     <td className="px-4 py-3 text-center">{submission.user_id}</td>
                     <td
                       className={`px-4 py-3 text-center font-semibold ${
-                        submission.passed === true
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }`}
-                    >
-                      {submission.passed === true? "✔ 맞았습니다": "❌ 틀렸습니다"}
+                        submission.passed === true ? "text-green-500" : "text-red-500"
+                      }`}>
+                      {submission.passed === true ? "✔ 맞았습니다" : "❌ 틀렸습니다"}
                     </td>
                     <td className="px-4 py-3 text-center">{submission.code_language}</td>
                     <td className="px-4 py-3 text-center">{submission.code_len}</td>
-                    <td className="px-4 py-3 text-center">{formatShortDate(submission.timestamp)}</td> 
+                    <td className="px-4 py-3 text-center">
+                      {formatShortDate(submission.timestamp)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

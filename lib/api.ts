@@ -302,6 +302,7 @@ export const solve_api = {
     if (!res.ok) throw new Error("채점 내용 가져오기 실패");
     return res.json();
   },
+
   async solve_get_by_solve_id(solve_id: number) {
     const res = await fetch(`/api/proxy/solves/${solve_id}`, {
       method: "GET",
