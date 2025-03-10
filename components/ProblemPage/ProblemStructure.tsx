@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import ProblemSelector from "@/components/ProblemPage/ProblemModal/ProblemSelectorModal";
 import OpenModalButton from "@/components/ui/OpenModalButton";
 import SearchBar from "@/components/ui/SearchBar";
@@ -26,6 +26,11 @@ export default function ProblemStructure({
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
   // const [sortOrder, setSortOrder] = useState("제목순");
+  const { groupId, examId } = params; // params에서 직접 구조 분해 할당
+
+  // `useMemo`로 캐싱하여 불필요한 재연산 방지
+  const numericGroupId = useMemo(() => Number(groupId), [groupId]);
+  const numericExamId = useMemo(() => Number(examId), [examId]);
 
   const [refresh, setRefresh] = useState(false);
 
@@ -37,8 +42,8 @@ export default function ProblemStructure({
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          group_id: Number(params.groupId),
-          workbook_id: Number(params.examId),
+          group_id: numericGroupId,
+          workbook_id: numericExamId,
         }),
       });
 
@@ -50,13 +55,12 @@ export default function ProblemStructure({
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [params.groupId || params.examId || refresh]);
+  }, [numericGroupId, numericExamId, refresh]);
 
   useEffect(() => {
     fetchProblems();
   }, [fetchProblems]);
 
-  
   return (
     <>
       {/* 문제 추가 버튼 */}
@@ -86,20 +90,20 @@ export default function ProblemStructure({
       {viewMode === "gallery" ? (
         <ProblemGallery
           problems={selectedProblems}
-          groupId={Number(params.groupId)}
-          workbookId={Number(params.examId)}
+          groupId={numericGroupId}
+          workbookId={numericExamId}
         />
       ) : (
         <ProblemList
           problems={selectedProblems} // ✅ 현재 선택된 문제 목록
-          groupId={Number(params.groupId)} // ✅ 그룹 ID
-          workbookId={Number(params.examId)}
+          groupId={numericGroupId} // ✅ 그룹 ID
+          workbookId={numericExamId}
         />
       )}
 
       <ProblemSelector
-        groupId={Number(params.groupId)}
-        workbookId={Number(params.examId)}
+        groupId={numericGroupId}
+        workbookId={numericExamId}
         selectedProblems={selectedProblems}
         setSelectedProblems={setSelectedProblems}
         isModalOpen={isModalOpen}

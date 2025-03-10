@@ -32,10 +32,11 @@ export default function ManageGroup() {
   const [groupName, setGroupName] = useState("");
   const [groupPrivacy, setGroupPrivacy] = useState("public");
   const [showModalSave, setShowModalSave] = useState(false); // 저장 모달 상태
+  const numericGroupId = Number(groupId);
 
   const fetchGroupMember = useCallback(async () => {
     try {
-      const res = await group_member_api.group_get_member(Number(groupId));
+      const res = await group_member_api.group_get_member(numericGroupId);
       if (!Array.isArray(res)) {
         return;
       }
@@ -43,11 +44,11 @@ export default function ManageGroup() {
     } catch (err) {
       console.error("그룹 정보 가져오는데 에러 발생", err);
     }
-  }, [groupId]); // groupId가 변경될 때만 함수가 새로 생성됨
+  }, [numericGroupId]); // groupId가 변경될 때만 함수가 새로 생성됨
 
   const fetchPrivateGroupMemberReq = useCallback(async () => {
     try {
-      const res = await group_member_api.group_private_member_req(Number(groupId));
+      const res = await group_member_api.group_private_member_req(numericGroupId);
       if (!Array.isArray(res)) {
         return;
       }
@@ -55,7 +56,7 @@ export default function ManageGroup() {
     } catch (err) {
       console.error("그룹 멤버 요청 가져오는데 에러 발생", err);
     }
-  }, [groupId]);
+  }, [numericGroupId]);
 
   useEffect(() => {
     fetchGroupMember();
@@ -66,9 +67,9 @@ export default function ManageGroup() {
   }, [fetchPrivateGroupMemberReq]);
 
   // 그룹 정보 가지고 오기
-  const fetchGroup = async () => {
+  const fetchGroup = useCallback(async () => {
     try {
-      const res = await group_api.group_get_by_id(Number(groupId));
+      const res = await group_api.group_get_by_id(numericGroupId);
       if (res) {
         setGroupName(res.group_name || ""); // 그룹 이름 저장
         setGroupPrivacy(res.group_private_state ? "private" : "public"); // 공개 여부 설정
@@ -76,12 +77,12 @@ export default function ManageGroup() {
     } catch (err) {
       console.error("그룹 정보를 가져오는데 실패", err);
     }
-  };
+  }, [numericGroupId]);
 
   // 그룹 정보 업데이트 하기
-  const updateGroup = async () => {
+  const updateGroup = useCallback(async () => {
     try {
-      await group_api.group_update(Number(groupId), groupName, groupPrivacy === "private");
+      await group_api.group_update(numericGroupId, groupName, groupPrivacy === "private");
       alert("그룹 정보가 성공적으로 업데이트되었습니다.");
       await fetchGroup();
       setShowModalSave(false);
@@ -89,13 +90,11 @@ export default function ManageGroup() {
       console.error("그룹 정보 업데이트 실패", err);
       alert("그룹 정보 업데이트 중 오류가 발생했습니다.");
     }
-  };
+  }, [numericGroupId, groupName, groupPrivacy, fetchGroup]);
 
   useEffect(() => {
-    if (groupId) {
-      fetchGroup();
-    }
-  }, [groupId]);
+    fetchGroup();
+  }, [fetchGroup]);
 
   const toggleMembers = () => setShowMembers((prev) => !prev);
   const toggleInvMembers = () => setShowInvitationMembers((prev) => !prev);
