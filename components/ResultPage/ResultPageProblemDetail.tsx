@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
 // import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 
-function ResultPageProblemDetail({ problem }) {
+function ResultPageProblemDetail({ problem }: { problem: Problem }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleDescription = () => setIsExpanded(!isExpanded);
@@ -11,8 +12,7 @@ function ResultPageProblemDetail({ problem }) {
     <div>
       <button
         onClick={toggleDescription}
-        className="text-gray-700 hover:text-gray-900 font-medium  flex items-center justify-center gap-2"
-      >
+        className="text-gray-700 hover:text-gray-900 font-medium  flex items-center justify-center gap-2">
         {isExpanded ? (
           <>
             {/* <IoIosArrowUp size={20} /> */}
@@ -30,12 +30,9 @@ function ResultPageProblemDetail({ problem }) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        >
+          transition={{ duration: 0.4, ease: "easeOut" }}>
           <div className="sticky top-0 z-10 pb-4 pt-6">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              {problem.title}
-            </h1>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">{problem.title}</h1>
             <hr className="border-t-2 border-gray-400" />
           </div>
           <div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">

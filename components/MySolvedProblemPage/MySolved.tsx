@@ -8,6 +8,20 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { solve_api } from "@/lib/api";
 
+interface Solve {
+  userId: string;
+  problem_id: string;
+  score: number;
+  group_id: string;
+  workbook_id: string;
+  problem_name: string;
+  group_name: string;
+  workbook_name: string;
+  timestamp: string;
+  passed: boolean;
+  solve_id: string;
+}
+
 export default function MySolved() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
@@ -19,8 +33,8 @@ export default function MySolved() {
   //   setFilteredProblems(filteredProblemsData);
   // },[search])
 
-  const [correctProblems, setCorrectProblems] = useState([]);
-  const [ongoingProblems, setOngoingProblems] = useState([]);
+  const [correctProblems, setCorrectProblems] = useState<Solve[]>([]);
+  const [ongoingProblems, setOngoingProblems] = useState<Solve[]>([]);
   // const [solves, setSolves] = useState([]);
 
   const getStatusColor = (passed: boolean) => {
@@ -28,38 +42,36 @@ export default function MySolved() {
   };
 
   const getButtonColor = (passed: boolean) => {
-    return passed
-      ? "bg-green-500 hover:bg-green-600"
-      : "bg-blue-500 hover:bg-blue-600";
+    return passed ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600";
   };
 
-  const processSolves = (solveData) => {
-    const groupedSolves = {};
-  
+  const processSolves = (solveData: Solve[]): Solve[] => {
+    const groupedSolves: Record<string, Solve> = {};
+
     solveData.forEach((solve) => {
       const { group_id, problem_id, workbook_id, passed } = solve;
       const key = `${group_id}-${problem_id}-${workbook_id}`;
-  
+
       // 기존 키가 없으면 solve 객체 전체를 저장
       if (!groupedSolves[key]) {
         groupedSolves[key] = { ...solve }; // 기존 solve 데이터를 유지
       }
-  
+
       // 하나라도 passed=true가 있으면 최종 상태를 true로 변경
       if (passed) {
         groupedSolves[key].passed = true;
       }
     });
-  
+
     return Object.values(groupedSolves);
   };
 
-    // solve 데이터 가져오는 함수 (useCallback 적용)
+  // solve 데이터 가져오는 함수 (useCallback 적용)
   const fetchSolves = useCallback(async () => {
     try {
       const data = await solve_api.solve_get_me();
       const processedData = processSolves(data);
-  
+
       setCorrectProblems(processedData.filter((p) => p.passed === true));
       setOngoingProblems(processedData.filter((p) => p.passed === false));
 
@@ -86,8 +98,7 @@ export default function MySolved() {
         className="flex items-center gap-4 mb-4 w-full"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
+        transition={{ duration: 0.3, delay: 0.2 }}>
         <SearchBar searchQuery={search} setSearchQuery={setSearch} />
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         <SortButton onSortChange={() => {}} />
@@ -96,9 +107,7 @@ export default function MySolved() {
       {/* 맞은 문제 섹션 */}
       {correctProblems.length > 0 && (
         <>
-          <motion.h2 className="text-2xl font-bold mb-4">
-            ✅ 맞은 문제
-          </motion.h2>
+          <motion.h2 className="text-2xl font-bold mb-4">✅ 맞은 문제</motion.h2>
           <motion.hr
             className="border-b-1 border-gray-300 my-4 m-2"
             initial={{ opacity: 0, scaleX: 0 }}
@@ -109,49 +118,39 @@ export default function MySolved() {
             key={`correct-${viewMode}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+            transition={{ duration: 0.3 }}>
             {viewMode === "gallery" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {correctProblems.map((problem) => (
                   <div
                     key={problem.problem_id}
-                    className="p-5 border rounded-2xl shadow bg-white transition-all duration-200 hover:shadow-md hover:-translate-y-1"
-                  >
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {problem.problem_name}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{problem.group_name} &gt; {problem.workbook_name}</p>
-                    <p
-                      className={`text-sm font-medium mt-1 ${getStatusColor(
-                        problem.passed
-                      )}`}
-                    >
+                    className="p-5 border rounded-2xl shadow bg-white transition-all duration-200 hover:shadow-md hover:-translate-y-1">
+                    <h3 className="text-lg font-semibold text-gray-800">{problem.problem_name}</h3>
+                    <p className="text-gray-500 text-sm">
+                      {problem.group_name} &gt; {problem.workbook_name}
+                    </p>
+                    <p className={`text-sm font-medium mt-1 ${getStatusColor(problem.passed)}`}>
                       상태: {problem.passed ? "맞음" : "도전 중"}
                     </p>
 
                     <Link
-                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}
-                    >
-                        <button
-                          className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
-                            problem.passed
-                          )}`}
-                        >
-                          제출 기록 보기
-                        </button>
-                      </Link>
-                      <Link
-                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result/${problem.solve_id}`}
-                      >
-                        <button
-                          className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
-                            problem.passed
-                          )}`}
-                        >
-                          피드백 보기
-                        </button>
-                      </Link>
+                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}>
+                      <button
+                        className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
+                          problem.passed
+                        )}`}>
+                        제출 기록 보기
+                      </button>
+                    </Link>
+                    <Link
+                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result/${problem.solve_id}`}>
+                      <button
+                        className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
+                          problem.passed
+                        )}`}>
+                        피드백 보기
+                      </button>
+                    </Link>
                   </div>
                 ))}
               </div>
@@ -175,13 +174,11 @@ export default function MySolved() {
                       <td className="p-4 text-gray-500">{problem.timestamp}</td>
                       <td className="p-4 text-center">
                         <Link
-                          href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}
-                        >
+                          href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}>
                           <button
                             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 text-white ${getButtonColor(
                               problem.passed
-                            )}`}
-                          >
+                            )}`}>
                             피드백 보기
                           </button>
                         </Link>
@@ -198,9 +195,7 @@ export default function MySolved() {
       {/* 도전 중 문제 섹션 */}
       {ongoingProblems.length > 0 && (
         <>
-          <motion.h2 className="text-2xl font-bold mb-4 mt-8">
-            🚀 도전 중 문제
-          </motion.h2>
+          <motion.h2 className="text-2xl font-bold mb-4 mt-8">🚀 도전 중 문제</motion.h2>
           <motion.hr
             className="border-b-1 border-gray-300 my-4 m-2"
             initial={{ opacity: 0, scaleX: 0 }}
@@ -211,35 +206,27 @@ export default function MySolved() {
             key={`ongoing-${viewMode}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+            transition={{ duration: 0.3 }}>
             {viewMode === "gallery" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {ongoingProblems.map((problem) => (
                   <div
                     key={problem.problem_id}
-                    className="p-5 border rounded-2xl shadow bg-white transition-all duration-200 hover:shadow-md hover:-translate-y-1"
-                  >
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {problem.problem_name}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{problem.group_name} &gt; {problem.workbook_name}</p>
-                    <p
-                      className={`text-sm font-medium mt-1 ${getStatusColor(
-                        problem.passed
-                      )}`}
-                    >
+                    className="p-5 border rounded-2xl shadow bg-white transition-all duration-200 hover:shadow-md hover:-translate-y-1">
+                    <h3 className="text-lg font-semibold text-gray-800">{problem.problem_name}</h3>
+                    <p className="text-gray-500 text-sm">
+                      {problem.group_name} &gt; {problem.workbook_name}
+                    </p>
+                    <p className={`text-sm font-medium mt-1 ${getStatusColor(problem.passed)}`}>
                       상태: {problem.passed ? "맞음" : "틀림"}
                     </p>
 
                     <Link
-                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/write`}
-                    >
+                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/write`}>
                       <button
                         className={`mt-4 w-full text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
                           problem.passed
-                        )}`}
-                      >
+                        )}`}>
                         문제 풀기
                       </button>
                     </Link>
@@ -266,13 +253,11 @@ export default function MySolved() {
                       <td className="p-4 text-gray-500">{problem.timestamp}</td>
                       <td className="p-4 text-center">
                         <Link
-                          href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}
-                        >
+                          href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}>
                           <button
                             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 text-white ${getButtonColor(
                               problem.passed
-                            )}`}
-                          >
+                            )}`}>
                             피드백 보기
                           </button>
                         </Link>

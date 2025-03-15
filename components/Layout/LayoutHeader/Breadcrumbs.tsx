@@ -1,6 +1,15 @@
 "use client";
 
 import Link from "next/link";
+interface BreadcrumbsProps {
+  pathname: string;
+  group?: { group_name: string };
+  groupId?: string;
+  exam?: { workbook_name: string };
+  examId?: string;
+  problem?: { title: string };
+  problemId?: string;
+}
 
 export default function Breadcrumbs({ pathname, group, exam, problem }: BreadcrumbsProps) {
   // URL 세그먼트 분리

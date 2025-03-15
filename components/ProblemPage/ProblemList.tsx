@@ -15,13 +15,9 @@ interface ProblemListProps {
   problems: Problem[];
   groupId: number;
   workbookId: number;
- }
+}
 
-const ProblemList = ({
-  problems,
-  groupId,
-  workbookId,
-}: ProblemListProps) => {
+const ProblemList = ({ problems, groupId, workbookId }: ProblemListProps) => {
   const router = useRouter();
   console.log("문제 리스트:", problems);
 
@@ -32,15 +28,9 @@ const ProblemList = ({
           <thead className="bg-gray-200">
             <tr className="border-b-4 border-gray-200 text-gray-800">
               <th className="px-5 py-4 text-center text-lg font-semibold">#</th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                문제 제목
-              </th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                시도한 횟수
-              </th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                맞은 횟수
-              </th>
+              <th className="px-5 py-4 text-center text-lg font-semibold">문제 제목</th>
+              <th className="px-5 py-4 text-center text-lg font-semibold">시도한 횟수</th>
+              <th className="px-5 py-4 text-center text-lg font-semibold">맞은 횟수</th>
               <th className="px-5 py-4 text-center text-lg font-semibold"></th>
             </tr>
           </thead>
@@ -49,17 +39,14 @@ const ProblemList = ({
               problems.map((p, index) => (
                 <tr
                   key={p.problem_id}
-                  className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
-                >
+                  className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer">
                   <td className="px-5 py-4 text-center">{index + 1}</td>
                   <td
                     className="px-5 py-4 text-center truncate max-w-[200px] overflow-hidden whitespace-nowrap"
                     title={p.title} // 🔹 툴팁으로 전체 제목 보기 가능
-                    onClick={() => handleSelectProblem(p.problem_id)}
+                    // onClick={() => handleSelectProblem(p.problem_id)}
                   >
-                    {p.title.length > 15
-                      ? `${p.title.slice(0, 15)}...`
-                      : p.title}
+                    {p.title.length > 15 ? `${p.title.slice(0, 15)}...` : p.title}
                   </td>
 
                   <td className="px-5 py-4 text-center">{p.attempt_count}</td>
@@ -71,8 +58,7 @@ const ProblemList = ({
                           `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`
                         )
                       }
-                      className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-gray-800 text-white hover:bg-gray-700"
-                    >
+                      className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-gray-800 text-white hover:bg-gray-700">
                       도전하기
                     </button>
                   </td>

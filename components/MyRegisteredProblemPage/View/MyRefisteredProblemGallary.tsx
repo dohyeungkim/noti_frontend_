@@ -21,8 +21,8 @@ interface GalleryViewProps {
   filteredData: Question[];
   selectedProblem: Question | null;
   handleCloseDetail: () => void;
-  handleHoverStartProblem: (problem: Question) => void,
-  handleHoverEndProblem: () => void,
+  handleHoverStartProblem: (problem: Question) => void;
+  handleHoverEndProblem: () => void;
   handleDeleteButtonClick: (problem_id: number) => Promise<void>;
 }
 
@@ -37,7 +37,7 @@ export default function GalleryView({
   const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [targetProblemId, setTargetProblemId] = useState<number | null>(null);
-  
+
   const openDeleteModal = (problem_id: number) => {
     setTargetProblemId(problem_id);
     setIsConfirming(true);
@@ -68,41 +68,35 @@ export default function GalleryView({
                 key={item.problem_id}
                 className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200"
                 onHoverStart={() => handleHoverStartProblem(item)}
-                onHoverEnd={() => handleHoverEndProblem()}
-                >
+                onHoverEnd={() => handleHoverEndProblem()}>
                 <div className="p-1 rounded-lg">
-                
-                <h3 
-                  className={`m-3 text-xl font-semibold w-auto truncate`}
-                  title={item.title}>
-                  {item.title}
-                </h3>       
+                  <h3 className={`m-3 text-xl font-semibold w-auto truncate`} title={item.title}>
+                    {item.title}
+                  </h3>
 
-                <p className="text-gray-500 text-sm m-3">{item.group}</p>
-                <p className="text-gray-400 text-sm">{item.paper}</p>
+                  <p className="text-gray-500 text-sm m-3">{item.group}</p>
+                  <p className="text-gray-400 text-sm">{item.paper}</p>
 
-                {/* 버튼 그룹 */}
-                <div className="flex items-center justify-between mt-3 w-full">
-                  <span className="inline-flex text-blue-500">
+                  {/* 버튼 그룹 */}
+                  <div className="flex items-center justify-between mt-3 w-full">
+                    <span className="inline-flex text-blue-500">
+                      <button
+                        onClick={() =>
+                          router.push(`/registered-problems/edit/${selectedProblem!.problem_id}`)
+                        }
+                        className="flex items-center p-2 hover:text-black transition">
+                        <FontAwesomeIcon icon={faPen} className="mr-1" />
+                        수정
+                      </button>
+                    </span>
                     <button
-                      onClick={() => router.push(`/registered-problems/edit/${selectedProblem.problem_id}`)}
-                      className="flex items-center p-2 hover:text-black transition"
-                    >
-                      <FontAwesomeIcon icon={faPen} className="mr-1" />
-                      수정
+                      onClick={() => openDeleteModal(item.problem_id)}
+                      className="text-red-500 hover:text-red-700 transition">
+                      <FontAwesomeIcon icon={faTrashCan} />
+                      삭제
                     </button>
-                  </span>   
-                  <button
-                    onClick={() => openDeleteModal(item.problem_id)}
-                    className="text-red-500 hover:text-red-700 transition"
-                  >
-                    <FontAwesomeIcon icon={faTrashCan} />           
-                    삭제
-                  </button>
+                  </div>
                 </div>
-              </div>
-
-                
               </motion.div>
             ))
           ) : (

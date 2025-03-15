@@ -8,6 +8,8 @@ import dynamic from "next/dynamic";
 // import { testExams } from "@/data/testmode";
 import { AnimatePresence, motion } from "framer-motion";
 import { auth_api, problem_api, code_log_api, solve_api } from "@/lib/api";
+import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
+import { editor } from "monaco-editor";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -22,7 +24,7 @@ export default function WriteCodePageClient({
   const { groupId } = useParams();
   const [isExpanded, setIsExpanded] = useState(true);
 
-  const [problem, setProblem] = useState(undefined);
+  const [problem, setProblem] = useState<Problem | undefined>(undefined);
 
   // const isTestMode = testExams.some((test) => test.examId === params.examId);
   const [code, setCode] = useState("");
@@ -35,11 +37,12 @@ export default function WriteCodePageClient({
 
   const [userId, setUserId] = useState("");
 
-  const editorRef = useRef(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
-   // 유저 정보 가져오기
-   const fetchUser = useCallback(async () => {
-    if (userId === "") {  // userId가 비어 있을 때만 실행
+  // 유저 정보 가져오기
+  const fetchUser = useCallback(async () => {
+    if (userId === "") {
+      // userId가 비어 있을 때만 실행
       try {
         const res = await auth_api.getUser();
         setUserId(res.user_id);
@@ -67,10 +70,9 @@ export default function WriteCodePageClient({
     fetchProblem();
   }, [fetchProblem]); // problemId 변경 시 다시 실행
 
-
   const handleKeyDown = () => {
     if (editorRef.current) {
-      const newCode = editorRef.current.getValue()
+      const newCode = editorRef.current.getValue();
       setCode(newCode);
       setCodeLogs((prevLogs) => [...prevLogs, newCode]);
       setTimeStamps((prev) => [...prev, new Date().toISOString()]);
@@ -96,7 +98,7 @@ export default function WriteCodePageClient({
     setError("");
 
     try {
-      const newCode = editorRef.current?.getValue();
+      const newCode = editorRef.current?.getValue() || "";
       const newCodeLogs = [...codeLogs, newCode];
       const newTimeStamps = [...timeStamps, new Date().toISOString()];
 
@@ -108,12 +110,7 @@ export default function WriteCodePageClient({
         newCode,
         language
       );
-      await code_log_api.code_log_create(
-        Number(data.solve_id),
-        userId,
-        newCodeLogs,
-        newTimeStamps
-      );
+      await code_log_api.code_log_create(Number(data.solve_id), userId, newCodeLogs, newTimeStamps);
 
       console.log("제출 성공:", newCodeLogs, newTimeStamps);
       setCodeLogs([]);
@@ -123,9 +120,7 @@ export default function WriteCodePageClient({
         `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result`
       );
     } catch (err) {
-      alert(
-        `❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`
-      );
+      alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
@@ -142,26 +137,23 @@ export default function WriteCodePageClient({
         className="flex items-center gap-2 justify-end"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-      >
+        transition={{ delay: 0.2 }}>
         <motion.button
           onClick={handleSubmit}
           disabled={loading}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className={`flex items-center ${
-            loading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-black hover:bg-gray-500"
-          } text-white px-16 py-1.5 rounded-xl m-2 text-md`}
-        >
+            loading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-500"
+          } text-white px-16 py-1.5 rounded-xl m-2 text-md`}>
           {loading ? "제출 중..." : "제출하기"}
         </motion.button>
       </motion.div>
 
       {error && <p className="text-red-500 text-center mt-2">{error}</p>}
 
-      <main className=" flex flex-1 gap-x-6 mt-3 w-full 
+      <main
+        className=" flex flex-1 gap-x-6 mt-3 w-full 
                 h-[65vh] sm:h-[60vh] md:h-[60vh] lg:h-[60vh]">
         {/* 문제 설명 영역 (왼쪽) */}
         <AnimatePresence>
@@ -172,12 +164,9 @@ export default function WriteCodePageClient({
               animate={{ flex: 1, opacity: 1 }}
               exit={{ flex: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 100 }}
-              className="overflow-hidden border-r-2 pr-4"
-            >
+              className="overflow-hidden border-r-2 pr-4">
               <div className="sticky top-0z-10 pb-4">
-                <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                  {problem.title}
-                </h1>
+                <h1 className="text-4xl font-bold text-gray-800 mb-2">{problem.title}</h1>
                 <hr className="border-t-2 border-gray-400" />
               </div>
               <div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">
@@ -192,23 +181,20 @@ export default function WriteCodePageClient({
         <div className="flex items-start">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="px-3 py-2 border rounded-lg transition hover:bg-gray-200"
-          >
+            className="px-3 py-2 border rounded-lg transition hover:bg-gray-200">
             {isExpanded ? "<" : ">"}
           </button>
         </div>
         {/* 코드 에디터 영역 (오른쪽) */}
         <div
           className="flex-1 flex-col min-w-0 transition-all duration-300"
-          style={{ flex: isExpanded ? 1 : 5 }}
-        >
+          style={{ flex: isExpanded ? 1 : 5 }}>
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-lg font-semibold">나의 코드</h2>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="border rounded-lg p-2"
-            >
+              className="border rounded-lg p-2">
               <option value="python">Python</option>
               <option value="C"> C</option>
               <option value="C++">C++</option>
@@ -218,8 +204,7 @@ export default function WriteCodePageClient({
 
           <div className="bg-white p-4 rounded shadow">
             <MonacoEditor
-                   height="45vh"
-
+              height="45vh"
               language={language}
               value={code}
               options={{
@@ -241,10 +226,10 @@ export default function WriteCodePageClient({
                 editorRef.current = editor;
 
                 editor.onKeyDown((event) => {
-                  if(event.keyCode === monaco.KeyCode.Enter){
-                    handleKeyDown(event);
+                  if (event.keyCode === monaco.KeyCode.Enter) {
+                    handleKeyDown();
                   }
-                })
+                });
               }}
             />
           </div>
