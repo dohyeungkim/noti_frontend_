@@ -61,11 +61,7 @@ export default function GroupsClient() {
         new Date(a.createdAt ?? "1970-01-01").getTime()
       );
     } else if (sortOrder === "공개순") {
-      return a.group_private_state === b.group_private_state
-        ? 0
-        : a.group_private_state
-        ? -1
-        : 1;
+      return a.group_private_state === b.group_private_state ? 0 : a.group_private_state ? -1 : 1;
     }
     return 0;
   });
@@ -77,8 +73,7 @@ export default function GroupsClient() {
         className="flex justify-end"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
+        transition={{ duration: 0.3, delay: 0.1 }}>
         <OpenModalButton
           onClick={() => setIsModalOpen(true)}
           label="그룹 생성하기"
@@ -91,8 +86,7 @@ export default function GroupsClient() {
         className="flex items-center gap-4 mb-4 w-full"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
+        transition={{ duration: 0.3, delay: 0.2 }}>
         <div className="flex-grow min-w-0">
           <SearchBar
             searchQuery={searchQuery}
@@ -100,11 +94,7 @@ export default function GroupsClient() {
             className="animate-fade-in"
           />
         </div>
-        <ViewToggle
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          className="animate-fade-in"
-        />
+        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in" />
         <SortButton onSortChange={setSortOrder} className="animate-fade-in" />
       </motion.div>
 
@@ -112,8 +102,7 @@ export default function GroupsClient() {
         className="text-2xl font-bold mb-4 m-2 pt-4"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3, delay: 0.3 }}
-      >
+        transition={{ duration: 0.3, delay: 0.3 }}>
         나의 그룹
       </motion.h2>
       <motion.hr
@@ -128,8 +117,7 @@ export default function GroupsClient() {
         key={viewMode}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
-      >
+        transition={{ duration: 0.3, delay: 0.4 }}>
         {viewMode === "gallery" ? (
           <GroupList groups={sortedGroups} />
         ) : (
