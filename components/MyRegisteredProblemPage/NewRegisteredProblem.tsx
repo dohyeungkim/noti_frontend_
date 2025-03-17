@@ -1,302 +1,234 @@
-//문제등록페이지입니당
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Heading from "@tiptap/extension-heading";
-import BulletList from "@tiptap/extension-bullet-list";
-import OrderedList from "@tiptap/extension-ordered-list";
-import Highlight from "@tiptap/extension-highlight";
-import Image from "@tiptap/extension-image";
+import { useEffect, useState } from "react";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { problem_api } from "@/lib/api";
-import Toolbar from "../markdown/Toolbar";
-// import { ResizableTable } from "../markdown/ResizableTable";
+import { dummyProblems } from "@/data/dummy";
+import HistoryGraph from "@/components/history/myhistory";
+import ProblemStatistics from "../ui/ProblemStatistics";
 
-import { ResizableImage } from "../markdown/ResizableImage";
-import TableCellExtension from "../markdown/TableCellExtension";
+interface Problem {
+  title: string;
+  description: string;
+  input: string;
+  output: string;
+}
 
-
-// ✅ 확장 기능을 올바르게 가져오기
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableCell } from "@tiptap/extension-table-cell";
-
-export default function NewRegisteredProblem() {
+export default function ProblemView() {
   const router = useRouter();
-  // const { id } = useParams();
+  const { id } = useParams();
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpandedHistory, setIsExpandedHistory] = useState(false);
 
-  const [title, setTitle] = useState("");
-  const [inputs, setInputs] = useState([{ input: "", output: "" }]);
-  // const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchProblem = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/proxy/problems/${id}`);
+        const data = await response.json();
+        setProblem(data);
+        console.log("📌 API에서 받은 문제 설명:", data.description);
+      } catch (error) {
+        console.error("Failed to fetch problem:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
- 
-  const editor = useEditor({
-    extensions: [
-      TableCellExtension, // ✅ 커스텀 TableCell 적용
-
-      
-            ResizableImage,
-            StarterKit,
-            Heading.configure({ levels: [1, 2, 3] }),
-            BulletList,
-            OrderedList,
-            Highlight.configure({ multicolor: true }),
-            Image,
-      
-            Table.configure({ resizable: true }),
-            TableRow,
-            TableHeader,
-            TableCell,
-    ],
-    content: "",
-  });
-
-  if (!editor) return null; // 에디터가 로드될 때까지 기다림
-
-  // const handleInputChange = (index: number, value: string, field: string) => {
-  //   const updatedInputs = inputs.map((input, i) => {
-  //     if (i === index) {
-  //       return { ...input, [field]: value };
-  //     }
-  //     return input;
-  //   });
-  //   setInputs(updatedInputs);
-  // };
-
-  const addLocalImage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64Image = reader.result as string;
-        if (editor) {
-          // editor가 null이 아닐 때만 실행
-          editor.chain().focus().setImage({ src: base64Image }).run();
-        }
-      };
-      reader.readAsDataURL(file);
+    if (id) {
+      fetchProblem();
     }
-  };
+  }, [id]);
 
+  if (loading) {
+    return <p>Loading...</p>;
+  }
 
-  const handleSubmitButtonClick = async () => {
-    if (title.trim() === "") {
-      alert("제목을 입력해주세요");
-      return;
-    }
-
-    if (!editor) {
-      alert("에디터가 로드되지 않았습니다.");
-      return;
-    }
-
-    const content = editor.getHTML();
-    console.log("📝 저장할 문제 설명:", content);
-
-    try {
-      await problem_api.problem_create(title, content, "", "", inputs);
-      router.back();
-    } catch (error) {
-      console.error("❌ 문제 등록 실패:", error);
-      alert("문제 등록 중 오류가 발생했습니다.");
-    }
-  };
+  if (!problem) {
+    return <p>문제 정보를 불러올 수 없습니다.</p>;
+  }
 
   return (
-    <div>
-      <motion.div
-        className="flex items-center gap-2 justify-end"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}>
-        {" "}
-        <button
-          onClick={handleSubmitButtonClick}
-          className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
-      hover:bg-gray-500 transition-all duration-200 ease-in-out
-      active:scale-95">
-          🚀 등록하기
-        </button>
-      </motion.div>
-      <div className="gap-6 w-full">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2 ">문제 등록</h2>
-          <div className="border-t border-gray-300 my-4"></div>
-          {/* 🔹 문제 제목 입력 */}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="문제 제목"
-            className="w-full px-4 py-2 border rounded-md"
-          />
-
-          {/* 🔹 Notion 스타일 문제 설명 */}
-          <div className="col-span-2">
-            <div className="border rounded-md mt-2 bg-white">
-              <Toolbar editor={editor} addLocalImage={addLocalImage} />
-              <EditorContent
-                editor={editor}
-                className="p-4 h-[500px] min-h-[500px] max-h-[500px] w-full text-black overflow-y-auto rounded-md"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-bold mb-2 "> 입출력 예제</h2>
-          <div className="border-t border-gray-300 my-4"></div>
-          <table className="w-full border-collapse bg-white shadow-md rounded-xl mt-2">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 text-left w-12">#</th>
-                <th className="p-3 text-left">입력값</th>
-                <th className="p-3 text-left">출력값</th>
-                <th className="p-3 text-center w-16">삭제</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inputs.map((pair, index) => (
-                <tr key={index} className="border-t">
-                  <td className="p-3 text-center">{index + 1}</td>
-                  <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
-                      placeholder="입력값"
-                      value={pair.input}
-                      onChange={(e) => {
-                        const newInputs = [...inputs];
-                        newInputs[index].input = e.target.value;
-                        setInputs(newInputs);
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
-                    />
-                  </td>
-                  <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
-                      placeholder="출력값"
-                      value={pair.output}
-                      onChange={(e) => {
-                        const newInputs = [...inputs];
-                        newInputs[index].output = e.target.value;
-                        setInputs(newInputs);
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
-                    />
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => setInputs(inputs.filter((_, i) => i !== index))}
-                      className="bg-red-500 text-white px-3 py-2 rounded-lg">
-                      ✖
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>{" "}
-          {/* 🔹 추가 & 등록 버튼 */}
-          <div className="flex justify-between mt-6">
-            <button
-              onClick={() => setInputs([...inputs, { input: "", output: "" }])}
-              className="bg-green-500 text-white px-4 py-2 rounded-full">
-              + 추가
-            </button>
-          </div>
-        </div>
+    <>
+      <div className="flex items-center gap-2 justify-end">
+        <motion.button
+          onClick={() => router.push(`/registered-problems/edit/${id}`)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center bg-black text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer hover:bg-gray-500 transition-all duration-200 ease-in-out active:scale-95"
+        >
+          문제 수정하기
+        </motion.button>
       </div>
 
-      {/* ✅ 스타일 추가 (드래그 핸들) */}
-      <style>
-        {`
-  .ProseMirror {
-    outline: none;
-    min-height: 150px;
-    padding: 12px;
-  }
+      <div className="p-6  mx-auto bg-white shadow-md rounded-lg">
+        {/* 문제 제목 */}
+        <h1 className="text-5xl font-bold text-gray-900 mb-6">
+        ✏️ {problem.title}
+        </h1>
 
-  /* ✅ H1, H2, H3 적용 */
-  .ProseMirror h1 { font-size: 2rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
-  .ProseMirror h2 { font-size: 1.5rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
-  .ProseMirror h3 { font-size: 1.25rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
+        {/* 구분선 (굵게 설정) */}
+        <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-3 text-gray-700 hover:text-black flex items-center"
+        >
+          {isExpanded ? (
+            <>
+              <FaChevronUp className="mr-2" /> 접기
+            </>
+          ) : (
+            <>
+              <FaChevronDown className="mr-2" /> 펼치기
+            </>
+          )}
+        </button>
+      </div>
 
-  /* ✅ 리스트 스타일 */
-  .ProseMirror ul { list-style-type: disc; margin-left: 1.5rem; }
-  .ProseMirror ol { list-style-type: decimal; margin-left: 1.5rem; }
-  .ProseMirror li { margin-bottom: 0.5rem; }
+      {/* ✅ Tiptap HTML 렌더링 (토글 가능) */}
+      <div
+        className={`transition-all duration-300 ${
+          isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+        }`}
+      >
+        <div className="editor-content" dangerouslySetInnerHTML={{ __html: problem.description }} />
+      </div>
+        {/* ✅ 테이블 테두리 강제 적용 */}
+        <style>
+          {`
+          .editor-content h1 { font-size: 2rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
+          .editor-content h2 { font-size: 1.5rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
+          .editor-content h3 { font-size: 1.25rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
+          .editor-content ul { list-style-type: disc; margin-left: 1.5rem; }
+          .editor-content ol { list-style-type: decimal; margin-left: 1.5rem; }
 
-  /* ✅ 테이블 스타일 (테두리 추가) */
-  .ProseMirror table {
-    width: 100%;
-    border-collapse: collapse; /* ✅ 테이블 셀 사이의 공간 제거 */
-    margin-top: 10px;
-    border: 1px solid #ccc; /* ✅ 전체 테이블 테두리 */
-  }
+          /* ✅ 테이블 스타일 적용 */
+          .editor-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            border: 2px solid #333;
+          }
 
-  .ProseMirror th, .ProseMirror td {
-    border: 1px solid #ddd; /* ✅ 각 셀 테두리 추가 */
-    padding: 8px;
-    text-align: left;
-  }
+          .editor-content th, .editor-content td {
+            border: 2px solid #333 !important;
+            padding: 12px;
+            text-align: left;
+            word-wrap: break-word;
+          }
 
-  .ProseMirror th {
-    background-color: #f4f4f4; /* ✅ 헤더 배경색 추가 */
-    font-weight: bold;
-  }
+          .editor-content th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+          }
 
-  /* ✅ 툴바 버튼 */
-  .toolbar-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px;
-    cursor: pointer;
-    background: none;
-    border: none;
-    transition: color 0.1s ease-in-out;
-  }
-  .toolbar-icon:hover {
-    transform: scale(1.1);
-  }
+          /* ✅ 전체 테이블 스타일 */
+          .editor-content table {
+            width: 100%;
+            border-collapse: collapse !important;
+            margin-top: 10px !important;
+            border: 2px solid #d4d4d4 !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            background-color: #f9f9f9 !important;
+          }
 
-  /* ✅ 형광펜 버튼 */
-  .highlight-btn {
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform 0.1s ease-in-out;
-  }
-  .highlight-btn:hover {
-    transform: scale(1.1);
-  }
-`}
-      </style>
+          /* ✅ 헤더 스타일 */
+          .editor-content th {
+            background-color: #f1f1f1 !important;
+            font-weight: 600 !important;
+            text-align: center !important;
+            color: #333 !important;
+            padding: 14px !important;
+            border-bottom: 1.5px solid #d4d4d4 !important;
+          }
+
+          /* ✅ 내부 셀 스타일 */
+          .editor-content td {
+            background-color: #ffffff !important;
+            border: 1px solid #e0e0e0 !important;
+            padding: 12px !important;
+            text-align: left !important;
+            font-size: 1rem !important;
+            color: #444 !important;
+            transition: background 0.2s ease-in-out !important;
+            border-radius: 0 !important;
+          }
+
+          /* ✅ 강조된 셀 (제목 스타일) */
+          .editor-content td[data-header="true"] {
+            background-color: #e7e7e7 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            color: #222 !important;
+          }
+
+          /* ✅ 마우스 오버 효과 */
+          .editor-content td:hover {
+            background-color: #f5f5f5 !important;
+          }
+
+          /* ✅ 테이블 전체 둥글게 조정 */
+          .editor-content tr:first-child th:first-child {
+            border-top-left-radius: 12px !important;
+          }
+          .editor-content tr:first-child th:last-child {
+            border-top-right-radius: 12px !important;
+          }
+          .editor-content tr:last-child td:first-child {
+            border-bottom-left-radius: 12px !important;
+          }
+          .editor-content tr:last-child td:last-child {
+            border-bottom-right-radius: 12px !important;
+          }
+        
+        `}
+        </style>
+      </div>
+
+      <div className="p-6 bg-white shadow-md rounded-lg mt-10">
+      {/* 문제 제목 */}
+      <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4>
+
+      {/* 구분선 & 토글 버튼 */}
+      <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
+        <button
+          onClick={() => setIsExpandedHistory(!isExpandedHistory)}
+          className="mt-3 text-gray-700 hover:text-black flex items-center"
+        >
+          {isExpandedHistory ? (
+            <>
+              <FaChevronUp className="mr-2" /> 접기
+            </>
+          ) : (
+            <>
+              <FaChevronDown className="mr-2" /> 펼치기
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* 토글 대상 영역 (애니메이션 적용) */}
+      <div
+        className={`transition-all duration-300 ${
+          isExpandedHistory ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+        }`}
+      >
+        <HistoryGraph historys={dummyProblems} />
+      </div>
     </div>
+
+      <div className="p-6  bg-white shadow-md rounded-lg mt-10">
+      <h4 className="text-2xl font-bold text-gray-900 mb-2">📊 이 문제의 통계</h4>
+      <hr className="border-t-2 border-gray-600 " />
+        {/* //데이터 나중에 수정 */}
+        <ProblemStatistics problem_id={1}/> 
+      </div>
+    </>
   );
 }
