@@ -16,6 +16,7 @@ interface GroupTableProps {
 }
 export default function GroupTable({ groups }: GroupTableProps) {
   const router = useRouter();
+  const filteredGroups = groups.filter((group) => group.is_member);
 
   return (
     <div className="w-full overflow-x-auto">
@@ -31,7 +32,7 @@ export default function GroupTable({ groups }: GroupTableProps) {
         </thead>
         <tbody>
           {groups.length > 0 ? (
-            groups.map((group) => (
+            filteredGroups.map((group) => (
               <tr
                 key={group.group_id}
                 className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"

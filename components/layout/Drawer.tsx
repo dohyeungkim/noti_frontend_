@@ -50,11 +50,15 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
       console.error("내 그룹 정보 가져오기 실패:", error);
       setGroups([]);
     }
-  }, []); // 의존성 배열이 비어 있음으로, 함수가 재생성되지 않음
+  }, []);
 
   useEffect(() => {
     fetchGroup();
-  }, [fetchGroup]); // fetchGroup을 의존성 배열에 추가
+  }, [fetchGroup]);
+
+  // ✅ 10자 이상 그룹명 `...` 처리
+  const truncateText = (text: string, maxLength: number) =>
+    text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 
   return (
     <>
@@ -123,16 +127,20 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
 
           {/* "나의 그룹" 목록 추가 */}
           <div className={`${isOpen ? "block" : "hidden"}`}>
-            <p className="text-gray-500  text-xs sm:text-sm mt-[4%] sm:mt-[20%]">나의 그룹</p>
-            <div className="mt-[10%] m sm:mt-[1%] space-y-[0.5%] sm:space-y-[1%] max-h-[15%] xs:max-h-[15%] sm:max-h-[25%] overflow-y-auto">
+            <p className="text-gray-500 text-xs sm:text-sm mt-4">나의 그룹</p>
+
+            {/* ✅ 그룹 개수 15개 이상이면 스크롤 추가 */}
+            <div
+              className="mt-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+            >
               {groups.length > 0 ? (
                 groups.map((group) => (
                   <Link
                     key={group.group_id}
                     href={`/mygroups/${group.group_id}`}
-                    className=" block text-gray-900 text-xs sm:text-sm hover:text-black transition-all duration-200 pl-[3%] sm:pl-[3%] pt-[3%]"
+                    className="block text-gray-900 text-xs sm:text-sm hover:text-black transition-all duration-200 pl-3 pt-2"
                   >
-                    🏡 <span className="text-gray-700">{group.group_name}</span>
+                    🏡 <span className="text-gray-700">{truncateText(group.group_name, 10)}</span>
                   </Link>
                 ))
               ) : (
@@ -149,11 +157,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <button className="border-none bg-transparent text-lg cursor-pointer">
                 <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" />
               </button>
-              <span
-                className={`className="no-underline text-gray-700 flex items-center hover:text-black transition-all duration-300 text-sm ${
-                  isOpen ? "inline" : "hidden"
-                }`}
-              >
+              <span className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${isOpen ? "inline" : "hidden"}`}>
                 <PasswordChange />
               </span>
             </li>
@@ -161,17 +165,14 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <button className="border-none bg-transparent text-lg cursor-pointer">
                 <FontAwesomeIcon icon={faRightFromBracket} className="text-gray-500" />
               </button>
-              <span
-                className={`className="no-underline text-gray-700 flex items-center hover:text-black transition-all duration-300 text-sm ${
-                  isOpen ? "inline" : "hidden"
-                }`}
-              >
+              <span className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${isOpen ? "inline" : "hidden"}`}>
                 <Logout />
               </span>
             </li>
           </ul>
         </div>
       </div>
+
       <button
         className={`absolute top-[10px] left-[70px] bg-gray-100 text-black rounded-full w-8 h-8 text-lg cursor-pointer ${
           isOpen ? "hidden" : "block"

@@ -142,16 +142,19 @@ const handleDelete = async () => {
   </div>
 
   {/* ✅ Tiptap HTML 렌더링 (토글 가능) */}
+  {/* ✅ Tiptap HTML 렌더링 (길면 스크롤) */}
+<div
+  className={`transition-all duration-300 overflow-hidden ${
+    isExpanded ? "max-h-96 overflow-y-auto" : "max-h-0 opacity-0"
+  } `}
+  style={{ wordBreak: "break-word" }} // ✅ 너무 긴 단어도 줄바꿈
+>
   <div
-    className={`transition-all duration-300 ${
-      isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-    }`}
-  >
-    <div
-      className="editor-content"
-      dangerouslySetInnerHTML={{ __html: problem.description }}
-    />
-  </div>
+    className="editor-content"
+    dangerouslySetInnerHTML={{ __html: problem.description }}
+  />
+</div>
+
 
 
         {/* ✅ 테이블 테두리 강제 적용 */}

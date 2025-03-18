@@ -1,6 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { BreadcrumbsProps } from "./types";
+
+// ✅ 문자열을 15자로 제한하는 함수 추가
+function truncateText(text?: string, maxLength = 15): string {
+  if (!text) return "";
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
 
 export default function Breadcrumbs({ pathname, group, exam, problem }: BreadcrumbsProps) {
   // URL 세그먼트 분리
@@ -19,7 +26,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
             <BreadcrumbSeparator />
             <BreadcrumbLink
               href={`/mygroups/${segments[1]}`}
-              label={`📚 ${group?.group_name || "나의 그룹"}`}
+              label={`📚 ${truncateText(group?.group_name) || "나의 그룹"}`}
             />
           </>
         )}
@@ -30,7 +37,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
             <BreadcrumbSeparator />
             <BreadcrumbLink
               href={`/mygroups/${segments[1]}/exams/${segments[3]}`}
-              label={`📄 ${exam?.workbook_name || "나의 문제지"}`}
+              label={`📄 ${truncateText(exam?.workbook_name) || "나의 문제지"}`}
             />
           </>
         )}
@@ -41,7 +48,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
             <BreadcrumbSeparator />
             <BreadcrumbLink
               href={`/mygroups/${segments[1]}/exams/${segments[3]}/problems/${segments[5]}`}
-              label={`✏️ ${problem?.title || "문제 정보"}`}
+              label={`✏️ ${truncateText(problem?.title) || "문제 정보"}`}
             />
           </>
         )}
@@ -79,7 +86,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
   if (segments.includes("mypage")) {
     return (
       <nav className="text-gray-500 text-sm mb-2">
-        {/* 🔹 나의 그룹들 (홈) */}
+        {/* 🔹 나의 페이지 (홈) */}
         <BreadcrumbLink href="/mypage" label="🚀 나의 페이지" />
       </nav>
     );
@@ -88,7 +95,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
   if (segments.includes("solved-problems")) {
     return (
       <nav className="text-gray-500 text-sm mb-2">
-        {/* 🔹 나의 그룹들 (홈) */}
+        {/* 🔹 내가 푼 문제 모음 */}
         <BreadcrumbLink href="/solved-problems" label="🔥 내가 푼 문제 모음" />
       </nav>
     );

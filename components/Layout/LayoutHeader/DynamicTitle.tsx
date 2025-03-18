@@ -8,6 +8,12 @@ interface DynamicTitleProps {
   group?: { group_name: string };
 }
 
+// ✅ 문자열을 15자로 제한하는 함수 추가
+function truncateText(text?: string, maxLength = 15): string {
+  if (!text) return "";
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
 function getTitle(
   pathname: string,
   userName?: string,
@@ -17,10 +23,10 @@ function getTitle(
 ): string {
   //홈
   if (pathname.startsWith("/mypage")) {
-    return `🚀 ${userName || "사용자"}님의 페이지`;
+    return `🚀 ${truncateText(userName || "사용자")}님의 페이지`;
   }
 
-  //내가 푼 문제 모음 !!!
+  //내가 푼 문제 모음
   if (pathname.startsWith("/solved-problems")) {
     return "🔥 내가 푼 문제 모음";
   }
@@ -58,14 +64,14 @@ function getTitle(
   if (segments[0] === "mygroups") {
     switch (segments.length) {
       case 2: // 그룹 레벨
-        return `📚 ${group?.group_name || "나의 그룹"}`;
+        return `📚 ${truncateText(group?.group_name || "나의 그룹")}`;
       case 4: // 시험 레벨 (예: /mygroups/7/exams/5)
-        return `📄 ${exam?.workbook_name || "나의 문제지"}`;
+        return `📄 ${truncateText(exam?.workbook_name || "나의 문제지")}`;
       case 6: // 문제 레벨 (예: /mygroups/7/exams/5/problems/4)
-        return `✏️ ${problem?.title || "나의 문제"}`;
+        return `✏️ ${truncateText(problem?.title || "나의 문제")}`;
       case 8: // 결과 레벨 (예: /mygroups/7/exams/5/problems/4/result)
         return segments[6] === "result"
-          ? `📖 ${problem?.title || "문제 결과"} 문제의 피드백`
+          ? `📖 ${truncateText(problem?.title || "문제 결과")} 문제의 피드백`
           : "🏡 나의 페이지";
       default:
         return "🏡 나의 그룹들";
@@ -86,8 +92,8 @@ export default function DynamicTitle({
   const title = getTitle(pathname, userName, problem, exam, group);
 
   return (
-<h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold flex justify-start items-start gap-2 sm:pt-4 md:pt-6 lg:pt-8 xl:pt-10">
-{title}
+    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold flex justify-start items-start gap-2 sm:pt-4 md:pt-6 lg:pt-8 xl:pt-10">
+      {title}
     </h1>
   );
 }

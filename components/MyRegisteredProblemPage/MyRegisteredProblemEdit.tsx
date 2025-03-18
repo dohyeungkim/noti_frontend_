@@ -84,7 +84,9 @@ export default function ProblemEdit() {
     try {
       await problem_api.problem_update(id, title, updatedDescription, inputs);
       alert("문제가 성공적으로 업데이트되었습니다.");
-      router.push(`/registered-problems`);
+      router.push(
+        `/registered-problems/view/${id}`
+      );
     } catch (error) {
       console.error("문제 업데이트 실패:", error);
       alert("문제 업데이트 중 오류가 발생했습니다.");

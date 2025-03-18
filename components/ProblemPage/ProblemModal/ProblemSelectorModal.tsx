@@ -1,3 +1,5 @@
+"use client";
+
 import { problem_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
@@ -37,25 +39,18 @@ export default function ProblemSelector({
   const isFetched = useRef(false);
 
   const handleSelect = (problem: Problem) => {
+    // 이미 등록된 문제는 선택/해제 불가능
+    if (isAlreadySelected.some((p) => p.problem_id === problem.problem_id)) {
+      console.log("🚫 이미 선택된 문제는 해제할 수 없습니다:", problem.title);
+      return;
+    }
+
     setSelectedProblems((prevSelected) => {
       const isSelected = prevSelected.some((p) => p.problem_id === problem.problem_id);
-      const isAlreadySelectedProblem = isAlreadySelected.some(
-        (p) => p.problem_id === problem.problem_id
-      );
-
-      if (isAlreadySelectedProblem) {
-        console.log("🚫 이미 선택된 문제는 해제할 수 없습니다:", problem.title);
-        return prevSelected;
-      }
-
       if (isSelected) {
-        const updatedSelection = prevSelected.filter((p) => p.problem_id !== problem.problem_id);
-        console.log("❌ 문제 선택 해제됨:", updatedSelection);
-        return updatedSelection;
+        return prevSelected.filter((p) => p.problem_id !== problem.problem_id);
       } else {
-        const updatedSelection = [...prevSelected, problem];
-        console.log("🔹 문제 추가됨:", updatedSelection);
-        return updatedSelection;
+        return [...prevSelected, problem];
       }
     });
   };
@@ -79,7 +74,7 @@ export default function ProblemSelector({
       console.error("❌ 문제를 가져오는 데 실패했습니다.", error);
       setProblems([]);
     }
-  }, [selectedProblems]); // selectedProblems가 변경될 때도 새로 실행됨
+  }, [selectedProblems]);
 
   // 모달이 열릴 때 fetchProblem 실행
   useEffect(() => {
@@ -87,7 +82,7 @@ export default function ProblemSelector({
       fetchProblem();
       isFetched.current = true;
     }
-  }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
+  }, [isModalOpen, fetchProblem]);
 
   const handleAddProblemButton = async () => {
     if (isSubmitting) return;
@@ -97,7 +92,7 @@ export default function ProblemSelector({
         .filter((p) => !isAlreadySelected.some((selected) => selected.problem_id === p.problem_id))
         .map((p) => p.problem_id);
 
-      console.log("전송할 문제 ID 배열:", selectedProblems);
+      console.log("전송할 문제 ID 배열:", makeSelectedProblems);
       await fetch("/api/proxy/problems_ref", {
         method: "POST",
         credentials: "include",
@@ -108,6 +103,7 @@ export default function ProblemSelector({
           problem_id: makeSelectedProblems,
         }),
       });
+
       alert("문제가 성공적으로 추가되었습니다!");
       setRefresh(!refresh);
       setIsModalOpen(false);
@@ -136,17 +132,20 @@ export default function ProblemSelector({
                 <h2 className="text-xl font-bold mb-2">문제 목록</h2>
                 <ul className="border p-4 rounded-md shadow-md bg-white h-64 overflow-y-auto">
                   {problems.map((problem) => {
+                    const isDisabled = isAlreadySelected.some((p) => p.problem_id === problem.problem_id);
                     return (
                       <li
                         key={problem.problem_id}
-                        onClick={() => handleSelect(problem)}
-                        className={`cursor-pointer rounded-md p-2 border-b ${
-                          selectedProblems.some((p) => p.problem_id === problem.problem_id)
+                        onClick={() => !isDisabled && handleSelect(problem)}
+                        className={`cursor-pointer rounded-md p-2 border-b transition ${
+                          isDisabled
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : selectedProblems.some((p) => p.problem_id === problem.problem_id)
                             ? "bg-mygreen text-white"
-                            : "bg-gray-100"
+                            : "bg-gray-100 hover:bg-gray-200"
                         }`}
                       >
-                        {problem.title}
+                        📌 {problem.title.length > 18 ? `${problem.title.slice(0, 18)}...` : problem.title}
                       </li>
                     );
                   })}
@@ -166,7 +165,7 @@ export default function ProblemSelector({
                           onClick={() => handleSelect(selected)}
                           className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200"
                         >
-                          {newProblem ? newProblem.title : "알 수 없는 문제"}
+                          📌 {newProblem ? (newProblem.title.length > 18 ? `${newProblem.title.slice(0, 18)}...` : newProblem.title) : "알 수 없는 문제"}
                         </li>
                       );
                     })
@@ -182,7 +181,7 @@ export default function ProblemSelector({
               <button
                 onClick={handleAddProblemButton}
                 disabled={isSubmitting}
-                className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80"
+                className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80 transition"
               >
                 문제 추가하기
               </button>
