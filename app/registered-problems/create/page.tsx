@@ -2,7 +2,7 @@ import NewRegisteredProblem from "@/components/MyRegisteredProblemPage/NewRegist
 
 export default function MyQuestionsPageClient() {
   return (
-   
-      <NewRegisteredProblem />
+   <NewRegisteredProblem />
+     
   );
 }

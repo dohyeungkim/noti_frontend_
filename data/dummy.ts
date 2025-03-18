@@ -56,37 +56,4 @@ export const dummyProblems: history[] = [
          tags : ["알고리즘", "문제지1"],
          enable: false, // 이 문제는 히스토리에서 흑백으로 처리
     },
-    // {
-    //     problem_id: 6,
-    //      maker_id : "admin", 
-    //      title: "two sum5", 
-    //      description: "두 수를 더하는 프로그램을 만드세용!.",
-    //      testcase : [""],
-    //      root_problem_id : 1,
-    //      parent_problem_id : 4,
-    //      tags : ["알고리즘", "문제지1"],
-    //      enable: false, // 이 문제는 히스토리에서 흑백으로 처리
-    // },
-    // {
-    //     problem_id: 7,
-    //      maker_id : "admin", 
-    //      title: "two sum5", 
-    //      description: "두 수를 더하는 프로그램을 만드세용!.",
-    //      testcase : [""],
-    //      root_problem_id : 1,
-    //      parent_problem_id : 4,
-    //      tags : ["알고리즘", "문제지1"],
-    //      enable: false, // 이 문제는 히스토리에서 흑백으로 처리
-    // },
-    // {
-    //     problem_id: 8,
-    //      maker_id : "admin", 
-    //      title: "two sum5", 
-    //      description: "두 수를 더하는 프로그램을 만드세용!.",
-    //      testcase : [""],
-    //      root_problem_id : 1,
-    //      parent_problem_id : 4,
-    //      tags : ["알고리즘", "문제지1"],
-    //      enable: false, // 이 문제는 히스토리에서 흑백으로 처리
-    // },
 ];

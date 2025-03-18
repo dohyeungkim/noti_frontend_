@@ -13,12 +13,15 @@ import { motion } from "framer-motion";
 import { problem_api } from "@/lib/api";
 import { ResizableImage } from "../markdown/ResizableImage";
 import Toolbar from "../markdown/Toolbar";
+import HistoryGraph from "@/components/history/myhistory";
 
 // ✅ 확장 기능을 올바르게 가져오기
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
+import { dummyProblems } from "@/data/dummy";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 export default function ProblemEdit() {
   const router = useRouter();
@@ -27,6 +30,7 @@ export default function ProblemEdit() {
   const [title, setTitle] = useState("");
   const [inputs, setInputs] = useState([{ input: "", output: "" }]);
   const [loading, setLoading] = useState(true);
+  const [isExpandedHistory, setIsExpandedHistory] = useState(true);
 
   const editor = useEditor({
     extensions: [
@@ -86,16 +90,6 @@ export default function ProblemEdit() {
       alert("문제 업데이트 중 오류가 발생했습니다.");
     }
   };
-
-  // const handleInputChange = (index: number, value: string, field: string) => {
-  //   const updatedInputs = inputs.map((input, i) => {
-  //     if (i === index) {
-  //       return { ...input, [field]: value };
-  //     }
-  //     return input;
-  //   });
-  //   setInputs(updatedInputs);
-  // };
 
   const addLocalImage = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -239,6 +233,40 @@ export default function ProblemEdit() {
               + 추가
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="p-6 bg-white shadow-md rounded-lg mt-10">
+        {/* 문제 제목 */}
+        <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4>
+
+        {/* 구분선 & 토글 버튼 */}
+        <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
+          <button
+            onClick={() => setIsExpandedHistory(!isExpandedHistory)}
+            className="mt-3 text-gray-700 hover:text-black flex items-center"
+          >
+            {isExpandedHistory ? (
+              <>
+                <FaChevronUp className="mr-2" /> 접기
+              </>
+            ) : (
+              <>
+                <FaChevronDown className="mr-2" /> 펼치기
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* 토글 대상 영역 (애니메이션 적용) */}
+        <div
+          className={`transition-all duration-300 ${
+            isExpandedHistory
+              ? "max-h-screen opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
+          }`}
+        >
+          <HistoryGraph historys={dummyProblems} />
         </div>
       </div>
 

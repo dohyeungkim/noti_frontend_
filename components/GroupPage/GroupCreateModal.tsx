@@ -26,24 +26,29 @@ export default function GroupCreateModal({
 }: GroupCreateModalProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPastGroups, setShowPastGroups] = useState(false); // 과거 그룹 토글 상태
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
-  // useCallback으로 감싸기
+  // 예제: 과거 그룹 리스트
+  const pastGroups = ["컴퓨터 구조", "알고리즘", "인공지능 기초"];
+
   const resetState = useCallback(() => {
     setGroupName("");
     setIsPublic(true);
     setIsConfirming(false);
     setIsLoading(false);
+    setSelectedGroup(null);
+    setShowPastGroups(false);
   }, [setGroupName, setIsPublic, setIsConfirming, setIsLoading]);
 
   useEffect(() => {
     if (!isOpen) {
       resetState();
     }
-  }, [isOpen, resetState]); // 'resetState'가 변경될 때만 실행됨
+  }, [isOpen, resetState]);
 
   if (!isOpen) return null;
 
-  // 그룹 생성 API 요청
   const handleCreate = async () => {
     console.log("그룹 이름:", groupName);
     console.log("공개 여부:", isPublic ? "공개" : "비공개");
@@ -52,9 +57,7 @@ export default function GroupCreateModal({
     try {
       const response = await fetch(`/api/proxy/groups`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           group_name: groupName,
@@ -62,9 +65,7 @@ export default function GroupCreateModal({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("그룹 생성 실패");
-      }
+      if (!response.ok) throw new Error("그룹 생성 실패");
 
       const data = await response.json();
       console.log("그룹 생성 성공:", data);
@@ -86,6 +87,7 @@ export default function GroupCreateModal({
       <div
         className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl relative"
         onClick={(e) => e.stopPropagation()}>
+        
         {/* 헤더 */}
         <div className="flex justify-between items-center border-b pb-4">
           <h2 className="text-lg font-semibold">그룹 생성하기</h2>
@@ -99,7 +101,7 @@ export default function GroupCreateModal({
           </button>
         </div>
 
-        {/* 확인 단계 */}
+        {/* 그룹 생성 확인 단계 */}
         {isConfirming ? (
           <div className="text-center my-4">
             <h3 className="text-lg font-semibold mb-4">
@@ -144,6 +146,37 @@ export default function GroupCreateModal({
                 {isPublic ? "공개" : "비공개"}
               </button>
             </div>
+
+            {/* 과거 그룹 불러오기 버튼 */}
+            <button
+              onClick={() => setShowPastGroups(!showPastGroups)}
+              className="flex items-center gap-2 text-sm text-gray-700 border border-gray-300 rounded-lg p-2 transition hover:bg-gray-100">
+              {showPastGroups ? "▲ 과거 그룹 숨기기" : "▼ 과거 그룹 불러오기"}
+            </button>
+
+            {/* 과거 그룹 목록 (토글) */}
+            {showPastGroups && (
+              <div className="border border-gray-300 rounded-lg p-2">
+                <p className="text-sm font-semibold text-gray-700 mb-2">그룹 목록</p>
+                <ul className="space-y-1">
+                  {pastGroups.map((group, index) => (
+                    <li
+                      key={index}
+                      onClick={() => {
+                        setGroupName(group);
+                        setSelectedGroup(group);
+                      }}
+                      className={`p-2 cursor-pointer rounded-md transition ${
+                        selectedGroup === group
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}>
+                      {group}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
