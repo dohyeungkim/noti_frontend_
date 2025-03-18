@@ -1,5 +1,5 @@
 import { problem_api } from "@/lib/api";
-import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef} from "react";
+import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
 interface Problem {
@@ -18,7 +18,7 @@ interface ProblemSelectorProps {
   selectedProblems: Problem[];
   setSelectedProblems: Dispatch<SetStateAction<Problem[]>>;
   refresh: boolean;
-  setRefresh: (refresh: boolean) => void
+  setRefresh: (refresh: boolean) => void;
 }
 
 export default function ProblemSelector({
@@ -39,8 +39,10 @@ export default function ProblemSelector({
   const handleSelect = (problem: Problem) => {
     setSelectedProblems((prevSelected) => {
       const isSelected = prevSelected.some((p) => p.problem_id === problem.problem_id);
-      const isAlreadySelectedProblem = isAlreadySelected.some((p) => p.problem_id === problem.problem_id);
-      
+      const isAlreadySelectedProblem = isAlreadySelected.some(
+        (p) => p.problem_id === problem.problem_id
+      );
+
       if (isAlreadySelectedProblem) {
         console.log("🚫 이미 선택된 문제는 해제할 수 없습니다:", problem.title);
         return prevSelected;
@@ -57,9 +59,9 @@ export default function ProblemSelector({
       }
     });
   };
-  
-   // 문제 가져오기 함수 (useCallback 적용)
-   const fetchProblem = useCallback(async () => {
+
+  // 문제 가져오기 함수 (useCallback 적용)
+  const fetchProblem = useCallback(async () => {
     try {
       console.log("📢 문제 가져오기 요청 시작!");
       const res = await problem_api.problem_get();
@@ -86,7 +88,6 @@ export default function ProblemSelector({
       isFetched.current = true;
     }
   }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
-
 
   const handleAddProblemButton = async () => {
     if (isSubmitting) return;
@@ -139,9 +140,9 @@ export default function ProblemSelector({
                       <li
                         key={problem.problem_id}
                         onClick={() => handleSelect(problem)}
-                        className={`cursor-pointer p-2 border-b ${
+                        className={`cursor-pointer rounded-md p-2 border-b ${
                           selectedProblems.some((p) => p.problem_id === problem.problem_id)
-                            ? "bg-blue-500 text-white"
+                            ? "bg-mygreen text-white"
                             : "bg-gray-100"
                         }`}
                       >
@@ -163,7 +164,7 @@ export default function ProblemSelector({
                         <li
                           key={selected.problem_id}
                           onClick={() => handleSelect(selected)}
-                          className="p-2 border-b cursor-pointer hover:bg-red-200"
+                          className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200"
                         >
                           {newProblem ? newProblem.title : "알 수 없는 문제"}
                         </li>
@@ -181,7 +182,7 @@ export default function ProblemSelector({
               <button
                 onClick={handleAddProblemButton}
                 disabled={isSubmitting}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80"
               >
                 문제 추가하기
               </button>

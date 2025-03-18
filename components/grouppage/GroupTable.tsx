@@ -37,18 +37,17 @@ export default function GroupTable({ groups }: GroupTableProps) {
                 className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
                 onClick={() => router.push(`/mygroups/${group.group_id}`)}
               >
-          <td className="px-5 py-4 text-center">{group.group_name.length > 10 ? `${group.group_name.slice(0, 10)}...` : group.group_name}</td>
-          <td className="px-5 py-4 text-center">{group.group_id}</td>
+                <td className="px-5 py-4 text-center">
+                  {group.group_name.length > 10
+                    ? `${group.group_name.slice(0, 10)}...`
+                    : group.group_name}
+                </td>
+                <td className="px-5 py-4 text-center">{group.group_id}</td>
                 <td className="px-5 py-4 text-center">{group.member_count}명</td>
                 <td className="px-5 py-4 text-center">{group.group_owner}</td>
                 <td
-
                   className={`px-5 py-4 text-center font-semibold 
-                                ${
-                                  group.group_private_state
-                                    ? "text-gray-500"
-                                    : "text-blue-500"
-                                }`}
+                                ${group.group_private_state ? "text-gray-500" : "text-mygreen"}`}
                 >
                   {group.group_private_state ? "비공개" : "공개"}
                 </td>

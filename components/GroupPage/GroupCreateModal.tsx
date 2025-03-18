@@ -147,12 +147,12 @@ export default function GroupCreateModal({
               resetState();
               onClose();
             }}
-            className="text-red-500 hover:text-red-700 text-2xl"
+            className="text-gray-800 hover:text-opacity-80 text-2xl"
           >
             ✖
           </button>
         </div>
-
+        
         {/* 입력 폼 */}
         <div className="flex flex-col gap-3 mt-4">
           {/* 그룹 이름 입력 */}
@@ -177,6 +177,7 @@ export default function GroupCreateModal({
             >
               {isPublic ? "공개" : "비공개"}
             </button>
+
           </div>
 
           {/* 과거 그룹 불러오기 버튼 */}
@@ -229,17 +230,20 @@ export default function GroupCreateModal({
         </div>
 
         {/* 그룹 생성 버튼 */}
-        <div className="mt-6">
-          <button
-            onClick={handleCreate}
-            disabled={isLoading}
-            className={`w-full bg-gray-800 text-white py-2 rounded-lg text-lg cursor-pointer hover:bg-gray-900 transition ${
-              isLoading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {isLoading ? "생성 중..." : "그룹 생성하기"}
-          </button>
-        </div>
+
+        {!isConfirming && (
+          <div className="mt-6">
+            <button
+              onClick={() => setIsConfirming(true)}
+              disabled={isLoading}
+              className={`w-full bg-mygreen text-white py-2 rounded-lg text-lg cursor-pointer hover:bg-opacity-80 transition ${
+                isLoading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {isLoading ? "생성 중..." : "그룹 생성하기"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

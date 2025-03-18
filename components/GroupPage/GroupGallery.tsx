@@ -34,9 +34,7 @@ export default function GroupList({ groups }: GroupListProps) {
           <div
             className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold 
                     ${
-                      group.group_private_state
-                        ? "bg-[rgb(134,140,136)] text-white"
-                        : "bg-[rgb(120,148,129)] text-white"
+                      group.group_private_state ? "bg-mygray text-white" : "bg-mypublic text-white"
                     }`}
           >
             {group.group_private_state ? "비공개" : "공개"}
@@ -50,18 +48,18 @@ export default function GroupList({ groups }: GroupListProps) {
                 : group.group_name}
             </h2>
             <div className="flex flex-col">
-              <div className="flex flex-end">
+              <div className="flex justify-between">
                 <p className="mb-1">📌 그룹 번호: {group.group_id}</p>
-                <p className="mb-1 pl-6">👥 수강생: {group.member_count}명</p>
-              </div>
-              <div className="flex flex-end">
                 <p className="mb-1">👨‍🏫 그룹장: {group.group_owner}</p>
+              </div>
+              <div className="flex">
+                <p className="mb-1">👥 수강생: {group.member_count}명</p>
               </div>
             </div>
           </div>
 
           {/* ✅ 그룹 입장 버튼 (하단 고정) */}
-          <button className="mt-auto  w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-[rgb(73,118,88)] text-white hover:bg-[rgb(169,100,100)]">
+          <button className="mt-auto  w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80">
             들어가기
           </button>
         </div>

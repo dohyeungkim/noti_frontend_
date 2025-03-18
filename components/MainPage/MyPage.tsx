@@ -121,11 +121,7 @@ export default function MyPage() {
                   {/* 🔵 그룹 상태 배지 */}
                   <div
                     className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold 
-                  ${
-                    group.group_private_state
-                      ? "bg-[rgb(134,140,136)] text-white"
-                      : "bg-[rgb(120,148,129)] text-white"
-                  }`}
+                  ${group.group_private_state ? "bg-mygray text-white" : "bg-mypublic text-white"}`}
                   >
                     {group.group_private_state ? "비공개" : "공개"}
                   </div>
@@ -150,7 +146,7 @@ export default function MyPage() {
                   {/* ✅ 그룹 참여 버튼 */}
                   {group.is_member ? (
                     <button
-                      className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-[rgb(73,118,88)] text-white hover:bg-[rgb(169,100,100)]"
+                      className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80"
                       onClick={() => {
                         window.location.href = `/mygroups/${group.group_id}`;
                       }}
@@ -159,7 +155,7 @@ export default function MyPage() {
                     </button>
                   ) : (
                     <button
-                      className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-[rgb(23,58,35)] text-white hover:bg-[rgb(165,74,74)]"
+                      className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-mydarkgreen text-white hover:bg-opacity-80"
                       onClick={() => {
                         handleClickPublicJoinButton(group.group_id);
                       }}
