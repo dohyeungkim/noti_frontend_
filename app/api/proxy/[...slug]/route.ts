@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   return middlewareHandler(req);
 }
+export async function PATCH(req: NextRequest) {
+  return middlewareHandler(req);
+}
 export async function DELETE(req: NextRequest) {
   return middlewareHandler(req);
 }

@@ -101,13 +101,23 @@
   background-color: rgb(230, 230, 230);
   margin-top: 8px;
   width: 100%;
-  height: auto;
+  height: 30px;
   padding: 10px;
   border-radius: 10px;
+  /* text-align: center; */
 }
 .man_problem_menu {
   display: flex;
+  justify-content: space-between;
   flex-direction: column;
+  /* align-items: center; */
+}
+.man_problem_menu2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-top: 3px; */
+  /* flex-direction: column; */
 }
 .problem_table_container {
   width: 100%;
