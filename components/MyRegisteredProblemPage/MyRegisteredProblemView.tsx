@@ -101,43 +101,59 @@ const handleDelete = async () => {
         </motion.button>
       </div>
 
-      <div className="p-6  mx-auto bg-white shadow-md rounded-lg">
-        {/* 문제 제목 */}
-        <h1 className="text-5xl font-bold text-gray-900 mb-6">
-          ✏️ {problem.title}
-        </h1>
+      <div className="p-6 mx-auto bg-white shadow-md rounded-lg">
+  {/* 문제 제목 + 작성 날짜 + 버전 배지 */}
+  <div className="flex justify-between items-center">
+  <h1
+  className="text-3xl font-bold text-gray-900 flex items-center"
+  title={problem.title} // ✅ 마우스 오버 시 전체 제목 표시
+>
+  ✏️ {problem.title.length > 30 ? problem.title.slice(0, 30) + "..." : problem.title}
+</h1>
 
-        {/* 구분선 (굵게 설정) */}
-        <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-3 text-gray-700 hover:text-black flex items-center"
-          >
-            {isExpanded ? (
-              <>
-                <FaChevronUp className="mr-2" /> 접기
-              </>
-            ) : (
-              <>
-                <FaChevronDown className="mr-2" /> 펼치기
-              </>
-            )}
-          </button>
-        </div>
+    
+    {/* 작성 날짜 + 버전 배지 */}
+    <div className="flex items-center space-x-3">
+      <span className="text-gray-500 text-sm">
+        {problem.created_at}에 작성되었습니다.
+      </span>
+      <span className="bg-mygreen text-white text-sm font-semibold px-8 py-1 rounded-md">
+        V1-2
+      </span>
+    </div>
+  </div>
 
-        {/* ✅ Tiptap HTML 렌더링 (토글 가능) */}
-        <div
-          className={`transition-all duration-300 ${
-            isExpanded
-              ? "max-h-screen opacity-100"
-              : "max-h-0 opacity-0 overflow-hidden"
-          }`}
-        >
-          <div
-            className="editor-content"
-            dangerouslySetInnerHTML={{ __html: problem.description }}
-          />
-        </div>
+  {/* 구분선 (굵게 설정) */}
+  <div className="flex justify-between items-center border-t-2 border-gray-600 my-4">
+    <button
+      onClick={() => setIsExpanded(!isExpanded)}
+      className="mt-3 text-gray-700 hover:text-black flex items-center"
+    >
+      {isExpanded ? (
+        <>
+          <FaChevronUp className="mr-2" /> 접기
+        </>
+      ) : (
+        <>
+          <FaChevronDown className="mr-2" /> 펼치기
+        </>
+      )}
+    </button>
+  </div>
+
+  {/* ✅ Tiptap HTML 렌더링 (토글 가능) */}
+  <div
+    className={`transition-all duration-300 ${
+      isExpanded ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+    }`}
+  >
+    <div
+      className="editor-content"
+      dangerouslySetInnerHTML={{ __html: problem.description }}
+    />
+  </div>
+
+
         {/* ✅ 테이블 테두리 강제 적용 */}
         <style>
           {`
@@ -317,7 +333,7 @@ const handleDelete = async () => {
     e.stopPropagation(); // 부모 div의 클릭 이벤트와 충돌 방지
     openDeleteModal(problem.problem_id); // ✅ 문제 ID 전달
   }}
-  className="flex items-center gap-2 bg-red-500 text-white font-semibold px-8 py-1.5 rounded-lg shadow-md hover:bg-red-600 transition-all mt-4"
+  className="flex items-center gap-2 bg-mydelete text-white font-semibold px-8 py-1.5 rounded-lg shadow-md hover:bg-red-600 transition-all mt-4"
 >
   삭제 하기
 </button>

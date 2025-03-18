@@ -20,8 +20,8 @@ interface GalleryViewProps {
   filteredData: Question[];
   selectedProblem: Question | null;
   handleCloseDetail: () => void;
-  handleHoverStartProblem: (problem: Question) => void,
-  handleHoverEndProblem: () => void,
+  handleHoverStartProblem: (problem: Question) => void;
+  handleHoverEndProblem: () => void;
   handleDeleteButtonClick: (problem_id: number) => Promise<void>;
 }
 
@@ -36,7 +36,7 @@ export default function GalleryView({
   const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [targetProblemId, setTargetProblemId] = useState<number | null>(null);
-  
+
   const openDeleteModal = (problem_id: number) => {
     setTargetProblemId(problem_id);
     setIsConfirming(true);
@@ -60,85 +60,49 @@ export default function GalleryView({
         <motion.div
           className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300 ${
             selectedProblem ? "w-2/3" : "w-full"
-          }`}>
+          }`}
+        >
           {filteredData.length > 0 ? (
             filteredData.map((item) => (
               <motion.div
-              key={item.problem_id}
-              className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-              onClick={() => router.push(`/registered-problems/edit/${item.problem_id}`)} // ✅ motion.div 자체 클릭 가능하게 변경
-            >
-              <div className="p-1 rounded-lg">
-                <h3 className="m-3 text-xl font-semibold w-auto truncate" title={item.title}>
-                  {item.title}
-                </h3>       
-            
-                <p className="text-gray-500 text-sm m-3">{item.group}</p>
-                <p className="text-gray-400 text-sm">{item.paper}</p>
-            
-                {/* 버튼 그룹 */}
-                <div className="flex items-center justify-between mt-3 w-full z-10 relative"> 
-                  <span className="inline-flex text-blue-500">
+                key={item.problem_id}
+                className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+              >
+                <div className="p-1 rounded-lg">
+                  <h3
+                    className="m-3 text-xl font-semibold w-auto truncate"
+                    title={item.title}
+                  >
+                    ✏️ {item.title}
+                  </h3>
+
+                  <p className="text-gray-500 text-sm m-3">{item.group}</p>
+                  <p className="text-gray-400 text-sm">{item.paper}</p>
+
+                  {/* 문제 보기 버튼 (디자인 개선) */}
+                  <div className="flex justify-center mt-3">
                     <button
                       onClick={(e) => {
-                        e.stopPropagation(); // ✅ 부모 div의 클릭 이벤트와 충돌 방지
-                        router.push(`/registered-problems/edit/${item.problem_id}`);
+                        e.stopPropagation(); // ✅ 부모 div의 클릭 이벤트 방지
+                        router.push(
+                          `/registered-problems/view/${item.problem_id}`
+                        );
                       }}
-                      className="flex items-center p-2 hover:text-black transition"
+                      className="bg-mygreen text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full"
                     >
-                      <FontAwesomeIcon icon={faPen} className="mr-1" />
-                      수정
+                      문제 보기
                     </button>
-                  </span>
-
-                  <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // ✅ 부모 div의 클릭 이벤트와 충돌 방지
-                        router.push(`/registered-problems/view/${item.problem_id}`);
-                      }}
-                      className="flex items-center p-2 hover:text-black transition"
-                    >
-                      <FontAwesomeIcon icon={faPen} className="mr-1" />
-                      문제보기
-                    </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // ✅ 부모 div의 클릭 이벤트와 충돌 방지
-                      openDeleteModal(item.problem_id);
-                    }}
-                    className="text-red-500 hover:text-red-700 transition"
-                  >
-                    <FontAwesomeIcon icon={faTrashCan} />           
-                    삭제
-                  </button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-            
+              </motion.div>
             ))
           ) : (
-            <p className="text-center text-gray-500 col-span-3">등록된 문제가 없습니다.</p>
+            <p className="text-center text-gray-500 col-span-3">
+              등록된 문제가 없습니다.
+            </p>
           )}
         </motion.div>
-
-        {/* ✅ 문제 상세 패널 */}
-        {/* <motion.div
-          className={`transition-all duration-300 ${selectedProblem ? "w-1/3" : "w-0 hidden"}`}>
-          <ProblemDetailPanel problem={selectedProblem} onClose={handleCloseDetail} />
-        </motion.div> */}
       </motion.div>
-
-      {/* ✅ 삭제 확인 모달 */}
-      {isConfirming && (
-        <ConfirmationModal
-          message={`"${
-            filteredData.find((q) => q.problem_id === targetProblemId)?.title || "이"
-          }" 문제를 삭제하시겠습니까?`} // ✅ 문제 제목 표시
-          onConfirm={handleDelete}
-          onCancel={() => setIsConfirming(false)}
-        />
-      )}
     </>
   );
 }

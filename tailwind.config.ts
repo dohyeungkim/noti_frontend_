@@ -12,6 +12,7 @@ module.exports = {
       },
       colors: {
         mygreen: "#589960", 
+        mydelete: "#F06769",
       },
     },
   },

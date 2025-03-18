@@ -115,12 +115,14 @@ export default function ProblemEdit() {
         className="flex items-center gap-2 justify-end"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}>
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
         <button
           onClick={handleSave}
           className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
           hover:bg-gray-500 transition-all duration-200 ease-in-out
-          active:scale-95">
+          active:scale-95"
+        >
           🚀 수정완료
         </button>
       </motion.div>
@@ -216,8 +218,11 @@ export default function ProblemEdit() {
                   </td>
                   <td className="p-3 text-center">
                     <button
-                      onClick={() => setInputs(inputs.filter((_, i) => i !== index))}
-                      className="bg-red-500 text-white px-3 py-2 rounded-lg">
+                      onClick={() =>
+                        setInputs(inputs.filter((_, i) => i !== index))
+                      }
+                      className="bg-mydelete text-white px-3 py-2 rounded-lg"
+                    >
                       ✖
                     </button>
                   </td>
@@ -229,7 +234,8 @@ export default function ProblemEdit() {
           <div className="flex justify-between mt-6">
             <button
               onClick={() => setInputs([...inputs, { input: "", output: "" }])}
-              className="bg-green-500 text-white px-4 py-2 rounded-full">
+              className="bg-mygreen text-white px-4 py-1 rounded-full"
+            >
               + 추가
             </button>
           </div>

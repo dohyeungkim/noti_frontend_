@@ -5,7 +5,7 @@
 
 body {
   @apply font-inter;
-  @apply bg-[#f9f9f9];
+  @apply bg-[#FCFCFC];
   overflow-x: hidden;
   display: flex;
   width: 100vw;
