@@ -60,7 +60,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
     <>
       {/* 사이드바 */}
       <div
-        className={`fixed top-0 left-0 h-full bg-gray-200 shadow-lg overflow-hidden rounded-r-2xl transition-all duration-300 z-[1000] ${
+        className={`fixed top-0 left-0 h-full bg-[#E5E7EB] shadow-lg overflow-hidden rounded-r-2xl transition-all duration-300 z-[1000] ${
           isOpen ? "w-64" : "w-16"
         }`}
       >

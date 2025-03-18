@@ -249,10 +249,8 @@ export default function ManageGroup() {
           </Modal>
         </div>
       </div>
-
       <div className="setting_container">
         <h3 style={{ color: "rgb(162, 162, 162)", padding: "5px" }}>그룹 설정</h3>
-
         {/* ✅ 그룹 공개 설정 */}
         <div className="man_public">
           <h2>그룹 공개 설정</h2>
@@ -279,11 +277,64 @@ export default function ManageGroup() {
             />
           </div>
         </div>
-      </div>
+        <div className="man_delete">
+          <h2>그룹 삭제</h2>
+          <button className="btn_del">삭제</button>
+        </div>
+        {/* 문제지 관리 */}
+        <div className="problem_container">
+          <h3 style={{ color: "rgb(162, 162, 162)", padding: "5px" }}>문제지 관리</h3>
+          <div className="man_group">
+            <div className="man_group_menu">
+              <h2>문제지 공개 수정</h2>
+              <select
+                className="sel_pub"
+                // value={problemPrivacy}
+                // onChange={(e) => setGroupPrivacy(e.target.value)} // 수정 가능하게 변경
+              >
+                <option value="public">공개</option>
+                <option value="private">비공개</option>
+              </select>
+            </div>
+          </div>
 
-      <div className="man_delete">
-        <h2>그룹 삭제</h2>
-        <button className="btn_del">삭제</button>
+          {/* 문제지 정보 수정 */}
+          <div className="man_problem">
+            <div className="man_problem_menu">
+              <h2>문제지 정보 수정</h2>
+              <div className="problem_table_container">
+                <div className="man_problem_name">
+                  <h2>
+                    <strong>문제지 이름</strong>
+                  </h2>
+                  <div>
+                    <input
+                      type="text"
+                      className="edit_name"
+                      placeholder="문제지 이름"
+                      // value={groupName}
+                      // onChange={(e) => setGroupName(e.target.value)} // 수정 가능하게 변경
+                    />
+                  </div>
+                </div>
+                {/* 문제지 소개 */}
+                <div className="man_problem_intro">
+                  <h2>
+                    <strong>문제지 소개</strong>
+                  </h2>
+                  <div className="man_problem_intro">
+                    <textarea
+                      className="edit_intro"
+                      placeholder="문제지 소개"
+                      // value={groupName}
+                      // onChange={(e) => setGroupName(e.target.value)} // 수정 가능하게 변경
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div className="buttons_container">
         <button className="btn_cancle" onClick={() => router.back()}>
