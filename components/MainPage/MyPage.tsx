@@ -77,7 +77,8 @@ export default function MyPage() {
         className="flex items-center gap-4 mb-4 w-full"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}>
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
         <SearchBar searchQuery={search} setSearchQuery={setSearch} />
         <SortButton onSortChange={() => {}} />
       </motion.div>
@@ -87,7 +88,8 @@ export default function MyPage() {
         className="text-2xl font-bold mb-4"
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}>
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
         📌 모든 그룹
       </motion.h2>
       <motion.hr
@@ -96,7 +98,6 @@ export default function MyPage() {
         animate={{ opacity: 1, scaleX: 1 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       />
-
       {/* 로딩 중 메시지 */}
       {loading && <p className="text-center text-gray-500">🔄 그룹 정보를 불러오는 중...</p>}
       {error && <p className="text-center text-red-500">{error}</p>}
@@ -104,66 +105,73 @@ export default function MyPage() {
       {/* 🔥 그룹 카드 리스트 */}
       {!loading && !error && (
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}>
-          {filteredGroups.map((group) => (
-            !group.group_private_state && (
-              <motion.div
-              key={group.group_id}
-              className="relative p-6 border rounded-2xl shadow-md bg-white transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
-              whileHover={{ scale: 1.02 }}>
-              {/* 🔵 그룹 상태 배지 */}
-              <div
-                className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold 
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          {filteredGroups.map(
+            (group) =>
+              !group.group_private_state && (
+                <motion.div
+                  key={group.group_id}
+                  className="relative p-6 border rounded-2xl shadow-md bg-white transition-all duration-200 hover:shadow-lg hover:-translate-y-1 min-h-[180px]"
+                  whileHover={{ scale: 1.02 }}
+                >
+                  {/* 🔵 그룹 상태 배지 */}
+                  <div
+                    className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold 
                   ${
-                    group.group_private_state ? "bg-gray-500 text-white" : "bg-blue-500 text-white"
-                  }`}>
-                {group.group_private_state ? "비공개" : "공개"}
-              </div>
+                    group.group_private_state
+                      ? "bg-[rgb(134,140,136)] text-white"
+                      : "bg-[rgb(120,148,129)] text-white"
+                  }`}
+                  >
+                    {group.group_private_state ? "비공개" : "공개"}
+                  </div>
 
-              {/* 그룹 정보 */}
-              <h2 className="text-xl font-bold mb-2 text-gray-800">
-                {group.group_name.length > 8
-                  ? `${group.group_name.slice(0, 8)}...`
-                  : group.group_name}
-              </h2>
-             
-              <p className="mb-1 text-gray-600">
-                👥 수강생: <span className="font-medium text-gray-700">{group.member_count}명</span>
-              </p>
+                  {/* 그룹 정보 */}
+                  <h2 className="text-xl font-bold mb-2 text-gray-800">
+                    {group.group_name.length > 8
+                      ? `${group.group_name.slice(0, 8)}...`
+                      : group.group_name}
+                  </h2>
 
-              <div className="flex justify-between items-center text-sm font-semibold mt-4">
-                <span className="text-gray-700">
-                  👨‍🏫 그룹장: <span className="text-gray-900">{group.group_owner}</span>
-                </span>
-              </div>
+                  <p className="mb-1 text-gray-600">
+                    👥 수강생:{" "}
+                    <span className="font-medium text-gray-700">{group.member_count}명</span>
+                  </p>
 
-              {/* ✅ 그룹 참여 버튼 */}
-              {group.is_member ? (
-                <button
-                  className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-black text-white hover:bg-slate-600"
-                  onClick={() => {
-                    window.location.href = `/mygroups/${group.group_id}`;
-                  }}>
-                  들어가기
-                </button>
-              ) :(
-                <button
-                  className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-blue-600 text-white hover:bg-blue-700"
-                  onClick={() => {
-                    handleClickPublicJoinButton(group.group_id);
-                  }}>
-                  그룹 참여하기 →
-                </button>
-              )}
-            </motion.div> 
-            )
-          ))}
+                  <div className="flex justify-between items-center text-sm font-semibold mt-4">
+                    <span className="text-gray-700">
+                      👨‍🏫 그룹장: <span className="text-gray-900">{group.group_owner}</span>
+                    </span>
+                  </div>
+                  {/* ✅ 그룹 참여 버튼 */}
+                  {group.is_member ? (
+                    <button
+                      className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-[rgb(73,118,88)] text-white hover:bg-[rgb(169,100,100)]"
+                      onClick={() => {
+                        window.location.href = `/mygroups/${group.group_id}`;
+                      }}
+                    >
+                      들어가기
+                    </button>
+                  ) : (
+                    <button
+                      className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-[rgb(23,58,35)] text-white hover:bg-[rgb(165,74,74)]"
+                      onClick={() => {
+                        handleClickPublicJoinButton(group.group_id);
+                      }}
+                    >
+                      그룹 참여하기 →
+                    </button>
+                  )}
+                </motion.div>
+              )
+          )}
         </motion.div>
       )}
-
       {/* 📊 학습 진행 상황 */}
       {/* <motion.h2
         className="text-2xl font-bold mt-10 mb-4"

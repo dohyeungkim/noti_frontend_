@@ -10,6 +10,8 @@ import {
   faPen,
   faUserCircle,
   faArrowRight,
+  faRightFromBracket,
+  faUnlockAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import Logout from "../Auth/Logout";
 import { useEffect, useState, useCallback } from "react";
@@ -60,7 +62,8 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
       <div
         className={`fixed top-0 left-0 h-full bg-gray-200 shadow-lg overflow-hidden rounded-r-2xl transition-all duration-300 z-[1000] ${
           isOpen ? "w-64" : "w-16"
-        }`}>
+        }`}
+      >
         <Link href="/mypage">
           {/* 프로필 영역 */}
           <div className="flex items-center p-3 bg-gray-200 text-gray-700">
@@ -68,12 +71,14 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <FontAwesomeIcon icon={faUserCircle} size="2x" className="text-gray-500" />
             </button>
             <p
-              className={`ml-2 transition-all duration-300 text-sm ${isOpen ? "block" : "hidden"}`}>
+              className={`ml-2 transition-all duration-300 text-sm ${isOpen ? "block" : "hidden"}`}
+            >
               {userName ? `안녕하세요. ${userName}님!` : "Loading..."}
             </p>
             <button
               className={`ml-auto transition-all duration-300 ${isOpen ? "block" : "hidden"}`}
-              onClick={() => setIsOpen(false)}>
+              onClick={() => setIsOpen(false)}
+            >
               <FontAwesomeIcon icon={faArrowLeft} className="text-gray-500" />
             </button>
           </div>
@@ -99,14 +104,16 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <li key={href} className="my-4 flex items-center gap-2">
                 <Link
                   href={href}
-                  className="no-underline text-gray-700 flex items-center hover:text-black">
+                  className="no-underline text-gray-700 flex items-center hover:text-black"
+                >
                   <button className="border-none bg-transparent text-lg cursor-pointer">
                     <FontAwesomeIcon icon={icon} className="text-gray-500" />
                   </button>
                   <span
                     className={`ml-2 transition-all duration-300 text-sm ${
                       isOpen ? "inline" : "hidden"
-                    }`}>
+                    }`}
+                  >
                     {text}
                   </span>
                 </Link>
@@ -123,7 +130,8 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
                   <Link
                     key={group.group_id}
                     href={`/mygroups/${group.group_id}`}
-                    className=" block text-gray-900 text-xs sm:text-sm hover:text-black transition-all duration-200 pl-[3%] sm:pl-[3%] pt-[3%]">
+                    className=" block text-gray-900 text-xs sm:text-sm hover:text-black transition-all duration-200 pl-[3%] sm:pl-[3%] pt-[3%]"
+                  >
                     🏡 <span className="text-gray-700">{group.group_name}</span>
                   </Link>
                 ))
@@ -133,19 +141,43 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
             </div>
           </div>
         </div>
-        <div>
-          <Logout />
-        </div>
-        <div>
-          <PasswordChange />
+
+        {/* 비번 변경, 로그아웃 */}
+        <div className="absolute bottom-0 left-0 w-full pl-4">
+          <ul className="list-none p-0">
+            <li className="my-4 flex items-center gap-2">
+              <button className="border-none bg-transparent text-lg cursor-pointer">
+                <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" />
+              </button>
+              <span
+                className={`className="no-underline text-gray-700 flex items-center hover:text-black transition-all duration-300 text-sm ${
+                  isOpen ? "inline" : "hidden"
+                }`}
+              >
+                <PasswordChange />
+              </span>
+            </li>
+            <li className="my-4 flex items-center gap-2">
+              <button className="border-none bg-transparent text-lg cursor-pointer">
+                <FontAwesomeIcon icon={faRightFromBracket} className="text-gray-500" />
+              </button>
+              <span
+                className={`className="no-underline text-gray-700 flex items-center hover:text-black transition-all duration-300 text-sm ${
+                  isOpen ? "inline" : "hidden"
+                }`}
+              >
+                <Logout />
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
-
       <button
         className={`absolute top-[10px] left-[70px] bg-gray-100 text-black rounded-full w-8 h-8 text-lg cursor-pointer ${
           isOpen ? "hidden" : "block"
         }`}
-        onClick={() => setIsOpen(true)}>
+        onClick={() => setIsOpen(true)}
+      >
         <FontAwesomeIcon icon={faArrowRight} className="text-gray-500" />
       </button>
     </>
