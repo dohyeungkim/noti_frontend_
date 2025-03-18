@@ -139,7 +139,7 @@ export default function GroupCreateModal({
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:outline-none transition text-gray-700"
             />
 
-            {/* 공개/비공개 선택 */}
+            {/* 공개/비공개 선택! */}
             <div className="flex justify-between items-center border border-gray-300 p-2 rounded-lg">
               <span className="text-sm text-gray-600">그룹 상태</span>
               <button
