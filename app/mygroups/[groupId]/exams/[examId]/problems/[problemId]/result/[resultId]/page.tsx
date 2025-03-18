@@ -6,7 +6,7 @@ export default function FeedbackWithSubmissionPage({
   params: { groupId: string; examId: string; problemId: string; resultId: string};
 }) {
   return (
-    <div className="w-full max-w-5xl px-6">
+    <div >
       <FeedbackWithSubmissionPageClient params={params}/>
     </div>
   );

@@ -1,13 +1,15 @@
 "use client";
+
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import CodeLogReplay from "@/components/ResultPage/CodeLogReplay";
 import CommentSection from "@/components/ResultPage/CommentSection";
 import { code_log_api, problem_api, solve_api } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
+import { tree, treemapBinary } from "d3";
 
 export default function FeedbackWithSubmissionPageClient({
-   params,
+  params,
 }: {
   params: {
     groupId: string;
@@ -16,13 +18,13 @@ export default function FeedbackWithSubmissionPageClient({
     resultId: string;
   };
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [problem, setProblem] = useState(null);
   const [solveData, setSolveData] = useState(null);
   const [codeLogs, setCodeLogs] = useState([]);
-  const [aiFeedback, setAiFeedback] = useState<string>(""); // ✅ AI 피드백 추가
+  const [aiFeedback, setAiFeedback] = useState<string>("");
+  const [isLoaded, setIsLoaded] = useState(false); // ✅ UI 로드 상태 추가
 
-  // ✅ 더미 데이터 (AI 피드백 테스트용)
   useEffect(() => {
     setSolveData({
       user_id: "user123",
@@ -31,10 +33,11 @@ export default function FeedbackWithSubmissionPageClient({
       code_length: 250,
     });
 
-    setAiFeedback("❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다.");
+    setAiFeedback(
+      "❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다."
+    );
   }, []);
 
-  // ✅ 문제 불러오기
   const fetchProblem = useCallback(async () => {
     try {
       const res = await problem_api.problem_get_by_id(Number(params.problemId));
@@ -44,40 +47,47 @@ export default function FeedbackWithSubmissionPageClient({
     }
   }, [params.problemId]);
 
-  // ✅ 제출 기록 불러오기
   const fetchSolve = useCallback(async () => {
     try {
-      const res = await solve_api.solve_get_by_solve_id(Number(params.resultId));
+      const res = await solve_api.solve_get_by_solve_id(
+        Number(params.resultId)
+      );
       setSolveData(res);
     } catch (error) {
       console.error("제출 기록 불러오기 중 오류 발생:", error);
     }
   }, [params.resultId]);
 
-  // ✅ 코드 로그 불러오기
   const fetchCodeLogs = useCallback(async () => {
     try {
-      const res = await code_log_api.code_logs_get_by_solve_id(Number(params.resultId));
+      const res = await code_log_api.code_logs_get_by_solve_id(
+        Number(params.resultId)
+      );
       setCodeLogs(res);
     } catch (error) {
       console.error("코드 로그 불러오기 중 오류 발생:", error);
     }
   }, [params.resultId]);
 
-  // ✅ 데이터 가져오기
   useEffect(() => {
     fetchProblem();
     fetchSolve();
     fetchCodeLogs();
   }, [fetchProblem, fetchSolve, fetchCodeLogs]);
 
-  if (!problem || !solveData || !codeLogs) {
+  useEffect(() => {
+    if (problem && solveData && codeLogs) {
+      setIsLoaded(true); // ✅ UI 크기 유지
+    }
+  }, [problem, solveData, codeLogs]);
+
+  if (!isLoaded) {
     return (
       <motion.div
-        className="text-center mt-10"
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, type: "spring" }}
+        className="w-full min-h-screen flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl font-bold text-gray-800">
           문제를 불러오는 중입니다...
@@ -88,52 +98,73 @@ export default function FeedbackWithSubmissionPageClient({
 
   return (
     <>
-      {/* 제출 결과 */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        className={`fixed right-6 bottom-30 rounded-l-xl z-50 h-90`} // 화면 높이의 약 2/3 차지
+        initial={{ opacity: 0, scale: 0, x: "50vw" }}
+        animate={{
+          opacity: isSidebarOpen ? 1 : 0,
+          scale: isSidebarOpen ? 1 : 0,
+          x: isSidebarOpen ? 0 : "50vw",
+        }}
+        exit={{ opacity: 0, scale: 0, x: "50vw" }}
+        transition={{ duration: 0.5, type: "spring" }}
+      >
+        {isSidebarOpen && <CommentSection params={params} />}
+      </motion.div>
+
+      {/* 버튼을 독립적으로 레이아웃에 포함 */}
+      <motion.button
+        className="fixed bottom-6 right-6 bg-mygreen text-white
+             p-3 sm:p-4 w-12 h-12 sm:w-14 sm:h-14
+             rounded-full shadow-lg hover:bg-gray-700 transition-all duration-200
+             z-[10001]" // z-index를 채팅창보다 높게 설정
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-6 h-6"
+        >
+          <path d="M12 3C6.477 3 2 7.03 2 12c0 2.038.786 3.95 2.095 5.454L4 21l3.682-1.96A10.12 10.12 0 0 0 12 20c5.523 0 10-4.03 10-9s-4.477-9-10-9zM7 11h10v2H7v-2z" />
+        </svg>
+      </motion.button>
+
+      <motion.div
+        className="w-full p-6 rounded-lg min-h-screen"
+        initial={{ opacity: 0 }} // ✅ 크기 변화 없음
+        animate={{ opacity: 1 }} // ✅ 투명도만 변경 (scale 변화 X)
         transition={{ duration: 0.4, delay: 0.2 }}
       >
-        <div className="mt-6">
+        <div className="mt-6 mb-3">
           <span
             className={`text-sm font-bold ${
-              solveData.passed ? "text-green-600" : "text-yellow-600"
+              solveData.passed ? "text-mygreen" : "text-yellow-600"
             }`}
           >
             {solveData.passed ? "🟢 맞았습니다" : "🟡 틀렸습니다."}
           </span>
         </div>
-        <div className="flex justify-between items-center px-4">
-          <motion.h2
-            className="text-2xl font-bold m-2 pt-2"
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {solveData.user_id}님의 코드
-          </motion.h2>
-        </div>
 
-        
-        <motion.div
-          className="w-full border-b-2 border-gray-400 mb-2"
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.5 }}
-        />
+        <motion.div className="w-full  border-b-2 border-gray-400 mb-2" />
 
         <CodeLogReplay codeLogs={codeLogs} idx={0} />
 
-        {/* AI 피드백 표시 */}
-      <motion.div
-        className="p-4 bg-gray-100 rounded-lg shadow-md border-l-4 border-blue-500 mb-4"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <h3 className="text-lg font-semibold text-gray-700">🧠 AI 피드백</h3>
-        <p className="text-gray-600 mt-2">{aiFeedback}</p>
-      </motion.div>
+        {/* AI 피드백 */}
+        <motion.div
+          className="p-4  bg-gray-100 rounded-lg shadow-md border-l-4  mb-4"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <h3 className="text-lg font-semibold text-gray-700">🧠 AI 피드백</h3>
+          <p className="text-gray-600 mt-2">{aiFeedback}</p>
+        </motion.div>
+
         <ResultPageProblemDetail problem={problem} />
       </motion.div>
     </>

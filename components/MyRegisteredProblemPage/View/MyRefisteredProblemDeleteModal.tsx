@@ -4,7 +4,7 @@ import { useState } from "react";
 
 interface ConfirmationModalProps {
   message: string;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>; // ✅ 비동기 함수로 변경
   onCancel: () => void;
 }
 
@@ -13,7 +13,26 @@ export default function ConfirmationModal({
   onConfirm,
   onCancel,
 }: ConfirmationModalProps) {
-  const [isConfirming, setIsConfirming] = useState(true); // ✅ 상태 추가
+  const [isConfirming, setIsConfirming] = useState(true); // ✅ 삭제 진행 상태
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 상태 추가
+  const [refCount, setRefCount] = useState<number | null>(null); // ✅ 참조 개수 상태 추가
+
+  const handleDelete = async () => {
+    try {
+      setIsConfirming(false); // ✅ 버튼 비활성화 후 삭제 진행
+      await onConfirm();
+    } catch (error: any) {
+      console.error("❌ 삭제 실패:", error);
+
+      // ✅ API 응답에서 오류 메시지와 참조 개수를 추출하여 표시
+      if (error.detail?.msg && error.detail?.ref_cnt !== undefined) {
+        setRefCount(error.detail.ref_cnt);
+        setErrorMessage(`⚠️ 이 문제를 참조하는 문제지가 ${error.detail.ref_cnt}개 있어 삭제가 불가합니다.`);
+      } else {
+        setErrorMessage(`⚠️ 이 문제를 참조하는 문제지가 ${error.detail.ref_cnt}개 있어 삭제가 불가합니다.`);
+      }
+    }
+  };
 
   return (
     <div
@@ -34,16 +53,13 @@ export default function ConfirmationModal({
           </button>
         </div>
 
-        {/* ✅ 확인 단계 */}
-        {isConfirming && (
+        {/* ✅ 삭제 확인 UI */}
+        {isConfirming && !errorMessage && (
           <div className="text-center my-4">
             <h3 className="text-lg font-semibold mb-4">{message}</h3>
             <div className="flex justify-center gap-4">
               <button
-                onClick={() => {
-                  setIsConfirming(false); // ✅ 버튼 비활성화 후 삭제 진행
-                  onConfirm();
-                }}
+                onClick={handleDelete}
                 className="bg-green-600 text-white py-2 px-6 rounded-md transition hover:bg-green-700">
                 예
               </button>
@@ -53,6 +69,23 @@ export default function ConfirmationModal({
                 아니요
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ✅ 삭제 실패 시 커스텀 모달창으로 오류 메시지 표시 */}
+        {errorMessage && (
+          <div className="text-center my-4">
+            <h3 className="text-lg font-semibold text-red-600">{errorMessage}</h3>
+            {refCount !== null && (
+              <p className="text-sm text-gray-600">
+                (참조된 문제지 개수: {refCount}개)
+              </p>
+            )}
+            <button
+              onClick={onCancel}
+              className="mt-4 bg-gray-600 text-white py-2 px-6 rounded-md hover:bg-gray-700 transition">
+              확인
+            </button>
           </div>
         )}
       </div>

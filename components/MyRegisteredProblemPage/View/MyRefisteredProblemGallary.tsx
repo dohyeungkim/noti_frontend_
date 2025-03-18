@@ -42,17 +42,7 @@ export default function GalleryView({
     setIsConfirming(true);
   };
 
-  const handleDelete = async () => {
-    if (targetProblemId !== null) {
-      try {
-        await handleDeleteButtonClick(targetProblemId);
-      } catch (error) {
-        console.error("삭제 실패:", error);
-        alert("삭제 중 오류가 발생했습니다.");
-      }
-    }
-    setIsConfirming(false);
-  };
+
 
   return (
     <>

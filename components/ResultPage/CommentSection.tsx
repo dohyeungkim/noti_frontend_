@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { auth_api, comment_api } from "@/lib/api";
 import { UserIcon } from "lucide-react";
-// import { IoIosSend } from "react-icons/io";
+import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
+import { ko } from "date-fns/locale";
 
 // 댓글 타입 정의
 interface Comment {
@@ -25,6 +26,30 @@ interface CommentSectionProps {
   };
 }
 
+const formatTimestamp = (timestamp?: string) => {
+  if (!timestamp) return "방금 전"; // 만약 시간이 없으면 "방금 전" 표시
+
+  const date = new Date(timestamp);
+
+  // 오늘 날짜면 "오늘 HH:mm"
+  if (isToday(date)) return `오늘 ${format(date, "HH:mm")}`;
+
+  // 어제 날짜면 "어제 HH:mm"
+  if (isYesterday(date)) return `어제 ${format(date, "HH:mm")}`;
+
+  // 1주일 이내면 "n일 전"으로 표시
+  const diff = formatDistanceToNow(date, { addSuffix: true, locale: ko });
+  if (
+    diff.includes("일 전") ||
+    diff.includes("시간 전") ||
+    diff.includes("분 전")
+  )
+    return diff;
+
+  // 그 외에는 "YYYY-MM-DD" 형식으로 반환
+  return format(date, "yyyy-MM-dd HH:mm");
+};
+
 const CommentSection = ({ params }: CommentSectionProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [currentComment, setCurrentComment] = useState<string>("");
@@ -34,54 +59,44 @@ const CommentSection = ({ params }: CommentSectionProps) => {
   >("submission");
   const [userId, setUserId] = useState<string>("");
 
-  // ✅ 댓글 가져오기 (useCallback 적용)
+  // ✅ 댓글 가져오기
   const fetchComments = useCallback(async () => {
     try {
-      let data;
-      if (commentViewType === "problem") {
-        data = await comment_api.comments_get_by_problem_id(
-          Number(params.problemId)
-        );
-      } else {
-        data = await comment_api.comments_get_by_solve_id(
-          Number(params.resultId)
-        );
-      }
+      const data =
+        commentViewType === "problem"
+          ? await comment_api.comments_get_by_problem_id(
+              Number(params.problemId)
+            )
+          : await comment_api.comments_get_by_solve_id(Number(params.resultId));
+
       setComments(data);
     } catch (error) {
       console.error(`코멘트 불러오기 오류: ${error}`);
     }
-  }, [commentViewType, params.problemId, params.resultId]); // ✅ params 값도 의존성 배열에 추가
+  }, [commentViewType, params.problemId, params.resultId]);
 
-  // ✅ 사용자 정보 가져오기 (최적화 적용)
+  // ✅ 사용자 정보 가져오기
   const fetchUserId = useCallback(async () => {
     try {
       const user = await auth_api.getUser();
-      if (user.user_id !== userId) {
-        // ✅ 동일한 userId라면 setState 호출 방지
-        setUserId(user.user_id);
-      }
+      if (user.user_id !== userId) setUserId(user.user_id);
     } catch (error) {
-      console.error("사용자 아이디가 유효하지 않습니다.", error);
+      console.error("사용자 아이디 불러오기 실패:", error);
     }
   }, [userId]);
 
-  // ✅ 댓글 데이터 가져오기
   useEffect(() => {
     fetchComments();
-  }, [fetchComments]); // ✅ useCallback을 활용하여 최신 함수 참조 유지
+  }, [fetchComments]);
 
-  // ✅ 사용자 정보 가져오기 (마운트 시 한 번만 실행)
   useEffect(() => {
     fetchUserId();
   }, [fetchUserId]);
 
   // ✅ 댓글 전송 핸들러
   const handleSubmit = async () => {
-    if (!currentComment.trim()) {
-      alert("댓글을 입력하세요.");
-      return;
-    }
+    if (!currentComment.trim()) return alert("댓글을 입력하세요.");
+
     try {
       const newComment: Comment = {
         user_id: userId,
@@ -103,121 +118,150 @@ const CommentSection = ({ params }: CommentSectionProps) => {
         commentViewType === "problem"
       );
 
-      setComments((prevComments) => [...prevComments, newComment]);
+      setComments((prev) => [...prev, newComment]);
       setCurrentComment("");
     } catch (error) {
       console.error("코멘트 생성 오류:", error);
     }
   };
 
-  // ✅ 버튼 스타일 적용
-  const getButtonClass = (type: "problem" | "submission") => {
-    return commentViewType === type
-      ? "bg-white text-gray-900" // 선택된 버튼
-      : "bg-gray-300 text-gray-500"; // 선택되지 않은 버튼
+  // 🔹 긴 문자열을 10자 단위로 줄 바꿈하는 함수
+  const formatCommentWithLineBreaks = (
+    comment: string,
+    maxLength: number = 10
+  ) => {
+    return comment.split("").reduce((acc, char, idx) => {
+      if (idx > 0 && idx % maxLength === 0) acc += "\n"; // 10자마다 줄 바꿈 추가
+      return acc + char;
+    }, "");
   };
 
   return (
-    <div className=" mr-10 mb-10">
+    <div className="mr-10 mb-10">
+      {/* 🔹 댓글 보기 전환 버튼 */}
       <div className="flex justify-between items-center">
-        <div />
         <div className="flex overflow-hidden shadow-sm">
           <button
             onClick={() => setCommentViewType("submission")}
-            className={`px-8 py-2 rounded-tl-lg transition ${getButtonClass(
-              "submission"
-            )}`}
+            className={`px-6 py-2 rounded-tl-lg transition ${
+              commentViewType === "submission"
+                ? "bg-white text-gray-900"
+                : "bg-gray-300 text-gray-500"
+            }`}
           >
             제출별 보기
           </button>
           <button
             onClick={() => setCommentViewType("problem")}
-            className={`px-8 py-2 rounded-tr-lg transition ${getButtonClass(
-              "problem"
-            )}`}
+            className={`px-6 py-2 rounded-tr-lg transition ${
+              commentViewType === "problem"
+                ? "bg-white text-gray-900"
+                : "bg-gray-300 text-gray-500"
+            }`}
           >
             문제별 보기
           </button>
         </div>
       </div>
-      <div className="h-[66vh]"> 
-      <div className="relative shadow rounded-lg p-4 h-[66vh] bg-white ">
-        <h3 className="font-semibold text-gray-900 mb-2">
-          {commentViewType === "problem"
-            ? `${params.problemId} 문제의 댓글`
-            : `${userId}님의 코드 댓글`}
-        </h3>
-        <div className="h-[2px] bg-gray-300 w-full mb-3 mt-3"></div>
 
-        <div className="flex-1 overflow-y-scroll bg-white   h-[53vh] ">
-          {comments.map((comment, index) => (
-            <motion.li
-              key={index}
-              className="flex items-start space-x-3 p-2"
-              transition={{ duration: 0.5, delay: index * 0.001 }}
-            >
-              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                <UserIcon className="w-6 h-6 text-gray-600" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center">
-                  <strong className="text-gray-900">
-                    {comment.is_anonymous ? comment.nickname : comment.user_id}
-                  </strong>
-                  <div className="pr-4"></div>
-                  <span className="text-xs text-gray-600">
-                    {comment.timestamp || "방금 전"}
-                  </span>
-                </div>
-                <p className="text-gray-800 mt-1">{comment.comment}</p>
-              </div>
-            </motion.li>
-          ))}
+      {/* 🔹 댓글 박스 */}
+      {/* 🔹 댓글 박스 (최대 높이 고정) */}
+      <div className="shadow rounded-lg p-4 bg-white h-[66vh] flex flex-col">
+        {/* 🔹 제목 + 구분선 (상단 고정) */}
+        <div className="flex-shrink-0">
+          <h3 className="font-semibold text-gray-900 mb-2">
+            {commentViewType === "problem"
+              ? `📝 ${params.problemId} 문제의 댓글`
+              : `💬 ${userId}님의 코드 댓글`}
+          </h3>
+          <div className="h-[2px] bg-gray-300 w-full mb-3 mt-3"></div>
         </div>
 
-        <div className="flex justify-between sticky bottom-[10vh] w-full">
-          <label className="flex items-center space-x-2 mr-4 whitespace-nowrap">
+        {/* 🔹 댓글 리스트 (여기만 스크롤) */}
+        <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+          {comments.length === 0 ? (
+            <p className="text-center text-gray-500">아직 댓글이 없습니다.</p>
+          ) : (
+            comments.map((comment, index) => (
+              <motion.div
+                key={index}
+                className="flex items-start space-x-3 p-2 bg-gray-50 rounded-lg"
+                transition={{ duration: 0.5, delay: index * 0.05 }}
+              >
+                {/* 🔹 프로필 아이콘 */}
+                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                  <UserIcon className="w-6 h-6 text-gray-600" />
+                </div>
+
+                {/* 🔹 댓글 내용 */}
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <strong className="text-gray-900">
+                      {comment.is_anonymous
+                        ? comment.nickname
+                        : comment.user_id}
+                    </strong>
+                    <span className="text-xs text-gray-600">
+                      {formatTimestamp(comment.timestamp)}
+                    </span>
+                  </div>
+
+                  {/* ✅ 10자마다 줄 바꿈 적용 */}
+                  <p className="text-gray-800 mt-1 whitespace-pre-wrap">
+                    {formatCommentWithLineBreaks(comment.comment, 10)}
+                  </p>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* 🔹 댓글 입력창 (하단 고정) */}
+        <div className="flex-shrink-0 flex items-center gap-2 p-3 bg-gray-100 rounded-xl mt-3 shadow-sm">
+          {/* 🔸 익명 체크박스 */}
+          <label className="flex items-center space-x-2 cursor-pointer">
             <input
               type="checkbox"
-              className="h-4 w-4 appearance-none border border-gray-400 rounded-md checked:bg-gray-400 checked:border-gray-400 checked:text-white focus:ring-2 focus:ring-gray-500"
+              className="h-4 w-4 appearance-none border border-gray-400 rounded-md checked:bg-mygreen checked:border-mygreen checked:text-white focus:ring-2 focus:ring-mygreen transition flex items-center justify-center"
               checked={isAnonymous}
               onChange={() => setIsAnonymous(!isAnonymous)}
             />
             <span className="text-sm text-gray-700">익명</span>
           </label>
 
-          <div className="flex flex-1 items-center space-x-4 ">
-            <div className="relative w-full h-12 bg-gray-200 rounded-xl flex items-center  ">
-              <textarea
-                placeholder="댓글을 입력해 주세요."
-                className="flex-1 bg-transparent w-full h-full resize-none border-none focus:outline-none p-2"
-                value={currentComment}
-                onChange={(e) => setCurrentComment(e.target.value)}
-              />
-              <button
-                onClick={handleSubmit}
-                className="ml-3 flex items-center p-2 text-gray-700 rounded-lg hover:text-gray-900 transition-colors"
+          {/* 🔸 댓글 입력 필드 */}
+          <div className="flex-1 flex items-center bg-white rounded-lg border border-gray-300">
+            <textarea
+              placeholder="댓글을 입력해 주세요.."
+              className="w-full h-12 resize-none border-none focus:outline-none p-2 rounded-lg"
+              value={currentComment}
+              onChange={(e) => setCurrentComment(e.target.value)}
+            />
+
+            {/* 🔸 전송 버튼 */}
+            <button
+              onClick={handleSubmit}
+              className="p-3 text-gray-700 hover:text-gray-900 transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 2L11 13" />
-                  <path d="M22 2L15 22 11 13 2 9z" />
-                </svg>
-              </button>
-            </div>
+                <path d="M22 2L11 13" />
+                <path d="M22 2L15 22 11 13 2 9z" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
-    </div></div>
+    </div>
   );
 };
 
