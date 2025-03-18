@@ -8,10 +8,14 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        inter: ['Inter', 'sans-serif'],
+        inter: ["Inter", "sans-serif"],
       },
       colors: {
-        mygreen: "#589960", 
+        mygreen: "#589960",
+        mypublic: "#789481",
+        mydarkgreen: "#173A23",
+        mygray: "#868C88",
+        myred: "#C24343",
         mydelete: "#F06769",
       },
     },

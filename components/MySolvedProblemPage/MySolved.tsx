@@ -24,42 +24,40 @@ export default function MySolved() {
   // const [solves, setSolves] = useState([]);
 
   const getStatusColor = (passed: boolean) => {
-    return passed ? "text-green-500" : "text-blue-500";
+    return passed ? "text-mygreen" : "text-myred";
   };
 
   const getButtonColor = (passed: boolean) => {
-    return passed
-      ? "bg-green-500 hover:bg-green-600"
-      : "bg-blue-500 hover:bg-blue-600";
+    return passed ? "bg-mygreen hover:bg-green-600" : "bg-myred hover:bg-opacity-80";
   };
 
   const processSolves = (solveData) => {
     const groupedSolves = {};
-  
+
     solveData.forEach((solve) => {
       const { group_id, problem_id, workbook_id, passed } = solve;
       const key = `${group_id}-${problem_id}-${workbook_id}`;
-  
+
       // 기존 키가 없으면 solve 객체 전체를 저장
       if (!groupedSolves[key]) {
         groupedSolves[key] = { ...solve }; // 기존 solve 데이터를 유지
       }
-  
+
       // 하나라도 passed=true가 있으면 최종 상태를 true로 변경
       if (passed) {
         groupedSolves[key].passed = true;
       }
     });
-  
+
     return Object.values(groupedSolves);
   };
 
-    // solve 데이터 가져오는 함수 (useCallback 적용)
+  // solve 데이터 가져오는 함수 (useCallback 적용)
   const fetchSolves = useCallback(async () => {
     try {
       const data = await solve_api.solve_get_me();
       const processedData = processSolves(data);
-  
+
       setCorrectProblems(processedData.filter((p) => p.passed === true));
       setOngoingProblems(processedData.filter((p) => p.passed === false));
 
@@ -96,9 +94,7 @@ export default function MySolved() {
       {/* 맞은 문제 섹션 */}
       {correctProblems.length > 0 && (
         <>
-          <motion.h2 className="text-2xl font-bold mb-4">
-            ✅ 맞은 문제
-          </motion.h2>
+          <motion.h2 className="text-2xl font-bold mb-4">✅ 맞은 문제</motion.h2>
           <motion.hr
             className="border-b-1 border-gray-300 my-4 m-2"
             initial={{ opacity: 0, scaleX: 0 }}
@@ -118,40 +114,36 @@ export default function MySolved() {
                     key={problem.problem_id}
                     className="p-5 border rounded-2xl shadow bg-white transition-all duration-200 hover:shadow-md hover:-translate-y-1"
                   >
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {problem.problem_name}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{problem.group_name} &gt; {problem.workbook_name}</p>
-                    <p
-                      className={`text-sm font-medium mt-1 ${getStatusColor(
-                        problem.passed
-                      )}`}
-                    >
+                    <h3 className="text-lg font-semibold text-gray-800">{problem.problem_name}</h3>
+                    <p className="text-gray-500 text-sm">
+                      {problem.group_name} &gt; {problem.workbook_name}
+                    </p>
+                    <p className={`text-sm font-medium mt-1 ${getStatusColor(problem.passed)}`}>
                       상태: {problem.passed ? "맞음" : "도전 중"}
                     </p>
 
                     <Link
                       href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}
                     >
-                        <button
-                          className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
-                            problem.passed
-                          )}`}
-                        >
-                          제출 기록 보기
-                        </button>
-                      </Link>
-                      <Link
-                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result/${problem.solve_id}`}
+                      <button
+                        className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
+                          problem.passed
+                        )}`}
                       >
-                        <button
-                          className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
-                            problem.passed
-                          )}`}
-                        >
-                          피드백 보기
-                        </button>
-                      </Link>
+                        제출 기록 보기
+                      </button>
+                    </Link>
+                    <Link
+                      href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result/${problem.solve_id}`}
+                    >
+                      <button
+                        className={`mt-4 w-1/2 text-white py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${getButtonColor(
+                          problem.passed
+                        )}`}
+                      >
+                        피드백 보기
+                      </button>
+                    </Link>
                   </div>
                 ))}
               </div>
@@ -198,9 +190,7 @@ export default function MySolved() {
       {/* 도전 중 문제 섹션 */}
       {ongoingProblems.length > 0 && (
         <>
-          <motion.h2 className="text-2xl font-bold mb-4 mt-8">
-            🚀 도전 중 문제
-          </motion.h2>
+          <motion.h2 className="text-2xl font-bold mb-4 mt-8">🚀 도전 중 문제</motion.h2>
           <motion.hr
             className="border-b-1 border-gray-300 my-4 m-2"
             initial={{ opacity: 0, scaleX: 0 }}
@@ -220,15 +210,11 @@ export default function MySolved() {
                     key={problem.problem_id}
                     className="p-5 border rounded-2xl shadow bg-white transition-all duration-200 hover:shadow-md hover:-translate-y-1"
                   >
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {problem.problem_name}
-                    </h3>
-                    <p className="text-gray-500 text-sm">{problem.group_name} &gt; {problem.workbook_name}</p>
-                    <p
-                      className={`text-sm font-medium mt-1 ${getStatusColor(
-                        problem.passed
-                      )}`}
-                    >
+                    <h3 className="text-lg font-semibold text-gray-800">{problem.problem_name}</h3>
+                    <p className="text-gray-500 text-sm">
+                      {problem.group_name} &gt; {problem.workbook_name}
+                    </p>
+                    <p className={`text-sm font-medium mt-1 ${getStatusColor(problem.passed)}`}>
                       상태: {problem.passed ? "맞음" : "틀림"}
                     </p>
 

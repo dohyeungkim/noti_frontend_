@@ -61,7 +61,8 @@ export default function WorkBookCreateModal({
           <h2 className="text-lg font-semibold">문제지 추가하기</h2>
           <button
             onClick={() => setIsModalOpen(false)}
-            className="text-red-500 hover:text-red-700 text-2xl">
+            className="text-gray-800 hover:text-opacity-80 text-2xl"
+          >
             ✖
           </button>
         </div>
@@ -96,14 +97,16 @@ export default function WorkBookCreateModal({
               <button
                 onClick={handleCreateWorkbook}
                 disabled={isLoading}
-                className={`bg-green-600 text-white py-2 px-6 rounded-md transition ${
+                className={`bg-mygreen text-white py-2 px-6 rounded-md transition ${
                   isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
-                }`}>
+                }`}
+              >
                 {isLoading ? "생성 중..." : "예"}
               </button>
               <button
                 onClick={() => setIsConfirming(false)}
-                className="bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 transition">
+                className="bg-myred text-white py-2 px-6 rounded-md hover:bg-red-700 transition"
+              >
                 아니요
               </button>
             </div>
@@ -115,9 +118,10 @@ export default function WorkBookCreateModal({
           <button
             onClick={() => setIsConfirming(true)}
             disabled={isLoading}
-            className={`mt-4 w-full bg-black text-white py-3 rounded-md text-lg cursor-pointer hover:bg-gray-800 transition ${
+            className={`mt-4 w-full bg-mygreen text-white py-3 rounded-md text-lg cursor-pointer hover:bg-opacity-80 transition ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
-            }`}>
+            }`}
+          >
             {isLoading ? "생성 중..." : "문제지 생성하기"}
           </button>
         )}
