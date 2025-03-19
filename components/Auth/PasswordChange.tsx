@@ -56,13 +56,8 @@ export default function PasswordChange() {
       setLoading(false);
     }
   };
-
   return (
     <>
-      {/* 비밀번호 변경 버튼 */}
-      <button onClick={handleOpenModal}>비밀번호 변경하기</button>
-
-      {/* 모달 */}
       {open && (
         <div
           style={{
@@ -76,48 +71,69 @@ export default function PasswordChange() {
             alignItems: "center",
             justifyContent: "center",
           }}
-          onClick={() => {
-            if (!success) return; // 성공하지 않으면 닫히지 않음
-            setOpen(false);
-          }}>
+          onClick={() => setOpen(false)}>
           <div
             style={{
               backgroundColor: "white",
               padding: "20px",
               borderRadius: "10px",
-              minWidth: "300px",
+              width: "300px", // 고정된 너비
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
               position: "relative",
             }}
             onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "16px",
+                color: "#333",
+              }}>
+              X
+            </button>
             <h2>비밀번호 변경</h2>
             {error && <p style={{ color: "red" }}>{error}</p>}
-            {success && <p style={{ color: "green" }}>{success}</p>}
-
             <input
               type="password"
               placeholder="현재 비밀번호"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              style={{ display: "block", width: "100%", margin: "10px 0", padding: "8px" }}
+              style={{ display: "block", width: "100%", margin: "10px 0", padding: "8px", borderRadius: '4px', border: '1px solid #ccc' }}
             />
             <input
               type="password"
               placeholder="새 비밀번호"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              style={{ display: "block", width: "100%", margin: "10px 0", padding: "8px" }}
+              style={{ display: "block", width: "100%", margin: "10px 0", padding: "8px", borderRadius: '4px', border: '1px solid #ccc' }}
             />
-
             <button
               onClick={handlePasswordChange}
               disabled={loading}
-              style={{ marginRight: "10px" }}>
-              {loading ? "변경 중..." : "비밀번호 변경"}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: "#4CAF50", // mygreen 색상
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                outline: 'none',
+                fontSize: '16px',
+                display: 'block',
+                width: '100%',
+                margin: '10px 0'
+              }}>
+              {loading ? "변경 중..." : "변경하기"}
             </button>
-            <button onClick={() => setOpen(false)}>닫기</button>
           </div>
         </div>
       )}
+      <button onClick={handleOpenModal}>비밀번호 변경하기</button>
     </>
   );
 }
