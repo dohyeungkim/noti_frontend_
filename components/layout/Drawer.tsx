@@ -68,7 +68,6 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
           isOpen ? "w-64" : "w-16"
         }`}
       >
-        <Link href="/mypage">
           {/* 프로필 영역 */}
           <div className="flex items-center p-3 bg-gray-200 text-gray-700">
             <button className="text-lg cursor-pointer bg-transparent border-none">
@@ -86,7 +85,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <FontAwesomeIcon icon={faArrowLeft} className="text-gray-500" />
             </button>
           </div>
-        </Link>
+        
 
         {/* 네비게이션 메뉴 */}
         <div className="p-4">
