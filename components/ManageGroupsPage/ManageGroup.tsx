@@ -40,7 +40,7 @@ export default function ManageGroup() {
   // 모달 및 토글 상태
   const [showMembers, setShowMembers] = useState(false);
   const [showInvitationMembers, setShowInvitationMembers] = useState(false);
-  // const [showProblemList, setShowProblemList] = useState(false);
+  const [showProblemList, setShowProblemList] = useState(false);
   const [showModalBan, setShowModalBan] = useState(false);
   const [showModalDen, setShowModalDen] = useState(false);
   const [showModalAcc, setShowModalAcc] = useState(false);
@@ -155,7 +155,7 @@ export default function ManageGroup() {
 
   const toggleMembers = () => setShowMembers((prev) => !prev);
   const toggleInvMembers = () => setShowInvitationMembers((prev) => !prev);
-  // const toggleProblemList = () => setShowProblemList((prev) => !prev);
+  const toggleProblemList = () => setShowProblemList((prev) => !prev);
 
   return (
     <div className="w-full flex flex-col bg-transparent p-5 overflow-auto">
@@ -402,7 +402,7 @@ export default function ManageGroup() {
           <button className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]">삭제</button>
         </div>
 
-        {/* 문제지(워크북) 조회 및 수정 영역 */}
+        {/* ✅ 문제지(워크북) 조회 및 수정 영역 ✨ */}
         <div className="mt-[35px]">
           <h2 className="text-gray-500 p-1">문제지 설정</h2>
           <div className="flex justify-between items-center bg-[#E6E6E6] w-full h-[50px] p-[10px] rounded-[10px]">
@@ -414,83 +414,100 @@ export default function ManageGroup() {
           </div>
 
           {/* 문제지 목록 카드들을 스크롤 가능한 영역에 나열 */}
-          <div className="bg-[#E6E6E6] w-full p-[10px] mt-2 rounded-[10px] overflow-auto max-h-[300px]">
-            <h2 className="mb-5">문제지 정보 설정</h2>
-            {workbooks.length > 0 ? (
-              workbooks.map((wb, index) => (
-                <div key={wb.workbook_id} className="border border-gray-300 p-4 rounded-md mb-4">
-                  <div className="flex justify-between items-center">
-                    <label className="font-bold">문제지 이름</label>
-                    <input
-                      type="text"
-                      className="w-[250px] h-[33px] pl-[10px] resize-none rounded-[10px] text-center"
-                      value={wb.workbook_name}
-                      onChange={(e) => {
-                        const updated = [...workbooks];
-                        updated[index] = { ...updated[index], workbook_name: e.target.value };
-                        setWorkbooks(updated);
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-col mt-3">
-                    <label className="font-bold">문제지 소개</label>
-                    <textarea
-                      className="flex w-full h-[100px] items-center p-[10px] mt-2 resize-none rounded-[10px] overflow-auto"
-                      value={wb.description}
-                      onChange={(e) => {
-                        const updated = [...workbooks];
-                        updated[index] = { ...updated[index], description: e.target.value };
-                        setWorkbooks(updated);
-                      }}
-                    />
+          <div
+            className="bg-[#E6E6E6] w-full p-[10px] mt-2 rounded-[10px] overflow-auto h-[50px]"
+            style={{ height: showProblemList ? "300px" : "50px" }}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2>문제지 정보 설정</h2>
+              <button
+                className="bg-[#B8B8B8] w-[110px] h-[33px] rounded-[10px]"
+                onClick={toggleProblemList}
+              >
+                문제지 조회
+              </button>
+            </div>
+
+            {showProblemList && (
+              <div className="mt-4">
+                {workbooks.length > 0 ? (
+                  workbooks.map((wb, index) => (
+                    <div
+                      key={wb.workbook_id}
+                      className="border border-gray-300 p-3 rounded-md mb-4"
+                    >
+                      <div className="flex justify-between items-center">
+                        <label className="font-bold">문제지 이름</label>
+                        <input
+                          type="text"
+                          className="w-[250px] h-[33px] pl-[10px] resize-none rounded-[10px] text-center"
+                          value={wb.workbook_name}
+                          onChange={(e) => {
+                            const updated = [...workbooks];
+                            updated[index] = { ...updated[index], workbook_name: e.target.value };
+                            setWorkbooks(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col mt-3">
+                        <label className="font-bold">문제지 소개</label>
+                        <textarea
+                          className="w-full h-[100px] p-[10px] mt-2 resize-none rounded-[10px] overflow-auto"
+                          value={wb.description}
+                          onChange={(e) => {
+                            const updated = [...workbooks];
+                            updated[index] = { ...updated[index], description: e.target.value };
+                            setWorkbooks(updated);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 mt-3">문제지가 존재하지 않습니다.</p>
+                )}
+              </div>
+              // </div>
+              // </div>
+            )}
+          </div>
+          {/* 저장 버튼 영역 */}
+          <div className="flex justify-center mt-20 gap-[10px]">
+            <button
+              className="bg-[#868c88] text-white py-[5px] px-[15px] rounded-[10px]"
+              onClick={() => router.back()}
+            >
+              이전
+            </button>
+            <button
+              className="bg-[#497658] text-white py-[5px] px-[15px] rounded-[10px]"
+              onClick={() => setShowModalSave(true)}
+            >
+              변경사항 저장
+            </button>
+            {showModalSave && (
+              <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex justify-center items-center z-[1000]">
+                <div className="bg-white p-[30px] rounded-[18px] text-center min-w-[300px]">
+                  <h3 className="text-center">변경 사항을 저장하시겠습니까?</h3>
+                  <div className="flex justify-center mt-[30px] gap-[5px]">
+                    <button
+                      className="bg-myred text-white py-[5px] px-[15px] rounded-[10px]"
+                      onClick={() => setShowModalSave(false)}
+                    >
+                      아니오
+                    </button>
+                    <button
+                      className="bg-mygreen text-white py-[5px] px-[15px] rounded-[10px]"
+                      onClick={updateGroup}
+                    >
+                      네
+                    </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div>
-                <h2>문제지 정보 설정</h2>
-                <p className="text-center text-gray-500 mt-3">문제지가 존재하지 않습니다.</p>
               </div>
             )}
           </div>
         </div>
-      </div>
-
-      {/* 저장 버튼 영역 */}
-      <div className="flex justify-center mt-20 gap-[10px]">
-        <button
-          className="bg-[#868c88] text-white py-[5px] px-[15px] rounded-[10px]"
-          onClick={() => router.back()}
-        >
-          이전
-        </button>
-        <button
-          className="bg-[#497658] text-white py-[5px] px-[15px] rounded-[10px]"
-          onClick={() => setShowModalSave(true)}
-        >
-          변경사항 저장
-        </button>
-        {showModalSave && (
-          <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex justify-center items-center z-[1000]">
-            <div className="bg-white p-[30px] rounded-[18px] text-center min-w-[300px]">
-              <h3 className="text-center">변경 사항을 저장하시겠습니까?</h3>
-              <div className="flex justify-center mt-[30px] gap-[5px]">
-                <button
-                  className="bg-myred text-white py-[5px] px-[15px] rounded-[10px]"
-                  onClick={() => setShowModalSave(false)}
-                >
-                  아니오
-                </button>
-                <button
-                  className="bg-mygreen text-white py-[5px] px-[15px] rounded-[10px]"
-                  onClick={updateGroup}
-                >
-                  네
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
