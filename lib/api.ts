@@ -143,6 +143,30 @@ export const problem_api = {
 };
 
 // "내가 등록한 문제"에서 제목 가져오기
+// ====================== problem_like 관련 api ===========================
+export const problem_like_api = {
+  async problem_like(problem_id: number) {
+    const res = await fetch("/api/proxy/problems_like", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ problem_id: problem_id }),
+    });
+
+    if (!res.ok) throw new Error("좋아요 실패");
+    return res.json();
+  },
+
+  async get_user_likes() {
+    const res = await fetch("/api/proxy/problems_like", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new Error("좋아요 상태 조회 실패");
+    return res.json();
+  },
+};
 
 // ====================== group 관련 api ===========================
 export const group_api = {

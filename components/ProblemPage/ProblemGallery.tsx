@@ -1,9 +1,10 @@
 "use client";
 
+import { problem_like_api } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Problem {
   problem_id: number;
@@ -23,11 +24,37 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
   const router = useRouter();
   const [likedProblems, setLikedProblems] = useState<Record<number, boolean>>({});
 
-  const toggleLike = (problemId: number) => {
-    setLikedProblems((prev) => ({
-      ...prev,
-      [problemId]: !prev[problemId],
-    }));
+  // 초기 좋아요 상태 가져오기
+  useEffect(() => {
+    const fetchLikes = async () => {
+      try {
+        const response = await problem_like_api.get_user_likes();
+        const likedIds = response.liked_problem_ids || [];
+        const initialLikes = problems.reduce((acc: Record<number, boolean>, p: Problem) => {
+          acc[p.problem_id] = likedIds.includes(p.problem_id);
+          return acc;
+        }, {} as Record<number, boolean>);
+        setLikedProblems(initialLikes);
+      } catch (error) {
+        console.error("좋아요 상태 로드 실패:", error);
+      }
+    };
+    fetchLikes();
+  }, [problems]);
+
+  const toggleLike = async (problemId: number) => {
+    try {
+      const response = await problem_like_api.problem_like(problemId);
+      const isLiked = response.liked;
+
+      setLikedProblems((prev) => ({
+        ...prev,
+        [problemId]: isLiked,
+      }));
+    } catch (error) {
+      console.error("좋아요 토글 실패:", error);
+      alert("좋아요 처리 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -46,7 +73,7 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
               toggleLike(p.problem_id);
             }}
             className={`mt-2 flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
-              likedProblems[p.problem_id] ? "bg-red-500 text-white" : "bg-gray-200 text-gray-600"
+              likedProblems[p.problem_id] ? "bg-red-200 text-white" : "bg-gray-200 text-gray-600"
             }`}>
             <motion.div
               animate={{
