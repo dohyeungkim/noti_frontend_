@@ -145,6 +145,7 @@ export default function MySolved() {
                         </h2>
                       </div>
 
+
                       <p className="text-gray-500 text-sm">
                         {truncateText(problem.group_name, 10)} &gt;{" "}
                         {truncateText(problem.workbook_name, 10)}

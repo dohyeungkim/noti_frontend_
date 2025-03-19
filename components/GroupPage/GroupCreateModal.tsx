@@ -30,6 +30,7 @@ export default function GroupCreateModal({
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 상태 추가
 
+
   // 예제: 과거 그룹 리스트
   const pastGroups = ["컴퓨터 구조", "알고리즘", "인공지능 기초"];
 
@@ -63,6 +64,7 @@ export default function GroupCreateModal({
     setIsLoading(true);
     setErrorMessage(null); // ✅ 에러 메시지 초기화
 
+
     try {
       const response = await fetch(`/api/proxy/groups`, {
         method: "POST",
@@ -70,6 +72,7 @@ export default function GroupCreateModal({
         credentials: "include",
         body: JSON.stringify({
           group_name: groupName.trim(), // ✅ 공백 제거 후 저장
+
           group_private_state: !isPublic,
         }),
       });
@@ -156,6 +159,7 @@ export default function GroupCreateModal({
             {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
 
             {/* 공개/비공개 선택 */}
+
             <div className="flex justify-between items-center border border-gray-300 p-2 rounded-lg">
               <span className="text-sm text-gray-600">그룹 상태</span>
               <button
