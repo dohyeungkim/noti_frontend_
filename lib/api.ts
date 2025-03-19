@@ -265,6 +265,19 @@ export const group_member_api = {
     if (!res.ok) throw new Error("멤버 요청 처리 실패");
     return res.json();
   },
+
+  async group_member_kickoff(group_id: number, user_id: string) {
+    const res = await fetch(`/api/proxy/groups/kickoff/${group_id}/${user_id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail?.msg || "그룹원 추방 실패");
+    }
+    return res.json();
+  },
 };
 
 // ====================== workbook 관련 api ===========================

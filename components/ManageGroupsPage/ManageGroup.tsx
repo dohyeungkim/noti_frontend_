@@ -79,6 +79,28 @@ export default function ManageGroup() {
     fetchPrivateGroupMemberReq();
   }, [fetchPrivateGroupMemberReq]);
 
+  // 그룹 추방하기
+  const fetchGroupMemberKickoff = useCallback(
+    async (userId: string) => {
+      if (!window.confirm(`${userId}님을 정말로 추방하시겠습니까?`)) return;
+
+      try {
+        const response = await group_member_api.group_member_kickoff(Number(groupId), userId);
+        console.log("API 응답:", response);
+
+        const message = response?.message || `${userId}님이 성공적으로 추방되었습니다.`;
+        alert(message);
+
+        // 그룹원 목록에서 해당 유저 제거
+        setGroupMembers((prev) => prev.filter((member) => member.user_id !== userId));
+      } catch (error) {
+        console.error("그룹원 추방 처리 에러", error);
+        alert("그룹원 추방 중 오류 발생");
+      }
+    },
+    [groupId]
+  );
+
   // 그룹 신청 수락/거절 처리
   const fetchGroupMemberReqResponse = useCallback(
     async (userId: string, requestState: boolean) => {
@@ -198,7 +220,13 @@ export default function ManageGroup() {
                         </td>
                         <td className="border border-[#6c6c6c] p-2 text-left">{member.email}</td>
                         <td className="border border-[#6c6c6c] p-2 text-left">
-                          <button onClick={() => setShowModalBan(true)}>❌</button>
+                          <button
+                            onClick={() => {
+                              setSelectedUserId(member.user_id);
+                              setShowModalBan(true);
+                            }}>
+                            ❌
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -228,7 +256,12 @@ export default function ManageGroup() {
                 </button>
                 <button
                   className="bg-mygreen text-white py-[5px] px-[15px] rounded-[10px]"
-                  onClick={() => setShowModalBan(false)}>
+                  onClick={async () => {
+                    if (selectedUserId) {
+                      await fetchGroupMemberKickoff(selectedUserId);
+                      setShowModalBan(false);
+                    }
+                  }}>
                   네
                 </button>
               </div>
