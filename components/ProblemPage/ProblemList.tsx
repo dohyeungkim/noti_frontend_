@@ -58,7 +58,7 @@ const ProblemList = ({ problems, groupId, workbookId }: ProblemListProps) => {
                           `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`
                         )
                       }
-                      className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-gray-800 text-white hover:bg-gray-700">
+                      className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80">
                       도전하기
                     </button>
                   </td>

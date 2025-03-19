@@ -45,7 +45,8 @@ export default function ExamTable({ workbooks, handleEnterExam }: ExamTableProps
                 <tr
                   key={workbook.workbook_id}
                   className={`${rowBgColor} ${hoverBgColor} transition-colors duration-200 border-b border-gray-300 cursor-pointer group`}
-                  onClick={() => handleEnterExam(String(workbook.workbook_id))}>
+                  onClick={() => handleEnterExam(String(workbook.workbook_id))}
+                >
                   <td className="px-5 py-4 text-center text-gray-800 font-medium">
                     <h2 className="px-5 py-4 text-center text-gray-600">
                       {workbook.workbook_name.length > 10
@@ -69,8 +70,9 @@ export default function ExamTable({ workbooks, handleEnterExam }: ExamTableProps
                   <td className="px-5 py-4 text-center">
                     <button
                       className={
-                        "w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-gray-800 text-white hover:bg-gray-700"
-                      }>
+                        "w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80"
+                      }
+                    >
                       문제지 펼치기 →
                     </button>
                   </td>

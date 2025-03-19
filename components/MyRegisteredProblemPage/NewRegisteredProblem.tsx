@@ -10,78 +10,55 @@ import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
 import { motion } from "framer-motion";
 import { problem_api } from "@/lib/api";
 import Toolbar from "../markdown/Toolbar";
-// import { ResizableTable } from "../markdown/ResizableTable";
-
-import { ResizableImage } from "../markdown/ResizableImage";
+import { ResizableTable } from "../markdown/ResizableTable";
 import TableCellExtension from "../markdown/TableCellExtension";
-
-
-// ✅ 확장 기능을 올바르게 가져오기
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableCell } from "@tiptap/extension-table-cell";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { dummyProblems } from "@/data/dummy";
+import HistoryGraph from "@/components/history/myhistory";
 
 export default function NewRegisteredProblem() {
   const router = useRouter();
-  // const { id } = useParams();
-
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [inputs, setInputs] = useState([{ input: "", output: "" }]);
-  // const [loading, setLoading] = useState(true);
+  const [isExpandedHistory, setIsExpandedHistory] = useState(true);
 
- 
+
   const editor = useEditor({
     extensions: [
+      StarterKit,
+      Heading.configure({ levels: [1, 2, 3] }),
+      BulletList,
+      OrderedList,
+      Highlight.configure({ multicolor: true }),
+      Image,
+      ResizableTable, // ✅ 기존 Table 대신 ResizableTable 사용
+      TableRow,
+      TableHeader,
       TableCellExtension, // ✅ 커스텀 TableCell 적용
-
-      
-            ResizableImage,
-            StarterKit,
-            Heading.configure({ levels: [1, 2, 3] }),
-            BulletList,
-            OrderedList,
-            Highlight.configure({ multicolor: true }),
-            Image,
-      
-            Table.configure({ resizable: true }),
-            TableRow,
-            TableHeader,
-            TableCell,
     ],
-    content: "",
+    content: "<p>문제 설명을 입력하세요...</p>",
   });
 
   if (!editor) return null; // 에디터가 로드될 때까지 기다림
 
-  // const handleInputChange = (index: number, value: string, field: string) => {
-  //   const updatedInputs = inputs.map((input, i) => {
-  //     if (i === index) {
-  //       return { ...input, [field]: value };
-  //     }
-  //     return input;
-  //   });
-  //   setInputs(updatedInputs);
-  // };
-
+  // ✅ 로컬 이미지를 Base64 URL로 변환하여 삽입
   const addLocalImage = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
         const base64Image = reader.result as string;
-        if (editor) {
-          // editor가 null이 아닐 때만 실행
-          editor.chain().focus().setImage({ src: base64Image }).run();
-        }
+        editor.chain().focus().setImage({ src: base64Image }).run();
       };
       reader.readAsDataURL(file);
     }
   };
-
 
   const handleSubmitButtonClick = async () => {
     if (title.trim() === "") {
@@ -108,23 +85,22 @@ export default function NewRegisteredProblem() {
 
   return (
     <div>
-      <motion.div
-        className="flex items-center gap-2 justify-end"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}>
-        {" "}
+    <motion.div
+      className="flex items-center gap-2 justify-end"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.1 }}>
         <button
           onClick={handleSubmitButtonClick}
           className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
-      hover:bg-gray-500 transition-all duration-200 ease-in-out
-      active:scale-95">
+          hover:bg-gray-500 transition-all duration-200 ease-in-out
+          active:scale-95">
           🚀 등록하기
         </button>
       </motion.div>
-      <div className="gap-6 w-full">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2 ">문제 등록</h2>
+      <div className="grid  gap-6 w-full">
+      <div className="mb-8">
+      <h2 className="text-xl font-bold mb-2 ">문제 등록</h2>
           <div className="border-t border-gray-300 my-4"></div>
           {/* 🔹 문제 제목 입력 */}
           <input
@@ -146,7 +122,6 @@ export default function NewRegisteredProblem() {
             </div>
           </div>
         </div>
-
         <div>
           <h2 className="text-xl font-bold mb-2 "> 입출력 예제</h2>
           <div className="border-t border-gray-300 my-4"></div>
@@ -164,13 +139,8 @@ export default function NewRegisteredProblem() {
                 <tr key={index} className="border-t">
                   <td className="p-3 text-center">{index + 1}</td>
                   <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
+                    <input
+                      type="text"
                       placeholder="입력값"
                       value={pair.input}
                       onChange={(e) => {
@@ -178,22 +148,12 @@ export default function NewRegisteredProblem() {
                         newInputs[index].input = e.target.value;
                         setInputs(newInputs);
                       }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     />
                   </td>
                   <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
+                    <input
+                      type="text"
                       placeholder="출력값"
                       value={pair.output}
                       onChange={(e) => {
@@ -201,18 +161,16 @@ export default function NewRegisteredProblem() {
                         newInputs[index].output = e.target.value;
                         setInputs(newInputs);
                       }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                     />
                   </td>
                   <td className="p-3 text-center">
                     <button
-                      onClick={() => setInputs(inputs.filter((_, i) => i !== index))}
-                      className="bg-red-500 text-white px-3 py-2 rounded-lg">
+                      onClick={() =>
+                        setInputs(inputs.filter((_, i) => i !== index))
+                      }
+                      className="bg-red-500 text-white px-3 py-2 rounded-lg"
+                    >
                       ✖
                     </button>
                   </td>
@@ -224,16 +182,49 @@ export default function NewRegisteredProblem() {
           <div className="flex justify-between mt-6">
             <button
               onClick={() => setInputs([...inputs, { input: "", output: "" }])}
-              className="bg-green-500 text-white px-4 py-2 rounded-full">
+              className="bg-green-500 text-white px-4 py-2 rounded-full"
+            >
               + 추가
             </button>
           </div>
         </div>
       </div>
+      <div className="p-6 bg-white shadow-md rounded-lg mt-10">
+        {/* 문제 제목 */}
+        <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4>
 
+        {/* 구분선 & 토글 버튼 */}
+        <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
+          <button
+            onClick={() => setIsExpandedHistory(!isExpandedHistory)}
+            className="mt-3 text-gray-700 hover:text-black flex items-center"
+          >
+            {isExpandedHistory ? (
+              <>
+                <FaChevronUp className="mr-2" /> 접기
+              </>
+            ) : (
+              <>
+                <FaChevronDown className="mr-2" /> 펼치기
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* 토글 대상 영역 (애니메이션 적용) */}
+        <div
+          className={`transition-all duration-300 ${
+            isExpandedHistory
+              ? "max-h-screen opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
+          }`}
+        >
+          <HistoryGraph historys={dummyProblems} />
+        </div>
+      </div>
       {/* ✅ 스타일 추가 (드래그 핸들) */}
       <style>
-        {`
+{`
   .ProseMirror {
     outline: none;
     min-height: 150px;
@@ -296,7 +287,8 @@ export default function NewRegisteredProblem() {
     transform: scale(1.1);
   }
 `}
-      </style>
+</style>
+
     </div>
   );
 }

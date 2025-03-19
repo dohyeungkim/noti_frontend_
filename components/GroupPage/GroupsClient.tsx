@@ -13,7 +13,7 @@ import GroupTable from "@/components/GroupPage/GroupTable";
 export default function GroupsClient() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("제목순");
+  const [sortOrder, setSortOrder] = useState("제목순"); // ✅ 기본값을 제목순으로 설정
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
   const [refresh, setRefresh] = useState(false);
 
@@ -55,11 +55,6 @@ export default function GroupsClient() {
   const sortedGroups = [...filteredGroups].sort((a, b) => {
     if (sortOrder === "제목순") {
       return a.group_name.localeCompare(b.group_name);
-    } else if (sortOrder === "생성일순") {
-      return (
-        new Date(b.createdAt ?? "1970-01-01").getTime() -
-        new Date(a.createdAt ?? "1970-01-01").getTime()
-      );
     } else if (sortOrder === "공개순") {
       return a.group_private_state === b.group_private_state ? 0 : a.group_private_state ? -1 : 1;
     }
@@ -95,7 +90,12 @@ export default function GroupsClient() {
           />
         </div>
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in" />
-        <SortButton onSortChange={setSortOrder} className="animate-fade-in" />
+
+        {/* ✅ SortButton을 동적으로 정렬 변경 가능하도록 설정 */}
+        <SortButton
+          sortOptions={["제목순", "공개순"]}
+          onSortChange={(selectedSort) => setSortOrder(selectedSort)}
+        />
       </motion.div>
 
       <motion.h2

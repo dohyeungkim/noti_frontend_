@@ -60,16 +60,7 @@ export default function ProblemDetailPanel({
         dangerouslySetInnerHTML={{ __html: problem.description || "설명이 없습니다." }}
       />
     </motion.div>
-    {/* ✅ 문제 수정 버튼 (고정) */}
-    {/* <motion.button
-      onClick={() => router.push(`/registered-problems/edit/${problem.problem_id}`)}
-      // whileHover={{ scale: 1.05 }}
-      // whileTap={{ scale: 0.95 }}
-      className="w-3/4 max-w-[400px] sm:w-2/3 md:w-1/2 bg-black text-white py-2 rounded-xl text-md cursor-pointer hover:bg-gray-500 transition-all duration-200 ease-in-out active:scale-95 absolute bottom-6 left-1/2 transform -translate-x-1/2"
-      >
-      문제 수정하기
-    </motion.button>
-   */}
+    
       {/* ✅ 테이블 스타일 적용 */}
       <style>
         {`

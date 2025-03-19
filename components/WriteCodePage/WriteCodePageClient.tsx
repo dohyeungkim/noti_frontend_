@@ -166,7 +166,9 @@ export default function WriteCodePageClient({
               transition={{ type: "spring", stiffness: 100 }}
               className="overflow-hidden border-r-2 pr-4">
               <div className="sticky top-0z-10 pb-4">
-                <h1 className="text-4xl font-bold text-gray-800 mb-2">{problem.title}</h1>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                  {problem.title.length > 20 ? `${problem.title.slice(0, 20)}...` : problem.title}
+                </h1>
                 <hr className="border-t-2 border-gray-400" />
               </div>
               <div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">

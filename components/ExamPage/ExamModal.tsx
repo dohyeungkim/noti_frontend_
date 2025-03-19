@@ -28,22 +28,29 @@ export default function WorkBookCreateModal({
 }: WorkBookCreateModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 추가
 
   const handleCreateWorkbook = async () => {
-    setRefresh(!refresh);
-    setIsLoading(true);
-
     if (!WorkBookName.trim()) {
-      alert("문제지 이름을 입력해주세요.");
+      setErrorMessage("📌 문제지 이름을 입력해주세요!");
       return;
     }
 
+    if (!WorkBookDescription.trim()) {
+      setErrorMessage("📌 문제지 소개를 입력해주세요!");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null); // ✅ 에러 메시지 초기화
+
     try {
-      await workbook_api.workbook_create(group_id, WorkBookName, WorkBookDescription);
+      await workbook_api.workbook_create(group_id, WorkBookName.trim(), WorkBookDescription.trim());
 
       setWorkBookName("");
       setWorkBookDescription("");
       setIsModalOpen(false);
+      setRefresh(!refresh);
     } catch (error) {
       console.error("문제지 생성 실패:", error);
     } finally {
@@ -60,8 +67,12 @@ export default function WorkBookCreateModal({
         <div className="flex justify-between items-center border-b pb-4">
           <h2 className="text-lg font-semibold">문제지 추가하기</h2>
           <button
-            onClick={() => setIsModalOpen(false)}
-            className="text-red-500 hover:text-red-700 text-2xl">
+            onClick={() => {
+              setErrorMessage(null); // ✅ 모달 닫을 때 에러 메시지 초기화
+              setIsModalOpen(false);
+            }}
+            className="text-gray-800 hover:text-opacity-80 text-2xl"
+          >
             ✖
           </button>
         </div>
@@ -69,22 +80,35 @@ export default function WorkBookCreateModal({
         {/* 입력 폼 */}
         {!isConfirming ? (
           <div className="flex flex-col gap-4 mt-4">
-            {/* 문제지 이름 */}
+            {/* ✅ 문제지 이름 입력 */}
             <input
               type="text"
               value={WorkBookName}
-              onChange={(e) => setWorkBookName(e.target.value)}
+              onChange={(e) => {
+                setWorkBookName(e.target.value);
+                setErrorMessage(null); // ✅ 입력하면 에러 메시지 제거
+              }}
               placeholder="문제지 이름"
-              className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:outline-none transition"
+              className={`p-2 border rounded-md transition ${
+                errorMessage && WorkBookName.trim() === "" ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-gray-500 focus:outline-none`}
             />
 
-            {/* 문제지 소개 */}
+            {/* ✅ 문제지 소개 입력 */}
             <textarea
               value={WorkBookDescription}
-              onChange={(e) => setWorkBookDescription(e.target.value)}
+              onChange={(e) => {
+                setWorkBookDescription(e.target.value);
+                setErrorMessage(null);
+              }}
               placeholder="문제지 소개"
-              className="p-2 border border-gray-300 rounded-md h-20 focus:ring-2 focus:ring-gray-500 focus:outline-none transition"
+              className={`p-2 border rounded-md h-20 transition ${
+                errorMessage && WorkBookDescription.trim() === "" ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-gray-500 focus:outline-none`}
             />
+
+            {/* ✅ 에러 메시지 출력 */}
+            {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
           </div>
         ) : (
           // ✅ 문제지 생성 확인 단계
@@ -96,14 +120,16 @@ export default function WorkBookCreateModal({
               <button
                 onClick={handleCreateWorkbook}
                 disabled={isLoading}
-                className={`bg-green-600 text-white py-2 px-6 rounded-md transition ${
+                className={`bg-mygreen text-white py-2 px-6 rounded-md transition ${
                   isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
-                }`}>
+                }`}
+              >
                 {isLoading ? "생성 중..." : "예"}
               </button>
               <button
                 onClick={() => setIsConfirming(false)}
-                className="bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 transition">
+                className="bg-myred text-white py-2 px-6 rounded-md hover:bg-red-700 transition"
+              >
                 아니요
               </button>
             </div>
@@ -113,11 +139,18 @@ export default function WorkBookCreateModal({
         {/* 문제지 생성 버튼 */}
         {!isConfirming && (
           <button
-            onClick={() => setIsConfirming(true)}
+            onClick={() => {
+              if (!WorkBookName.trim() || !WorkBookDescription.trim()) {
+                setErrorMessage("📌 문제지 이름과 소개를 입력해주세요!");
+                return;
+              }
+              setIsConfirming(true);
+            }}
             disabled={isLoading}
-            className={`mt-4 w-full bg-black text-white py-3 rounded-md text-lg cursor-pointer hover:bg-gray-800 transition ${
+            className={`mt-4 w-full bg-mygreen text-white py-3 rounded-md text-lg cursor-pointer hover:bg-opacity-80 transition ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
-            }`}>
+            }`}
+          >
             {isLoading ? "생성 중..." : "문제지 생성하기"}
           </button>
         )}

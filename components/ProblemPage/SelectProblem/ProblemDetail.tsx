@@ -109,12 +109,14 @@ export default function ProblemDetail() {
              h-[55vh] min-h-[50vh] overflow-hidden"
 >
   {/* ✅ 제목과 구분선을 고정 */}
-  <div className="sticky top-0 bg-white z-10 pb-4">
-    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-      {problem.title}
-    </h1>
-    <hr className="border-t-2 border-gray-400" />
-  </div>
+  {/* ✅ 제목과 구분선을 고정 */}
+<div className="sticky top-0 bg-white z-10 pb-4">
+  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+    {problem.title.length > 35 ? `${problem.title.slice(0, 35)}...` : problem.title}
+  </h1>
+  <hr className="border-t-2 border-gray-400" />
+</div>
+
 
   {/* ✅ 본문 내용 (스크롤 가능) */}
   <div className="overflow-y-auto h-full p-2 pr-2">

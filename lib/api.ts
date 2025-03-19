@@ -225,6 +225,22 @@ export const group_member_api = {
 
     return res.json();
   },
+
+  async group_member_req_response(group_id: number, user_id: string, request_state: boolean) {
+    const res = await fetch(`/api/proxy/member_request/group-invites/${group_id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id,
+        request_state, // true: 수락, false: 거절
+      }),
+    });
+    if (!res.ok) throw new Error("멤버 요청 처리 실패");
+    return res.json();
+  },
 };
 
 // ====================== workbook 관련 api ===========================
@@ -262,6 +278,18 @@ export const workbook_api = {
       credentials: "include",
     });
     if (!res.ok) throw new Error("문제지 가져오기 실패");
+    return res.json();
+  },
+
+  // 문제지 관리 페이지에 문제지 설정부분 api 입니당구리
+  async workbook_update(workbook_id: number, workbook_name: string, description: string) {
+    const res = await fetch(`/api/proxy/workbook/${workbook_id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workbook_name, description }),
+    });
+    if (!res.ok) throw new Error("문제지 업데이트 실패");
     return res.json();
   },
 };
@@ -429,3 +457,25 @@ export const member_request_api = {
     return res.json();
   },
 };
+
+// //====================== workbook manage 관련 api ===========================
+// export const man_workbook_api = {
+//   // workbook_get_by_group: async (groupId: number) => {
+//   //   const response = await fetch(`/api/workbook/by-group/${groupId}`);
+//   //   if (!response.ok) {
+//   //     throw new Error("문제지 목록 조회 실패");
+//   //   }
+//   //   return response.json();
+//   // },
+//   workbook_update: async (workbook_id: number, workbook_name: string, description: string) => {
+//     const response = await fetch(`/api/workbook/${workbook_id}`, {
+//       method: "PUT",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ workbook_name, description }),
+//     });
+//     if (!response.ok) {
+//       throw new Error("워크북 정보 업데이트 실패");
+//     }
+//     return response.json();
+//   },
+// };

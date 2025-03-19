@@ -18,7 +18,9 @@
   margin-top: 80px;
   gap: 10px;
 }
-
+.problem_container {
+  margin-top: 35px;
+}
 .man_public {
   display: flex;
   justify-content: space-between;
@@ -50,15 +52,28 @@
   border-radius: 10px;
 }
 .edit_name {
-  width: 160px;
+  width: 250px;
   height: 33px;
   align-content: center;
   align-items: center;
   padding-left: 10px;
-  margin-right: 10px;
+  /* margin-right: 10px; */
   resize: none;
   border-radius: 10px;
   text-align: center;
+}
+.edit_intro {
+  display: flex;
+  width: 100%;
+  height: 100px;
+  align-content: center;
+  align-items: center;
+  padding: 10px;
+  margin-right: 10px;
+  resize: none;
+  border-radius: 10px;
+  overflow: auto;
+  /* text-align: center; */
 }
 .btn_edit {
   background-color: rgb(184, 184, 184);
@@ -81,6 +96,55 @@
   align-items: center;
 }
 
+.man_problem {
+  justify-content: space-between;
+  background-color: rgb(230, 230, 230);
+  margin-top: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 10px;
+  border-radius: 10px;
+  /* text-align: center; */
+}
+.man_problem_menu {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  /* align-items: center; */
+}
+.man_problem_menu2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-top: 3px; */
+  /* flex-direction: column; */
+}
+.problem_table_container {
+  width: 100%;
+  margin-top: 20px;
+  overflow: auto;
+  min-height: 100px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background-color: transparent;
+  border-radius: 10px;
+
+  /* display: flex;
+  justify-content: space-between;
+  align-items: center; */
+  /* justify-content: space-between; */
+}
+.man_problem_name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.man_problem_intro {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
 .man_stu {
   justify-content: space-between;
   background-color: rgb(230, 230, 230);
@@ -100,7 +164,7 @@
 .man_delete {
   display: flex;
   justify-content: space-between;
-  background-color: rgb(219, 211, 211);
+  background-color: rgb(230, 230, 230);
   width: 100%;
   height: 50px;
   padding: 10px;
@@ -109,8 +173,7 @@
   align-items: center;
 }
 .btn_del {
-  background-color: rgb(177, 152, 152);
-
+  background-color: #b99d9d;
   width: 70px;
   height: 33px;
   border-radius: 10px;
@@ -150,13 +213,15 @@
 }
 
 .btn_cancle {
-  background-color: rgb(193, 200, 221);
+  background-color: #868c88;
+  color: white;
   padding: 5px 15px;
   border-radius: 10px;
 }
 
 .btn_save {
-  background-color: rgb(169, 189, 255);
+  background-color: #497658;
+  color: white;
   padding: 5px 15px;
   border-radius: 10px;
 }
