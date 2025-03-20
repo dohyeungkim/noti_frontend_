@@ -4,7 +4,7 @@ import { problem_like_api } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Problem {
   problem_id: number;
@@ -49,7 +49,7 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
           <div
             key={p.problem_id}
             className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md 
-                       transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                      transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
           >
             <h2 className="text-xl font-semibold text-gray-800 truncate">{p.title}</h2>
 
