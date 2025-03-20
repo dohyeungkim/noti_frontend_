@@ -140,6 +140,18 @@ export const problem_api = {
     }
     return response.json();
   },
+
+  // 문제 통계 가져오기
+  async problem_get_stats(problem_id: number) {
+    const response = await fetch(`/api/proxy/problems/stats/${problem_id}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("문제 통계를 불러오지 못했습니다.");
+    }
+    return response.json();
+  },
 };
 
 // "내가 등록한 문제"에서 제목 가져오기
@@ -158,7 +170,7 @@ export const problem_like_api = {
   },
 
   async get_user_likes() {
-    const res = await fetch("/api/proxy/problems_like", {
+    const res = await fetch("/api/proxy/problems_like/get", {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
