@@ -13,6 +13,8 @@ interface WorkBookCreateModalProps {
   group_id: number;
   refresh: boolean;
   setRefresh: (refresh: boolean) => void;
+  // isPublic: boolean;
+  // setIsPublic: (value: boolean) => void;
 }
 
 export default function WorkBookCreateModal({
@@ -25,7 +27,10 @@ export default function WorkBookCreateModal({
   refresh,
   setRefresh,
   group_id,
+
 }: WorkBookCreateModalProps) {
+  // const [isPublic, setIsPublic] = useState(true); // 또는 초기 상태에 따라 false일 수 있습니다.
+
   const [isLoading, setIsLoading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 추가
@@ -107,9 +112,28 @@ export default function WorkBookCreateModal({
               } focus:ring-2 focus:ring-gray-500 focus:outline-none`}
             />
 
+            
+
             {/* ✅ 에러 메시지 출력 */}
             {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+          
+            {/* <div className="flex justify-between items-center border border-gray-300 p-2 rounded-lg">
+              <span className="text-sm text-gray-600">그룹 상태</span>
+              <button
+                onClick={() => setIsPublic(!isPublic)}
+                className={`px-4 py-1 rounded-lg text-sm transition ${
+                  isPublic ? "bg-mygreen text-white" : "bg-mygray text-white"
+                }`}
+              >
+                {isPublic ? "공개" : "비공개"}
+              </button>
+            </div>
+ */}
+
+
           </div>
+
+          
         ) : (
           // ✅ 문제지 생성 확인 단계
           <div className="text-center my-4">

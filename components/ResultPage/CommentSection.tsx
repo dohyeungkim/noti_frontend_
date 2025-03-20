@@ -2,9 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { auth_api, comment_api } from "@/lib/api";
 import { UserIcon } from "lucide-react";
-import { toZonedTime, format as tzFormat } from "date-fns-tz";
-import { formatDistanceToNow } from "date-fns";
-import { ko } from "date-fns/locale";
+import { formatTimestamp } from "../util/dageUtils";
 
 // 댓글 타입 정의
 interface Comment {
@@ -27,40 +25,7 @@ interface CommentSectionProps {
   };
 }
 
-// 한국 시간(Asia/Seoul) 기준으로 timestamp를 포맷하는 함수
-const formatTimestamp = (timestamp?: string) => {
-  if (!timestamp) return "방금 전"; // 시간이 없으면 "방금 전" 표시
 
-  const seoulTimeZone = "Asia/Seoul";
-  const dateUTC = new Date(timestamp);
-  const dateInSeoul = toZonedTime(dateUTC, seoulTimeZone);
-
-  const nowInSeoul = toZonedTime(new Date(), seoulTimeZone);
-  const dateString = tzFormat(dateInSeoul, "yyyy-MM-dd", { timeZone: seoulTimeZone });
-  const nowString = tzFormat(nowInSeoul, "yyyy-MM-dd", { timeZone: seoulTimeZone });
-
-  // 오늘
-  if (dateString === nowString) {
-    return `오늘 ${tzFormat(dateInSeoul, "HH:mm", { timeZone: seoulTimeZone })}`;
-  }
-
-  // 어제
-  const yesterdayDate = new Date(nowInSeoul.getTime());
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterdayInSeoul = toZonedTime(yesterdayDate, seoulTimeZone);
-  const yesterdayString = tzFormat(yesterdayInSeoul, "yyyy-MM-dd", { timeZone: seoulTimeZone });
-
-  if (dateString === yesterdayString) {
-    return `어제 ${tzFormat(dateInSeoul, "HH:mm", { timeZone: seoulTimeZone })}`;
-  }
-
-  // 1주일 이내
-  const diff = formatDistanceToNow(dateInSeoul, { addSuffix: true, locale: ko });
-  if (diff.includes("일 전") || diff.includes("시간 전") || diff.includes("분 전")) return diff;
-
-  // 그 외에는 "YYYY-MM-DD HH:mm"
-  return tzFormat(dateInSeoul, "yyyy-MM-dd HH:mm", { timeZone: seoulTimeZone });
-};
 
 const CommentSection = ({ params }: CommentSectionProps) => {
   const [comments, setComments] = useState<Comment[]>([]);

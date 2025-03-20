@@ -78,7 +78,19 @@ export default function MyPage() {
           }
         ></SortButton>
       </motion.div>
-
+      <motion.h2
+        className="text-2xl font-bold mb-4 m-2 pt-4"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}>
+        모든 그룹
+      </motion.h2>
+      <motion.hr
+        className="border-b-1 border-gray-300 my-4 m-2"
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      />
       {loading && (
         <p className="text-center text-gray-500">
           🔄 그룹 정보를 불러오는 중...
