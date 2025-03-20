@@ -15,6 +15,7 @@ interface Problem {
   description: string;
   attempt_count: number;
   pass_count: number;
+  is_like: boolean;
 }
 
 export default function ProblemStructure({
