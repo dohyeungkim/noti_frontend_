@@ -115,13 +115,26 @@ export default function ManageGroup() {
         alert(message);
         setGroupInvMembers((prev) => prev.filter((member) => member.user_id !== userId));
         await fetchPrivateGroupMemberReq();
+        if (requestState) {
+          await fetchGroupMember();
+        }
       } catch (error) {
         console.error("초대 응답 처리 에러", error);
         alert("초대 응답 처리 중 오류 발생");
       }
     },
-    [groupId, fetchPrivateGroupMemberReq]
+    [groupId, fetchPrivateGroupMemberReq, fetchGroupMember] //초대 수락 햇ㅇ으닉가 그룹 멤버도 다시 불러와야돼서 fetchGroupMember 추가함.
   );
+
+  // ❌ 그룹 삭제 !!!
+  // const fetchGroupDelete = async() => {
+  //   try{
+  //     const res = awiat group_delete_api.group_delete_by_id(Number(groupId));
+  //     if(res) {
+  //       s
+  //     }
+  //   }
+  // }
 
   // 그룹 정보 및 문제지(워크북) 목록 조회
   const fetchGroup = async () => {
@@ -134,6 +147,20 @@ export default function ManageGroup() {
       }
     } catch (err) {
       console.error("그룹 정보 조회 에러", err);
+    }
+  };
+
+  // ❌ 그룹 삭제 !!!
+  const deleteGroup = async () => {
+    if (!window.confirm("정말로 이 그룹을 삭제하시겠습니까?")) return;
+    try {
+      await group_api.group_delete_by_id(Number(groupId));
+      alert("그룹이 삭제되었습니다.");
+      // 그룹 삭제 후 적절한 페이지로 이동 (예: 그룹 목록 페이지)
+      router.push("/mygroups");
+    } catch (error) {
+      console.error("그룹 삭제 에러", error);
+      alert("그룹 삭제 중 오류 발생");
     }
   };
 
@@ -169,7 +196,8 @@ export default function ManageGroup() {
     }
   };
 
-  // 문제지 삭제 함수 (DELETE /api/proxy/workbook/{group_id}/{workbook_id})
+  // 📌 문제지 삭제 함수
+  // (백엔드 엔드포인트: DELETE /api/proxy/workbook/{group_id}/{workbook_id})
   const deleteWorkbook = async (workbookId: number) => {
     try {
       await workbook_api.workbook_delete(Number(groupId), workbookId);
@@ -446,24 +474,28 @@ export default function ManageGroup() {
 
         <div className="flex justify-between items-center bg-[#E6E6E6] w-full h-[50px] p-[10px] mt-[25px] rounded-[10px]">
           <h2>그룹 삭제</h2>
-          <button className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]">삭제</button>
+          <button className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]" onClick={deleteGroup}>
+            삭제
+          </button>
         </div>
 
-        {/* ✅ 문제지(워크북) 조회 및 수정 영역 ✨ */}
-        <div className="mt-[35px]">
+        {/* 문제지(워크북) 조회 및 수정 영역 */}
+        <div className="mt-[40px]">
           <h2 className="text-gray-500 p-1">문제지 설정</h2>
+          {/* 🟡 문제지 공개 비공개 기능 있는거 맞나요?? */}
+          {/* 
           <div className="flex justify-between items-center bg-[#E6E6E6] w-full h-[50px] p-[10px] rounded-[10px]">
             <h2>문제지 공개 수정</h2>
             <select className="bg-[#B8B8B8] rounded-[10px] w-[70px] h-[33px] text-center">
               <option value="public">공개</option>
               <option value="private">비공개</option>
             </select>
-          </div>
+          </div> */}
 
           {/* 문제지 목록 카드들을 스크롤 가능한 영역에 나열 */}
           <div
-            className="bg-[#E6E6E6] w-full p-[10px] mt-2 rounded-[10px] overflow-auto"
-            style={{ height: showProblemList ? "300px" : "50px" }}
+            className="bg-[#E6E6E6] w-full p-[10px] rounded-[10px] overflow-auto"
+            style={{ height: showProblemList ? "400px" : "50px" }}
           >
             <div className="flex justify-between items-center mb-6">
               <h2>문제지 정보 설정</h2>
@@ -509,8 +541,15 @@ export default function ManageGroup() {
                           }}
                         />
                       </div>
+                      <div className="mt-5 flex justify-between">
+                        <label className="font-bold">문제지 공개 설정</label>
+                        <select className="bg-[#B8B8B8] rounded-[10px] w-[70px] h-[33px] text-center">
+                          <option value="public">공개</option>
+                          <option value="private">비공개</option>
+                        </select>
+                      </div>
                       {/* 문제지 삭제 */}
-                      <div className="flex justify-between mt-8">
+                      <div className="flex justify-between mt-5">
                         <label className="font-bold">문제지 삭제</label>
                         <button
                           className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]"

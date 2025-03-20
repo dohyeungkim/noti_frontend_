@@ -11,7 +11,6 @@ import {
   faUserCircle,
   faArrowRight,
   faRightFromBracket,
-  faUnlockAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import Logout from "../Auth/Logout";
 import { useEffect, useState, useCallback } from "react";
@@ -149,26 +148,32 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
           <ul className="list-none p-0">
             <li className="my-4 flex items-center gap-2">
               <button className="border-none bg-transparent text-lg cursor-pointer">
-                <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" />
+                {/* <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" /> */}
+                <PasswordChange />
               </button>
               <span
                 className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${
                   isOpen ? "inline" : "hidden"
                 }`}
               >
-                <PasswordChange />
+                {/* 비빌번호 변경하기 */}
+                {/* <PasswordChange /> */}
               </span>
             </li>
             <li className="my-4 flex items-center gap-2">
-              <button className="border-none bg-transparent text-lg cursor-pointer">
-                <FontAwesomeIcon icon={faRightFromBracket} className="text-gray-500" />
+              <button
+                className="border-none bg-transparent text-lg cursor-pointer"
+                // onClick={<Logout />}
+              >
+                {/* <FontAwesomeIcon icon={faRightFromBracket} className="text-gray-500" /> */}
+                <Logout />
               </button>
               <span
                 className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${
                   isOpen ? "inline" : "hidden"
                 }`}
               >
-                <Logout />
+                {/* <Logout /> */}
               </span>
             </li>
           </ul>
