@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { auth_api, comment_api } from "@/lib/api";
 import { UserIcon } from "lucide-react";
-import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
-import { ko } from "date-fns/locale";
+import { formatTimestamp } from "../util/dageUtils";
 
 // 댓글 타입 정의
 interface Comment {
@@ -26,37 +25,13 @@ interface CommentSectionProps {
   };
 }
 
-const formatTimestamp = (timestamp?: string) => {
-  if (!timestamp) return "방금 전"; // 만약 시간이 없으면 "방금 전" 표시
 
-  const date = new Date(timestamp);
-
-  // 오늘 날짜면 "오늘 HH:mm"
-  if (isToday(date)) return `오늘 ${format(date, "HH:mm")}`;
-
-  // 어제 날짜면 "어제 HH:mm"
-  if (isYesterday(date)) return `어제 ${format(date, "HH:mm")}`;
-
-  // 1주일 이내면 "n일 전"으로 표시
-  const diff = formatDistanceToNow(date, { addSuffix: true, locale: ko });
-  if (
-    diff.includes("일 전") ||
-    diff.includes("시간 전") ||
-    diff.includes("분 전")
-  )
-    return diff;
-
-  // 그 외에는 "YYYY-MM-DD" 형식으로 반환
-  return format(date, "yyyy-MM-dd HH:mm");
-};
 
 const CommentSection = ({ params }: CommentSectionProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [currentComment, setCurrentComment] = useState<string>("");
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
-  const [commentViewType, setCommentViewType] = useState<
-    "problem" | "submission"
-  >("submission");
+  const [commentViewType, setCommentViewType] = useState<"problem" | "submission">("submission");
   const [userId, setUserId] = useState<string>("");
 
   // ✅ 댓글 가져오기
@@ -64,9 +39,7 @@ const CommentSection = ({ params }: CommentSectionProps) => {
     try {
       const data =
         commentViewType === "problem"
-          ? await comment_api.comments_get_by_problem_id(
-              Number(params.problemId)
-            )
+          ? await comment_api.comments_get_by_problem_id(Number(params.problemId))
           : await comment_api.comments_get_by_solve_id(Number(params.resultId));
 
       setComments(data);
@@ -126,10 +99,7 @@ const CommentSection = ({ params }: CommentSectionProps) => {
   };
 
   // 🔹 긴 문자열을 10자 단위로 줄 바꿈하는 함수
-  const formatCommentWithLineBreaks = (
-    comment: string,
-    maxLength: number = 10
-  ) => {
+  const formatCommentWithLineBreaks = (comment: string, maxLength: number = 10) => {
     return comment.split("").reduce((acc, char, idx) => {
       if (idx > 0 && idx % maxLength === 0) acc += "\n"; // 10자마다 줄 바꿈 추가
       return acc + char;
@@ -154,9 +124,7 @@ const CommentSection = ({ params }: CommentSectionProps) => {
           <button
             onClick={() => setCommentViewType("problem")}
             className={`px-6 py-2 rounded-tr-lg transition ${
-              commentViewType === "problem"
-                ? "bg-white text-gray-900"
-                : "bg-gray-300 text-gray-500"
+              commentViewType === "problem" ? "bg-white text-gray-900" : "bg-gray-300 text-gray-500"
             }`}
           >
             문제별 보기
@@ -165,7 +133,6 @@ const CommentSection = ({ params }: CommentSectionProps) => {
       </div>
 
       {/* 🔹 댓글 박스 */}
-      {/* 🔹 댓글 박스 (최대 높이 고정) */}
       <div className="shadow rounded-lg p-4 bg-white h-[66vh] flex flex-col">
         {/* 🔹 제목 + 구분선 (상단 고정) */}
         <div className="flex-shrink-0">
@@ -197,16 +164,13 @@ const CommentSection = ({ params }: CommentSectionProps) => {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <strong className="text-gray-900">
-                      {comment.is_anonymous
-                        ? comment.nickname
-                        : comment.user_id}
+                      {comment.is_anonymous ? comment.nickname : comment.user_id}
                     </strong>
                     <span className="text-xs text-gray-600">
                       {formatTimestamp(comment.timestamp)}
                     </span>
                   </div>
 
-                  {/* ✅ 10자마다 줄 바꿈 적용 */}
                   <p className="text-gray-800 mt-1 whitespace-pre-wrap">
                     {formatCommentWithLineBreaks(comment.comment, 10)}
                   </p>

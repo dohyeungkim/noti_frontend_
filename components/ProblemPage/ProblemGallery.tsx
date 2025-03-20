@@ -51,6 +51,7 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
             className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md 
                        transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
             <h2 className="text-xl font-semibold text-gray-800 truncate">{p.title}</h2>
+
             {/* 좋아요 버튼 */}
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -81,6 +82,7 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
           </div>
         );
       })}
+
     </section>
   );
 }

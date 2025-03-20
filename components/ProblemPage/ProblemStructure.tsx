@@ -8,6 +8,8 @@ import ViewToggle from "@/components/ui/ViewToggle";
 import ProblemGallery from "@/components/ProblemPage/ProblemGallery";
 import { motion } from "framer-motion";
 import ProblemList from "./ProblemList";
+import { useAuth } from "@/stores/auth";
+import { group_api } from "@/lib/api";
 
 interface Problem {
   problem_id: number;
@@ -25,19 +27,35 @@ export default function ProblemStructure({
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProblems, setSelectedProblems] = useState<Problem[]>([]);
-  const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]); // ✅ 필터링된 문제 목록 저장
+  const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
-  // const [sortOrder, setSortOrder] = useState("제목순");
-  const { groupId, examId } = params; // params에서 직접 구조 분해 할당
+  const { groupId, examId } = params;
+  const { userName } = useAuth();
 
-  // `useMemo`로 캐싱하여 불필요한 재연산 방지
   const numericGroupId = useMemo(() => Number(groupId), [groupId]);
   const numericExamId = useMemo(() => Number(examId), [examId]);
 
   const [refresh, setRefresh] = useState(false);
 
-  // ✅ 문제 가져오기 함수
+  // 그룹 오너 정보 상태
+  const [groupOwner, setGroupOwner] = useState<string | null>(null);
+  const isGroupOwner = userName === groupOwner;
+
+  // 그룹 오너 정보 가져오기
+  const fetchMyOwner = useCallback(async () => {
+    try {
+      const data = await group_api.my_group_get();
+      const currentGroup = data.find(
+        (group: { group_id: number; group_owner: string }) => group.group_id === Number(groupId)
+      );
+      setGroupOwner(currentGroup?.group_owner || null);
+    } catch (error) {
+      console.error("그룹장 불러오기 중 오류:", error);
+    }
+  }, [groupId]);
+
+  // 문제 가져오기 함수
   const fetchProblems = useCallback(async () => {
     try {
       const res = await fetch(`/api/proxy/problems_ref/get`, {
@@ -55,7 +73,7 @@ export default function ProblemStructure({
       const data = await res.json();
       console.log(data);
       setSelectedProblems(data);
-      setFilteredProblems(data); // ✅ 초기 문제 목록 저장
+      setFilteredProblems(data);
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
@@ -65,26 +83,35 @@ export default function ProblemStructure({
     fetchProblems();
   }, [fetchProblems]);
 
-  // ✅ 검색어 변경 시 필터링 적용
+  // 그룹 오너 정보도 가져오기 (그룹 ID가 변경되거나 컴포넌트 마운트 시)
+  useEffect(() => {
+    if (groupId) {
+      fetchMyOwner();
+    }
+  }, [groupId, fetchMyOwner]);
+
   useEffect(() => {
     const filtered = selectedProblems.filter((problem) =>
       problem.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredProblems(filtered);
-  }, [searchQuery, selectedProblems]); // ✅ 검색어 또는 문제 목록이 변경될 때 필터링 실행
+  }, [searchQuery, selectedProblems]);
 
   return (
     <>
-      {/* 문제 추가 버튼 */}
+      {/* 문제 추가 버튼: 그룹 오너일 때만 보임 */}
       <motion.div
         className="flex items-center gap-2 justify-end"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}>
-        <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제 추가하기" />
+        transition={{ delay: 0.2 }}
+      >
+        {isGroupOwner && (
+          <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제 추가하기" />
+        )}
       </motion.div>
 
-      {/* 검색바 & 정렬 버튼 & 보기 방식 토글 */}
+      {/* 검색바 & 보기 방식 토글 */}
       <motion.div
         className="flex items-center gap-4 mb-4 w-full"
         initial="hidden"
@@ -92,7 +119,8 @@ export default function ProblemStructure({
         variants={{
           hidden: { opacity: 0, y: -10 },
           visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
-        }}>
+        }}
+      >
         <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
       </motion.div>
@@ -100,7 +128,6 @@ export default function ProblemStructure({
       <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제들</h2>
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
-      {/* 🔹 선택된 보기 방식에 따라 다르게 렌더링 */}
       {viewMode === "gallery" ? (
         <ProblemGallery
           problems={selectedProblems}
@@ -109,8 +136,8 @@ export default function ProblemStructure({
         />
       ) : (
         <ProblemList
-          problems={selectedProblems} // ✅ 현재 선택된 문제 목록
-          groupId={numericGroupId} // ✅ 그룹 ID
+          problems={selectedProblems}
+          groupId={numericGroupId}
           workbookId={numericExamId}
         />
       )}

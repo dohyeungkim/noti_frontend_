@@ -115,13 +115,26 @@ export default function ManageGroup() {
         alert(message);
         setGroupInvMembers((prev) => prev.filter((member) => member.user_id !== userId));
         await fetchPrivateGroupMemberReq();
+        if (requestState) {
+          await fetchGroupMember();
+        }
       } catch (error) {
         console.error("초대 응답 처리 에러", error);
         alert("초대 응답 처리 중 오류 발생");
       }
     },
-    [groupId, fetchPrivateGroupMemberReq]
+    [groupId, fetchPrivateGroupMemberReq, fetchGroupMember] //초대 수락 햇ㅇ으닉가 그룹 멤버도 다시 불러와야돼서 fetchGroupMember 추가함.
   );
+
+  // ❌ 그룹 삭제 !!!
+  // const fetchGroupDelete = async() => {
+  //   try{
+  //     const res = awiat group_delete_api.group_delete_by_id(Number(groupId));
+  //     if(res) {
+  //       s
+  //     }
+  //   }
+  // }
 
   // 그룹 정보 및 문제지(워크북) 목록 조회
   const fetchGroup = async () => {
@@ -134,6 +147,20 @@ export default function ManageGroup() {
       }
     } catch (err) {
       console.error("그룹 정보 조회 에러", err);
+    }
+  };
+
+  // ❌ 그룹 삭제 !!!
+  const deleteGroup = async () => {
+    if (!window.confirm("정말로 이 그룹을 삭제하시겠습니까?")) return;
+    try {
+      await group_api.group_delete_by_id(Number(groupId));
+      alert("그룹이 삭제되었습니다.");
+      // 그룹 삭제 후 적절한 페이지로 이동 (예: 그룹 목록 페이지)
+      router.push("/mygroups");
+    } catch (error) {
+      console.error("그룹 삭제 에러", error);
+      alert("그룹 삭제 중 오류 발생");
     }
   };
 
@@ -169,6 +196,20 @@ export default function ManageGroup() {
     }
   };
 
+  // 📌 문제지 삭제 함수
+  // (백엔드 엔드포인트: DELETE /api/proxy/workbook/{group_id}/{workbook_id})
+  const deleteWorkbook = async (workbookId: number) => {
+    try {
+      await workbook_api.workbook_delete(Number(groupId), workbookId);
+      alert("문제지가 삭제되었습니다.");
+      // 삭제 후 최신 문제지 목록을 갱신하여 삭제된 문제지가 보이지 않도록 함
+      fetchWorkbooks();
+    } catch (error) {
+      console.error("문제지 삭제 에러", error);
+      alert("문제지 삭제 중 오류 발생");
+    }
+  };
+
   useEffect(() => {
     if (groupId) {
       fetchGroup();
@@ -188,12 +229,14 @@ export default function ManageGroup() {
         <h3 className="text-gray-500 p-1">그룹원 관리</h3>
         <div
           className="bg-[#E6E6E6] w-full p-[10px] rounded-[10px] flex flex-col"
-          style={{ height: showMembers ? "auto" : "50px" }}>
+          style={{ height: showMembers ? "auto" : "50px" }}
+        >
           <div className="flex justify-between items-center">
             <h2>그룹원 조회</h2>
             <button
               className="bg-[#B8B8B8] w-[70px] h-[33px] rounded-[10px]"
-              onClick={toggleMembers}>
+              onClick={toggleMembers}
+            >
               조회
             </button>
           </div>
@@ -224,7 +267,8 @@ export default function ManageGroup() {
                             onClick={() => {
                               setSelectedUserId(member.user_id);
                               setShowModalBan(true);
-                            }}>
+                            }}
+                          >
                             ❌
                           </button>
                         </td>
@@ -251,7 +295,8 @@ export default function ManageGroup() {
               <div className="flex justify-center mt-[30px] gap-[5px]">
                 <button
                   className="bg-myred text-white py-[5px] px-[15px] rounded-[10px]"
-                  onClick={() => setShowModalBan(false)}>
+                  onClick={() => setShowModalBan(false)}
+                >
                   아니오
                 </button>
                 <button
@@ -261,7 +306,8 @@ export default function ManageGroup() {
                       await fetchGroupMemberKickoff(selectedUserId);
                       setShowModalBan(false);
                     }
-                  }}>
+                  }}
+                >
                   네
                 </button>
               </div>
@@ -273,12 +319,14 @@ export default function ManageGroup() {
       {/* 그룹 초대 수락/거절 영역 */}
       <div
         className="flex flex-col bg-[#E6E6E6] w-full p-[10px] mt-2 rounded-[10px]"
-        style={{ height: showInvitationMembers ? "auto" : "50px" }}>
+        style={{ height: showInvitationMembers ? "auto" : "50px" }}
+      >
         <div className="flex justify-between items-center">
           <h2>그룹 초대 수락</h2>
           <button
             className="bg-[#B8B8B8] w-[110px] h-[33px] rounded-[10px]"
-            onClick={toggleInvMembers}>
+            onClick={toggleInvMembers}
+          >
             신청 멤버 조회
           </button>
         </div>
@@ -310,7 +358,8 @@ export default function ManageGroup() {
                           onClick={() => {
                             setSelectedUserId(member.user_id);
                             setShowModalDen(true);
-                          }}>
+                          }}
+                        >
                           ❌
                         </button>
                       </td>
@@ -319,7 +368,8 @@ export default function ManageGroup() {
                           onClick={() => {
                             setSelectedUserId(member.user_id);
                             setShowModalAcc(true);
-                          }}>
+                          }}
+                        >
                           ✅
                         </button>
                       </td>
@@ -345,7 +395,8 @@ export default function ManageGroup() {
               <div className="flex justify-center mt-[30px] gap-[5px]">
                 <button
                   className="bg-myred text-white py-[5px] px-[15px] rounded-[10px]"
-                  onClick={() => setShowModalDen(false)}>
+                  onClick={() => setShowModalDen(false)}
+                >
                   아니오
                 </button>
                 <button
@@ -355,7 +406,8 @@ export default function ManageGroup() {
                       fetchGroupMemberReqResponse(selectedUserId, false);
                       setShowModalDen(false);
                     }
-                  }}>
+                  }}
+                >
                   네
                 </button>
               </div>
@@ -371,7 +423,8 @@ export default function ManageGroup() {
               <div className="flex justify-center mt-[30px] gap-[5px]">
                 <button
                   className="bg-myred text-white py-[5px] px-[15px] rounded-[10px]"
-                  onClick={() => setShowModalAcc(false)}>
+                  onClick={() => setShowModalAcc(false)}
+                >
                   아니오
                 </button>
                 <button
@@ -381,7 +434,8 @@ export default function ManageGroup() {
                       await fetchGroupMemberReqResponse(selectedUserId, true);
                       setShowModalAcc(false);
                     }
-                  }}>
+                  }}
+                >
                   네
                 </button>
               </div>
@@ -398,7 +452,8 @@ export default function ManageGroup() {
           <select
             className="bg-[#B8B8B8] rounded-[10px] w-[70px] h-[33px] text-center"
             value={groupPrivacy}
-            onChange={(e) => setGroupPrivacy(e.target.value)}>
+            onChange={(e) => setGroupPrivacy(e.target.value)}
+          >
             <option value="public">공개</option>
             <option value="private">비공개</option>
           </select>
@@ -419,29 +474,35 @@ export default function ManageGroup() {
 
         <div className="flex justify-between items-center bg-[#E6E6E6] w-full h-[50px] p-[10px] mt-[25px] rounded-[10px]">
           <h2>그룹 삭제</h2>
-          <button className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]">삭제</button>
+          <button className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]" onClick={deleteGroup}>
+            삭제
+          </button>
         </div>
 
-        {/* ✅ 문제지(워크북) 조회 및 수정 영역 ✨ */}
-        <div className="mt-[35px]">
+        {/* 문제지(워크북) 조회 및 수정 영역 */}
+        <div className="mt-[40px]">
           <h2 className="text-gray-500 p-1">문제지 설정</h2>
+          {/* 🟡 문제지 공개 비공개 기능 있는거 맞나요?? */}
+          {/* 
           <div className="flex justify-between items-center bg-[#E6E6E6] w-full h-[50px] p-[10px] rounded-[10px]">
             <h2>문제지 공개 수정</h2>
             <select className="bg-[#B8B8B8] rounded-[10px] w-[70px] h-[33px] text-center">
               <option value="public">공개</option>
               <option value="private">비공개</option>
             </select>
-          </div>
+          </div> */}
 
           {/* 문제지 목록 카드들을 스크롤 가능한 영역에 나열 */}
           <div
-            className="bg-[#E6E6E6] w-full p-[10px] mt-2 rounded-[10px] overflow-auto h-[50px]"
-            style={{ height: showProblemList ? "300px" : "50px" }}>
+            className="bg-[#E6E6E6] w-full p-[10px] rounded-[10px] overflow-auto"
+            style={{ height: showProblemList ? "400px" : "50px" }}
+          >
             <div className="flex justify-between items-center mb-6">
               <h2>문제지 정보 설정</h2>
               <button
                 className="bg-[#B8B8B8] w-[110px] h-[33px] rounded-[10px]"
-                onClick={toggleProblemList}>
+                onClick={toggleProblemList}
+              >
                 문제지 조회
               </button>
             </div>
@@ -452,7 +513,8 @@ export default function ManageGroup() {
                   workbooks.map((wb, index) => (
                     <div
                       key={wb.workbook_id}
-                      className="border border-gray-300 p-3 rounded-md mb-4">
+                      className="border border-gray-400 p-3 rounded-md mb-4"
+                    >
                       <div className="flex justify-between items-center">
                         <label className="font-bold">문제지 이름</label>
                         <input
@@ -466,6 +528,7 @@ export default function ManageGroup() {
                           }}
                         />
                       </div>
+                      {/* 문제지 소개 */}
                       <div className="flex flex-col mt-3">
                         <label className="font-bold">문제지 소개</label>
                         <textarea
@@ -478,26 +541,43 @@ export default function ManageGroup() {
                           }}
                         />
                       </div>
+                      <div className="mt-5 flex justify-between">
+                        <label className="font-bold">문제지 공개 설정</label>
+                        <select className="bg-[#B8B8B8] rounded-[10px] w-[70px] h-[33px] text-center">
+                          <option value="public">공개</option>
+                          <option value="private">비공개</option>
+                        </select>
+                      </div>
+                      {/* 문제지 삭제 */}
+                      <div className="flex justify-between mt-5">
+                        <label className="font-bold">문제지 삭제</label>
+                        <button
+                          className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]"
+                          onClick={() => deleteWorkbook(wb.workbook_id)}
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </div>
                   ))
                 ) : (
                   <p className="text-center text-gray-500 mt-3">문제지가 존재하지 않습니다.</p>
                 )}
               </div>
-              // </div>
-              // </div>
             )}
           </div>
           {/* 저장 버튼 영역 */}
           <div className="flex justify-center mt-20 gap-[10px]">
             <button
               className="bg-[#868c88] text-white py-[5px] px-[15px] rounded-[10px]"
-              onClick={() => router.back()}>
+              onClick={() => router.back()}
+            >
               이전
             </button>
             <button
               className="bg-[#497658] text-white py-[5px] px-[15px] rounded-[10px]"
-              onClick={() => setShowModalSave(true)}>
+              onClick={() => setShowModalSave(true)}
+            >
               변경사항 저장
             </button>
             {showModalSave && (
@@ -507,12 +587,14 @@ export default function ManageGroup() {
                   <div className="flex justify-center mt-[30px] gap-[5px]">
                     <button
                       className="bg-myred text-white py-[5px] px-[15px] rounded-[10px]"
-                      onClick={() => setShowModalSave(false)}>
+                      onClick={() => setShowModalSave(false)}
+                    >
                       아니오
                     </button>
                     <button
                       className="bg-mygreen text-white py-[5px] px-[15px] rounded-[10px]"
-                      onClick={updateGroup}>
+                      onClick={updateGroup}
+                    >
                       네
                     </button>
                   </div>

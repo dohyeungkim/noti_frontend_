@@ -9,7 +9,12 @@ function truncateText(text?: string, maxLength = 15): string {
   return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 }
 
-export default function Breadcrumbs({ pathname, group, exam, problem }: BreadcrumbsProps) {
+export default function Breadcrumbs({
+  pathname,
+  group,
+  exam,
+  problem,
+}: BreadcrumbsProps) {
   // URL 세그먼트 분리
   const segments = pathname.split("/").filter(Boolean);
 
@@ -62,7 +67,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
         )}
 
         {/* 🔹 채점 결과 (결과 페이지 - `/result`) */}
-        {segments.length >= 7 && (
+        {segments.length >= 7 && !pathname.includes("/write") && (
           <>
             <BreadcrumbSeparator />
             <BreadcrumbLink
@@ -105,13 +110,30 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
     return (
       <nav className="text-gray-500 text-sm mb-2">
         {/* 📌 내가 등록한 문제들 */}
-        <BreadcrumbLink href="/registered-problems" label="📌 내가 등록한 문제들" />
+        <BreadcrumbLink
+          href="/registered-problems"
+          label="📌 내가 등록한 문제들"
+        />
+
+        {/* 📝 문제 등록하기 (/registered-problems/create) */}
+        {segments.length >= 2 && segments[1] === "view" && (
+          <>
+            <BreadcrumbSeparator />
+            <BreadcrumbLink
+              href={`/registered-problems/view/${segments[2]}`}
+              label="🔍 문제 보기"
+            />
+          </>
+        )}
 
         {/* 📝 문제 등록하기 (/registered-problems/create) */}
         {segments.length >= 2 && segments[1] === "create" && (
           <>
             <BreadcrumbSeparator />
-            <BreadcrumbLink href="/registered-problems/create" label="📝 문제 등록하기" />
+            <BreadcrumbLink
+              href="/registered-problems/create"
+              label="📝 문제 등록하기"
+            />
           </>
         )}
 

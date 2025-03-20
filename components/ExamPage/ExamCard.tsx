@@ -17,14 +17,6 @@ interface ExamCardProps {
   onClick: () => void;
 }
 
-// ✅ 생성일을 'YY.MM.DD' 형식으로 변환하는 함수
-// const formatShortDate = (dateString: string) => {
-//   const date = new Date(dateString);
-//   const year = date.getFullYear().toString().slice(2); // YY (두 자리 연도)
-//   const month = String(date.getMonth() + 1).padStart(2, "0"); // MM (두 자리 월)
-//   const day = String(date.getDate()).padStart(2, "0"); // DD (두 자리 날짜)
-//   return `${year}.${month}.${day}`;
-// };
 
 export default function ExamCard({ workbook, onClick }: ExamCardProps) {
   return (
@@ -37,7 +29,7 @@ export default function ExamCard({ workbook, onClick }: ExamCardProps) {
     >
       {/* ✅ 제목 (workbook_name) - 상단 고정 */}
       <div>
-        <h2 className="text-xl font-semibold mb-2">
+        <h2 className="text-xl font-semibold mb-2 overflow-hidden text-ellipsis">
           📄{" "}
           {workbook.workbook_name.length > 24
             ? `${workbook.workbook_name.slice(0, 24)}...`
@@ -54,7 +46,6 @@ export default function ExamCard({ workbook, onClick }: ExamCardProps) {
           {workbook.description}
         </p>
         <p className="mb-2  ">📌 문제 수: {workbook.problem_cnt}개</p>
-        {/* <p className="mb-1">📅 생성일: {formatShortDate(workbook.creation_date)}</p> */}
       </div>
 
       {/* ✅ 버튼 - 항상 아래에 위치 */}

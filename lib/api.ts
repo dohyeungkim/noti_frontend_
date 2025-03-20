@@ -232,6 +232,16 @@ export const group_api = {
     if (!res.ok) throw new Error("그룹 업데이트 실패");
     return res.json();
   },
+
+  // ❌ 그룹 삭제하기
+  async group_delete_by_id(group_id: number) {
+    const res = await fetch(`/api/groups/${group_id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("그룹 삭제 실패");
+    return res.json();
+  },
 };
 
 // ====================== group member 관련 api ===========================
@@ -333,6 +343,16 @@ export const workbook_api = {
       body: JSON.stringify({ workbook_name, description }),
     });
     if (!res.ok) throw new Error("문제지 업데이트 실패");
+    return res.json();
+  },
+
+  // 문제지 삭제...
+  async workbook_delete(group_id: number, workbook_id: number) {
+    const res = await fetch(`/api/proxy/workbook/${group_id}/${workbook_id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("문제지 삭제 실패");
     return res.json();
   },
 };
