@@ -1,60 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import { ProblemStats } from "@/types/ProblemStats";
-import { dummyProblemStats } from "@/data/dummyProblemStats";
+import { problem_api } from "@/lib/api";
 import { UserIcon } from "lucide-react";
-
-// ✅ 더미 댓글 데이터
-const dummyComments = [
-  {
-    user_id: "alice123",
-    comment: "이 문제 진짜 어렵네요...😅",
-    timestamp: "2025-03-18T14:45:00Z",
-  },
-  {
-    user_id: "bob456",
-    comment: "해설 강의 어디서 보나요?",
-    timestamp: "2025-03-18T15:10:00Z",
-  },
-  {
-    user_id: "charlie789",
-    comment: "이거 조건 하나 빼면 틀리던데...",
-    timestamp: "2025-03-18T16:05:00Z",
-  },
-];
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export default function ProblemStatistics({
-  problem_id,
-}: {
+interface ProblemStatsResponse {
   problem_id: number;
-}) {
-  const selectedProblem: ProblemStats | undefined = dummyProblemStats.find(
-    (stat: { problem_id: number }) => stat.problem_id === problem_id
-  );
+  group_id: number;
+  workbook_id: number;
+  like: number;
+  attempt_count: number;
+  pass_count: number;
+  comments: { user_id: string; comment: string; timestamp: string }[];
+}
 
-  if (!selectedProblem) {
+interface ApiResponse {
+  msg: string;
+  data: ProblemStatsResponse[];
+}
+
+export default function ProblemStatistics({ problem_id }: { problem_id: number }) {
+  const [problemStats, setProblemStats] = useState<ProblemStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response: ApiResponse = await problem_api.problem_get_stats(problem_id);
+        // 응답 데이터에서 첫 번째 항목 사용 (배열의 첫 번째만 필요하다고 가정)
+        const stats = response.data[0];
+        setProblemStats(stats);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [problem_id]);
+
+  if (loading) {
+    return <p className="text-center text-gray-500">로딩 중...</p>;
+  }
+
+  if (error || !problemStats) {
     return (
-      <p className="text-center text-gray-500">
-        해당 문제에 대한 통계가 없습니다.
-      </p>
+      <p className="text-center text-gray-500">{error || "해당 문제에 대한 통계가 없습니다."}</p>
     );
   }
 
   // ✅ 변수 설정
-  const likeCount = selectedProblem.likes;
+  const likeCount = problemStats.like;
   const mygreen = "#589960";
 
   // ✅ 날짜 포맷 함수
   const formatTime = (timestamp: string): string => {
     const date = new Date(timestamp);
-    return `${date.getFullYear()}-${
-      date.getMonth() + 1
-    }-${date.getDate()} ${date.getHours().toString().padStart(2, "0")}:
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:
       ${date.getMinutes().toString().padStart(2, "0")}`;
   };
 
@@ -63,10 +73,7 @@ export default function ProblemStatistics({
     labels: ["맞은 사람", "도전 중"],
     datasets: [
       {
-        data: [
-          selectedProblem.total_solutions,
-          selectedProblem.total_submissions - selectedProblem.total_solutions,
-        ],
+        data: [problemStats.pass_count, problemStats.attempt_count - problemStats.pass_count],
         backgroundColor: [mygreen, "#D9D9D9"],
         hoverBackgroundColor: [mygreen, "#BDBDBD"],
       },
@@ -84,8 +91,7 @@ export default function ProblemStatistics({
             <Doughnut data={doughnutData} />
           </div>
           <p className="text-center text-gray-600 mt-3">
-            이 문제는 {selectedProblem.total_submissions}명 중{" "}
-            {selectedProblem.total_solutions}명이 성공했습니다!
+            이 문제는 {problemStats.attempt_count}명 중 {problemStats.pass_count}명이 성공했습니다!
           </p>
         </div>
 
@@ -93,29 +99,19 @@ export default function ProblemStatistics({
         <div className="flex flex-col items-center w-full">
           <h3 className="text-md font-semibold mb-2">📌 이 문제의 댓글들</h3>
           <div className="w-full max-h-60 overflow-y-auto border border-gray-200 rounded-lg shadow p-4 bg-white">
-            {dummyComments.length === 0 ? (
-              <p className="text-gray-500 text-center">
-                💬 아직 댓글이 없습니다.
-              </p>
+            {problemStats.comments.length === 0 ? (
+              <p className="text-gray-500 text-center">💬 아직 댓글이 없습니다.</p>
             ) : (
-              dummyComments.map((comment, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-3 p-3 border-b last:border-none"
-                >
+              problemStats.comments.map((comment, index) => (
+                <div key={index} className="flex items-start gap-3 p-3 border-b last:border-none">
                   <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
                     <UserIcon className="w-5 h-5 text-gray-600" />
                   </div>
-
                   <div className="flex-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-900 font-semibold">
-                        {comment.user_id}
-                      </span>
+                      <span className="text-gray-900 font-semibold">{comment.user_id}</span>
                       <span className="text-sm text-gray-500">
-                        {comment.timestamp
-                          ? formatTime(comment.timestamp)
-                          : "방금 전"}
+                        {comment.timestamp ? formatTime(comment.timestamp) : "방금 전"}
                       </span>
                     </div>
                     <p className="text-gray-700 mt-1">{comment.comment}</p>
@@ -134,8 +130,7 @@ export default function ProblemStatistics({
             viewBox="0 0 24 24"
             className="w-full h-full"
             fill="currentColor"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+            xmlns="http://www.w3.org/2000/svg">
             <path
               fillRule="evenodd"
               clipRule="evenodd"
@@ -143,13 +138,9 @@ export default function ProblemStatistics({
               fill={mygreen}
             />
           </svg>
-          <span className="absolute text-white text-5xl font-bold">
-            {likeCount}
-          </span>
+          <span className="absolute text-white text-5xl font-bold">{likeCount}</span>
         </div>
-        <p className="text-center text-gray-600 mt-3">
-          총 {likeCount}명이 좋아합니다!
-        </p>
+        <p className="text-center text-gray-600 mt-3">총 {likeCount}명이 좋아합니다!</p>
       </div>
 
       {/* ✅ 문제 그룹 & 문제지 통계 테이블 */}
@@ -165,19 +156,13 @@ export default function ProblemStatistics({
             </tr>
           </thead>
           <tbody>
-            {selectedProblem.referenced_groups.map((group, idx) => (
-              <tr key={idx} className="border-t">
-                <td className="px-6 py-3">{group}</td>
-                <td className="px-6 py-3">
-                  {selectedProblem.referenced_papers[idx]}
-                </td>
-                <td className="px-6 py-3">{likeCount}</td>
-                <td className="px-6 py-3">
-                  {selectedProblem.total_submissions}
-                </td>
-                <td className="px-6 py-3">{selectedProblem.total_solutions}</td>
-              </tr>
-            ))}
+            <tr className="border-t">
+              <td className="px-6 py-3">{problemStats.group_id}</td>
+              <td className="px-6 py-3">{problemStats.workbook_id}</td>
+              <td className="px-6 py-3">{likeCount}</td>
+              <td className="px-6 py-3">{problemStats.attempt_count}</td>
+              <td className="px-6 py-3">{problemStats.pass_count}</td>
+            </tr>
           </tbody>
         </table>
       </div>

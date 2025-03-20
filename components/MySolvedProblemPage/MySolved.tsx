@@ -105,8 +105,7 @@ export default function MySolved() {
         className="flex items-center gap-4 mb-4 w-full"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
+        transition={{ duration: 0.3, delay: 0.2 }}>
         <SearchBar searchQuery={search} setSearchQuery={setSearch} />
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         <SortButton
@@ -125,8 +124,7 @@ export default function MySolved() {
             key={`correct-${viewMode}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+            transition={{ duration: 0.3 }}>
             {viewMode === "gallery" ? (
               <div className="w-full">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full">
@@ -136,8 +134,7 @@ export default function MySolved() {
                       className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer 
                       shadow-md transition-all duration-300 ease-in-out 
                       hover:-translate-y-1 hover:shadow-xl transform-gpu 
-                      flex flex-col justify-between"
-                    >
+                      flex flex-col justify-between">
                       <div>
                         <h2 className="text-xl font-semibold mb-2">
                           📄 {truncateText(problem.problem_name, 15)}
@@ -155,8 +152,7 @@ export default function MySolved() {
                       </div>
 
                       <Link
-                        href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}
-                      >
+                        href={`mygroups/${problem.group_id}/exams/${problem.workbook_id}/problems/${problem.problem_id}/result`}>
                         <button className="mt-3 w-full py-2 text-white rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-mygreen hover:bg-green-600">
                           피드백 보기
                         </button>

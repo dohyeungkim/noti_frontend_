@@ -46,15 +46,13 @@ const CodeLogReplay = ({ codeLogs }: CodeLogReplayProps) => {
         <div className="flex items-center gap-2 p-[clamp(4px, 1vw, 16px)] mb-4">
           <button
             onClick={handlePlayPauseClick}
-            className="w-32 h-8 px-4 py-2 flex items-center justify-center bg-mygreen text-white rounded hover:bg-gray-800 transition-all duration-200 ease-in-out active:scale-95"
-          >
+            className="w-32 h-8 px-4 py-2 flex items-center justify-center bg-mygreen text-white rounded hover:bg-gray-800 transition-all duration-200 ease-in-out active:scale-95">
             {isPlaying ? "일시정지" : "재생"}
           </button>
           <select
             value={playbackSpeed}
             onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
-            className="px-4 py-1 border rounded w-[clamp(60px, 8vw, 120px)] focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
+            className="px-4 py-1 border rounded w-[clamp(60px, 8vw, 120px)] focus:outline-none focus:ring-2 focus:ring-gray-400">
             <option value={1}>0.5x</option>
             <option value={2}>1x</option>
             <option value={4}>2x</option>
@@ -68,7 +66,9 @@ const CodeLogReplay = ({ codeLogs }: CodeLogReplayProps) => {
             onChange={(e) => setCurrentLogIndex(Number(e.target.value))}
             onMouseDown={() => setIsPlaying(false)}
             style={{
-              background: `linear-gradient(to right, #589960 ${(currentLogIndex / (codeLogs.length - 1)) * 100}%, #D3D3D3 ${(currentLogIndex / (codeLogs.length - 1)) * 100}%)`,
+              background: `linear-gradient(to right, #589960 ${
+                (currentLogIndex / (codeLogs.length - 1)) * 100
+              }%, #D3D3D3 ${(currentLogIndex / (codeLogs.length - 1)) * 100}%)`,
             }}
             className="flex-1 h-[clamp(4px, 1vw, 8px)] appearance-none rounded-lg overflow-hidden [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full"
           />
@@ -80,8 +80,8 @@ const CodeLogReplay = ({ codeLogs }: CodeLogReplayProps) => {
             value={codeLogs[currentLogIndex]?.code}
             theme="vs-light"
             options={{
-              readOnly: true,  // 읽기 전용 확실히 적용
-              cursorStyle: 'line', // 커서 스타일 지정
+              readOnly: true, // 읽기 전용 확실히 적용
+              cursorStyle: "line", // 커서 스타일 지정
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
               fontSize: 16,

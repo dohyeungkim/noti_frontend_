@@ -4,8 +4,8 @@ import { useAuth } from "@/stores/auth";
 import { usePathname } from "next/navigation";
 
 import { useState } from "react";
-import DrawerWrapper from "@/components/layout/DrawerWrapper";
-import PageHeaderWrapper from "./PageHeaderWrapper";
+import DrawerWrapper from "@/components/Layout/DrawerWrapper";
+import PageHeaderWrapper from "@/components/Layout/PageHeaderWrapper";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { isAuth } = useAuth();
@@ -30,8 +30,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <div className="flex-grow flex w-full">
           <DrawerWrapper onToggle={setIsDrawerOpen} />
           <main
-            className={`flex-grow mx-auto transition-all duration-300 flex justify-center ${leftPadding}`}
-          >
+            className={`flex-grow mx-auto transition-all duration-300 flex justify-center ${leftPadding}`}>
             <div className="w-full px-[2%] md:px-[3%] lg:px-[5%]">
               <PageHeaderWrapper />
               {children}

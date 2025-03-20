@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
 import { solve_api } from "@/lib/api";
@@ -49,12 +48,13 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
       let res: Submission[] = await solve_api.solve_get_by_problem_id(Number(params.problemId));
 
       // ✅ 검색 필터 적용
-      res = res.filter((p) =>
-        (searchTitle ? p.problem_name.includes(searchTitle) : true) &&
-        (searchUser ? p.user_id.includes(searchUser) : true) &&
-        (searchProblemId ? p.problem_id.toString() === searchProblemId : true) &&
-        p.group_id === Number(params.groupId) &&
-        p.workbook_id === Number(params.examId)
+      res = res.filter(
+        (p) =>
+          (searchTitle ? p.problem_name.includes(searchTitle) : true) &&
+          (searchUser ? p.user_id.includes(searchUser) : true) &&
+          (searchProblemId ? p.problem_id.toString() === searchProblemId : true) &&
+          p.group_id === Number(params.groupId) &&
+          p.workbook_id === Number(params.examId)
       );
 
       setSubmissions(res);
@@ -98,16 +98,13 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
       className="flex flex-col gap-4"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.2 }}
-    >
+      transition={{ delay: 0.2 }}>
       {/* ✅ 검색창 UI */}
       <motion.div
         className="flex flex-wrap items-center gap-2 md:gap-4 justify-between  p-4 mt-10 "
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-          
+        transition={{ duration: 0.3, delay: 0.2 }}>
         {/* 문제 제목 입력 */}
         <input
           type="text"
@@ -138,12 +135,11 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
         {/* 검색 버튼 */}
         <button
           onClick={handleSearch} // ✅ 검색 버튼 클릭 시 실행
-          className="px-8 py-1 bg-mygreen text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition"
-        >
+          className="px-8 py-1 bg-mygreen text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition">
           검색하기
         </button>
       </motion.div>
-      <div className="flex justify-between items-center border-t-2 border-gray-200 "/>
+      <div className="flex justify-between items-center border-t-2 border-gray-200 " />
 
       {/* ✅ 검색 결과 없을 때 */}
       {submissions.length === 0 ? (
@@ -170,8 +166,7 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
                   <tr
                     key={submission.id}
                     className="border-b hover:bg-gray-100 transition cursor-pointer"
-                    onClick={() => handleRowClick(submission.solve_id)}
-                  >
+                    onClick={() => handleRowClick(submission.solve_id)}>
                     <td className="px-4 py-3 text-center">{submission.solve_id}</td>
                     <td className="px-4 py-3 text-center">{submission.problem_id}</td>
                     <td className="px-4 py-3 text-center">
@@ -183,8 +178,7 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
                     <td
                       className={`px-4 py-3 text-center font-semibold ${
                         submission.passed ? "text-mygreen" : "text-mydelete"
-                      }`}
-                    >
+                      }`}>
                       {submission.passed ? "✔ 맞았습니다" : "❌ 틀렸습니다"}
                     </td>
                     <td className="px-4 py-3 text-center">{submission.code_language}</td>

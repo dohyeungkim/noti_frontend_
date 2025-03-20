@@ -140,9 +140,45 @@ export const problem_api = {
     }
     return response.json();
   },
+
+  // 문제 통계 가져오기
+  async problem_get_stats(problem_id: number) {
+    const response = await fetch(`/api/proxy/problems/stats/${problem_id}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error("문제 통계를 불러오지 못했습니다.");
+    }
+    return response.json();
+  },
 };
 
 // "내가 등록한 문제"에서 제목 가져오기
+// ====================== problem_like 관련 api ===========================
+export const problem_like_api = {
+  async problem_like(problem_id: number) {
+    const res = await fetch("/api/proxy/problems_like", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ problem_id: problem_id }),
+    });
+
+    if (!res.ok) throw new Error("좋아요 실패");
+    return res.json();
+  },
+
+  async get_user_likes() {
+    const res = await fetch("/api/proxy/problems_like/get", {
+      method: "GET",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new Error("좋아요 상태 조회 실패");
+    return res.json();
+  },
+};
 
 // ====================== group 관련 api ===========================
 export const group_api = {
@@ -239,6 +275,19 @@ export const group_member_api = {
       }),
     });
     if (!res.ok) throw new Error("멤버 요청 처리 실패");
+    return res.json();
+  },
+
+  async group_member_kickoff(group_id: number, user_id: string) {
+    const res = await fetch(`/api/proxy/groups/kickoff/${group_id}/${user_id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail?.msg || "그룹원 추방 실패");
+    }
     return res.json();
   },
 };
@@ -340,6 +389,7 @@ export const solve_api = {
     if (!res.ok) throw new Error("채점 내용 가져오기 실패");
     return res.json();
   },
+
   async solve_get_by_solve_id(solve_id: number) {
     const res = await fetch(`/api/proxy/solves/${solve_id}`, {
       method: "GET",

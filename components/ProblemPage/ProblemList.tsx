@@ -39,13 +39,12 @@ const ProblemList = ({ problems, groupId, workbookId }: ProblemListProps) => {
               problems.map((p, index) => (
                 <tr
                   key={p.problem_id}
-                  className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
-                >
+                  className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer">
                   <td className="px-5 py-4 text-center">{index + 1}</td>
                   <td
                     className="px-5 py-4 text-center truncate max-w-[200px] overflow-hidden whitespace-nowrap"
                     title={p.title} // 🔹 툴팁으로 전체 제목 보기 가능
-                    onClick={() => handleSelectProblem(p.problem_id)}
+                    // onClick={() => handleSelectProblem(p.problem_id)}
                   >
                     {p.title.length > 15 ? `${p.title.slice(0, 15)}...` : p.title}
                   </td>
@@ -59,8 +58,7 @@ const ProblemList = ({ problems, groupId, workbookId }: ProblemListProps) => {
                           `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`
                         )
                       }
-                      className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80"
-                    >
+                      className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80">
                       도전하기
                     </button>
                   </td>

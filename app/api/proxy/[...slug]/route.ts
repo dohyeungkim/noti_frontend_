@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function middlewareHandler(req: NextRequest) {
+async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
   const { pathname, search } = new URL(req.url);
   const externalApiUrl = `${process.env.NEXT_PUBLIC_API_URL}${pathname.replace(
     "/api/proxy", // 클라이언트가 이렇게 보내면
@@ -29,6 +29,7 @@ export async function middlewareHandler(req: NextRequest) {
 
   const responseData = await response.json();
   console.log(responseData);
+
   // ✅ 로그인 요청일 경우, `access_token`을 쿠키에 저장
   if (pathname === "/api/proxy/user/login" && response.ok && responseData.access_token) {
     const nextResponse = NextResponse.json(responseData, { status: response.status });
@@ -48,13 +49,13 @@ export async function middlewareHandler(req: NextRequest) {
 }
 
 // HTTP 메서드별 라우트 설정
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   return middlewareHandler(req);
 }
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   return middlewareHandler(req);
 }
-export async function PUT(req: NextRequest) {
+export async function PUT(req: NextRequest): Promise<NextResponse> {
   return middlewareHandler(req);
 }
 export async function PATCH(req: NextRequest) {

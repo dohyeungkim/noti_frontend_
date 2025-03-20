@@ -4,7 +4,7 @@ import { problem_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
-interface Problem {
+export interface Problem {
   problem_id: number;
   title: string;
   description: string;
@@ -39,14 +39,17 @@ export default function ProblemSelector({
   const isFetched = useRef(false);
 
   const handleSelect = (problem: Problem) => {
-    // 이미 등록된 문제는 선택/해제 불가능
-    if (isAlreadySelected.some((p) => p.problem_id === problem.problem_id)) {
-      console.log("🚫 이미 선택된 문제는 해제할 수 없습니다:", problem.title);
-      return;
-    }
-
     setSelectedProblems((prevSelected) => {
       const isSelected = prevSelected.some((p) => p.problem_id === problem.problem_id);
+      const isAlreadySelectedProblem = isAlreadySelected.some(
+        (p) => p.problem_id === problem.problem_id
+      );
+
+      if (isAlreadySelectedProblem) {
+        console.log("🚫 이미 선택된 문제는 해제할 수 없습니다:", problem.title);
+        return prevSelected;
+      }
+
       if (isSelected) {
         return prevSelected.filter((p) => p.problem_id !== problem.problem_id);
       } else {
@@ -82,7 +85,7 @@ export default function ProblemSelector({
       fetchProblem();
       isFetched.current = true;
     }
-  }, [isModalOpen, fetchProblem]);
+  }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
 
   const handleAddProblemButton = async () => {
     if (isSubmitting) return;
@@ -120,8 +123,7 @@ export default function ProblemSelector({
         <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-lg relative">
           <button
             className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            onClick={() => setIsModalOpen(false)}
-          >
+            onClick={() => setIsModalOpen(false)}>
             <X className="w-6 h-6" />
           </button>
 
@@ -132,7 +134,9 @@ export default function ProblemSelector({
                 <h2 className="text-xl font-bold mb-2">문제 목록</h2>
                 <ul className="border p-4 rounded-md shadow-md bg-white h-64 overflow-y-auto">
                   {problems.map((problem) => {
-                    const isDisabled = isAlreadySelected.some((p) => p.problem_id === problem.problem_id);
+                    const isDisabled = isAlreadySelected.some(
+                      (p) => p.problem_id === problem.problem_id
+                    );
                     return (
                       <li
                         key={problem.problem_id}
@@ -143,9 +147,11 @@ export default function ProblemSelector({
                             : selectedProblems.some((p) => p.problem_id === problem.problem_id)
                             ? "bg-mygreen text-white"
                             : "bg-gray-100 hover:bg-gray-200"
-                        }`}
-                      >
-                        📌 {problem.title.length > 18 ? `${problem.title.slice(0, 18)}...` : problem.title}
+                        }`}>
+                        📌{" "}
+                        {problem.title.length > 18
+                          ? `${problem.title.slice(0, 18)}...`
+                          : problem.title}
                       </li>
                     );
                   })}
@@ -163,9 +169,13 @@ export default function ProblemSelector({
                         <li
                           key={selected.problem_id}
                           onClick={() => handleSelect(selected)}
-                          className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200"
-                        >
-                          📌 {newProblem ? (newProblem.title.length > 18 ? `${newProblem.title.slice(0, 18)}...` : newProblem.title) : "알 수 없는 문제"}
+                          className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200">
+                          📌{" "}
+                          {newProblem
+                            ? newProblem.title.length > 18
+                              ? `${newProblem.title.slice(0, 18)}...`
+                              : newProblem.title
+                            : "알 수 없는 문제"}
                         </li>
                       );
                     })
@@ -181,8 +191,7 @@ export default function ProblemSelector({
               <button
                 onClick={handleAddProblemButton}
                 disabled={isSubmitting}
-                className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80 transition"
-              >
+                className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80 transition">
                 문제 추가하기
               </button>
             </div>

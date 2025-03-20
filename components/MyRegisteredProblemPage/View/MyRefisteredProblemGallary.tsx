@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPen, faTrashCan } from "@fortawesome/free-solid-svg-icons";
-import ConfirmationModal from "@/components/MyRegisteredProblemPage/View/MyRefisteredProblemDeleteModal"; // ✅ 추가
 
 interface Question {
   problem_id: number;
@@ -25,14 +22,7 @@ interface GalleryViewProps {
   handleDeleteButtonClick: (problem_id: number) => Promise<void>;
 }
 
-export default function GalleryView({
-  filteredData,
-  selectedProblem,
-  handleCloseDetail,
-  handleHoverStartProblem,
-  handleHoverEndProblem,
-  handleDeleteButtonClick,
-}: GalleryViewProps) {
+export default function GalleryView({ filteredData, selectedProblem }: GalleryViewProps) {
   const router = useRouter();
   const [isConfirming, setIsConfirming] = useState(false);
   const [targetProblemId, setTargetProblemId] = useState<number | null>(null);
@@ -42,27 +32,20 @@ export default function GalleryView({
     setIsConfirming(true);
   };
 
-
-
   return (
     <>
       <motion.div className="flex transition-all duration-300">
         <motion.div
           className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300 ${
             selectedProblem ? "w-2/3" : "w-full"
-          }`}
-        >
+          }`}>
           {filteredData.length > 0 ? (
             filteredData.map((item) => (
               <motion.div
                 key={item.problem_id}
-                className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-              >
+                className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer">
                 <div className="p-1 rounded-lg">
-                  <h3
-                    className="m-3 text-xl font-semibold w-auto truncate"
-                    title={item.title}
-                  >
+                  <h3 className="m-3 text-xl font-semibold w-auto truncate" title={item.title}>
                     ✏️ {item.title}
                   </h3>
 
@@ -74,12 +57,9 @@ export default function GalleryView({
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // ✅ 부모 div의 클릭 이벤트 방지
-                        router.push(
-                          `/registered-problems/view/${item.problem_id}`
-                        );
+                        router.push(`/registered-problems/view/${item.problem_id}`);
                       }}
-                      className="bg-mygreen text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full"
-                    >
+                      className="bg-mygreen text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full">
                       문제 보기
                     </button>
                   </div>
@@ -87,9 +67,7 @@ export default function GalleryView({
               </motion.div>
             ))
           ) : (
-            <p className="text-center text-gray-500 col-span-3">
-              등록된 문제가 없습니다.
-            </p>
+            <p className="text-center text-gray-500 col-span-3">등록된 문제가 없습니다.</p>
           )}
         </motion.div>
       </motion.div>

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "Teaching with APROFI",
 };
 
-export default function RootLayout({
+export default function layout({
   children,
 }: Readonly<{
   children: React.ReactNode;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import ProblemSelector from "@/components/ProblemPage/ProblemModal/ProblemSelectorModal";
 import OpenModalButton from "@/components/ui/OpenModalButton";
 import SearchBar from "@/components/ui/SearchBar";
@@ -27,6 +27,12 @@ export default function ProblemStructure({
   const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]); // ✅ 필터링된 문제 목록 저장
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
+  // const [sortOrder, setSortOrder] = useState("제목순");
+  const { groupId, examId } = params; // params에서 직접 구조 분해 할당
+
+  // `useMemo`로 캐싱하여 불필요한 재연산 방지
+  const numericGroupId = useMemo(() => Number(groupId), [groupId]);
+  const numericExamId = useMemo(() => Number(examId), [examId]);
 
   const [refresh, setRefresh] = useState(false);
 
@@ -38,8 +44,8 @@ export default function ProblemStructure({
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          group_id: Number(params.groupId),
-          workbook_id: Number(params.examId),
+          group_id: numericGroupId,
+          workbook_id: numericExamId,
         }),
       });
 
@@ -52,7 +58,7 @@ export default function ProblemStructure({
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [params.groupId, params.examId, refresh]);
+  }, [numericGroupId, numericExamId]);
 
   useEffect(() => {
     fetchProblems();
@@ -73,8 +79,7 @@ export default function ProblemStructure({
         className="flex items-center gap-2 justify-end"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-      >
+        transition={{ delay: 0.2 }}>
         <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제 추가하기" />
       </motion.div>
 
@@ -86,8 +91,7 @@ export default function ProblemStructure({
         variants={{
           hidden: { opacity: 0, y: -10 },
           visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
-        }}
-      >
+        }}>
         <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
       </motion.div>
@@ -98,21 +102,21 @@ export default function ProblemStructure({
       {/* 🔹 선택된 보기 방식에 따라 다르게 렌더링 */}
       {viewMode === "gallery" ? (
         <ProblemGallery
-          problems={filteredProblems} // ✅ 필터링된 데이터 사용
-          groupId={Number(params.groupId)}
-          workbookId={Number(params.examId)}
+          problems={selectedProblems}
+          groupId={numericGroupId}
+          workbookId={numericExamId}
         />
       ) : (
         <ProblemList
-          problems={filteredProblems} // ✅ 필터링된 데이터 사용
-          groupId={Number(params.groupId)}
-          workbookId={Number(params.examId)}
+          problems={selectedProblems} // ✅ 현재 선택된 문제 목록
+          groupId={numericGroupId} // ✅ 그룹 ID
+          workbookId={numericExamId}
         />
       )}
 
       <ProblemSelector
-        groupId={Number(params.groupId)}
-        workbookId={Number(params.examId)}
+        groupId={numericGroupId}
+        workbookId={numericExamId}
         selectedProblems={selectedProblems}
         setSelectedProblems={setSelectedProblems}
         isModalOpen={isModalOpen}
