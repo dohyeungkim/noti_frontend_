@@ -12,6 +12,7 @@ interface Problem {
   description: string;
   attempt_count: number;
   pass_count: number;
+  is_like: boolean;
 }
 
 interface ProblemGalleryProps {
@@ -24,27 +25,9 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
   const router = useRouter();
   const [likedProblems, setLikedProblems] = useState<Record<number, boolean>>({});
 
-  // 초기 좋아요 상태 가져오기
-  useEffect(() => {
-    const fetchLikes = async () => {
-      try {
-        const response = await problem_like_api.get_user_likes();
-        const likedIds = response.liked_problem_ids || [];
-        const initialLikes = problems.reduce((acc: Record<number, boolean>, p: Problem) => {
-          acc[p.problem_id] = likedIds.includes(p.problem_id);
-          return acc;
-        }, {} as Record<number, boolean>);
-        setLikedProblems(initialLikes);
-      } catch (error) {
-        console.error("좋아요 상태 로드 실패:", error);
-      }
-    };
-    fetchLikes();
-  }, [problems]);
-
-  const toggleLike = async (problemId: number) => {
+  const toggleLike = async (problemId: number, groupId: number, workbookId: number) => {
     try {
-      const response = await problem_like_api.problem_like(problemId);
+      const response = await problem_like_api.problem_like(problemId, groupId, workbookId);
       const isLiked = response.liked;
 
       setLikedProblems((prev) => ({
@@ -59,53 +42,47 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
 
   return (
     <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 m-2">
-      {problems.map((p: Problem) => (
-        <div
-          key={p.problem_id}
-          className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md 
-                     transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
-        >
-          <div className="flex justify-between ">
-            <h2 className="text-xl font-semibold text-gray-800 truncate mt-1">{p.title}</h2>
+      {problems.map((p: Problem) => {
+        // likedProblems에 값이 있으면 그 값을, 없으면 p.is_like를 사용
+        const isLiked = likedProblems[p.problem_id] ?? p.is_like;
+        return (
+          <div
+            key={p.problem_id}
+            className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md 
+                       transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+            <h2 className="text-xl font-semibold text-gray-800 truncate">{p.title}</h2>
+
             {/* 좋아요 버튼 */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={(e) => {
                 e.stopPropagation();
-                toggleLike(p.problem_id);
+                toggleLike(p.problem_id, groupId, workbookId);
               }}
-              className={`flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
-                likedProblems[p.problem_id] ? "bg-red-200 text-white" : "bg-gray-200 text-gray-600"
-              }`}
-            >
+              className={`mt-2 flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
+                isLiked ? "bg-red-200 text-white" : "bg-gray-200 text-gray-600"
+              }`}>
               <motion.div
                 animate={{
-                  scale: likedProblems[p.problem_id] ? 1.2 : 1,
-                  color: likedProblems[p.problem_id] ? "#ff4757" : "#4B5563",
+                  scale: isLiked ? 1.2 : 1,
+                  color: isLiked ? "#ff4757" : "#4B5563",
                 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <Heart
-                  fill={likedProblems[p.problem_id] ? "#ff4757" : "none"}
-                  strokeWidth={2}
-                  size={24}
-                  // className="flex justify-between"
-                />
+                transition={{ type: "spring", stiffness: 300 }}>
+                <Heart fill={isLiked ? "#ff4757" : "none"} strokeWidth={2} size={24} />
               </motion.div>
             </motion.button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`);
+              }}
+              className="mt-4 w-full bg-mygreen text-white py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out hover:bg-opacity-80 active:scale-95">
+              도전하기
+            </button>
           </div>
+        );
+      })}
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`);
-            }}
-            className="mt-4 w-full bg-mygreen text-white py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out hover:bg-opacity-80 active:scale-95"
-          >
-            도전하기
-          </button>
-        </div>
-      ))}
     </section>
   );
 }
