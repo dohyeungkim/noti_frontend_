@@ -26,6 +26,7 @@ interface CommentSectionProps {
 }
 
 
+
 const CommentSection = ({ params }: CommentSectionProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [currentComment, setCurrentComment] = useState<string>("");
