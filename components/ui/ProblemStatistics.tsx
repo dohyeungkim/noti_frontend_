@@ -5,6 +5,7 @@ import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { problem_api } from "@/lib/api";
 import { UserIcon } from "lucide-react";
+import { formatTimestamp } from "../util/dageUtils";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -58,15 +59,7 @@ export default function ProblemStatistics({ problem_id }: { problem_id: number }
   const likeCount = problemStats.like;
   const mygreen = "#589960";
 
-  // ✅ 날짜 포맷 함수
-  const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date
-      .getHours()
-      .toString()
-      .padStart(2, "0")}:
-      ${date.getMinutes().toString().padStart(2, "0")}`;
-  };
+ 
 
   // ✅ 성공률 도넛 차트 데이터
   const doughnutData = {
@@ -111,7 +104,7 @@ export default function ProblemStatistics({ problem_id }: { problem_id: number }
                     <div className="flex justify-between items-center">
                       <span className="text-gray-900 font-semibold">{comment.user_id}</span>
                       <span className="text-sm text-gray-500">
-                        {comment.timestamp ? formatTime(comment.timestamp) : "방금 전"}
+                        {comment.timestamp ? formatTimestamp(comment.timestamp) : "방금 전"}
                       </span>
                     </div>
                     <p className="text-gray-700 mt-1">{comment.comment}</p>

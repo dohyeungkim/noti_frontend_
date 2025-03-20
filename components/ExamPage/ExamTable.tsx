@@ -1,5 +1,7 @@
 "use client";
 
+import { formatTimestamp } from "../util/dageUtils";
+
 interface ExamTableProps {
   workbooks: {
     workbook_id: number;
@@ -13,14 +15,7 @@ interface ExamTableProps {
   handleEnterExam: (examId: string) => void;
 }
 
-// ✅ 'YY.MM.DD' 형식으로 날짜 변환
-const formatShortDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const year = date.getFullYear().toString().slice(2);
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}.${month}.${day}`;
-};
+
 
 export default function ExamTable({ workbooks, handleEnterExam }: ExamTableProps) {
   return (
@@ -64,7 +59,7 @@ export default function ExamTable({ workbooks, handleEnterExam }: ExamTableProps
                   <td className="px-5 py-4 text-center text-gray-500">{workbook.problem_cnt}개</td>
 
                   <td className="px-5 py-4 text-center text-gray-500">
-                    📅 {formatShortDate(workbook.creation_date)}
+                    📅 {formatTimestamp(workbook.creation_date)}
                   </td>
 
                   <td className="px-5 py-4 text-center">
@@ -73,7 +68,7 @@ export default function ExamTable({ workbooks, handleEnterExam }: ExamTableProps
                         "w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80"
                       }
                     >
-                      문제지 펼치기 →
+                      문제지 펼치기
                     </button>
                   </td>
                 </tr>
