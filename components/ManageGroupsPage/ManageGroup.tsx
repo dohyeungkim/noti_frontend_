@@ -147,6 +147,19 @@ export default function ManageGroup() {
     }
   };
 
+  // 문제지 삭제 함수 (DELETE /api/proxy/workbook/{group_id}/{workbook_id})
+  const deleteWorkbook = async (workbookId: number) => {
+    try {
+      await workbook_api.workbook_delete(Number(groupId), workbookId);
+      alert("문제지가 삭제되었습니다.");
+      // 삭제 후 최신 문제지 목록을 갱신하여 삭제된 문제지가 보이지 않도록 함
+      fetchWorkbooks();
+    } catch (error) {
+      console.error("문제지 삭제 에러", error);
+      alert("문제지 삭제 중 오류 발생");
+    }
+  };
+
   useEffect(() => {
     if (groupId) {
       fetchGroup();
@@ -415,7 +428,7 @@ export default function ManageGroup() {
 
           {/* 문제지 목록 카드들을 스크롤 가능한 영역에 나열 */}
           <div
-            className="bg-[#E6E6E6] w-full p-[10px] mt-2 rounded-[10px] overflow-auto h-[50px]"
+            className="bg-[#E6E6E6] w-full p-[10px] mt-2 rounded-[10px] overflow-auto"
             style={{ height: showProblemList ? "300px" : "50px" }}
           >
             <div className="flex justify-between items-center mb-6">
@@ -434,7 +447,7 @@ export default function ManageGroup() {
                   workbooks.map((wb, index) => (
                     <div
                       key={wb.workbook_id}
-                      className="border border-gray-300 p-3 rounded-md mb-4"
+                      className="border border-gray-400 p-3 rounded-md mb-4"
                     >
                       <div className="flex justify-between items-center">
                         <label className="font-bold">문제지 이름</label>
@@ -449,6 +462,7 @@ export default function ManageGroup() {
                           }}
                         />
                       </div>
+                      {/* 문제지 소개 */}
                       <div className="flex flex-col mt-3">
                         <label className="font-bold">문제지 소개</label>
                         <textarea
@@ -461,14 +475,22 @@ export default function ManageGroup() {
                           }}
                         />
                       </div>
+                      {/* 문제지 삭제 */}
+                      <div className="flex justify-between mt-8">
+                        <label className="font-bold">문제지 삭제</label>
+                        <button
+                          className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]"
+                          onClick={() => deleteWorkbook(wb.workbook_id)}
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </div>
                   ))
                 ) : (
                   <p className="text-center text-gray-500 mt-3">문제지가 존재하지 않습니다.</p>
                 )}
               </div>
-              // </div>
-              // </div>
             )}
           </div>
           {/* 저장 버튼 영역 */}

@@ -6,7 +6,7 @@ import ViewToggle from "@/components/ui/ViewToggle";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { toZonedTime, format } from "date-fns-tz";
 import { solve_api } from "@/lib/api";
 
 // ✅ 문제 풀이 데이터 타입 정의
@@ -29,10 +29,11 @@ export default function MySolved() {
   const [correctProblems, setCorrectProblems] = useState<ProblemSolve[]>([]);
   const [filteredProblems, setFilteredProblems] = useState<ProblemSolve[]>([]);
 
-  // ✅ 날짜 포맷 함수
   const formatDate = (timestamp?: string) => {
     if (!timestamp) return "N/A";
-    return format(new Date(timestamp), "yyyy-MM-dd HH:mm");
+    const seoulTimeZone = "Asia/Seoul";
+    const zonedDate = toZonedTime(new Date(timestamp), seoulTimeZone);
+    return format(zonedDate, "yyyy-MM-dd HH:mm", { timeZone: seoulTimeZone });
   };
 
   // ✅ 문자열 길이 제한 함수 (너무 길면 `...` 표시)
@@ -117,9 +118,7 @@ export default function MySolved() {
       {/* ✅ 맞은 문제 리스트 */}
       {sortedProblems.length > 0 && (
         <>
-          <motion.h2 className="text-2xl font-bold mb-4">
-            ✅ 맞은 문제
-          </motion.h2>
+          <motion.h2 className="text-2xl font-bold mb-4">✅ 맞은 문제</motion.h2>
           <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
           <motion.div
@@ -144,7 +143,6 @@ export default function MySolved() {
                           📄 {truncateText(problem.problem_name, 15)}
                         </h2>
                       </div>
-
 
                       <p className="text-gray-500 text-sm">
                         {truncateText(problem.group_name, 10)} &gt;{" "}

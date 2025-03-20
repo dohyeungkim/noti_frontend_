@@ -292,6 +292,16 @@ export const workbook_api = {
     if (!res.ok) throw new Error("문제지 업데이트 실패");
     return res.json();
   },
+
+  // 문제지 삭제...
+  async workbook_delete(group_id: number, workbook_id: number) {
+    const res = await fetch(`/api/proxy/workbook/${group_id}/${workbook_id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("문제지 삭제 실패");
+    return res.json();
+  },
 };
 
 // ====================== solves 관련 api ===========================

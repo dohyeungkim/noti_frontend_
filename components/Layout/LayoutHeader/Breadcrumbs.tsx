@@ -62,7 +62,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
         )}
 
         {/* 🔹 채점 결과 (결과 페이지 - `/result`) */}
-        {segments.length >= 7 && (
+        {segments.length >= 7 && !pathname.includes("/write") && (
           <>
             <BreadcrumbSeparator />
             <BreadcrumbLink

@@ -68,24 +68,21 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
           isOpen ? "w-64" : "w-16"
         }`}
       >
-          {/* 프로필 영역 */}
-          <div className="flex items-center p-3 bg-gray-200 text-gray-700">
-            <button className="text-lg cursor-pointer bg-transparent border-none">
-              <FontAwesomeIcon icon={faUserCircle} size="2x" className="text-gray-500" />
-            </button>
-            <p
-              className={`ml-2 transition-all duration-300 text-sm ${isOpen ? "block" : "hidden"}`}
-            >
-              {userName ? `안녕하세요. ${userName}님!` : "Loading..."}
-            </p>
-            <button
-              className={`ml-auto transition-all duration-300 ${isOpen ? "block" : "hidden"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              <FontAwesomeIcon icon={faArrowLeft} className="text-gray-500" />
-            </button>
-          </div>
-        
+        {/* 프로필 영역 */}
+        <div className="flex items-center p-3 bg-gray-200 text-gray-700">
+          <button className="text-lg cursor-pointer bg-transparent border-none">
+            <FontAwesomeIcon icon={faUserCircle} size="2x" className="text-gray-500" />
+          </button>
+          <p className={`ml-2 transition-all duration-300 text-sm ${isOpen ? "block" : "hidden"}`}>
+            {userName ? `안녕하세요. ${userName}님!` : "Loading..."}
+          </p>
+          <button
+            className={`ml-auto transition-all duration-300 ${isOpen ? "block" : "hidden"}`}
+            onClick={() => setIsOpen(false)}
+          >
+            <FontAwesomeIcon icon={faArrowLeft} className="text-gray-500" />
+          </button>
+        </div>
 
         {/* 네비게이션 메뉴 */}
         <div className="p-4">
@@ -129,9 +126,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
             <p className="text-gray-500 text-xs sm:text-sm mt-4">나의 그룹</p>
 
             {/* ✅ 그룹 개수 15개 이상이면 스크롤 추가 */}
-            <div
-              className="mt-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
-            >
+            <div className="mt-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
               {groups.length > 0 ? (
                 groups.map((group) => (
                   <Link
@@ -156,7 +151,11 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <button className="border-none bg-transparent text-lg cursor-pointer">
                 <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" />
               </button>
-              <span className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${isOpen ? "inline" : "hidden"}`}>
+              <span
+                className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${
+                  isOpen ? "inline" : "hidden"
+                }`}
+              >
                 <PasswordChange />
               </span>
             </li>
@@ -164,7 +163,11 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <button className="border-none bg-transparent text-lg cursor-pointer">
                 <FontAwesomeIcon icon={faRightFromBracket} className="text-gray-500" />
               </button>
-              <span className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${isOpen ? "inline" : "hidden"}`}>
+              <span
+                className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${
+                  isOpen ? "inline" : "hidden"
+                }`}
+              >
                 <Logout />
               </span>
             </li>
@@ -173,7 +176,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
       </div>
 
       <button
-        className={`absolute top-[10px] left-[70px] bg-gray-100 text-black rounded-full w-8 h-8 text-lg cursor-pointer ${
+        className={`fixed z-[9999] top-[10px] left-[70px] bg-gray-100 text-black rounded-full w-8 h-8 text-lg cursor-pointer ${
           isOpen ? "hidden" : "block"
         }`}
         onClick={() => setIsOpen(true)}

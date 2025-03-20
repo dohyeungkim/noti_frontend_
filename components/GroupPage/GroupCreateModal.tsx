@@ -30,7 +30,6 @@ export default function GroupCreateModal({
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 상태 추가
 
-
   // 예제: 과거 그룹 리스트
   const pastGroups = ["컴퓨터 구조", "알고리즘", "인공지능 기초"];
 
@@ -63,7 +62,6 @@ export default function GroupCreateModal({
     console.log("공개 여부:", isPublic ? "공개" : "비공개");
     setIsLoading(true);
     setErrorMessage(null); // ✅ 에러 메시지 초기화
-
 
     try {
       const response = await fetch(`/api/proxy/groups`, {
