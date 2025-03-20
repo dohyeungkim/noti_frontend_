@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { auth_api } from "@/lib/api";
 import { useAuth } from "@/stores/auth";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUnlockAlt } from "@fortawesome/free-solid-svg-icons";
 
 export default function PasswordChange() {
   const [open, setOpen] = useState(false);
@@ -71,7 +73,8 @@ export default function PasswordChange() {
             alignItems: "center",
             justifyContent: "center",
           }}
-          onClick={() => setOpen(false)}>
+          onClick={() => setOpen(false)}
+        >
           <div
             style={{
               backgroundColor: "white",
@@ -81,7 +84,8 @@ export default function PasswordChange() {
               boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
               position: "relative",
             }}
-            onClick={(e) => e.stopPropagation()}>
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setOpen(false)}
               style={{
@@ -93,7 +97,8 @@ export default function PasswordChange() {
                 cursor: "pointer",
                 fontSize: "16px",
                 color: "#333",
-              }}>
+              }}
+            >
               X
             </button>
             <h2>비밀번호 변경</h2>
@@ -103,37 +108,54 @@ export default function PasswordChange() {
               placeholder="현재 비밀번호"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              style={{ display: "block", width: "100%", margin: "10px 0", padding: "8px", borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{
+                display: "block",
+                width: "100%",
+                margin: "10px 0",
+                padding: "8px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+              }}
             />
             <input
               type="password"
               placeholder="새 비밀번호"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              style={{ display: "block", width: "100%", margin: "10px 0", padding: "8px", borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{
+                display: "block",
+                width: "100%",
+                margin: "10px 0",
+                padding: "8px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+              }}
             />
             <button
               onClick={handlePasswordChange}
               disabled={loading}
               style={{
-                padding: '10px 20px',
-                backgroundColor: "#4CAF50", // mygreen 색상
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                outline: 'none',
-                fontSize: '16px',
-                display: 'block',
-                width: '100%',
-                margin: '10px 0'
-              }}>
+                padding: "10px 20px",
+                backgroundColor: "#589960", // mygreen 색상
+                color: "white",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+                outline: "none",
+                fontSize: "16px",
+                display: "block",
+                width: "100%",
+                margin: "10px 0",
+              }}
+            >
               {loading ? "변경 중..." : "변경하기"}
             </button>
           </div>
         </div>
       )}
-      <button onClick={handleOpenModal}>비밀번호 변경하기</button>
+      <button onClick={handleOpenModal}>
+        <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" />
+      </button>
     </>
   );
 }

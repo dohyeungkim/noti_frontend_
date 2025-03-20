@@ -29,7 +29,7 @@ export default function ExamCard({ workbook, onClick }: ExamCardProps) {
     >
       {/* ✅ 제목 (workbook_name) - 상단 고정 */}
       <div>
-        <h2 className="text-xl font-semibold mb-2">
+        <h2 className="text-xl font-semibold mb-2 overflow-hidden text-ellipsis">
           📄{" "}
           {workbook.workbook_name.length > 24
             ? `${workbook.workbook_name.slice(0, 24)}...`

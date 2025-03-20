@@ -2,6 +2,8 @@
 
 import { useAuth } from "@/stores/auth";
 import { auth_api } from "@/lib/api";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 
 export default function Logout() {
   const { setIsAuth } = useAuth();
@@ -12,5 +14,10 @@ export default function Logout() {
     setIsAuth(false);
   };
 
-  return <button onClick={handleLogout}>로그아웃</button>;
+  return (
+    <button onClick={handleLogout}>
+      <FontAwesomeIcon icon={faRightFromBracket} className="text-gray-500" />
+      {/* 로그아웃 */}
+    </button>
+  );
 }
