@@ -1,63 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, forwardRef, useImperativeHandle } from "react";
 import { auth_api } from "@/lib/api";
 import { useAuth } from "@/stores/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUnlockAlt } from "@fortawesome/free-solid-svg-icons";
 
-export default function PasswordChange() {
+export interface PasswordChangeHandles {
+  openModal: () => void;
+}
+
+const PasswordChange = forwardRef<PasswordChangeHandles>((props, ref) => {
   const [open, setOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const { userName } = useAuth();
 
   const handleOpenModal = () => {
-    setCurrentPassword(""); // 입력값 초기화
+    setCurrentPassword("");
     setNewPassword("");
     setError("");
-    setSuccess("");
     setOpen(true);
   };
 
   const handlePasswordChange = async () => {
     setError("");
-    setSuccess("");
-
     if (!userName) {
       setError("사용자 이름을 확인할 수 없습니다.");
       return;
     }
-
     if (!currentPassword || !newPassword) {
       setError("모든 필드를 입력하세요.");
       return;
     }
-
     if (currentPassword === newPassword) {
       setError("새 비밀번호는 현재 비밀번호와 다르게 설정해야 합니다.");
       return;
     }
-
     setLoading(true);
     try {
       await auth_api.changePassword(userName, currentPassword, newPassword);
-      setSuccess("비밀번호가 성공적으로 변경되었습니다.");
       alert("비밀번호가 성공적으로 변경되었습니다.");
-      // ✅ 새 비밀번호를 현재 비밀번호로 갱신
-      setCurrentPassword(newPassword);
-      setNewPassword("");
-      setOpen(false); // 성공 시에만 모달 닫기
+      setOpen(false);
     } catch (error) {
       setError("비밀번호 변경에 실패했습니다.");
-      console.log("비밀번호 변경 실패: ", error);
+      console.error("비밀번호 변경 실패:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // 부모에서 openModal을 호출할 수 있도록 ref에 함수 노출
+  useImperativeHandle(ref, () => ({
+    openModal: handleOpenModal,
+  }));
+
   return (
     <>
       {open && (
@@ -72,6 +71,7 @@ export default function PasswordChange() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            zIndex: 1100,
           }}
           onClick={() => setOpen(false)}
         >
@@ -80,7 +80,7 @@ export default function PasswordChange() {
               backgroundColor: "white",
               padding: "20px",
               borderRadius: "10px",
-              width: "300px", // 고정된 너비
+              width: "300px",
               boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
               position: "relative",
             }}
@@ -136,14 +136,11 @@ export default function PasswordChange() {
               disabled={loading}
               style={{
                 padding: "10px 20px",
-                backgroundColor: "#589960", // mygreen 색상
+                backgroundColor: "#589960",
                 color: "white",
                 border: "none",
                 borderRadius: "5px",
                 cursor: "pointer",
-                outline: "none",
-                fontSize: "16px",
-                display: "block",
                 width: "100%",
                 margin: "10px 0",
               }}
@@ -153,9 +150,11 @@ export default function PasswordChange() {
           </div>
         </div>
       )}
-      <button onClick={handleOpenModal}>
-        <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" />
-      </button>
+      {/* 아이콘만 렌더링 (클릭 이벤트는 부모에서 처리) */}
+      <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" style={{ cursor: "pointer" }} />
     </>
   );
-}
+});
+
+PasswordChange.displayName = "PasswordChange";
+export default PasswordChange;

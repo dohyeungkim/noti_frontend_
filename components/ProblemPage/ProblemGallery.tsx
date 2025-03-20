@@ -49,7 +49,8 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
           <div
             key={p.problem_id}
             className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md 
-                       transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+                       transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+          >
             <h2 className="text-xl font-semibold text-gray-800 truncate">{p.title}</h2>
 
             {/* 좋아요 버튼 */}
@@ -61,13 +62,15 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
               }}
               className={`mt-2 flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
                 isLiked ? "bg-red-200 text-white" : "bg-gray-200 text-gray-600"
-              }`}>
+              }`}
+            >
               <motion.div
                 animate={{
                   scale: isLiked ? 1.2 : 1,
                   color: isLiked ? "#ff4757" : "#4B5563",
                 }}
-                transition={{ type: "spring", stiffness: 300 }}>
+                transition={{ type: "spring", stiffness: 300 }}
+              >
                 <Heart fill={isLiked ? "#ff4757" : "none"} strokeWidth={2} size={24} />
               </motion.div>
             </motion.button>
@@ -76,13 +79,13 @@ export default function ProblemGallery({ problems, groupId, workbookId }: Proble
                 e.stopPropagation();
                 router.push(`/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`);
               }}
-              className="mt-4 w-full bg-mygreen text-white py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out hover:bg-opacity-80 active:scale-95">
+              className="mt-4 w-full bg-mygreen text-white py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out hover:bg-opacity-80 active:scale-95"
+            >
               도전하기
             </button>
           </div>
         );
       })}
-
     </section>
   );
 }

@@ -10,12 +10,11 @@ import {
   faPen,
   faUserCircle,
   faArrowRight,
-  faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
-import Logout from "../Auth/Logout";
-import { useEffect, useState, useCallback } from "react";
+import Logout, { LogoutHandles } from "../Auth/Logout";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/stores/auth";
-import PasswordChange from "../Auth/PasswordChange";
+import PasswordChange, { PasswordChangeHandles } from "../Auth/PasswordChange";
 
 interface DrawerProps {
   isOpen: boolean;
@@ -35,11 +34,14 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
     }[]
   >([]);
 
-  const fetchGroup = useCallback(async () => {
+  // PasswordChange와 Logout 컴포넌트의 ref 생성
+  const passwordChangeRef = useRef<PasswordChangeHandles>(null);
+  const logoutRef = useRef<LogoutHandles>(null);
+
+  const fetchGroup = async () => {
     try {
       const res = await fetch("/api/proxy/groups/my", { cache: "no-cache" });
       const data = await res.json();
-
       if (Array.isArray(data) && data.length > 0) {
         setGroups(data);
       } else {
@@ -49,13 +51,12 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
       console.error("내 그룹 정보 가져오기 실패:", error);
       setGroups([]);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchGroup();
-  }, [fetchGroup]);
+  }, []);
 
-  // ✅ 10자 이상 그룹명 `...` 처리
   const truncateText = (text: string, maxLength: number) =>
     text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
 
@@ -120,11 +121,9 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
             ))}
           </ul>
 
-          {/* "나의 그룹" 목록 추가 */}
+          {/* "나의 그룹" 목록 */}
           <div className={`${isOpen ? "block" : "hidden"}`}>
             <p className="text-gray-500 text-xs sm:text-sm mt-4">나의 그룹</p>
-
-            {/* ✅ 그룹 개수 15개 이상이면 스크롤 추가 */}
             <div className="mt-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
               {groups.length > 0 ? (
                 groups.map((group) => (
@@ -143,37 +142,33 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
           </div>
         </div>
 
-        {/* 비번 변경, 로그아웃 */}
+        {/* 비밀번호 변경, 로그아웃 */}
         <div className="absolute bottom-0 left-0 w-full pl-4">
           <ul className="list-none p-0">
-            <li className="my-4 flex items-center gap-2">
-              <button className="border-none bg-transparent text-lg cursor-pointer">
-                {/* <FontAwesomeIcon icon={faUnlockAlt} className="text-gray-500" /> */}
-                <PasswordChange />
-              </button>
+            <li
+              className="my-4 flex items-center gap-2 cursor-pointer"
+              onClick={() => passwordChangeRef.current?.openModal()}
+            >
+              <PasswordChange ref={passwordChangeRef} />
               <span
-                className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${
+                className={`text-gray-700 ml-2 transition-all duration-300 text-sm ${
                   isOpen ? "inline" : "hidden"
                 }`}
               >
-                {/* 비빌번호 변경하기 */}
-                {/* <PasswordChange /> */}
+                비밀번호 변경하기
               </span>
             </li>
-            <li className="my-4 flex items-center gap-2">
-              <button
-                className="border-none bg-transparent text-lg cursor-pointer"
-                // onClick={<Logout />}
-              >
-                {/* <FontAwesomeIcon icon={faRightFromBracket} className="text-gray-500" /> */}
-                <Logout />
-              </button>
+            <li
+              className="my-4 flex items-center gap-2 cursor-pointer"
+              onClick={() => logoutRef.current?.logout()}
+            >
+              <Logout ref={logoutRef} />
               <span
-                className={`text-gray-700 flex items-center hover:text-black transition-all text-sm ${
+                className={`text-gray-700 ml-2 transition-all duration-300 text-sm ${
                   isOpen ? "inline" : "hidden"
                 }`}
               >
-                {/* <Logout /> */}
+                로그아웃
               </span>
             </li>
           </ul>
