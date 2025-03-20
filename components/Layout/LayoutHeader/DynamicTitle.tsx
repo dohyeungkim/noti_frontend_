@@ -40,10 +40,19 @@ function getTitle(
         return "📝 문제 등록하기";
       case pathname.startsWith("/registered-problems/edit"):
         return "🛠 문제 수정하기";
+      case pathname.startsWith("/registered-problems/view/"):
+        // 경로를 '/'로 분리하여 배열을 생성
+        const segments = pathname.split('/');
+        // 세그먼트의 길이가 4이고, 3번째 세그먼트가 'view'일 때
+        if (segments.length === 4 && segments[2] === 'view') {
+          return `🔍 문제 보기`; // '아이디' 부분을 동적으로 표시
+        }
+        break;
       default:
         break;
     }
   }
+  
 
   if (pathname.startsWith("/feedback")) {
     return "📖 피드백 보기";
