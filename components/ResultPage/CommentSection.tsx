@@ -34,8 +34,8 @@ const formatTimestamp = (timestamp?: string) => {
   const seoulTimeZone = "Asia/Seoul";
   const dateUTC = new Date(timestamp);
   const dateInSeoul = toZonedTime(dateUTC, seoulTimeZone);
-  const nowInSeoul = toZonedTime(new Date(), seoulTimeZone);
 
+  const nowInSeoul = toZonedTime(new Date(), seoulTimeZone);
   const dateString = tzFormat(dateInSeoul, "yyyy-MM-dd", { timeZone: seoulTimeZone });
   const nowString = tzFormat(nowInSeoul, "yyyy-MM-dd", { timeZone: seoulTimeZone });
 
