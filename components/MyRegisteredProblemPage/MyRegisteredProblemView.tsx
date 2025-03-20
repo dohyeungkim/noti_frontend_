@@ -299,7 +299,7 @@ export default function ProblemView() {
           className={`transition-all duration-300 ${
             isExpandedstatis ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
           }`}>
-          <ProblemStatistics problem_id={3} />
+          <ProblemStatistics problem_id={problem.problem_id} />
         </div>
       </div>
       {/* <button
