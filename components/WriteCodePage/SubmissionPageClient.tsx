@@ -34,6 +34,7 @@ interface SubmissionPageClientProps {
 
 export default function SubmissionPageClient({ params }: SubmissionPageClientProps) {
   const { problemId } = useParams();
+  const problemIdNum = Number(problemId);
   const router = useRouter();
 
   // ✅ 검색 필드 상태 추가 (타입 적용)
@@ -45,7 +46,7 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
   // ✅ 제출 내역 불러오기 (검색 적용)
   const fetchSubmissions = useCallback(async () => {
     try {
-      let res: Submission[] = await solve_api.solve_get_by_problem_id(Number(params.problemId));
+      let res: Submission[] = await solve_api.solve_get_by_problem_id(problemIdNum);
 
       // ✅ 검색 필터 적용
       res = res.filter(
@@ -61,7 +62,7 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
     } catch (error) {
       console.error("제출 내역을 불러오는 중 오류 발생:", error);
     }
-  }, [params.problemId, searchTitle, searchUser, searchProblemId]);
+  }, [params.groupId, params.examId, problemIdNum, searchTitle, searchUser, searchProblemId]);
 
   // ✅ 페이지가 로드될 때 데이터 불러오기
   useEffect(() => {

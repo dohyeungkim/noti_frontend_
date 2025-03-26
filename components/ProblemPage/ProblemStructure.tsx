@@ -27,7 +27,7 @@ export default function ProblemStructure({
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProblems, setSelectedProblems] = useState<Problem[]>([]);
-  const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]);
+  // const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
   const { groupId, examId } = params;
@@ -73,16 +73,15 @@ export default function ProblemStructure({
       const data = await res.json();
       console.log(data);
       setSelectedProblems(data);
-      setFilteredProblems(data);
+      // setFilteredProblems(data);
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [numericGroupId, numericExamId, refresh]);
+  }, [numericGroupId, numericExamId]);
 
   useEffect(() => {
     fetchProblems();
-  }, [refresh]); // 👈 반드시 refresh에 반응하도록 의존성 배열 설정
-  
+  }, [fetchProblems, refresh]); // 👈 반드시 refresh에 반응하도록 의존성 배열 설정
 
   // 그룹 오너 정보도 가져오기 (그룹 ID가 변경되거나 컴포넌트 마운트 시)
   useEffect(() => {
@@ -91,12 +90,12 @@ export default function ProblemStructure({
     }
   }, [groupId, fetchMyOwner]);
 
-  useEffect(() => {
-    const filtered = selectedProblems.filter((problem) =>
-      problem.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredProblems(filtered);
-  }, [searchQuery, selectedProblems]);
+  // useEffect(() => {
+  //   const filtered = selectedProblems.filter((problem) =>
+  //     problem.title.toLowerCase().includes(searchQuery.toLowerCase())
+  //   );
+  //   setFilteredProblems(filtered);
+  // }, [searchQuery, selectedProblems]);
 
   return (
     <>
