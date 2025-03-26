@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 
-interface CodeLog {
+export interface CodeLog {
   id: number;
   code: string;
   timestamp: string;
@@ -9,6 +9,7 @@ interface CodeLog {
 
 interface CodeLogReplayProps {
   codeLogs: CodeLog[];
+  idx: number;
 }
 
 const CodeLogReplay = ({ codeLogs }: CodeLogReplayProps) => {

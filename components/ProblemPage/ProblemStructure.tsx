@@ -129,7 +129,7 @@ export default function ProblemStructure({
       {filteredProblems.length === 0 ? (
         searchQuery ? (
           <p className="text-center text-gray-500 mt-10">
-            🔍 <strong>"{searchQuery}"</strong>에 대한 검색 결과가 없습니다.
+            🔍 <strong>&quot;{searchQuery}&quot;</strong>에 대한 검색 결과가 없습니다.
           </p>
         ) : (
           <p className="text-center text-gray-500 mt-10">

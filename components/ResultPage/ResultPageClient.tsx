@@ -2,10 +2,18 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import CodeLogReplay from "@/components/ResultPage/CodeLogReplay";
+import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
 import CommentSection from "@/components/ResultPage/CommentSection";
 import { code_log_api, problem_api, solve_api } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
+import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
+
+interface SolveData {
+  passed: boolean;
+  user_id: string;
+  language: string;
+  code_length: number;
+}
 
 export default function FeedbackWithSubmissionPageClient({
   params,
@@ -18,11 +26,11 @@ export default function FeedbackWithSubmissionPageClient({
   };
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [problem, setProblem] = useState(null);
-  const [solveData, setSolveData] = useState<{ passed: boolean; user_id: string } | null>(null);
-  const [codeLogs, setCodeLogs] = useState([]);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [codeLogs, setCodeLogs] = useState<CodeLog[]>([]);
   const [aiFeedback, setAiFeedback] = useState<string>("");
-  const [isLoaded, setIsLoaded] = useState(false); // ✅ UI 로드 상태 추가
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [solveData, setSolveData] = useState<SolveData | null>(null);
 
   useEffect(() => {
     setSolveData({
@@ -129,9 +137,9 @@ export default function FeedbackWithSubmissionPageClient({
         <div className="mt-6 mb-3">
           <span
             className={`text-sm font-bold ${
-              solveData.passed ? "text-mygreen" : "text-yellow-600"
+              solveData?.passed ? "text-mygreen" : "text-yellow-600"
             }`}>
-            {solveData.passed ? "🟢 맞았습니다" : "🟡 틀렸습니다."}
+            {solveData?.passed ? "🟢 맞았습니다" : "🟡 틀렸습니다."}
           </span>
         </div>
 
@@ -149,7 +157,7 @@ export default function FeedbackWithSubmissionPageClient({
           <p className="text-gray-600 mt-2">{aiFeedback}</p>
         </motion.div>
 
-        <ResultPageProblemDetail problem={problem} />
+        {problem && <ResultPageProblemDetail problem={problem} />}
       </motion.div>
     </>
   );

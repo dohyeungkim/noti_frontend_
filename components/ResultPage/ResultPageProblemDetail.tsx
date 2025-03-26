@@ -3,11 +3,14 @@ import { useState } from "react";
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
 // import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 
-function ResultPageProblemDetail({ problem }: { problem: Problem }) {
+function ResultPageProblemDetail({ problem }: { problem: Problem | null }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleDescription = () => setIsExpanded(!isExpanded);
 
+  if (!problem) {
+    return null; // 또는 로딩 메시지: <div>문제 데이터를 불러오는 중...</div>
+  }
   return (
     <div>
       <button

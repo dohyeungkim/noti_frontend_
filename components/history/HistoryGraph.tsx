@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { history } from "@/types/history";
-
+import { HierarchyPointLink, HierarchyPointNode } from "d3-hierarchy";
 // Chart.js 요소 등록
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -45,7 +45,7 @@ const HistoryGraph = ({ historys }: { historys: history[] }) => {
       .attr(
         "d",
         d3
-          .linkHorizontal()
+          .linkHorizontal<HierarchyPointLink<history>, HierarchyPointNode<history>>()
           .x((d) => d.y)
           .y((d) => d.x)
       )
@@ -61,7 +61,7 @@ const HistoryGraph = ({ historys }: { historys: history[] }) => {
       .append("g")
       .attr("class", "node")
       .attr("transform", (d) => `translate(${d.y},${d.x})`)
-      .on("click", (event, d) => {
+      .on("click", (d) => {
         setSelectedhistory(d.data); // 클릭한 노드를 선택된 상태로 변경
       });
 

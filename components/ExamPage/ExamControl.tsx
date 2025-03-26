@@ -11,6 +11,7 @@ interface ExamControlsProps {
   setSortOrder: (order: string) => void;
   viewMode: "gallery" | "table";
   setViewMode: (mode: "gallery" | "table") => void;
+  sortOptions: ("최신순" | "제목순")[];
 }
 
 export default function ExamControls({
@@ -19,12 +20,13 @@ export default function ExamControls({
   setSortOrder,
   viewMode,
   setViewMode,
+  sortOptions,
 }: ExamControlsProps) {
   return (
     <div className="flex items-center gap-4 mb-4">
       <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
-      <SortButton onSortChange={setSortOrder} />
+      <SortButton sortOptions={sortOptions} onSortChange={setSortOrder} />
     </div>
   );
 }
