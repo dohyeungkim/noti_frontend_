@@ -42,7 +42,7 @@ export default function NewRegisteredProblem() {
       TableHeader,
       TableCellExtension, // ✅ 커스텀 TableCell 적용
     ],
-    content: "<p>문제 설명을 입력하세요...</p>",
+    content: " ",
   });
 
   if (!editor) return null; // 에디터가 로드될 때까지 기다림

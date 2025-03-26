@@ -32,7 +32,7 @@ export default function TiptapEditor() {
       TableHeader,
       TableCell,
     ],
-    content: "<p>문제 설명을 입력하세요...</p>",
+    content: " ",
   });
 
   // ✅ 로컬 이미지를 업로드하는 핸들러
