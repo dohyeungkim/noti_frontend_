@@ -198,8 +198,8 @@ export default function WriteCodePageClient({
               onChange={(e) => setLanguage(e.target.value)}
               className="border rounded-lg p-2">
               <option value="python">Python</option>
-              <option value="C"> C</option>
-              <option value="C++">C++</option>
+              {/* <option value="C"> C</option>
+              <option value="C++">C++</option> */}
             </select>
           </div>
           <div className="border-b-2 border-black my-2"></div>

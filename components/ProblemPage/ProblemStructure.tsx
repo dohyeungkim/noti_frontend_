@@ -77,11 +77,12 @@ export default function ProblemStructure({
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [numericGroupId, numericExamId]);
+  }, [numericGroupId, numericExamId, refresh]);
 
   useEffect(() => {
     fetchProblems();
-  }, [fetchProblems]);
+  }, [refresh]); // 👈 반드시 refresh에 반응하도록 의존성 배열 설정
+  
 
   // 그룹 오너 정보도 가져오기 (그룹 ID가 변경되거나 컴포넌트 마운트 시)
   useEffect(() => {
