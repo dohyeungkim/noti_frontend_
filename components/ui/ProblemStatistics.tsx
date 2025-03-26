@@ -46,8 +46,10 @@ export default function ProblemStatistics({
         const response: ApiResponse = await problem_api.problem_get_stats(
           problem_id
         );
+        console.log("📦 응답 데이터:", response);
         setProblemStatsList(response.data);
       } catch (err) {
+        console.error("❌ 에러 발생:", err);
         setError((err as Error).message);
       } finally {
         setLoading(false);
@@ -70,6 +72,8 @@ export default function ProblemStatistics({
     return acc;
   }, {} as Record<number, ProblemStatsResponse[]>);
 
+  console.log("📊 groupedByProblemId:", groupedByProblemId);
+
   return (
     <div className="p-6 space-y-12">
       {Object.entries(groupedByProblemId).map(([pid, statsList]) => {
@@ -86,6 +90,11 @@ export default function ProblemStatistics({
         const totalComments = statsList.flatMap((p) =>
           p.comments.filter((c) => c.is_problem_message === true)
         );
+
+        console.log("❤️ totalLikes:", totalLikes);
+        console.log("🚀 totalAttempts:", totalAttempts);
+        console.log("✅ totalPasses:", totalPasses);
+        console.log("💬 totalComments:", totalComments);
 
         const doughnutData = {
           labels: ["맞은 사람", "도전 중"],
@@ -106,6 +115,8 @@ export default function ProblemStatistics({
           }
           return acc;
         }, {} as Record<string, ProblemStatsResponse>);
+
+        console.log("📄 groupedStats:", groupedStats);
 
         return (
           <div key={pid} className="border-t pt-8">
@@ -199,19 +210,17 @@ export default function ProblemStatistics({
                     <th className="px-6 py-3">✅ 성공</th>
                   </tr>
                 </thead>
-
-<tbody>
-  {statsList.map((stat, idx) => (
-    <tr key={`${stat.group_id}-${stat.workbook_id}-${idx}`} className="border-t">
-      <td className="px-6 py-3">{stat.group_id}</td>
-      <td className="px-6 py-3">{stat.workbook_id}</td>
-      <td className="px-6 py-3">{stat.like}</td>
-      <td className="px-6 py-3">{stat.attempt_count}</td>
-      <td className="px-6 py-3">{stat.pass_count}</td>
-    </tr>
-  ))}
-</tbody>
-
+                <tbody>
+                  {statsList.map((stat, idx) => (
+                    <tr key={`${stat.group_id}-${stat.workbook_id}-${idx}`} className="border-t">
+                      <td className="px-6 py-3">{stat.group_id}</td>
+                      <td className="px-6 py-3">{stat.workbook_id}</td>
+                      <td className="px-6 py-3">{stat.like}</td>
+                      <td className="px-6 py-3">{stat.attempt_count}</td>
+                      <td className="px-6 py-3">{stat.pass_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>
