@@ -129,19 +129,30 @@ export default function ProblemStructure({
       <h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제들</h2>
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
-      {viewMode === "gallery" ? (
-        <ProblemGallery
-          problems={selectedProblems}
-          groupId={numericGroupId}
-          workbookId={numericExamId}
-        />
-      ) : (
-        <ProblemList
-          problems={selectedProblems}
-          groupId={numericGroupId}
-          workbookId={numericExamId}
-        />
-      )}
+      {filteredProblems.length === 0 ? (
+  searchQuery ? (
+    <p className="text-center text-gray-500 mt-10">
+      🔍 <strong>"{searchQuery}"</strong>에 대한 검색 결과가 없습니다.
+    </p>
+  ) : (
+    <p className="text-center text-gray-500 mt-10">
+      📭 등록된 문제가 없습니다. 문제를 추가해보세요!
+    </p>
+  )
+) : viewMode === "gallery" ? (
+  <ProblemGallery
+    problems={filteredProblems}
+    groupId={numericGroupId}
+    workbookId={numericExamId}
+  />
+) : (
+  <ProblemList
+    problems={filteredProblems}
+    groupId={numericGroupId}
+    workbookId={numericExamId}
+  />
+)}
+
 
       <ProblemSelector
         groupId={numericGroupId}
