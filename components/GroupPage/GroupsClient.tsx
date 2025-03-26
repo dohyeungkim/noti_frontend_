@@ -13,7 +13,7 @@ import GroupTable from "@/components/GroupPage/GroupTable";
 export default function GroupsClient() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("제목순"); // ✅ 기본값을 제목순으로 설정
+  const [sortOrder, setSortOrder] = useState("제목순");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
   const [refresh, setRefresh] = useState(false);
 
@@ -38,6 +38,7 @@ export default function GroupsClient() {
         throw new Error("내 그룹 데이터를 가져오는 데 실패했습니다.");
       }
       const data = await response.json();
+      console.log("받은 그룹 데이터:", data);
       setMyGroups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("내 그룹 정보 가져오기 실패:", error);
@@ -49,9 +50,15 @@ export default function GroupsClient() {
     fetchMyGroups();
   }, [refresh]);
 
-  const filteredGroups = myGroups.filter((group) =>
+  // ✅ 내가 속한 그룹만 필터링
+  const myJoinedGroups = myGroups.filter(group => group.is_member);
+
+  // ✅ 검색 필터
+  const filteredGroups = myJoinedGroups.filter((group) =>
     group.group_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // ✅ 정렬
   const sortedGroups = [...filteredGroups].sort((a, b) => {
     if (sortOrder === "제목순") {
       return a.group_name.localeCompare(b.group_name);
@@ -90,8 +97,6 @@ export default function GroupsClient() {
           />
         </div>
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in" />
-
-        {/* ✅ SortButton을 동적으로 정렬 변경 가능하도록 설정 */}
         <SortButton
           sortOptions={["제목순", "공개순"]}
           onSortChange={(selectedSort) => setSortOrder(selectedSort)}
@@ -105,6 +110,7 @@ export default function GroupsClient() {
         transition={{ duration: 0.3, delay: 0.3 }}>
         나의 그룹
       </motion.h2>
+
       <motion.hr
         className="border-b-1 border-gray-300 my-4 m-2"
         initial={{ opacity: 0, scaleX: 0 }}
@@ -112,20 +118,27 @@ export default function GroupsClient() {
         transition={{ duration: 0.3, delay: 0.3 }}
       />
 
-      {/* ✅ 선택된 보기 방식에 따라 애니메이션 적용 */}
+      {/* 그룹 리스트 또는 테이블 뷰 */}
       <motion.div
         key={viewMode}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.4 }}>
-        {viewMode === "gallery" ? (
-          <GroupList groups={sortedGroups} />
+        transition={{ duration: 0.3, delay: 0.4 }}
+      >
+        {myJoinedGroups.length === 0 ? (
+          <p className="text-center text-gray-500">내가 속한 그룹이 없습니다.</p>
+        ) : sortedGroups.length > 0 ? (
+          viewMode === "gallery" ? (
+            <GroupList groups={sortedGroups} />
+          ) : (
+            <GroupTable groups={sortedGroups} />
+          )
         ) : (
-          <GroupTable groups={sortedGroups} />
+          <p className="text-center text-gray-500">검색 결과가 없습니다.</p>
         )}
       </motion.div>
 
-      {/* ✅ 그룹 생성 모달 */}
+      {/* 그룹 생성 모달 */}
       <GroupCreateModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
