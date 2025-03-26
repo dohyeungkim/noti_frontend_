@@ -16,7 +16,12 @@ interface ProblemStatsResponse {
   like: number;
   attempt_count: number;
   pass_count: number;
-  comments: { user_id: string; comment: string; timestamp: string }[];
+  comments: {
+    user_id: string;
+    comment: string;
+    timestamp: string;
+    is_problem_message: boolean;
+  }[];
 }
 
 interface ApiResponse {
@@ -57,7 +62,7 @@ export default function ProblemStatistics({
       <p className="text-center text-gray-500">{error || "통계가 없습니다."}</p>
     );
 
-  // ✅ 문제별로 나누기
+  // ✅ 문제별로 그룹화
   const groupedByProblemId = problemStatsList.reduce((acc, curr) => {
     const id = curr.problem_id;
     if (!acc[id]) acc[id] = [curr];
@@ -68,13 +73,20 @@ export default function ProblemStatistics({
   return (
     <div className="p-6 space-y-12">
       {Object.entries(groupedByProblemId).map(([pid, statsList]) => {
+        // ✅ 전체 통계 (합산)
         const totalLikes = statsList.reduce((sum, p) => sum + p.like, 0);
         const totalAttempts = statsList.reduce(
           (sum, p) => sum + p.attempt_count,
           0
         );
-        const totalPasses = statsList.reduce((sum, p) => sum + p.pass_count, 0);
-        const totalComments = statsList.flatMap((p) => p.comments);
+        const totalPasses = statsList.reduce(
+          (sum, p) => sum + p.pass_count,
+          0
+        );
+        const totalComments = statsList.flatMap((p) =>
+          p.comments.filter((c) => c.is_problem_message === true)
+        );
+
         const doughnutData = {
           labels: ["맞은 사람", "도전 중"],
           datasets: [
@@ -86,15 +98,11 @@ export default function ProblemStatistics({
           ],
         };
 
+        // ✅ 그룹-문제지별로 유일하게 통계 집계
         const groupedStats = statsList.reduce((acc, curr) => {
           const key = `${curr.group_id}-${curr.workbook_id}`;
           if (!acc[key]) {
             acc[key] = { ...curr };
-          } else {
-            acc[key].like += curr.like;
-            acc[key].attempt_count += curr.attempt_count;
-            acc[key].pass_count += curr.pass_count;
-            acc[key].comments = [...acc[key].comments, ...curr.comments];
           }
           return acc;
         }, {} as Record<string, ProblemStatsResponse>);
@@ -164,9 +172,9 @@ export default function ProblemStatistics({
                     fillRule="evenodd"
                     clipRule="evenodd"
                     d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 
-                      2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 
-                      3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 
-                      3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                    2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 
+                    3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 
+                    3.78-3.4 6.86-8.55 11.54L12 21.35z"
                     fill="#589960"
                   />
                 </svg>
@@ -191,17 +199,19 @@ export default function ProblemStatistics({
                     <th className="px-6 py-3">✅ 성공</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {Object.entries(groupedStats).map(([key, stats]) => (
-                    <tr key={key} className="border-t">
-                      <td className="px-6 py-3">{stats.group_id}</td>
-                      <td className="px-6 py-3">{stats.workbook_id}</td>
-                      <td className="px-6 py-3">{stats.like}</td>
-                      <td className="px-6 py-3">{stats.attempt_count}</td>
-                      <td className="px-6 py-3">{stats.pass_count}</td>
-                    </tr>
-                  ))}
-                </tbody>
+
+<tbody>
+  {statsList.map((stat, idx) => (
+    <tr key={`${stat.group_id}-${stat.workbook_id}-${idx}`} className="border-t">
+      <td className="px-6 py-3">{stat.group_id}</td>
+      <td className="px-6 py-3">{stat.workbook_id}</td>
+      <td className="px-6 py-3">{stat.like}</td>
+      <td className="px-6 py-3">{stat.attempt_count}</td>
+      <td className="px-6 py-3">{stat.pass_count}</td>
+    </tr>
+  ))}
+</tbody>
+
               </table>
             </div>
           </div>

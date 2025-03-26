@@ -136,7 +136,7 @@ export default function ProblemStructure({
     </p>
   ) : (
     <p className="text-center text-gray-500 mt-10">
-      📭 등록된 문제가 없습니다. 문제를 추가해보세요!
+      등록된 문제가 없습니다. 문제를 추가해보세요!
     </p>
   )
 ) : viewMode === "gallery" ? (
