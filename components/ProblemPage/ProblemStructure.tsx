@@ -27,7 +27,7 @@ export default function ProblemStructure({
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProblems, setSelectedProblems] = useState<Problem[]>([]);
-  // const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]);
+  const [filteredProblems, setFilteredProblems] = useState<Problem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
   const { groupId, examId } = params;
@@ -73,7 +73,7 @@ export default function ProblemStructure({
       const data = await res.json();
       console.log(data);
       setSelectedProblems(data);
-      // setFilteredProblems(data);
+      setFilteredProblems(data);
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
@@ -90,12 +90,12 @@ export default function ProblemStructure({
     }
   }, [groupId, fetchMyOwner]);
 
-  // useEffect(() => {
-  //   const filtered = selectedProblems.filter((problem) =>
-  //     problem.title.toLowerCase().includes(searchQuery.toLowerCase())
-  //   );
-  //   setFilteredProblems(filtered);
-  // }, [searchQuery, selectedProblems]);
+  useEffect(() => {
+    const filtered = selectedProblems.filter((problem) =>
+      problem.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredProblems(filtered);
+  }, [searchQuery, selectedProblems]);
 
   return (
     <>
@@ -127,29 +127,28 @@ export default function ProblemStructure({
       <hr className="border-b-1 border-gray-300 my-4 m-2" />
 
       {filteredProblems.length === 0 ? (
-  searchQuery ? (
-    <p className="text-center text-gray-500 mt-10">
-      🔍 <strong>"{searchQuery}"</strong>에 대한 검색 결과가 없습니다.
-    </p>
-  ) : (
-    <p className="text-center text-gray-500 mt-10">
-      📭 등록된 문제가 없습니다. 문제를 추가해보세요!
-    </p>
-  )
-) : viewMode === "gallery" ? (
-  <ProblemGallery
-    problems={filteredProblems}
-    groupId={numericGroupId}
-    workbookId={numericExamId}
-  />
-) : (
-  <ProblemList
-    problems={filteredProblems}
-    groupId={numericGroupId}
-    workbookId={numericExamId}
-  />
-)}
-
+        searchQuery ? (
+          <p className="text-center text-gray-500 mt-10">
+            🔍 <strong>"{searchQuery}"</strong>에 대한 검색 결과가 없습니다.
+          </p>
+        ) : (
+          <p className="text-center text-gray-500 mt-10">
+            📭 등록된 문제가 없습니다. 문제를 추가해보세요!
+          </p>
+        )
+      ) : viewMode === "gallery" ? (
+        <ProblemGallery
+          problems={filteredProblems}
+          groupId={numericGroupId}
+          workbookId={numericExamId}
+        />
+      ) : (
+        <ProblemList
+          problems={filteredProblems}
+          groupId={numericGroupId}
+          workbookId={numericExamId}
+        />
+      )}
 
       <ProblemSelector
         groupId={numericGroupId}
