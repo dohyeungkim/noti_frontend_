@@ -76,8 +76,6 @@ export default function ExamsClient() {
     }
   }, [groupId]);
 
- 
-
   useEffect(() => {
     const filteredWorkbooksdata = workbooks
       .filter((wb) => wb.group_id === Number(groupId))
@@ -100,18 +98,21 @@ export default function ExamsClient() {
             className="flex items-center gap-2 justify-end"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}>
+            transition={{ delay: 0.2 }}
+          >
             {isGroupOwner && (
               <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제지 생성하기" />
             )}
-            {isGroupOwner && (<button
-              className="bg-gray-800 text-white px-4 py-1.5 rounded-xl text-md cursor-pointer
+            {isGroupOwner && (
+              <button
+                className="bg-gray-800 text-white px-4 py-1.5 rounded-xl text-md cursor-pointer
       hover:bg-gray-500 transition-all duration-200 ease-in-out
       active:scale-95"
-              onClick={handleClick}>
-              ⚙️ 설정
-            </button>
-          )}
+                onClick={handleClick}
+              >
+                ⚙️ 설정
+              </button>
+            )}
           </motion.div>
         </div>
         {/* 검색 & 정렬 & 보기 방식 변경 */}
@@ -122,10 +123,12 @@ export default function ExamsClient() {
           variants={{
             hidden: { opacity: 0, y: -10 },
             visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
-          }}>
+          }}
+        >
           <motion.div
             className="flex-grow min-w-0"
-            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
+            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+          >
             <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
           </motion.div>
           <motion.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}>
@@ -144,7 +147,8 @@ export default function ExamsClient() {
           key={viewMode}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}>
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
           {viewMode === "gallery" ? (
             <ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
           ) : (
