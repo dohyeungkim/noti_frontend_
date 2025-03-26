@@ -7,6 +7,14 @@ interface ConfirmationModalProps {
   onConfirm: () => Promise<void>; // ✅ 비동기 함수로 변경
   onCancel: () => void;
 }
+type ApiErrorDetail = {
+  msg?: string;
+  ref_cnt?: number;
+};
+
+type ApiError = {
+  detail?: ApiErrorDetail;
+};
 
 export default function ConfirmationModal({
   message,
@@ -19,17 +27,29 @@ export default function ConfirmationModal({
 
   const handleDelete = async () => {
     try {
-      setIsConfirming(false); // ✅ 버튼 비활성화 후 삭제 진행
+      setIsConfirming(false);
       await onConfirm();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ 삭제 실패:", error);
 
-      // ✅ API 응답에서 오류 메시지와 참조 개수를 추출하여 표시
-      if (error.detail?.msg && error.detail?.ref_cnt !== undefined) {
-        setRefCount(error.detail.ref_cnt);
-        setErrorMessage(`⚠️ 이 문제를 참조하는 문제지가 ${error.detail.ref_cnt}개 있어 삭제가 불가합니다.`);
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "detail" in error &&
+        typeof (error as ApiError).detail === "object"
+      ) {
+        const detail = (error as ApiError).detail;
+
+        if (detail?.msg && detail.ref_cnt !== undefined) {
+          setRefCount(detail.ref_cnt);
+          setErrorMessage(
+            `⚠️ 이 문제를 참조하는 문제지가 ${detail.ref_cnt}개 있어 삭제가 불가합니다.`
+          );
+        } else {
+          setErrorMessage("⚠️ 문제가 삭제되지 않았습니다.");
+        }
       } else {
-        setErrorMessage(`⚠️ 이 문제를 참조하는 문제지가 ${error.detail.ref_cnt}개 있어 삭제가 불가합니다.`);
+        setErrorMessage("⚠️ 문제가 삭제되지 않았습니다.");
       }
     }
   };
@@ -77,9 +97,7 @@ export default function ConfirmationModal({
           <div className="text-center my-4">
             <h3 className="text-lg font-semibold text-red-600">{errorMessage}</h3>
             {refCount !== null && (
-              <p className="text-sm text-gray-600">
-                (참조된 문제지 개수: {refCount}개)
-              </p>
+              <p className="text-sm text-gray-600">(참조된 문제지 개수: {refCount}개)</p>
             )}
             <button
               onClick={onCancel}

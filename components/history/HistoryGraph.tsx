@@ -1,14 +1,13 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { history } from "@/types/history";
 
 // Chart.js 요소 등록
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const historyGraph = ({ historys }: { historys: history[] }) => {
+const HistoryGraph = ({ historys }: { historys: history[] }) => {
   const ref = useRef<SVGSVGElement | null>(null);
   const [selectedhistory, setSelectedhistory] = useState<history | null>(null);
   const mygreen = "#589960";
@@ -19,9 +18,9 @@ const historyGraph = ({ historys }: { historys: history[] }) => {
     const root = d3
       .stratify<history>()
       .id((d) => d.problem_id.toString())
-      .parentId((d) =>
-        d.parent_problem_id === -1 ? null : d.parent_problem_id.toString()
-      )(historys);
+      .parentId((d) => (d.parent_problem_id === -1 ? null : d.parent_problem_id.toString()))(
+      historys
+    );
 
     const treeLayout = d3
       .tree<history>()
@@ -100,4 +99,4 @@ const historyGraph = ({ historys }: { historys: history[] }) => {
   );
 };
 
-export default historyGraph;
+export default HistoryGraph;

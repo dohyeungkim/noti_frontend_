@@ -19,15 +19,13 @@ import { ResizableTable } from "../markdown/ResizableTable";
 import TableCellExtension from "../markdown/TableCellExtension";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { dummyProblems } from "@/data/dummy";
-import HistoryGraph from "@/components/history/myhistory";
+import HistoryGraph from "@/components/history/HistoryGraph";
 
 export default function NewRegisteredProblem() {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [inputs, setInputs] = useState([{ input: "", output: "" }]);
   const [isExpandedHistory, setIsExpandedHistory] = useState(true);
-
 
   const editor = useEditor({
     extensions: [
@@ -85,11 +83,11 @@ export default function NewRegisteredProblem() {
 
   return (
     <div>
-    <motion.div
-      className="flex items-center gap-2 justify-end"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.1 }}>
+      <motion.div
+        className="flex items-center gap-2 justify-end"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}>
         <button
           onClick={handleSubmitButtonClick}
           className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
@@ -99,8 +97,8 @@ export default function NewRegisteredProblem() {
         </button>
       </motion.div>
       <div className="grid  gap-6 w-full">
-      <div className="mb-8">
-      <h2 className="text-xl font-bold mb-2 ">문제 등록</h2>
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-2 ">문제 등록</h2>
           <div className="border-t border-gray-300 my-4"></div>
           {/* 🔹 문제 제목 입력 */}
           <input
@@ -166,11 +164,8 @@ export default function NewRegisteredProblem() {
                   </td>
                   <td className="p-3 text-center">
                     <button
-                      onClick={() =>
-                        setInputs(inputs.filter((_, i) => i !== index))
-                      }
-                      className="bg-red-500 text-white px-3 py-2 rounded-lg"
-                    >
+                      onClick={() => setInputs(inputs.filter((_, i) => i !== index))}
+                      className="bg-red-500 text-white px-3 py-2 rounded-lg">
                       ✖
                     </button>
                   </td>
@@ -182,8 +177,7 @@ export default function NewRegisteredProblem() {
           <div className="flex justify-between mt-6">
             <button
               onClick={() => setInputs([...inputs, { input: "", output: "" }])}
-              className="bg-green-500 text-white px-4 py-2 rounded-full"
-            >
+              className="bg-green-500 text-white px-4 py-2 rounded-full">
               + 추가
             </button>
           </div>
@@ -197,8 +191,7 @@ export default function NewRegisteredProblem() {
         <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
           <button
             onClick={() => setIsExpandedHistory(!isExpandedHistory)}
-            className="mt-3 text-gray-700 hover:text-black flex items-center"
-          >
+            className="mt-3 text-gray-700 hover:text-black flex items-center">
             {isExpandedHistory ? (
               <>
                 <FaChevronUp className="mr-2" /> 접기
@@ -214,17 +207,14 @@ export default function NewRegisteredProblem() {
         {/* 토글 대상 영역 (애니메이션 적용) */}
         <div
           className={`transition-all duration-300 ${
-            isExpandedHistory
-              ? "max-h-screen opacity-100"
-              : "max-h-0 opacity-0 overflow-hidden"
-          }`}
-        >
+            isExpandedHistory ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+          }`}>
           <HistoryGraph historys={dummyProblems} />
         </div>
       </div>
       {/* ✅ 스타일 추가 (드래그 핸들) */}
       <style>
-{`
+        {`
   .ProseMirror {
     outline: none;
     min-height: 150px;
@@ -287,8 +277,7 @@ export default function NewRegisteredProblem() {
     transform: scale(1.1);
   }
 `}
-</style>
-
+      </style>
     </div>
   );
 }

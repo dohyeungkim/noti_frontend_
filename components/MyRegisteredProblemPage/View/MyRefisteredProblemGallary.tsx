@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
@@ -24,13 +23,6 @@ interface GalleryViewProps {
 
 export default function GalleryView({ filteredData, selectedProblem }: GalleryViewProps) {
   const router = useRouter();
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [targetProblemId, setTargetProblemId] = useState<number | null>(null);
-
-  const openDeleteModal = (problem_id: number) => {
-    setTargetProblemId(problem_id);
-    setIsConfirming(true);
-  };
 
   return (
     <>

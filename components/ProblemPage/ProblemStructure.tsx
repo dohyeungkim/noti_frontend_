@@ -104,8 +104,7 @@ export default function ProblemStructure({
         className="flex items-center gap-2 justify-end"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-      >
+        transition={{ delay: 0.2 }}>
         {isGroupOwner && (
           <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제 추가하기" />
         )}
@@ -119,8 +118,7 @@ export default function ProblemStructure({
         variants={{
           hidden: { opacity: 0, y: -10 },
           visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
-        }}
-      >
+        }}>
         <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
       </motion.div>

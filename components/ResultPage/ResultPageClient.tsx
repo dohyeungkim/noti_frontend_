@@ -6,7 +6,6 @@ import CodeLogReplay from "@/components/ResultPage/CodeLogReplay";
 import CommentSection from "@/components/ResultPage/CommentSection";
 import { code_log_api, problem_api, solve_api } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
-import { tree, treemapBinary } from "d3";
 
 export default function FeedbackWithSubmissionPageClient({
   params,

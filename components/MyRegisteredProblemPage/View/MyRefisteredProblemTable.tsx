@@ -17,10 +17,7 @@ interface TableViewProps {
   handleDeleteButtonClick: (problem_id: number) => Promise<void>;
 }
 
-export default function TableView({
-  filteredData,
-  handleDeleteButtonClick,
-}: TableViewProps) {
+export default function TableView({ filteredData }: TableViewProps) {
   const router = useRouter();
 
   return (
@@ -29,7 +26,7 @@ export default function TableView({
         <thead className="bg-gray-100">
           <tr>
             <th className="p-4 text-left">문제 제목</th>
-          
+
             <th className="p-4 text-center">작업</th>
           </tr>
         </thead>
@@ -38,25 +35,18 @@ export default function TableView({
             filteredData.map((item) => (
               <tr
                 key={item.problem_id}
-                className="border-t transition-all duration-200 hover:bg-gray-50"
-              >
+                className="border-t transition-all duration-200 hover:bg-gray-50">
                 <td className="p-4">
-                  {item.title.length > 20
-                    ? `${item.title.slice(0, 20)}...`
-                    : item.title}
+                  {item.title.length > 20 ? `${item.title.slice(0, 20)}...` : item.title}
                 </td>
-         
+
                 <td className="p-4 flex justify-center gap-3">
                   {/* 문제 보기 버튼 */}
                   <button
-                    onClick={() =>
-                      router.push(`/registered-problems/view/${item.problem_id}`)
-                    }
-                    className="bg-mygreen text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-opacity-80 transition-all"
-                  >
+                    onClick={() => router.push(`/registered-problems/view/${item.problem_id}`)}
+                    className="bg-mygreen text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-opacity-80 transition-all">
                     문제 보기
                   </button>
-                  
                 </td>
               </tr>
             ))
