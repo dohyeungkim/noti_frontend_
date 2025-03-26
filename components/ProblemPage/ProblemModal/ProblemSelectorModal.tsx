@@ -89,6 +89,8 @@ export default function ProblemSelector({
     }
   }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
 
+
+  
   const handleAddProblemButton = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -96,8 +98,7 @@ export default function ProblemSelector({
       const makeSelectedProblems = selectedProblems
         .filter((p) => !isAlreadySelected.some((selected) => selected.problem_id === p.problem_id))
         .map((p) => p.problem_id);
-
-      console.log("전송할 문제 ID 배열:", makeSelectedProblems);
+  
       await fetch("/api/proxy/problems_ref", {
         method: "POST",
         credentials: "include",
@@ -108,16 +109,23 @@ export default function ProblemSelector({
           problem_id: makeSelectedProblems,
         }),
       });
-
+  
       alert("문제가 성공적으로 추가되었습니다!");
-      setRefresh(!refresh);
-      setIsModalOpen(false);
+  
+      setIsModalOpen(false); // ✅ 먼저 모달 닫기
+  
+      setTimeout(() => {
+        setRefresh(!refresh); // ✅ 모달 닫힌 직후에 refresh 트리거
+      }, 300); // 살짝 delay 주면 더 자연스러움 (optional)
+  
     } catch (error) {
       console.error("문제지 - 문제 링크에 실패했습니다.", error);
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+  
 
   const router = useRouter();
   const MakeProblemClick = () => {
