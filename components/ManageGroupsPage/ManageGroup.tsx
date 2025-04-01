@@ -63,7 +63,9 @@ export default function ManageGroup() {
 
   const fetchPrivateGroupMemberReq = useCallback(async () => {
     try {
-      const res = await group_member_api.group_private_member_req(Number(groupId));
+      const res = await group_member_api.group_private_member_req(
+        Number(groupId)
+      );
       if (!Array.isArray(res)) return;
       setGroupInvMembers(res);
     } catch (err) {
@@ -85,14 +87,20 @@ export default function ManageGroup() {
       if (!window.confirm(`${userId}님을 정말로 추방하시겠습니까?`)) return;
 
       try {
-        const response = await group_member_api.group_member_kickoff(Number(groupId), userId);
+        const response = await group_member_api.group_member_kickoff(
+          Number(groupId),
+          userId
+        );
         console.log("API 응답:", response);
 
-        const message = response?.message || `${userId}님이 성공적으로 추방되었습니다.`;
+        const message =
+          response?.message || `${userId}님이 성공적으로 추방되었습니다.`;
         alert(message);
 
         // 그룹원 목록에서 해당 유저 제거
-        setGroupMembers((prev) => prev.filter((member) => member.user_id !== userId));
+        setGroupMembers((prev) =>
+          prev.filter((member) => member.user_id !== userId)
+        );
       } catch (error) {
         console.error("그룹원 추방 처리 에러", error);
         alert("그룹원 추방 중 오류 발생");
@@ -111,9 +119,12 @@ export default function ManageGroup() {
           requestState
         );
         console.log("API 응답:", response);
-        const message = response?.message || "요청이 성공적으로 처리되었습니다.";
+        const message =
+          response?.message || "요청이 성공적으로 처리되었습니다.";
         alert(message);
-        setGroupInvMembers((prev) => prev.filter((member) => member.user_id !== userId));
+        setGroupInvMembers((prev) =>
+          prev.filter((member) => member.user_id !== userId)
+        );
         await fetchPrivateGroupMemberReq();
         if (requestState) {
           await fetchGroupMember();
@@ -150,17 +161,33 @@ export default function ManageGroup() {
     }
   }, [groupId, fetchWorkbooks]);
 
-  // ❌ 그룹 삭제 !!!
+  // // ❌ 그룹 삭제 !!!
+  // const deleteGroup = async () => {
+  //   if (!window.confirm("정말로 이 그룹을 삭제하시겠습니까?")) return;
+  //   try {
+  //     await group_api.group_delete_by_id(Number(groupId));
+  //     alert("그룹이 삭제되었습니다.");
+  //     // 그룹 삭제 후 적절한 페이지로 이동 (예: 그룹 목록 페이지)
+  //     router.push("/mygroups");
+  //   } catch (error) {
+  //     console.error("그룹 삭제 에러", error);
+  //     alert("그룹 삭제 중 오류 발생");
+  //   }
+  // };
+
+  // ✅ 그룹 삭제
   const deleteGroup = async () => {
     if (!window.confirm("정말로 이 그룹을 삭제하시겠습니까?")) return;
+
     try {
-      await group_api.group_delete_by_id(Number(groupId));
+      console.log("✅ 그룹 삭제 API 호출 시작"); // 디버깅 로그
+      const res = await group_api.group_delete_by_id(Number(groupId));
+      console.log("✅ 그룹 삭제 API 응답", res); // 응답 로그
       alert("그룹이 삭제되었습니다.");
-      // 그룹 삭제 후 적절한 페이지로 이동 (예: 그룹 목록 페이지)
       router.push("/mygroups");
-    } catch (error) {
-      console.error("그룹 삭제 에러", error);
-      alert("그룹 삭제 중 오류 발생");
+    } catch (error: any) {
+      console.error("❌ 그룹 삭제 중 에러:", error);
+      alert("그룹 삭제 중 오류 발생: " + (error?.message || "알 수 없는 오류"));
     }
   };
 
@@ -168,12 +195,20 @@ export default function ManageGroup() {
   const updateGroup = async () => {
     try {
       // 그룹 정보 업데이트
-      await group_api.group_update(Number(groupId), groupName, groupPrivacy === "private");
+      await group_api.group_update(
+        Number(groupId),
+        groupName,
+        groupPrivacy === "private"
+      );
       // 문제지(워크북) 정보 업데이트 (모든 문제지 업데이트)
       if (workbooks.length > 0) {
         await Promise.all(
           workbooks.map((wb) =>
-            workbook_api.workbook_update(wb.workbook_id, wb.workbook_name, wb.description)
+            workbook_api.workbook_update(
+              wb.workbook_id,
+              wb.workbook_name,
+              wb.description
+            )
           )
         );
       }
@@ -186,17 +221,36 @@ export default function ManageGroup() {
     }
   };
 
-  // 📌 문제지 삭제 함수
-  // (백엔드 엔드포인트: DELETE /api/proxy/workbook/{group_id}/{workbook_id})
+  // // 📌 문제지 삭제 함수
+  // // (백엔드 엔드포인트: DELETE /api/proxy/workbook/{group_id}/{workbook_id})
+  // const deleteWorkbook = async (workbookId: number) => {
+  //   try {
+  //     await workbook_api.workbook_delete(Number(groupId), workbookId);
+  //     alert("문제지가 삭제되었습니다.");
+  //     // 삭제 후 최신 문제지 목록을 갱신하여 삭제된 문제지가 보이지 않도록 함
+  //     fetchWorkbooks();
+  //   } catch (error) {
+  //     console.error("문제지 삭제 에러", error);
+  //     alert("문제지 삭제 중 오류 발생");
+  //   }
+  // };
+
+  // ✅ 문제지 삭제
   const deleteWorkbook = async (workbookId: number) => {
     try {
-      await workbook_api.workbook_delete(Number(groupId), workbookId);
+      console.log(`✅ 문제지 삭제 API 호출 시작: workbookId=${workbookId}`);
+      const res = await workbook_api.workbook_delete(
+        Number(groupId),
+        workbookId
+      );
+      console.log("✅ 문제지 삭제 API 응답:", res);
       alert("문제지가 삭제되었습니다.");
-      // 삭제 후 최신 문제지 목록을 갱신하여 삭제된 문제지가 보이지 않도록 함
       fetchWorkbooks();
-    } catch (error) {
-      console.error("문제지 삭제 에러", error);
-      alert("문제지 삭제 중 오류 발생");
+    } catch (error: any) {
+      console.error("❌ 문제지 삭제 중 에러:", error);
+      alert(
+        "문제지 삭제 중 오류 발생: " + (error?.message || "알 수 없는 오류")
+      );
     }
   };
 
@@ -233,23 +287,39 @@ export default function ManageGroup() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="border border-[#6c6c6c] p-2 text-left">ID</th>
-                    <th className="border border-[#6c6c6c] p-2 text-left">이름</th>
-                    <th className="border border-[#6c6c6c] p-2 text-left">가입 일자</th>
-                    <th className="border border-[#6c6c6c] p-2 text-left">이메일</th>
-                    <th className="border border-[#6c6c6c] p-2 text-left">추방</th>
+                    <th className="border border-[#6c6c6c] p-2 text-left">
+                      ID
+                    </th>
+                    <th className="border border-[#6c6c6c] p-2 text-left">
+                      이름
+                    </th>
+                    <th className="border border-[#6c6c6c] p-2 text-left">
+                      가입 일자
+                    </th>
+                    <th className="border border-[#6c6c6c] p-2 text-left">
+                      이메일
+                    </th>
+                    <th className="border border-[#6c6c6c] p-2 text-left">
+                      추방
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {groupMembers.length > 0 ? (
                     groupMembers.map((member) => (
                       <tr key={member.user_id}>
-                        <td className="border border-[#6c6c6c] p-2 text-left">{member.user_id}</td>
-                        <td className="border border-[#6c6c6c] p-2 text-left">{member.username}</td>
+                        <td className="border border-[#6c6c6c] p-2 text-left">
+                          {member.user_id}
+                        </td>
+                        <td className="border border-[#6c6c6c] p-2 text-left">
+                          {member.username}
+                        </td>
                         <td className="border border-[#6c6c6c] p-2 text-left">
                           {new Date(member.timestamp).toLocaleDateString()}
                         </td>
-                        <td className="border border-[#6c6c6c] p-2 text-left">{member.email}</td>
+                        <td className="border border-[#6c6c6c] p-2 text-left">
+                          {member.email}
+                        </td>
                         <td className="border border-[#6c6c6c] p-2 text-left">
                           <button
                             onClick={() => {
@@ -263,7 +333,10 @@ export default function ManageGroup() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="border border-[#6c6c6c] p-2 text-center">
+                      <td
+                        colSpan={5}
+                        className="border border-[#6c6c6c] p-2 text-center"
+                      >
                         그룹원이 없습니다.
                       </td>
                     </tr>
@@ -319,17 +392,27 @@ export default function ManageGroup() {
               <thead>
                 <tr>
                   <th className="border border-[#6c6c6c] p-2 text-left">ID</th>
-                  <th className="border border-[#6c6c6c] p-2 text-left">이름</th>
-                  <th className="border border-[#6c6c6c] p-2 text-left">신청 일자</th>
-                  <th className="border border-[#6c6c6c] p-2 text-left">거절</th>
-                  <th className="border border-[#6c6c6c] p-2 text-left">수락</th>
+                  <th className="border border-[#6c6c6c] p-2 text-left">
+                    이름
+                  </th>
+                  <th className="border border-[#6c6c6c] p-2 text-left">
+                    신청 일자
+                  </th>
+                  <th className="border border-[#6c6c6c] p-2 text-left">
+                    거절
+                  </th>
+                  <th className="border border-[#6c6c6c] p-2 text-left">
+                    수락
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {groupInvMembers.length > 0 ? (
                   groupInvMembers.map((member) => (
                     <tr key={member.user_id}>
-                      <td className="border border-[#6c6c6c] p-2 text-left">{member.user_id}</td>
+                      <td className="border border-[#6c6c6c] p-2 text-left">
+                        {member.user_id}
+                      </td>
                       <td className="border border-[#6c6c6c] p-2 text-left">
                         {member.user_nickname}
                       </td>
@@ -358,7 +441,10 @@ export default function ManageGroup() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="border border-[#6c6c6c] p-2 text-center">
+                    <td
+                      colSpan={5}
+                      className="border border-[#6c6c6c] p-2 text-center"
+                    >
                       신청한 멤버가 없습니다.
                     </td>
                   </tr>
@@ -450,7 +536,10 @@ export default function ManageGroup() {
 
         <div className="flex justify-between items-center bg-[#E6E6E6] w-full h-[50px] p-[10px] mt-[25px] rounded-[10px]">
           <h2>그룹 삭제</h2>
-          <button className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]" onClick={deleteGroup}>
+          <button
+            className="bg-[#b99d9d] w-[70px] h-[33px] rounded-[10px]"
+            onClick={deleteGroup}
+          >
             삭제
           </button>
         </div>
@@ -496,7 +585,10 @@ export default function ManageGroup() {
                           value={wb.workbook_name}
                           onChange={(e) => {
                             const updated = [...workbooks];
-                            updated[index] = { ...updated[index], workbook_name: e.target.value };
+                            updated[index] = {
+                              ...updated[index],
+                              workbook_name: e.target.value,
+                            };
                             setWorkbooks(updated);
                           }}
                         />
@@ -509,7 +601,10 @@ export default function ManageGroup() {
                           value={wb.description}
                           onChange={(e) => {
                             const updated = [...workbooks];
-                            updated[index] = { ...updated[index], description: e.target.value };
+                            updated[index] = {
+                              ...updated[index],
+                              description: e.target.value,
+                            };
                             setWorkbooks(updated);
                           }}
                         />
@@ -533,7 +628,9 @@ export default function ManageGroup() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-gray-500 mt-3">문제지가 존재하지 않습니다.</p>
+                  <p className="text-center text-gray-500 mt-3">
+                    문제지가 존재하지 않습니다.
+                  </p>
                 )}
               </div>
             )}
