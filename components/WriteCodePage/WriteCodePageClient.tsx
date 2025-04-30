@@ -55,12 +55,16 @@ export default function WriteCodePageClient({
   // 문제 정보 가져오기
   const fetchProblem = useCallback(async () => {
     try {
-      const res = await problem_api.problem_get_by_id(Number(params.problemId));
+      const res = await problem_api.problem_get_by_id_group(
+        Number(params.groupId),
+        Number(params.examId),
+        Number(params.problemId)
+      );
       setProblem(res);
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [params.problemId]); // problemId 변경 시 실행
+  }, [params.groupId, params.examId, params.problemId]); // problemId 변경 시 실행
 
   useEffect(() => {
     fetchUser();

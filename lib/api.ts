@@ -99,6 +99,15 @@ export const problem_api = {
     return res.json();
   },
 
+  async problem_get_by_id_group(group_id: number, workbook_id: number, problem_id: number) {
+    const res = await fetch(`/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("문제 정보 가져오기 실패");
+    return res.json();
+  },
+
   async problem_delete(problem_id: number) {
     const res = await fetch(`/api/proxy/problems/${problem_id}`, {
       method: "DELETE",
@@ -235,7 +244,7 @@ export const group_api = {
 
   // ❌ 그룹 삭제하기
   async group_delete_by_id(group_id: number) {
-    const res = await fetch(`/api/groups/${group_id}`, {
+    const res = await fetch(`/api/proxy/groups/${group_id}`, {
       method: "DELETE",
       credentials: "include",
     });
