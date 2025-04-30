@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import HistoryGraph from "@/components/history/myhistory";
+import HistoryGraph from "@/components/history/HistoryGraph";
 import ProblemStatistics from "../ui/ProblemStatistics";
 import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
 
