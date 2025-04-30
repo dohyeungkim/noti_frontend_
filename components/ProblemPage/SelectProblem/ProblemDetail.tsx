@@ -1,8 +1,9 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { problem_api } from "@/lib/api";
 
 export default function ProblemDetail() {
   const router = useRouter();
@@ -23,40 +24,26 @@ export default function ProblemDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!problemId) {
+  const fetchProblem = useCallback(async () => {
+    try {
+      const res = await problem_api.problem_get_by_id_group(
+        Number(params.groupId),
+        Number(params.examId),
+        Number(params.problemId)
+      );
+      setLoading(true);
+      setError(null);
+      setProblem(res);
+    } catch (error) {
+      setError(`알 수 없는 오류 발생 ${error}`);
+    } finally {
       setLoading(false);
-      setError("올바른 문제 ID가 없습니다.");
-      return;
     }
+  }, [params.groupId, params.examId, params.problemId]);
 
-    console.log("problemId:", problemId);
-
-    const fetchProblem = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await fetch(`/api/proxy/problems/${problemId}`, {
-          method: "GET",
-        });
-
-        if (!res.ok) {
-          throw new Error("문제를 가져오는데 실패했습니다.");
-        }
-
-        const data = await res.json();
-        console.log("받은 데이터:", data);
-        setProblem(data);
-      } catch (error) {
-        setError( `알 수 없는 오류 발생 ${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchProblem();
-  }, [problemId]);
+  }, [fetchProblem]); // problemId 변경 시 다시 실행
 
   if (loading) {
     return (
@@ -83,51 +70,44 @@ export default function ProblemDetail() {
 
   return (
     <>
-     <motion.div
-  className="flex items-center gap-2 justify-end"
-  initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.3, delay: 0.1 }}
->
-  <motion.button
-    onClick={handleNavigate}
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    className="flex items-center bg-gray-800 text-white px-6 sm:px-8 md:px-10 lg:px-12 py-1.5 rounded-xl m-2 text-md cursor-pointer
-    hover:bg-gray-500 transition-all duration-200 ease-in-out active:scale-95"
-  >
-    문제 풀기
-  </motion.button>
-</motion.div>
+      <motion.div
+        className="flex items-center gap-2 justify-end"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}>
+        <motion.button
+          onClick={handleNavigate}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center bg-gray-800 text-white px-6 sm:px-8 md:px-10 lg:px-12 py-1.5 rounded-xl m-2 text-md cursor-pointer
+    hover:bg-gray-500 transition-all duration-200 ease-in-out active:scale-95">
+          문제 풀기
+        </motion.button>
+      </motion.div>
 
-{/* ✅ 문제 설명 (높이 `%` 적용) */}
-<motion.div
-  initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.4, ease: "easeOut" }}
-  className="mt-6 border p-4 sm:p-6 md:px-16 lg:px-20 rounded-lg bg-white shadow-md w-full max-w-[100%] mx-auto 
-             h-[55vh] min-h-[50vh] overflow-hidden"
->
-  {/* ✅ 제목과 구분선을 고정 */}
-  {/* ✅ 제목과 구분선을 고정 */}
-<div className="sticky top-0 bg-white z-10 pb-4">
-  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-    {problem.title.length > 35 ? `${problem.title.slice(0, 35)}...` : problem.title}
-  </h1>
-  <hr className="border-t-2 border-gray-400" />
-</div>
+      {/* ✅ 문제 설명 (높이 `%` 적용) */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="mt-6 border p-4 sm:p-6 md:px-16 lg:px-20 rounded-lg bg-white shadow-md w-full max-w-[100%] mx-auto 
+             h-[55vh] min-h-[50vh] overflow-hidden">
+        {/* ✅ 제목과 구분선을 고정 */}
+        {/* ✅ 제목과 구분선을 고정 */}
+        <div className="sticky top-0 bg-white z-10 pb-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+            {problem.title.length > 35 ? `${problem.title.slice(0, 35)}...` : problem.title}
+          </h1>
+          <hr className="border-t-2 border-gray-400" />
+        </div>
 
-
-  {/* ✅ 본문 내용 (스크롤 가능) */}
-  <div className="overflow-y-auto h-full p-2 pr-2">
-    <div
-      className="editor-content"
-      dangerouslySetInnerHTML={{ __html: problem.description }}
-    />
-  </div>
-
-
-
+        {/* ✅ 본문 내용 (스크롤 가능) */}
+        <div className="overflow-y-auto h-full p-2 pr-2">
+          <div
+            className="editor-content"
+            dangerouslySetInnerHTML={{ __html: problem.description }}
+          />
+        </div>
 
         {/* ✅ 테이블 테두리 강제 적용 */}
         <style>
