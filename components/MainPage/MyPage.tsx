@@ -12,6 +12,7 @@ interface Group {
   group_owner: string;
   group_private_state: boolean;
   is_member: boolean;
+  is_pending_member: boolean;
   member_count: number;
 }
 
@@ -61,8 +62,8 @@ export default function MyPage() {
 
   const handleClickPublicJoinButton = async (group_id: number) => {
     if (window.confirm("그룹에 참여하시겠습니까?")) {
-      alert("요청을 보냈습니다.");
-      await member_request_api.member_request_create(group_id);
+      const res = await member_request_api.member_request_create(group_id);
+      alert(res.message);
     }
   };
 
@@ -135,6 +136,10 @@ export default function MyPage() {
                       onClick={() => (window.location.href = `/mygroups/${group.group_id}`)}>
                       들어가기
                     </button>
+                  ) : group.is_pending_member ? (
+                    <div className="mt-5 w-full py-2 rounded-xl text-lg font-semibold text-center bg-gray-400 text-white">
+                      요청 수락 대기
+                    </div>
                   ) : (
                     <button
                       className="mt-5 w-full py-2 rounded-xl text-lg font-semibold transition-all active:scale-95 bg-mydarkgreen text-white hover:bg-opacity-80"

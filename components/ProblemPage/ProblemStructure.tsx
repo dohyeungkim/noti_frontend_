@@ -9,7 +9,7 @@ import ProblemGallery from "@/components/ProblemPage/ProblemGallery";
 import { motion } from "framer-motion";
 import ProblemList from "./ProblemList";
 import { useAuth } from "@/stores/auth";
-import { group_api } from "@/lib/api";
+import { group_api, problem_ref_api } from "@/lib/api";
 
 interface Problem {
   problem_id: number;
@@ -58,20 +58,7 @@ export default function ProblemStructure({
   // 문제 가져오기 함수
   const fetchProblems = useCallback(async () => {
     try {
-      const res = await fetch(`/api/proxy/problems_ref/get`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          group_id: numericGroupId,
-          workbook_id: numericExamId,
-        }),
-      });
-
-      if (!res.ok) throw new Error("문제 데이터를 가져오는 데 실패했습니다.");
-
-      const data = await res.json();
-      console.log(data);
+      const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId);
       setSelectedProblems(data);
       setFilteredProblems(data);
     } catch (error) {
@@ -81,7 +68,7 @@ export default function ProblemStructure({
 
   useEffect(() => {
     fetchProblems();
-  }, [fetchProblems, refresh]); // 👈 반드시 refresh에 반응하도록 의존성 배열 설정
+  }, [fetchProblems, refresh]);
 
   // 그룹 오너 정보도 가져오기 (그룹 ID가 변경되거나 컴포넌트 마운트 시)
   useEffect(() => {

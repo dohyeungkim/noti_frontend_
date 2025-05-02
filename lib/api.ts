@@ -1,3 +1,5 @@
+import { fetchWithAuth } from "./fetchWithAuth";
+
 // ====================== Auth 관련 api ===========================
 export const auth_api = {
   async register(userId: string, username: string, password: string, email: string) {
@@ -22,7 +24,7 @@ export const auth_api = {
   },
 
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
-    const res = await fetch("/api/proxy/user/change_password", {
+    const res = await fetchWithAuth("/api/proxy/user/change_password", {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -37,7 +39,7 @@ export const auth_api = {
   },
 
   async logout() {
-    const res = await fetch("/api/logout", {
+    const res = await fetchWithAuth("/api/logout", {
       method: "POST",
     });
     if (!res.ok) throw new Error("로그아웃 실패");
@@ -64,7 +66,7 @@ export const problem_api = {
     output_description: string,
     testcase: { input: string; output: string }[] // testcase 타입 지정
   ) {
-    const res = await fetch("/api/proxy/problems", {
+    const res = await fetchWithAuth("/api/proxy/problems", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -82,7 +84,7 @@ export const problem_api = {
   },
 
   async problem_get() {
-    const res = await fetch("/api/proxy/problems/me", {
+    const res = await fetchWithAuth("/api/proxy/problems/me", {
       method: "GET",
       credentials: "include",
     });
@@ -91,7 +93,7 @@ export const problem_api = {
   },
 
   async problem_get_by_id(problem_id: number) {
-    const res = await fetch(`/api/proxy/problems/${problem_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -100,16 +102,19 @@ export const problem_api = {
   },
 
   async problem_get_by_id_group(group_id: number, workbook_id: number, problem_id: number) {
-    const res = await fetch(`/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`, {
-      method: "GET",
-      credentials: "include",
-    });
+    const res = await fetchWithAuth(
+      `/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
     if (!res.ok) throw new Error("문제 정보 가져오기 실패");
     return res.json();
   },
 
   async problem_delete(problem_id: number) {
-    const res = await fetch(`/api/proxy/problems/${problem_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -118,7 +123,7 @@ export const problem_api = {
   },
 
   async problem_get_small() {
-    const res = await fetch("/api/proxy/problems/me/small", {
+    const res = await fetchWithAuth("/api/proxy/problems/me/small", {
       method: "GET",
       credentials: "include",
     });
@@ -137,7 +142,7 @@ export const problem_api = {
     description: string,
     testcase: { input: string; output: string }[]
   ) {
-    const response = await fetch(`/api/proxy/problems/${id}`, {
+    const response = await fetchWithAuth(`/api/proxy/problems/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, description, testcase }),
@@ -152,7 +157,7 @@ export const problem_api = {
 
   // 문제 통계 가져오기
   async problem_get_stats(problem_id: number) {
-    const response = await fetch(`/api/proxy/problems/stats/${problem_id}`, {
+    const response = await fetchWithAuth(`/api/proxy/problems/stats/${problem_id}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
@@ -163,11 +168,45 @@ export const problem_api = {
   },
 };
 
+// ====================== problem_ref 관련 api ===========================
+export const problem_ref_api = {
+  async problem_ref_get(group_id: number, workbook_id: number) {
+    const res = await fetchWithAuth("/api/proxy/problems_ref/get", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        group_id,
+        workbook_id,
+      }),
+    });
+
+    if (!res.ok) throw new Error("좋아요 실패");
+    return res.json();
+  },
+
+  async problem_ref_create(group_id: number, workbook_id: number, problem_id: number[]) {
+    const res = await fetchWithAuth("/api/proxy/problems_ref", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        group_id,
+        workbook_id,
+        problem_id,
+      }),
+    });
+
+    if (!res.ok) throw new Error("좋아요 실패");
+    return res.json();
+  },
+};
+
 // "내가 등록한 문제"에서 제목 가져오기
 // ====================== problem_like 관련 api ===========================
 export const problem_like_api = {
   async problem_like(problem_id: number, group_id: number, workbook_id: number) {
-    const res = await fetch("/api/proxy/problems_like", {
+    const res = await fetchWithAuth("/api/proxy/problems_like", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -186,7 +225,7 @@ export const problem_like_api = {
 // ====================== group 관련 api ===========================
 export const group_api = {
   async group_create(group_name: string, group_private_state: boolean) {
-    const res = await fetch("/api/proxy/groups", {
+    const res = await fetchWithAuth("/api/proxy/groups", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -201,7 +240,7 @@ export const group_api = {
   },
 
   async group_get() {
-    const res = await fetch("/api/proxy/groups", {
+    const res = await fetchWithAuth("/api/proxy/groups", {
       method: "GET",
       credentials: "include",
     });
@@ -210,7 +249,7 @@ export const group_api = {
   },
 
   async group_get_by_id(group_id: number) {
-    const res = await fetch(`/api/proxy/groups/${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/groups/${group_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -220,7 +259,7 @@ export const group_api = {
   },
 
   async my_group_get() {
-    const res = await fetch("/api/proxy/groups/my", {
+    const res = await fetchWithAuth("/api/proxy/groups/my", {
       method: "GET",
       credentials: "include",
     });
@@ -229,7 +268,7 @@ export const group_api = {
   },
 
   async group_update(group_id: number, group_name: string, group_private_state: boolean) {
-    const res = await fetch(`/api/proxy/groups/${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/groups/${group_id}`, {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -244,7 +283,7 @@ export const group_api = {
 
   // ❌ 그룹 삭제하기
   async group_delete_by_id(group_id: number) {
-    const res = await fetch(`/api/proxy/groups/${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/groups/${group_id}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -256,7 +295,7 @@ export const group_api = {
 // ====================== group member 관련 api ===========================
 export const group_member_api = {
   async group_get_member(group_id: number) {
-    const res = await fetch(`/api/proxy/groups/members/${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/groups/members/${group_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -265,7 +304,7 @@ export const group_member_api = {
   },
 
   async group_private_member_req(group_id: number) {
-    const res = await fetch(`/api/proxy/member_request/my-group?group_id=${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/member_request/my-group?group_id=${group_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -276,7 +315,7 @@ export const group_member_api = {
   },
 
   async group_member_req_response(group_id: number, user_id: string, request_state: boolean) {
-    const res = await fetch(`/api/proxy/member_request/group-invites/${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/member_request/group-invites/${group_id}`, {
       method: "PATCH",
       credentials: "include",
       headers: {
@@ -292,7 +331,7 @@ export const group_member_api = {
   },
 
   async group_member_kickoff(group_id: number, user_id: string) {
-    const res = await fetch(`/api/proxy/groups/kickoff/${group_id}/${user_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/groups/kickoff/${group_id}/${user_id}`, {
       method: "DELETE",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -308,7 +347,7 @@ export const group_member_api = {
 // ====================== workbook 관련 api ===========================
 export const workbook_api = {
   async workbook_create(group_id: number, workbook_name: string, description: string) {
-    const res = await fetch("/api/proxy/workbook", {
+    const res = await fetchWithAuth("/api/proxy/workbook", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -324,7 +363,7 @@ export const workbook_api = {
   },
 
   async workbook_get(group_id: number) {
-    const res = await fetch(`/api/proxy/workbook/group_id/${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/workbook/group_id/${group_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -335,7 +374,7 @@ export const workbook_api = {
 
   // 백엔드에서 만들어야함.
   async workbook_get_by_id(workbook_id: number) {
-    const res = await fetch(`/api/proxy/workbook/${workbook_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/workbook/${workbook_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -345,7 +384,7 @@ export const workbook_api = {
 
   // 문제지 관리 페이지에 문제지 설정부분 api 입니당구리
   async workbook_update(workbook_id: number, workbook_name: string, description: string) {
-    const res = await fetch(`/api/proxy/workbook/${workbook_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/workbook/${workbook_id}`, {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -357,7 +396,7 @@ export const workbook_api = {
 
   // 문제지 삭제...
   async workbook_delete(group_id: number, workbook_id: number) {
-    const res = await fetch(`/api/proxy/workbook/${group_id}/${workbook_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/workbook/${group_id}/${workbook_id}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -376,7 +415,7 @@ export const solve_api = {
     submitted_code: string,
     code_language: string
   ) {
-    const res = await fetch(
+    const res = await fetchWithAuth(
       `/api/proxy/solves?group_id=${group_id}&workbook_id=${workbook_id}&problem_id=${problem_id}`,
       {
         method: "POST",
@@ -394,7 +433,7 @@ export const solve_api = {
     return res.json();
   },
   async solve_get_by_problem_id(problem_id: number) {
-    const res = await fetch(`/api/proxy/solves/problem/${problem_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/solves/problem/${problem_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -404,7 +443,7 @@ export const solve_api = {
   },
 
   async solve_get_by_solve_id(solve_id: number) {
-    const res = await fetch(`/api/proxy/solves/${solve_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -414,7 +453,7 @@ export const solve_api = {
   },
 
   async solve_get_me() {
-    const res = await fetch(`/api/proxy/solves/me`, {
+    const res = await fetchWithAuth(`/api/proxy/solves/me`, {
       method: "GET",
       credentials: "include",
     });
@@ -432,7 +471,7 @@ export const code_log_api = {
     code_logs: string[],
     timestamp: string[]
   ) {
-    const res = await fetch("/api/proxy/code_logs", {
+    const res = await fetchWithAuth("/api/proxy/code_logs", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -448,7 +487,7 @@ export const code_log_api = {
     return res.json();
   },
   async code_logs_get_by_solve_id(solve_id: number) {
-    const res = await fetch(`/api/proxy/code_logs/${solve_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/code_logs/${solve_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -469,7 +508,7 @@ export const comment_api = {
     nickname: string,
     is_problem_message: boolean
   ) {
-    const res = await fetch("/api/proxy/comments", {
+    const res = await fetchWithAuth("/api/proxy/comments", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -489,7 +528,7 @@ export const comment_api = {
   },
 
   async comments_get_by_problem_id(problem_id: number) {
-    const res = await fetch(`/api/proxy/comments/problem_id/${problem_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/comments/problem_id/${problem_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -498,7 +537,7 @@ export const comment_api = {
     return res.json();
   },
   async comments_get_by_solve_id(solve_id: number) {
-    const res = await fetch(`/api/proxy/comments/solve_id/${solve_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/comments/solve_id/${solve_id}`, {
       method: "GET",
       credentials: "include",
     });
@@ -511,17 +550,16 @@ export const comment_api = {
 // ====================== member_request 관련 api ===========================
 export const member_request_api = {
   async member_request_create(group_id: number) {
-    const res = await fetch(`/api/proxy/member_request/${group_id}`, {
+    const res = await fetchWithAuth(`/api/proxy/member_request/${group_id}`, {
       method: "POST",
       credentials: "include",
     });
 
-    if (!res.ok) throw new Error("요청 보내기 실패");
     return res.json();
   },
 
   async member_request_get() {
-    const res = await fetch("/api/proxy/member_request/my-group", {
+    const res = await fetchWithAuth("/api/proxy/member_request/my-group", {
       method: "GET",
       credentials: "include",
     });
@@ -533,14 +571,14 @@ export const member_request_api = {
 // //====================== workbook manage 관련 api ===========================
 // export const man_workbook_api = {
 //   // workbook_get_by_group: async (groupId: number) => {
-//   //   const response = await fetch(`/api/workbook/by-group/${groupId}`);
+//   //   const response = await fetchWithAuth(`/api/workbook/by-group/${groupId}`);
 //   //   if (!response.ok) {
 //   //     throw new Error("문제지 목록 조회 실패");
 //   //   }
 //   //   return response.json();
 //   // },
 //   workbook_update: async (workbook_id: number, workbook_name: string, description: string) => {
-//     const response = await fetch(`/api/workbook/${workbook_id}`, {
+//     const response = await fetchWithAuth(`/api/workbook/${workbook_id}`, {
 //       method: "PUT",
 //       headers: { "Content-Type": "application/json" },
 //       body: JSON.stringify({ workbook_name, description }),

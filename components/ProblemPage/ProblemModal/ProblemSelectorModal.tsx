@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { problem_api } from "@/lib/api";
+import { problem_api, problem_ref_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
@@ -89,8 +89,6 @@ export default function ProblemSelector({
     }
   }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
 
-
-  
   const handleAddProblemButton = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -98,34 +96,25 @@ export default function ProblemSelector({
       const makeSelectedProblems = selectedProblems
         .filter((p) => !isAlreadySelected.some((selected) => selected.problem_id === p.problem_id))
         .map((p) => p.problem_id);
-  
-      await fetch("/api/proxy/problems_ref", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          group_id: Number(groupId),
-          workbook_id: Number(workbookId),
-          problem_id: makeSelectedProblems,
-        }),
-      });
-  
+      await problem_ref_api.problem_ref_create(
+        Number(groupId),
+        Number(workbookId),
+        makeSelectedProblems
+      );
+
       alert("문제가 성공적으로 추가되었습니다!");
-  
+
       setIsModalOpen(false); // ✅ 먼저 모달 닫기
-  
+
       setTimeout(() => {
         setRefresh(!refresh); // ✅ 모달 닫힌 직후에 refresh 트리거
       }, 300); // 살짝 delay 주면 더 자연스러움 (optional)
-  
     } catch (error) {
       console.error("문제지 - 문제 링크에 실패했습니다.", error);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-  
 
   const router = useRouter();
   const MakeProblemClick = () => {
@@ -138,8 +127,7 @@ export default function ProblemSelector({
         <div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-lg relative">
           <button
             className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            onClick={() => setIsModalOpen(false)}
-          >
+            onClick={() => setIsModalOpen(false)}>
             <X className="w-6 h-6" />
           </button>
 
@@ -163,8 +151,7 @@ export default function ProblemSelector({
                             : selectedProblems.some((p) => p.problem_id === problem.problem_id)
                             ? "bg-mygreen text-white"
                             : "bg-gray-100 hover:bg-gray-200"
-                        }`}
-                      >
+                        }`}>
                         📌{" "}
                         {problem.title.length > 18
                           ? `${problem.title.slice(0, 18)}...`
@@ -186,8 +173,7 @@ export default function ProblemSelector({
                         <li
                           key={selected.problem_id}
                           onClick={() => handleSelect(selected)}
-                          className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200"
-                        >
+                          className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200">
                           📌{" "}
                           {newProblem
                             ? newProblem.title.length > 18
@@ -207,15 +193,13 @@ export default function ProblemSelector({
             <div className="mt-4 flex justify-end">
               <button
                 onClick={MakeProblemClick}
-                className="bg-mydarkgreen text-white px-4 py-2 mr-2 rounded hover:bg-opacity-80 transition"
-              >
+                className="bg-mydarkgreen text-white px-4 py-2 mr-2 rounded hover:bg-opacity-80 transition">
                 문제 만들기
               </button>
               <button
                 onClick={handleAddProblemButton}
                 disabled={isSubmitting}
-                className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80 transition"
-              >
+                className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80 transition">
                 문제 추가하기
               </button>
             </div>

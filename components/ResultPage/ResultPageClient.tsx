@@ -45,12 +45,16 @@ export default function FeedbackWithSubmissionPageClient({
 
   const fetchProblem = useCallback(async () => {
     try {
-      const res = await problem_api.problem_get_by_id(Number(params.problemId));
+      const res = await problem_api.problem_get_by_id_group(
+        Number(params.groupId),
+        Number(params.examId),
+        Number(params.problemId)
+      );
       setProblem(res);
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [params.problemId]);
+  }, [params.groupId, params.examId, params.problemId]);
 
   const fetchSolve = useCallback(async () => {
     try {

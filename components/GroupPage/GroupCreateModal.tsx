@@ -1,4 +1,5 @@
 "use client";
+import { group_api } from "@/lib/api";
 import { useState, useEffect, useCallback } from "react";
 
 interface GroupCreateModalProps {
@@ -64,21 +65,7 @@ export default function GroupCreateModal({
     setErrorMessage(null); // ✅ 에러 메시지 초기화
 
     try {
-      const response = await fetch(`/api/proxy/groups`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          group_name: groupName.trim(), // ✅ 공백 제거 후 저장
-
-          group_private_state: !isPublic,
-        }),
-      });
-
-      if (!response.ok) throw new Error("그룹 생성 실패");
-
-      const data = await response.json();
-      console.log("그룹 생성 성공:", data);
+      await group_api.group_create(groupName.trim(), !isPublic);
       setRefresh(!refresh);
       onCreate();
       resetState();
@@ -93,12 +80,10 @@ export default function GroupCreateModal({
   return (
     <div
       className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
+      onClick={onClose}>
       <div
         className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl relative"
-        onClick={(e) => e.stopPropagation()}
-      >
+        onClick={(e) => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="flex justify-between items-center border-b pb-4">
           <h2 className="text-lg font-semibold">그룹 생성하기</h2>
@@ -107,8 +92,7 @@ export default function GroupCreateModal({
               resetState();
               onClose();
             }}
-            className="text-gray-800 hover:text-opacity-80 text-2xl"
-          >
+            className="text-gray-800 hover:text-opacity-80 text-2xl">
             ✖
           </button>
         </div>
@@ -125,14 +109,12 @@ export default function GroupCreateModal({
                 disabled={isLoading}
                 className={`bg-green-600 text-white py-2 px-6 rounded-md transition ${
                   isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-opacity-80"
-                }`}
-              >
+                }`}>
                 {isLoading ? "생성 중..." : "예"}
               </button>
               <button
                 onClick={() => setIsConfirming(false)}
-                className="bg-myred text-white py-2 px-6 rounded-md hover:bg-opacity-80 transition"
-              >
+                className="bg-myred text-white py-2 px-6 rounded-md hover:bg-opacity-80 transition">
                 아니요
               </button>
             </div>
@@ -164,8 +146,7 @@ export default function GroupCreateModal({
                 onClick={() => setIsPublic(!isPublic)}
                 className={`px-4 py-1 rounded-lg text-sm transition ${
                   isPublic ? "bg-mygreen text-white" : "bg-mygray text-white"
-                }`}
-              >
+                }`}>
                 {isPublic ? "공개" : "비공개"}
               </button>
             </div>
@@ -173,8 +154,7 @@ export default function GroupCreateModal({
             {/* 과거 그룹 불러오기 버튼 */}
             <button
               onClick={() => setShowPastGroups(!showPastGroups)}
-              className="flex items-center gap-2 text-sm text-gray-700 border border-gray-300 rounded-lg p-2 transition hover:bg-gray-100"
-            >
+              className="flex items-center gap-2 text-sm text-gray-700 border border-gray-300 rounded-lg p-2 transition hover:bg-gray-100">
               {showPastGroups ? "▲ 과거 그룹 숨기기" : "▼ 과거 그룹 불러오기"}
             </button>
 
@@ -194,8 +174,7 @@ export default function GroupCreateModal({
                         selectedGroup === group
                           ? "bg-mygreen text-white"
                           : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
-                    >
+                      }`}>
                       {group}
                     </li>
                   ))}
@@ -213,8 +192,7 @@ export default function GroupCreateModal({
               disabled={!groupName.trim()} // ✅ 공백이면 버튼 비활성화
               className={`w-full bg-mygreen text-white py-2 rounded-lg text-lg cursor-pointer hover:bg-opacity-80 transition ${
                 !groupName.trim() ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
+              }`}>
               {isLoading ? "생성 중..." : "그룹 생성하기"}
             </button>
           </div>

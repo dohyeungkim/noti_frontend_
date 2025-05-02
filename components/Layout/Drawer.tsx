@@ -15,6 +15,7 @@ import Logout, { LogoutHandles } from "../Auth/Logout";
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/stores/auth";
 import PasswordChange, { PasswordChangeHandles } from "../Auth/PasswordChange";
+import { group_api } from "@/lib/api";
 
 interface DrawerProps {
   isOpen: boolean;
@@ -40,8 +41,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
 
   const fetchGroup = async () => {
     try {
-      const res = await fetch("/api/proxy/groups/my", { cache: "no-cache" });
-      const data = await res.json();
+      const data = await group_api.my_group_get();
       if (Array.isArray(data) && data.length > 0) {
         setGroups(data);
       } else {
@@ -66,8 +66,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
       <div
         className={`fixed top-0 left-0 h-full bg-[#E5E7EB] shadow-lg overflow-hidden rounded-r-2xl transition-all duration-300 z-[1000] ${
           isOpen ? "w-64" : "w-16"
-        }`}
-      >
+        }`}>
         {/* 프로필 영역 */}
         <div className="flex items-center p-3 bg-gray-200 text-gray-700">
           <button className="text-lg cursor-pointer bg-transparent border-none">
@@ -78,8 +77,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
           </p>
           <button
             className={`ml-auto transition-all duration-300 ${isOpen ? "block" : "hidden"}`}
-            onClick={() => setIsOpen(false)}
-          >
+            onClick={() => setIsOpen(false)}>
             <FontAwesomeIcon icon={faArrowLeft} className="text-gray-500" />
           </button>
         </div>
@@ -104,16 +102,14 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               <li key={href} className="my-4 flex items-center gap-2">
                 <Link
                   href={href}
-                  className="no-underline text-gray-700 flex items-center hover:text-black"
-                >
+                  className="no-underline text-gray-700 flex items-center hover:text-black">
                   <button className="border-none bg-transparent text-lg cursor-pointer">
                     <FontAwesomeIcon icon={icon} className="text-gray-500" />
                   </button>
                   <span
                     className={`ml-2 transition-all duration-300 text-sm ${
                       isOpen ? "inline" : "hidden"
-                    }`}
-                  >
+                    }`}>
                     {text}
                   </span>
                 </Link>
@@ -130,8 +126,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
                   <Link
                     key={group.group_id}
                     href={`/mygroups/${group.group_id}`}
-                    className="block text-gray-900 text-xs sm:text-sm hover:text-black transition-all duration-200 pl-3 pt-2"
-                  >
+                    className="block text-gray-900 text-xs sm:text-sm hover:text-black transition-all duration-200 pl-3 pt-2">
                     🏡 <span className="text-gray-700">{truncateText(group.group_name, 10)}</span>
                   </Link>
                 ))
@@ -147,27 +142,23 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
           <ul className="list-none p-0">
             <li
               className="my-4 flex items-center gap-2 cursor-pointer"
-              onClick={() => passwordChangeRef.current?.openModal()}
-            >
+              onClick={() => passwordChangeRef.current?.openModal()}>
               <PasswordChange ref={passwordChangeRef} />
               <span
                 className={`text-gray-700 ml-2 transition-all duration-300 text-sm ${
                   isOpen ? "inline" : "hidden"
-                }`}
-              >
+                }`}>
                 비밀번호 변경하기
               </span>
             </li>
             <li
               className="my-4 flex items-center gap-2 cursor-pointer"
-              onClick={() => logoutRef.current?.logout()}
-            >
+              onClick={() => logoutRef.current?.logout()}>
               <Logout ref={logoutRef} />
               <span
                 className={`text-gray-700 ml-2 transition-all duration-300 text-sm ${
                   isOpen ? "inline" : "hidden"
-                }`}
-              >
+                }`}>
                 로그아웃
               </span>
             </li>
@@ -179,8 +170,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
         className={`fixed z-[9999] top-[10px] left-[70px] bg-gray-100 text-black rounded-full w-8 h-8 text-lg cursor-pointer ${
           isOpen ? "hidden" : "block"
         }`}
-        onClick={() => setIsOpen(true)}
-      >
+        onClick={() => setIsOpen(true)}>
         <FontAwesomeIcon icon={faArrowRight} className="text-gray-500" />
       </button>
     </>

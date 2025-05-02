@@ -9,6 +9,7 @@ import GroupCreateModal from "@/components/GroupPage/GroupCreateModal";
 import ViewToggle from "@/components/ui/ViewToggle";
 import GroupList from "@/components/GroupPage/GroupGallery";
 import GroupTable from "@/components/GroupPage/GroupTable";
+import { group_api } from "@/lib/api";
 
 export default function GroupsClient() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,12 +34,7 @@ export default function GroupsClient() {
 
   async function fetchMyGroups() {
     try {
-      const response = await fetch("/api/proxy/groups");
-      if (!response.ok) {
-        throw new Error("내 그룹 데이터를 가져오는 데 실패했습니다.");
-      }
-      const data = await response.json();
-      console.log("받은 그룹 데이터:", data);
+      const data = await group_api.group_get();
       setMyGroups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("내 그룹 정보 가져오기 실패:", error);
@@ -51,7 +47,7 @@ export default function GroupsClient() {
   }, [refresh]);
 
   // ✅ 내가 속한 그룹만 필터링
-  const myJoinedGroups = myGroups.filter(group => group.is_member);
+  const myJoinedGroups = myGroups.filter((group) => group.is_member);
 
   // ✅ 검색 필터
   const filteredGroups = myJoinedGroups.filter((group) =>
@@ -123,8 +119,7 @@ export default function GroupsClient() {
         key={viewMode}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
-      >
+        transition={{ duration: 0.3, delay: 0.4 }}>
         {myJoinedGroups.length === 0 ? (
           <p className="text-center text-gray-500">내가 속한 그룹이 없습니다.</p>
         ) : sortedGroups.length > 0 ? (
