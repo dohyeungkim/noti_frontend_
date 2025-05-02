@@ -82,7 +82,7 @@ export default function ProblemStructure({
       problem.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredProblems(filtered);
-  }, [searchQuery, selectedProblems]);
+  }, [searchQuery, selectedProblems, refresh]);
 
   return (
     <>
@@ -128,12 +128,18 @@ export default function ProblemStructure({
           problems={filteredProblems}
           groupId={numericGroupId}
           workbookId={numericExamId}
+          isGroupOwner={isGroupOwner}
+          refresh = {refresh}
+          setRefresh={setRefresh}
         />
       ) : (
         <ProblemList
           problems={filteredProblems}
           groupId={numericGroupId}
           workbookId={numericExamId}
+          isGroupOwner={isGroupOwner}
+          refresh = {refresh}
+          setRefresh={setRefresh}
         />
       )}
 
