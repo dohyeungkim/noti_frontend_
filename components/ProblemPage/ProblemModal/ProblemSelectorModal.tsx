@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { problem_api, problem_ref_api } from "@/lib/api";
+import { problem_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
@@ -20,7 +20,7 @@ interface ProblemSelectorProps {
   selectedProblems: Problem[];
   setSelectedProblems: Dispatch<SetStateAction<Problem[]>>;
   refresh: boolean;
-  setRefresh:  React.Dispatch<React.SetStateAction<boolean>>;
+  setRefresh: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function ProblemSelector({
@@ -98,7 +98,6 @@ export default function ProblemSelector({
     }
   }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
 
-
   // Re-fetch problems when refresh prop changes
   useEffect(() => {
     if (refresh) {
@@ -125,16 +124,13 @@ export default function ProblemSelector({
         }),
       });
 
-      const newlyAdded = problems.filter((p) =>
-        makeSelectedProblems.includes(p.problem_id)
-      );
+      const newlyAdded = problems.filter((p) => makeSelectedProblems.includes(p.problem_id));
       setSelectedProblems((prev) => [...prev, ...newlyAdded]);
 
       alert("문제가 성공적으로 추가되었습니다!");
 
-      setRefresh((prev) => !prev);  
+      setRefresh((prev) => !prev);
       setIsModalOpen(false);
-
     } catch (error) {
       console.error("문제지 - 문제 링크에 실패했습니다.", error);
     } finally {

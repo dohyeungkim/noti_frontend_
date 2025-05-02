@@ -8,6 +8,7 @@ import HistoryGraph from "@/components/history/HistoryGraph";
 import ProblemStatistics from "../ui/ProblemStatistics";
 import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
 import { problem_api } from "@/lib/api";
+import type { history } from "@/types/history";
 
 interface Problem {
   problem_id: number;
@@ -18,13 +19,11 @@ interface Problem {
   created_at: string;
 }
 
-history;
-
 export default function ProblemView() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const [problem, setProblem] = useState<Problem | null>(null);
-  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyData, setHistoryData] = useState<history[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isExpandedHistory, setIsExpandedHistory] = useState(true);
