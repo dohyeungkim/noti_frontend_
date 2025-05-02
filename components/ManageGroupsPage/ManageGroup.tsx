@@ -182,9 +182,14 @@ export default function ManageGroup() {
       console.log("✅ 그룹 삭제 API 응답", res); // 응답 로그
       alert("그룹이 삭제되었습니다.");
       router.push("/mygroups");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ 그룹 삭제 중 에러:", error);
-      alert("그룹 삭제 중 오류 발생: " + (error?.message || "알 수 없는 오류"));
+
+      if (error instanceof Error) {
+        alert("그룹 삭제 중 오류 발생: " + error.message);
+      } else {
+        alert("그룹 삭제 중 오류 발생: 알 수 없는 오류");
+      }
     }
   };
 
@@ -232,9 +237,14 @@ export default function ManageGroup() {
       console.log("✅ 문제지 삭제 API 응답:", res);
       alert("문제지가 삭제되었습니다.");
       fetchWorkbooks();
-    } catch (error: any) {
-      console.error("❌ 문제지 삭제 중 에러:", error);
-      alert("문제지 삭제 중 오류 발생: " + (error?.message || "알 수 없는 오류"));
+    } catch (error: unknown) {
+      console.error("❌ 그룹 삭제 중 에러:", error);
+
+      if (error instanceof Error) {
+        alert("그룹 삭제 중 오류 발생: " + error.message);
+      } else {
+        alert("그룹 삭제 중 오류 발생: 알 수 없는 오류");
+      }
     }
   };
 

@@ -18,9 +18,11 @@ interface Problem {
   created_at: string;
 }
 
+history;
+
 export default function ProblemView() {
   const router = useRouter();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ export default function ProblemView() {
 
   const handleDeleteButtonClick = async (problem_id: number) => {
     try {
-      const response = await problem_api.problem_delete(problem_id);
+      await problem_api.problem_delete(problem_id);
       alert("문제가 삭제되었습니다.");
       router.push("/registered-problems");
     } catch (error) {
