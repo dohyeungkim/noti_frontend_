@@ -53,12 +53,7 @@ export default function ProblemEdit() {
   useEffect(() => {
     const fetchProblem = async () => {
       try {
-        const response = await fetch(`/api/proxy/problems/${id}`);
-        if (!response.ok) throw new Error("Failed to fetch problem data");
-
-        const data = await response.json();
-        console.log("Fetched Data:", data); // 데이터 로그 출력
-
+        const data = await problem_api.problem_get_by_id(Number(id));
         setTitle(data.title);
         setInputs(data.testcase || [{ input: "", output: "" }]); // 데이터가 없는 경우를 위해 기본값 설정
         if (editor) {

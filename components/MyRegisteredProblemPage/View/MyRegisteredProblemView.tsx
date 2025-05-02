@@ -31,19 +31,11 @@ export default function MyRegisteredProblemView() {
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
   const [sortOrder, setSortOrder] = useState("제목순"); // ✅ 기본 정렬: 제목순
   const [selectedProblem, setSelectedProblem] = useState<Question | null>(null);
-  
+
   // ✅ 문제 삭제 함수
   const handleDeleteButtonClick = async (problem_id: number) => {
     try {
-      const res = await fetch(`/api/proxy/problems/${problem_id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`삭제 실패: ${errorText}`);
-      }
-      console.log("문제 삭제 성공");
+      await problem_api.problem_delete(problem_id);
       fetchProblems();
     } catch (error) {
       console.error("문제 삭제 중 에러 발생:", error);
@@ -152,10 +144,7 @@ export default function MyRegisteredProblemView() {
           handleDeleteButtonClick={handleDeleteButtonClick}
         />
       ) : (
-        <TableView
-          filteredData={sortedData}
-          handleDeleteButtonClick={handleDeleteButtonClick}
-        />
+        <TableView filteredData={sortedData} handleDeleteButtonClick={handleDeleteButtonClick} />
       )}
     </motion.div>
   );

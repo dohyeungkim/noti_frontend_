@@ -12,7 +12,9 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface ProblemStatsResponse {
   problem_id: number;
   group_id: number;
+  group_name: string;
   workbook_id: number;
+  workbook_name: string;
   like: number;
   attempt_count: number;
   pass_count: number;
@@ -29,23 +31,15 @@ interface ApiResponse {
   data: ProblemStatsResponse[];
 }
 
-export default function ProblemStatistics({
-  problem_id,
-}: {
-  problem_id: number;
-}) {
-  const [problemStatsList, setProblemStatsList] = useState<
-    ProblemStatsResponse[]
-  >([]);
+export default function ProblemStatistics({ problem_id }: { problem_id: number }) {
+  const [problemStatsList, setProblemStatsList] = useState<ProblemStatsResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response: ApiResponse = await problem_api.problem_get_stats(
-          problem_id
-        );
+        const response: ApiResponse = await problem_api.problem_get_stats(problem_id);
         console.log("📦 응답 데이터:", response);
         setProblemStatsList(response.data);
       } catch (err) {
@@ -60,9 +54,7 @@ export default function ProblemStatistics({
 
   if (loading) return <p className="text-center text-gray-500">로딩 중...</p>;
   if (error || problemStatsList.length === 0)
-    return (
-      <p className="text-center text-gray-500">{error || "통계가 없습니다."}</p>
-    );
+    return <p className="text-center text-gray-500">{error || "통계가 없습니다."}</p>;
 
   // ✅ 문제별로 그룹화
   const groupedByProblemId = problemStatsList.reduce((acc, curr) => {
@@ -79,14 +71,8 @@ export default function ProblemStatistics({
       {Object.entries(groupedByProblemId).map(([pid, statsList]) => {
         // ✅ 전체 통계 (합산)
         const totalLikes = statsList.reduce((sum, p) => sum + p.like, 0);
-        const totalAttempts = statsList.reduce(
-          (sum, p) => sum + p.attempt_count,
-          0
-        );
-        const totalPasses = statsList.reduce(
-          (sum, p) => sum + p.pass_count,
-          0
-        );
+        const totalAttempts = statsList.reduce((sum, p) => sum + p.attempt_count, 0);
+        const totalPasses = statsList.reduce((sum, p) => sum + p.pass_count, 0);
         const totalComments = statsList.flatMap((p) =>
           p.comments.filter((c) => c.is_problem_message === true)
         );
@@ -136,32 +122,23 @@ export default function ProblemStatistics({
                 <h3 className="text-md font-semibold mb-2">📌 댓글</h3>
                 <div className="w-full max-h-60 overflow-y-auto border border-gray-200 rounded-lg shadow p-4 bg-white">
                   {totalComments.length === 0 ? (
-                    <p className="text-gray-500 text-center">
-                      💬 아직 댓글이 없습니다.
-                    </p>
+                    <p className="text-gray-500 text-center">💬 아직 댓글이 없습니다.</p>
                   ) : (
                     totalComments.map((comment, index) => (
                       <div
                         key={index}
-                        className="flex items-start gap-3 p-3 border-b last:border-none"
-                      >
+                        className="flex items-start gap-3 p-3 border-b last:border-none">
                         <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
                           <UserIcon className="w-5 h-5 text-gray-600" />
                         </div>
                         <div className="flex-1">
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-900 font-semibold">
-                              {comment.user_id}
-                            </span>
+                            <span className="text-gray-900 font-semibold">{comment.user_id}</span>
                             <span className="text-sm text-gray-500">
-                              {comment.timestamp
-                                ? formatTimestamp(comment.timestamp)
-                                : "방금 전"}
+                              {comment.timestamp ? formatTimestamp(comment.timestamp) : "방금 전"}
                             </span>
                           </div>
-                          <p className="text-gray-700 mt-1">
-                            {comment.comment}
-                          </p>
+                          <p className="text-gray-700 mt-1">{comment.comment}</p>
                         </div>
                       </div>
                     ))
@@ -177,8 +154,7 @@ export default function ProblemStatistics({
                   viewBox="0 0 24 24"
                   className="w-full h-full"
                   fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                  xmlns="http://www.w3.org/2000/svg">
                   <path
                     fillRule="evenodd"
                     clipRule="evenodd"
@@ -189,13 +165,9 @@ export default function ProblemStatistics({
                     fill="#589960"
                   />
                 </svg>
-                <span className="absolute text-white text-5xl font-bold">
-                  {totalLikes}
-                </span>
+                <span className="absolute text-white text-5xl font-bold">{totalLikes}</span>
               </div>
-              <p className="text-center text-gray-600 mt-3">
-                총 {totalLikes}명이 좋아합니다!
-              </p>
+              <p className="text-center text-gray-600 mt-3">총 {totalLikes}명이 좋아합니다!</p>
             </div>
 
             {/* 테이블 */}
@@ -213,8 +185,8 @@ export default function ProblemStatistics({
                 <tbody>
                   {statsList.map((stat, idx) => (
                     <tr key={`${stat.group_id}-${stat.workbook_id}-${idx}`} className="border-t">
-                      <td className="px-6 py-3">{stat.group_id}</td>
-                      <td className="px-6 py-3">{stat.workbook_id}</td>
+                      <td className="px-6 py-3">{stat.group_name}</td>
+                      <td className="px-6 py-3">{stat.workbook_name}</td>
                       <td className="px-6 py-3">{stat.like}</td>
                       <td className="px-6 py-3">{stat.attempt_count}</td>
                       <td className="px-6 py-3">{stat.pass_count}</td>
