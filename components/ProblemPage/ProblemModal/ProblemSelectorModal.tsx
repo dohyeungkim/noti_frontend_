@@ -1,5 +1,3 @@
-"use client";
-
 import { useRouter } from "next/navigation";
 import { problem_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
@@ -22,7 +20,7 @@ interface ProblemSelectorProps {
   selectedProblems: Problem[];
   setSelectedProblems: Dispatch<SetStateAction<Problem[]>>;
   refresh: boolean;
-  setRefresh: (refresh: boolean) => void;
+  setRefresh:  React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function ProblemSelector({
@@ -38,6 +36,7 @@ export default function ProblemSelector({
   const [problems, setProblems] = useState<Problem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlreadySelected, setIsAlreadySelected] = useState<Problem[]>([]);
+  const [newlyAddedProblemIds, setNewlyAddedProblemIds] = useState<Set<number>>(new Set()); // Track newly added problems by ID
   const isFetched = useRef(false);
 
   const handleSelect = (problem: Problem) => {
@@ -53,8 +52,18 @@ export default function ProblemSelector({
       }
 
       if (isSelected) {
-        return prevSelected.filter((p) => p.problem_id !== problem.problem_id);
+        // Allow removing only newly added problems
+        if (newlyAddedProblemIds.has(problem.problem_id)) {
+          setNewlyAddedProblemIds((prev) => {
+            const updatedSet = new Set(prev);
+            updatedSet.delete(problem.problem_id); // Remove from the set
+            return updatedSet;
+          });
+          return prevSelected.filter((p) => p.problem_id !== problem.problem_id);
+        }
+        return prevSelected;
       } else {
+        setNewlyAddedProblemIds((prev) => new Set(prev.add(problem.problem_id))); // Add to the newly added set
         return [...prevSelected, problem];
       }
     });
@@ -79,7 +88,7 @@ export default function ProblemSelector({
       console.error("❌ 문제를 가져오는 데 실패했습니다.", error);
       setProblems([]);
     }
-  }, [selectedProblems]);
+  }, [selectedProblems, refresh]); // Use refresh to trigger a re-fetch
 
   // 모달이 열릴 때 fetchProblem 실행
   useEffect(() => {
@@ -89,8 +98,13 @@ export default function ProblemSelector({
     }
   }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
 
+  // Re-fetch problems when refresh prop changes
+  useEffect(() => {
+    if (refresh) {
+      fetchProblem(); // Re-fetch when refresh is toggled
+    }
+  }, [refresh, fetchProblem]); // Re-fetch when refresh prop changes
 
-  
   const handleAddProblemButton = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -98,7 +112,7 @@ export default function ProblemSelector({
       const makeSelectedProblems = selectedProblems
         .filter((p) => !isAlreadySelected.some((selected) => selected.problem_id === p.problem_id))
         .map((p) => p.problem_id);
-  
+
       await fetch("/api/proxy/problems_ref", {
         method: "POST",
         credentials: "include",
@@ -109,23 +123,24 @@ export default function ProblemSelector({
           problem_id: makeSelectedProblems,
         }),
       });
-  
+
+      const newlyAdded = problems.filter((p) =>
+        makeSelectedProblems.includes(p.problem_id)
+      );
+      setSelectedProblems((prev) => [...prev, ...newlyAdded]);
+
       alert("문제가 성공적으로 추가되었습니다!");
-  
-      setIsModalOpen(false); // ✅ 먼저 모달 닫기
-  
-      setTimeout(() => {
-        setRefresh(!refresh); // ✅ 모달 닫힌 직후에 refresh 트리거
-      }, 300); // 살짝 delay 주면 더 자연스러움 (optional)
-  
+
+      setRefresh((prev) => !prev);  
+      setIsModalOpen(false);
+
+
     } catch (error) {
       console.error("문제지 - 문제 링크에 실패했습니다.", error);
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-  
 
   const router = useRouter();
   const MakeProblemClick = () => {

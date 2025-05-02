@@ -1,5 +1,3 @@
-"use client";
-
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { problem_api } from "@/lib/api";
@@ -17,9 +15,18 @@ interface ProblemListProps {
   groupId: number;
   workbookId: number;
   isGroupOwner: boolean;
+  refresh: boolean; // Added refresh prop
+  setRefresh: React.Dispatch<React.SetStateAction<boolean>>; // Added setRefresh prop
 }
 
-const ProblemList = ({ problems, groupId, workbookId, isGroupOwner }: ProblemListProps) => {
+const ProblemList = ({
+  problems,
+  groupId,
+  workbookId,
+  isGroupOwner,
+  refresh,
+  setRefresh,
+}: ProblemListProps) => {
   const router = useRouter();
   const [currentProblems, setCurrentProblems] = useState<Problem[]>(problems);
 
@@ -28,6 +35,7 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner }: ProblemLis
     try {
       await problem_api.problem_ref_delete(problemId, groupId, workbookId);
       setCurrentProblems((prev) => prev.filter((p) => p.problem_id !== problemId));
+      setRefresh((prev) => !prev); // Trigger refresh by toggling the state
     } catch (error) {
       console.error("문제 삭제 실패:", error);
       alert("문제 삭제 중 오류가 발생했습니다.");
