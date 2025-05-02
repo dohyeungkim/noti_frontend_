@@ -141,12 +141,14 @@ export default function ProblemStructure({
           problems={filteredProblems}
           groupId={numericGroupId}
           workbookId={numericExamId}
+          isGroupOwner={isGroupOwner}
         />
       ) : (
         <ProblemList
           problems={filteredProblems}
           groupId={numericGroupId}
           workbookId={numericExamId}
+          isGroupOwner={isGroupOwner}
         />
       )}
 

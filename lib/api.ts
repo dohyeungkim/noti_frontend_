@@ -108,6 +108,15 @@ export const problem_api = {
     return res.json();
   },
 
+  async problem_ref_delete(problem_id:number, group_id: number, workbook_id:number) {
+    const res = await fetch(`/api/proxy/problems_ref/${group_id}/${workbook_id}/${problem_id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("문제 지우기 실패");
+    return res.json();
+  },
+  
   async problem_delete(problem_id: number) {
     const res = await fetch(`/api/proxy/problems/${problem_id}`, {
       method: "DELETE",
