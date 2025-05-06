@@ -539,6 +539,19 @@ export const member_request_api = {
   },
 };
 
+export const ai_feeedback_api = {
+  async get_ai_feedback(solve_id: number) {
+    const res = await fetch(`/api/proxy/feedback/${solve_id}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!res.ok) throw new Error("ai 피드백 불러오기 실패");
+    return res.json();
+  },
+};
+
+
 // //====================== workbook manage 관련 api ===========================
 // export const man_workbook_api = {
 //   // workbook_get_by_group: async (groupId: number) => {
