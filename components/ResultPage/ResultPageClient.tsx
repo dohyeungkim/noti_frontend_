@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
 import CommentSection from "@/components/ResultPage/CommentSection";
-import { code_log_api, problem_api, solve_api } from "@/lib/api";
+import { code_log_api, problem_api, solve_api, ai_feeedback_api } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
 
@@ -39,9 +39,22 @@ export default function FeedbackWithSubmissionPageClient({
       language: "Python",
       code_length: 250,
     });
-
-    setAiFeedback("❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다.");
+    
+    // setAiFeedback("❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다.");
   }, []);
+  
+  useEffect(() => {
+    const fetchAiFeedback = async () => {
+      try {
+        const res = await ai_feeedback_api.get_ai_feedback(Number(params.resultId));
+        setAiFeedback(res.feedback);  // ✅ 서버 응답에서 'feedback' 키 사용
+      } catch (error) {
+        console.error("AI 피드백 가져오기 실패:", error);
+      }
+    };
+  
+    fetchAiFeedback();
+  }, [params.resultId]);
 
   const fetchProblem = useCallback(async () => {
     try {
