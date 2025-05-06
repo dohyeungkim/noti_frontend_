@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import HistoryGraph from "@/components/history/HistoryGraph";
 import ProblemStatistics from "../ui/ProblemStatistics";
 import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
+import { problem_api } from "@/lib/api";
 
 interface Problem {
   problem_id: number;
@@ -33,8 +34,7 @@ export default function ProblemView() {
     const fetchProblem = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/proxy/problems/${id}`);
-        const data = await response.json();
+        const data = await problem_api.problem_get_by_id(Number(id));
         setProblem(data);
       } catch (error) {
         console.error("Failed to fetch problem:", error);
@@ -82,12 +82,7 @@ export default function ProblemView() {
 
   const handleDeleteButtonClick = async (problem_id: number) => {
     try {
-      const response = await fetch(`/api/proxy/problems/${problem_id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("삭제 요청 실패");
-
+      const response = await problem_api.problem_delete(problem_id);
       alert("문제가 삭제되었습니다.");
       router.push("/registered-problems");
     } catch (error) {
@@ -207,7 +202,7 @@ export default function ProblemView() {
 
         <div
           className={`transition-all duration-300 ${
-            isExpandedstatis ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+            isExpandedstatis ? "opacity-100" : "max-h-0 opacity-0 overflow-hidden"
           }`}>
           <ProblemStatistics problem_id={problem.problem_id} />
         </div>

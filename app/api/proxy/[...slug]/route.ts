@@ -28,7 +28,6 @@ async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
   });
 
   const responseData = await response.json();
-  console.log(responseData);
 
   // ✅ 로그인 요청일 경우, `access_token`을 쿠키에 저장
   if (pathname === "/api/proxy/user/login" && response.ok && responseData.access_token) {
