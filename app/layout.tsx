@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import AuthNavigator from "@/components/Auth/AuthNavigator";
-import ClientLayout from "@/components/layout/ClientLayout";
+import ClientLayout from "@/components/Layout/ClientLayout";
 import "./globals.css";
 
 export const metadata: Metadata = {

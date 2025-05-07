@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import ProblemStatistics from "../ui/ProblemStatistics";
 import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
 import { problem_api } from "@/lib/api";
-import type { history } from "@/types/history";
 
 interface Problem {
   problem_id: number;
@@ -124,7 +123,9 @@ export default function ProblemView() {
             ✏️ {problem.title.length > 30 ? problem.title.slice(0, 30) + "..." : problem.title}
           </h1>
           <div className="flex items-center space-x-3">
-            <span className="text-gray-500 text-sm">{problem.make_at.split("T")[0]}에 작성되었습니다.</span>
+            <span className="text-gray-500 text-sm">
+              {problem.make_at.split("T")[0]}에 작성되었습니다.
+            </span>
             <span className="bg-mygreen text-white text-sm font-semibold px-8 py-1 rounded-md">
               V1-2
             </span>
