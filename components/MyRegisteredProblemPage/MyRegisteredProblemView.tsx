@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import HistoryGraph from "@/components/history/HistoryGraph";
+// import HistoryGraph from "@/components/history/HistoryGraph";
 import ProblemStatistics from "../ui/ProblemStatistics";
 import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
 import { problem_api } from "@/lib/api";
@@ -15,17 +15,17 @@ interface Problem {
   description: string;
   input: string;
   output: string;
-  created_at: string;
+  make_at: string;
 }
 
 export default function ProblemView() {
   const router = useRouter();
   const { id } = useParams();
   const [problem, setProblem] = useState<Problem | null>(null);
-  const [historyData, setHistoryData] = useState<any[]>([]);
+  // const [historyData, setHistoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isExpandedHistory, setIsExpandedHistory] = useState(true);
+  // const [isExpandedHistory, setIsExpandedHistory] = useState(true);
   const [isExpandedstatis, setisExpandedstatis] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
   const [targetProblemId, setTargetProblemId] = useState<number | null>(null);
@@ -43,37 +43,37 @@ export default function ProblemView() {
       }
     };
 
-    const fetchHistory = async () => {
-      try {
-        console.log("📡 문제 히스토리 요청 시작:", id);
-        const res = await fetch(`/api/problems/problem_history/${id}`);
+    // const fetchHistory = async () => {
+    //   try {
+    //     console.log("📡 문제 히스토리 요청 시작:", id);
+    //     const res = await fetch(`/api/problems/problem_history/${id}`);
 
-        // 응답 코드 확인
-        if (!res.ok) {
-          console.error("❌ 서버 응답 오류:", res.status, res.statusText);
-          return;
-        }
+    //     // 응답 코드 확인
+    //     if (!res.ok) {
+    //       console.error("❌ 서버 응답 오류:", res.status, res.statusText);
+    //       return;
+    //     }
 
-        const data = await res.json();
-        console.log("📥 받아온 히스토리 데이터 원본:", data);
+    //     const data = await res.json();
+    //     console.log("📥 받아온 히스토리 데이터 원본:", data);
 
-        // 배열인지 확인 (API에서 data를 감싼 구조일 수도 있음)
-        if (Array.isArray(data)) {
-          setHistoryData(data);
-        } else if (Array.isArray(data?.data)) {
-          console.warn("📦 'data.data' 안에 배열이 있어 여기에 맞춰 설정합니다.");
-          setHistoryData(data.data);
-        } else {
-          console.error("❗ 예상치 못한 히스토리 응답 구조:", data);
-        }
-      } catch (err) {
-        console.error("💥 히스토리 가져오기 실패:", err);
-      }
-    };
+    //     // 배열인지 확인 (API에서 data를 감싼 구조일 수도 있음)
+    //     if (Array.isArray(data)) {
+    //       setHistoryData(data);
+    //     } else if (Array.isArray(data?.data)) {
+    //       console.warn("📦 'data.data' 안에 배열이 있어 여기에 맞춰 설정합니다.");
+    //       setHistoryData(data.data);
+    //     } else {
+    //       console.error("❗ 예상치 못한 히스토리 응답 구조:", data);
+    //     }
+    //   } catch (err) {
+    //     console.error("💥 히스토리 가져오기 실패:", err);
+    //   }
+    // };
 
     if (id) {
       fetchProblem();
-      fetchHistory();
+      // fetchHistory();
     }
   }, [id]);
 
@@ -121,7 +121,7 @@ export default function ProblemView() {
             ✏️ {problem.title.length > 30 ? problem.title.slice(0, 30) + "..." : problem.title}
           </h1>
           <div className="flex items-center space-x-3">
-            <span className="text-gray-500 text-sm">{problem.created_at}에 작성되었습니다.</span>
+            <span className="text-gray-500 text-sm">{problem.make_at.split("T")[0]}에 작성되었습니다.</span>
             <span className="bg-mygreen text-white text-sm font-semibold px-8 py-1 rounded-md">
               V1-2
             </span>
@@ -156,7 +156,7 @@ export default function ProblemView() {
         </div>
       </div>
 
-      <div className="p-6 bg-white shadow-md rounded-lg mt-10">
+      {/* <div className="p-6 bg-white shadow-md rounded-lg mt-10">
         <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4>
         <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
           <button
@@ -180,7 +180,7 @@ export default function ProblemView() {
           }`}>
           <HistoryGraph historys={historyData} />
         </div>
-      </div>
+      </div> */}
 
       <div className="p-6 bg-white shadow-md rounded-lg mt-10">
         <h4 className="text-2xl font-bold text-gray-900 mb-2">📊 이 문제의 통계</h4>

@@ -231,12 +231,12 @@ export default function ProblemEdit() {
         </div>
       </div>
 
-      <div className="p-6 bg-white shadow-md rounded-lg mt-10">
+      {/* <div className="p-6 bg-white shadow-md rounded-lg mt-10"> */}
         {/* 문제 제목 */}
-        <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4>
+        {/* <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4> */}
 
         {/* 구분선 & 토글 버튼 */}
-        <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
+        {/* <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
           <button
             onClick={() => setIsExpandedHistory(!isExpandedHistory)}
             className="mt-3 text-gray-700 hover:text-black flex items-center">
@@ -250,16 +250,16 @@ export default function ProblemEdit() {
               </>
             )}
           </button>
-        </div>
+        </div> */}
 
         {/* 토글 대상 영역 (애니메이션 적용) */}
-        <div
+        {/* <div
           className={`transition-all duration-300 ${
             isExpandedHistory ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
           }`}>
           <HistoryGraph historys={dummyProblems} />
         </div>
-      </div>
+      </div> */}
 
       {/* ✅ 스타일 추가 (드래그 핸들) */}
       <style>
