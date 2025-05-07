@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
 import CommentSection from "@/components/ResultPage/CommentSection";
-import { code_log_api, problem_api, solve_api } from "@/lib/api";
+import { code_log_api, problem_api, solve_api, ai_feeedback_api } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
 
@@ -30,6 +30,7 @@ export default function FeedbackWithSubmissionPageClient({
   const [codeLogs, setCodeLogs] = useState<CodeLog[]>([]);
   const [aiFeedback, setAiFeedback] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isAILoaded, setIsAILoaded] = useState(false);
   const [solveData, setSolveData] = useState<SolveData | null>(null);
 
   useEffect(() => {
@@ -39,9 +40,23 @@ export default function FeedbackWithSubmissionPageClient({
       language: "Python",
       code_length: 250,
     });
-
-    setAiFeedback("❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다.");
+    
+    // setAiFeedback("❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다.");
   }, []);
+  
+  useEffect(() => {
+    const fetchAiFeedback = async () => {
+      try {
+        const res = await ai_feeedback_api.get_ai_feedback(Number(params.resultId));
+        setAiFeedback(res.feedback);
+        setIsAILoaded(true);
+      } catch (error) {
+        console.error("AI 피드백 가져오기 실패:", error);
+      }
+    };
+  
+    fetchAiFeedback();
+  }, [params.resultId]);
 
   const fetchProblem = useCallback(async () => {
     try {
@@ -158,7 +173,11 @@ export default function FeedbackWithSubmissionPageClient({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}>
           <h3 className="text-lg font-semibold text-gray-700">🧠 AI 피드백</h3>
-          <p className="text-gray-600 mt-2">{aiFeedback}</p>
+          {!isAILoaded ? (
+            <p className="text-gray-600 mt-2">ai_feedback 불러오는 중</p>
+          ) : (
+            <p className="text-gray-600 mt-2">{aiFeedback}</p>
+          )}
         </motion.div>
 
         {problem && <ResultPageProblemDetail problem={problem} />}

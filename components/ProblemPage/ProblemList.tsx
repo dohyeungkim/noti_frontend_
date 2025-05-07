@@ -24,6 +24,7 @@ const ProblemList = ({
   groupId,
   workbookId,
   isGroupOwner,
+  refresh,
   setRefresh,
 }: ProblemListProps) => {
   const router = useRouter();
@@ -34,7 +35,7 @@ const ProblemList = ({
     try {
       await problem_api.problem_ref_delete(problemId, groupId, workbookId);
       setCurrentProblems((prev) => prev.filter((p) => p.problem_id !== problemId));
-      setRefresh((prev) => !prev); // Trigger refresh by toggling the state
+      setRefresh(!refresh); // Trigger refresh by toggling the state
     } catch (error) {
       console.error("문제 삭제 실패:", error);
       alert("문제 삭제 중 오류가 발생했습니다.");
@@ -74,9 +75,7 @@ const ProblemList = ({
                   <td className="px-5 py-4 text-center">
                     <button
                       onClick={() =>
-                        router.push(
-                          `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`
-                        )
+                        router.push(`/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`)
                       }
                       className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80">
                       도전하기

@@ -17,15 +17,15 @@ import { problem_api } from "@/lib/api";
 import Toolbar from "../markdown/Toolbar";
 import { ResizableTable } from "../markdown/ResizableTable";
 import TableCellExtension from "../markdown/TableCellExtension";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { dummyProblems } from "@/data/dummy";
-import HistoryGraph from "@/components/history/HistoryGraph";
+// import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+// import { dummyProblems } from "@/data/dummy";
+// import HistoryGraph from "@/components/history/HistoryGraph";
 
 export default function NewRegisteredProblem() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [inputs, setInputs] = useState([{ input: "", output: "" }]);
-  const [isExpandedHistory, setIsExpandedHistory] = useState(true);
+  // const [isExpandedHistory, setIsExpandedHistory] = useState(true);
 
   const editor = useEditor({
     extensions: [
@@ -137,8 +137,13 @@ export default function NewRegisteredProblem() {
                 <tr key={index} className="border-t">
                   <td className="p-3 text-center">{index + 1}</td>
                   <td className="p-3">
-                    <input
-                      type="text"
+                    <textarea
+                      ref={(el) => {
+                        if (el) {
+                          el.style.height = "auto"; // 높이 초기화
+                          el.style.height = el.scrollHeight + "px"; // 자동 확장
+                        }
+                      }}
                       placeholder="입력값"
                       value={pair.input}
                       onChange={(e) => {
@@ -146,12 +151,22 @@ export default function NewRegisteredProblem() {
                         newInputs[index].input = e.target.value;
                         setInputs(newInputs);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
+                        target.style.height = "auto"; // 높이 초기화
+                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
                     />
                   </td>
                   <td className="p-3">
-                    <input
-                      type="text"
+                    <textarea
+                      ref={(el) => {
+                        if (el) {
+                          el.style.height = "auto"; // 높이 초기화
+                          el.style.height = el.scrollHeight + "px"; // 자동 확장
+                        }
+                      }}
                       placeholder="출력값"
                       value={pair.output}
                       onChange={(e) => {
@@ -159,7 +174,12 @@ export default function NewRegisteredProblem() {
                         newInputs[index].output = e.target.value;
                         setInputs(newInputs);
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
+                        target.style.height = "auto"; // 높이 초기화
+                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
                     />
                   </td>
                   <td className="p-3 text-center">
@@ -183,12 +203,14 @@ export default function NewRegisteredProblem() {
           </div>
         </div>
       </div>
-      <div className="p-6 bg-white shadow-md rounded-lg mt-10">
+
+      {/**⚠️히스토리 주석처리 */}
+      {/* <div className="p-6 bg-white shadow-md rounded-lg mt-10"> */}
         {/* 문제 제목 */}
-        <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4>
+        {/* <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4> */}
 
         {/* 구분선 & 토글 버튼 */}
-        <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
+        {/* <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
           <button
             onClick={() => setIsExpandedHistory(!isExpandedHistory)}
             className="mt-3 text-gray-700 hover:text-black flex items-center">
@@ -202,16 +224,16 @@ export default function NewRegisteredProblem() {
               </>
             )}
           </button>
-        </div>
+        </div> */}
 
         {/* 토글 대상 영역 (애니메이션 적용) */}
-        <div
+        {/* <div
           className={`transition-all duration-300 ${
             isExpandedHistory ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
           }`}>
           <HistoryGraph historys={dummyProblems} />
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
       {/* ✅ 스타일 추가 (드래그 핸들) */}
       <style>
         {`

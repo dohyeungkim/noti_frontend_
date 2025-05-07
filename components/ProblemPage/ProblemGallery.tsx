@@ -27,6 +27,7 @@ export default function ProblemGallery({
   groupId,
   workbookId,
   isGroupOwner,
+  refresh,
   setRefresh,
 }: ProblemGalleryProps) {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function ProblemGallery({
     try {
       await problem_api.problem_ref_delete(problemId, groupId, workbookId);
       setCurrentProblems((prev) => prev.filter((p) => p.problem_id !== problemId));
-      setRefresh((prev) => !prev); // Trigger refresh by toggling the state
+      setRefresh(!refresh); // Trigger refresh by toggling the state
     } catch (error) {
       console.error("문제 삭제 실패:", error);
       alert("문제 삭제 중 오류가 발생했습니다.");
@@ -67,7 +68,9 @@ export default function ProblemGallery({
           <div
             key={p.problem_id}
             className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md 
-                      transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+                      transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+          >
+
             {/* X 삭제 버튼: 그룹장만 표시 */}
             {isGroupOwner && (
               <button
@@ -75,7 +78,8 @@ export default function ProblemGallery({
                 onClick={(e) => {
                   e.stopPropagation();
                   deleteProblem(p.problem_id);
-                }}>
+                }}
+              >
                 <X size={20} />
               </button>
             )}

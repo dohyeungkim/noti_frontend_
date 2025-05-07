@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Drawer from "@/components/Layout/Drawer";
+import Drawer from "./Drawer";
 
 export default function DrawerWrapper({ onToggle }: { onToggle: (open: boolean) => void }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);

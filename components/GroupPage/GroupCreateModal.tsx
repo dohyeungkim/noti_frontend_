@@ -27,20 +27,20 @@ export default function GroupCreateModal({
 }: GroupCreateModalProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPastGroups, setShowPastGroups] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  // const [showPastGroups, setShowPastGroups] = useState(false);
+  // const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 상태 추가
 
   // 예제: 과거 그룹 리스트
-  const pastGroups = ["컴퓨터 구조", "알고리즘", "인공지능 기초"];
+  // const pastGroups = ["컴퓨터 구조", "알고리즘", "인공지능 기초"];
 
   const resetState = useCallback(() => {
     setGroupName("");
     setIsPublic(true);
     setIsConfirming(false);
     setIsLoading(false);
-    setSelectedGroup(null);
-    setShowPastGroups(false);
+    // setSelectedGroup(null);
+    // setShowPastGroups(false);
     setErrorMessage(null); // ✅ 에러 메시지도 초기화
   }, [setGroupName, setIsPublic]);
 
@@ -152,14 +152,14 @@ export default function GroupCreateModal({
             </div>
 
             {/* 과거 그룹 불러오기 버튼 */}
-            <button
+            {/* <button
               onClick={() => setShowPastGroups(!showPastGroups)}
               className="flex items-center gap-2 text-sm text-gray-700 border border-gray-300 rounded-lg p-2 transition hover:bg-gray-100">
               {showPastGroups ? "▲ 과거 그룹 숨기기" : "▼ 과거 그룹 불러오기"}
-            </button>
+            </button> */}
 
             {/* 과거 그룹 목록 (토글) */}
-            {showPastGroups && (
+            {/* {showPastGroups && (
               <div className="border border-gray-300 rounded-lg p-2">
                 <p className="text-sm font-semibold text-gray-700 mb-2">그룹 목록</p>
                 <ul className="space-y-1">
@@ -180,7 +180,7 @@ export default function GroupCreateModal({
                   ))}
                 </ul>
               </div>
-            )}
+            )} */}
           </div>
         )}
 
