@@ -97,8 +97,7 @@ export default function ProblemSelector({
       isFetched.current = true;
     }
   }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
-
-
+  
   // Re-fetch problems when refresh prop changes
   useEffect(() => {
     if (refresh) {
@@ -130,7 +129,16 @@ export default function ProblemSelector({
       );
       setSelectedProblems((prev) => [...prev, ...newlyAdded]);
 
-      alert("문제가 성공적으로 추가되었습니다!");
+      await fetch("/api/proxy/problems_ref", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          group_id: Number(groupId),
+          workbook_id: Number(workbookId),
+          problem_id: makeSelectedProblems,
+        }),
+      });
 
       setRefresh((prev) => !prev);  
       setIsModalOpen(false);

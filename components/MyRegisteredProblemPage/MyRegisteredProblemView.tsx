@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import ProblemStatistics from "../ui/ProblemStatistics";
 import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
 import { problem_api } from "@/lib/api";
+import type { history } from "@/types/history";
 
 interface Problem {
   problem_id: number;
@@ -20,9 +21,11 @@ interface Problem {
 
 export default function ProblemView() {
   const router = useRouter();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [problem, setProblem] = useState<Problem | null>(null);
+
   // const [historyData, setHistoryData] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
   // const [isExpandedHistory, setIsExpandedHistory] = useState(true);
