@@ -17,9 +17,9 @@ import { problem_api } from "@/lib/api";
 import Toolbar from "../markdown/Toolbar";
 import { ResizableTable } from "../markdown/ResizableTable";
 import TableCellExtension from "../markdown/TableCellExtension";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { dummyProblems } from "@/data/dummy";
-import HistoryGraph from "@/components/history/HistoryGraph";
+// import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+// import { dummyProblems } from "@/data/dummy";
+// import HistoryGraph from "@/components/history/HistoryGraph";
 
 export default function NewRegisteredProblem() {
   const router = useRouter();

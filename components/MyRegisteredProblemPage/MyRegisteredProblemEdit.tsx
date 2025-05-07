@@ -13,15 +13,15 @@ import { motion } from "framer-motion";
 import { problem_api } from "@/lib/api";
 import { ResizableImage } from "../markdown/ResizableImage";
 import Toolbar from "../markdown/Toolbar";
-import HistoryGraph from "@/components/history/HistoryGraph";
+// import HistoryGraph from "@/components/history/HistoryGraph";
 
 // ✅ 확장 기능을 올바르게 가져오기
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
-import { dummyProblems } from "@/data/dummy";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+// import { dummyProblems } from "@/data/dummy";
+// import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 export default function ProblemEdit() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function ProblemEdit() {
   const [title, setTitle] = useState("");
   const [inputs, setInputs] = useState([{ input: "", output: "" }]);
   const [loading, setLoading] = useState(true);
-  const [isExpandedHistory, setIsExpandedHistory] = useState(true);
+  // const [isExpandedHistory, setIsExpandedHistory] = useState(true);
 
   const editor = useEditor({
     extensions: [

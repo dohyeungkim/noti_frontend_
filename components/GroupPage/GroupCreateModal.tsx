@@ -27,8 +27,8 @@ export default function GroupCreateModal({
 }: GroupCreateModalProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPastGroups, setShowPastGroups] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  // const [showPastGroups, setShowPastGroups] = useState(false);
+  // const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 상태 추가
 
   // 예제: 과거 그룹 리스트
@@ -39,8 +39,8 @@ export default function GroupCreateModal({
     setIsPublic(true);
     setIsConfirming(false);
     setIsLoading(false);
-    setSelectedGroup(null);
-    setShowPastGroups(false);
+    // setSelectedGroup(null);
+    // setShowPastGroups(false);
     setErrorMessage(null); // ✅ 에러 메시지도 초기화
   }, [setGroupName, setIsPublic]);
 

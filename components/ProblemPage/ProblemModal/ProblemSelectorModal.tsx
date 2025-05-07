@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { problem_api, problem_ref_api } from "@/lib/api";
+import { problem_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 

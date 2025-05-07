@@ -64,7 +64,7 @@ export default function WriteCodePageClient({
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [params.problemId]); // problemId 변경 시 실행
+  },  [params.groupId, params.examId, params.problemId]); // problemId 변경 시 실행
 
   useEffect(() => {
     fetchUser();

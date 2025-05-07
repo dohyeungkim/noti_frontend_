@@ -82,7 +82,7 @@ export default function ProblemView() {
 
   const handleDeleteButtonClick = async (problem_id: number) => {
     try {
-      const response = await problem_api.problem_delete(problem_id);
+      await problem_api.problem_delete(problem_id);
       alert("문제가 삭제되었습니다.");
       router.push("/registered-problems");
     } catch (error) {
