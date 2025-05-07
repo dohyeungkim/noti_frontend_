@@ -30,6 +30,7 @@ export default function FeedbackWithSubmissionPageClient({
   const [codeLogs, setCodeLogs] = useState<CodeLog[]>([]);
   const [aiFeedback, setAiFeedback] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isAILoaded, setIsAILoaded] = useState(false);
   const [solveData, setSolveData] = useState<SolveData | null>(null);
 
   useEffect(() => {
@@ -47,7 +48,8 @@ export default function FeedbackWithSubmissionPageClient({
     const fetchAiFeedback = async () => {
       try {
         const res = await ai_feeedback_api.get_ai_feedback(Number(params.resultId));
-        setAiFeedback(res.feedback);  // ✅ 서버 응답에서 'feedback' 키 사용
+        setAiFeedback(res.feedback);
+        setIsAILoaded(true);
       } catch (error) {
         console.error("AI 피드백 가져오기 실패:", error);
       }
@@ -171,7 +173,11 @@ export default function FeedbackWithSubmissionPageClient({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}>
           <h3 className="text-lg font-semibold text-gray-700">🧠 AI 피드백</h3>
-          <p className="text-gray-600 mt-2">{aiFeedback}</p>
+          {!isAILoaded ? (
+            <p className="text-gray-600 mt-2">ai_feedback 불러오는 중</p>
+          ) : (
+            <p className="text-gray-600 mt-2">{aiFeedback}</p>
+          )}
         </motion.div>
 
         {problem && <ResultPageProblemDetail problem={problem} />}
