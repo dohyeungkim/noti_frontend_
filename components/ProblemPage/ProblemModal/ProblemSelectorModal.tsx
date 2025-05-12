@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { problem_api } from "@/lib/api";
+import { problem_api, problem_ref_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
@@ -20,7 +20,7 @@ interface ProblemSelectorProps {
   selectedProblems: Problem[];
   setSelectedProblems: Dispatch<SetStateAction<Problem[]>>;
   refresh: boolean;
-  setRefresh:  React.Dispatch<React.SetStateAction<boolean>>;
+  setRefresh: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function ProblemSelector({
@@ -63,7 +63,7 @@ export default function ProblemSelector({
         }
         return prevSelected;
       } else {
-        setNewlyAddedProblemIds((prev) => new Set(prev.add(problem.problem_id))); // Add to the newly added set
+        setNewlyAddedProblemIds((prev) => new Set(prev).add(problem.problem_id));
         return [...prevSelected, problem];
       }
     });
@@ -74,7 +74,6 @@ export default function ProblemSelector({
     try {
       console.log("📢 문제 가져오기 요청 시작!");
       const res = await problem_api.problem_get();
-
       if (Array.isArray(res)) {
         setProblems(res);
         const alreadySelected = res.filter((problem) =>
@@ -88,61 +87,37 @@ export default function ProblemSelector({
       console.error("❌ 문제를 가져오는 데 실패했습니다.", error);
       setProblems([]);
     }
-  }, [selectedProblems, refresh]); // Use refresh to trigger a re-fetch
+  }, [selectedProblems]);
 
   // 모달이 열릴 때 fetchProblem 실행
   useEffect(() => {
+    fetchProblem();
     if (isModalOpen && !isFetched.current) {
-      fetchProblem();
       isFetched.current = true;
     }
-  }, [isModalOpen, fetchProblem]); // useCallback을 활용하여 함수 참조 고정
-  
-  // Re-fetch problems when refresh prop changes
-  useEffect(() => {
-    if (refresh) {
-      fetchProblem(); // Re-fetch when refresh is toggled
-    }
-  }, [refresh, fetchProblem]); // Re-fetch when refresh prop changes
+  }, [isModalOpen, fetchProblem]);
 
   const handleAddProblemButton = async () => {
+    console.log("handleAddProblemButton 호출됨", new Date().toISOString());
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const makeSelectedProblems = selectedProblems
-        .filter((p) => !isAlreadySelected.some((selected) => selected.problem_id === p.problem_id))
-        .map((p) => p.problem_id);
-
-      await fetch("/api/proxy/problems_ref", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          group_id: Number(groupId),
-          workbook_id: Number(workbookId),
-          problem_id: makeSelectedProblems,
-        }),
-      });
-
-      const newlyAdded = problems.filter((p) =>
-        makeSelectedProblems.includes(p.problem_id)
+      const uniqueProblemIds = Array.from(new Set(selectedProblems.map((p) => p.problem_id)));
+      const res = await problem_ref_api.problem_ref_create(
+        Number(groupId),
+        Number(workbookId),
+        uniqueProblemIds
       );
-      setSelectedProblems((prev) => [...prev, ...newlyAdded]);
 
-      await fetch("/api/proxy/problems_ref", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          group_id: Number(groupId),
-          workbook_id: Number(workbookId),
-          problem_id: makeSelectedProblems,
-        }),
+      const newlyAdded = problems.filter((p) => uniqueProblemIds.includes(p.problem_id));
+      setSelectedProblems((prev) => {
+        const existingIds = new Set(prev.map((p) => p.problem_id));
+        const filteredNew = newlyAdded.filter((p) => !existingIds.has(p.problem_id));
+        return [...prev, ...filteredNew];
       });
 
-      setRefresh((prev) => !prev);  
+      setRefresh((prev) => !prev);
       setIsModalOpen(false);
-
     } catch (error) {
       console.error("문제지 - 문제 링크에 실패했습니다.", error);
     } finally {
@@ -177,7 +152,7 @@ export default function ProblemSelector({
                     );
                     return (
                       <li
-                        key={problem.problem_id}
+                        key={`list-${problem.problem_id}`}
                         onClick={() => !isDisabled && handleSelect(problem)}
                         className={`cursor-pointer rounded-md p-2 border-b transition ${
                           isDisabled
@@ -205,7 +180,7 @@ export default function ProblemSelector({
                       const newProblem = problems.find((p) => p.problem_id === selected.problem_id);
                       return (
                         <li
-                          key={selected.problem_id}
+                          key={`selected-${selected.problem_id}`}
                           onClick={() => handleSelect(selected)}
                           className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200">
                           📌{" "}

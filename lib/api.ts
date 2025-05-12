@@ -113,7 +113,7 @@ export const problem_api = {
     return res.json();
   },
 
-  async problem_ref_delete(problem_id:number, group_id: number, workbook_id:number) {
+  async problem_ref_delete(problem_id: number, group_id: number, workbook_id: number) {
     const res = await fetch(`/api/proxy/problems_ref/${group_id}/${workbook_id}/${problem_id}`, {
       method: "DELETE",
       credentials: "include",
@@ -121,7 +121,7 @@ export const problem_api = {
     if (!res.ok) throw new Error("문제 지우기 실패");
     return res.json();
   },
-  
+
   async problem_delete(problem_id: number) {
     const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
       method: "DELETE",
@@ -206,7 +206,7 @@ export const problem_ref_api = {
       }),
     });
 
-    if (!res.ok) throw new Error("좋아요 실패");
+    if (!res.ok) throw new Error("문제 연결 실패");
     return res.json();
   },
 };
@@ -588,7 +588,6 @@ export const ai_feeedback_api = {
     return res.json();
   },
 };
-
 
 // //====================== workbook manage 관련 api ===========================
 // export const man_workbook_api = {
