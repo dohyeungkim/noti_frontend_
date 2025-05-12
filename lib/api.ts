@@ -3,7 +3,7 @@ import { fetchWithAuth } from "./fetchWithAuth";
 // ====================== Auth 관련 api ===========================
 export const auth_api = {
   async register(userId: string, username: string, password: string, email: string) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/register`, {
+    const res = await fetch(`/api/proxy/user/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: userId, username, password, email }),
