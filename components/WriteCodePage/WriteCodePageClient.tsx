@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 // import { testExams } from "@/data/testmode";
 import { AnimatePresence, motion } from "framer-motion";
-import { auth_api, problem_api, code_log_api, solve_api, ai_feeedback_api } from "@/lib/api";
+import { auth_api, problem_api, code_log_api, solve_api, ai_feeedback_api, run_code_api } from "@/lib/api";
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
 import { editor } from "monaco-editor";
 
@@ -22,7 +22,7 @@ export default function WriteCodePageClient({
 }) {
   const router = useRouter();
   const { groupId } = useParams();
-  const [isExpanded, setIsExpanded] = useState(true);
+  // const [isExpanded, setIsExpanded] = useState(true);
 
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
 
@@ -59,11 +59,13 @@ export default function WriteCodePageClient({
   // 문제 정보 가져오기
   const fetchProblem = useCallback(async () => {
     try {
+      console.log('문제 API 호출 파라미터:', params.groupId, params.examId, params.problemId);
       const res = await problem_api.problem_get_by_id_group(
         Number(params.groupId),
         Number(params.examId),
         Number(params.problemId)
       );
+      console.log('문제 API 응답:', res);
       setProblem(res);
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
@@ -98,15 +100,14 @@ export default function WriteCodePageClient({
     }
   }, [code]);
 
-  const handleKeyDown = () => {
-    if (editorRef.current) {
-      const newCode = editorRef.current.getValue();
-      setCode(newCode);
-      setCodeLogs((prevLogs) => [...prevLogs, newCode]);
-      setTimeStamps((prev) => [...prev, new Date().toISOString()]);
-    }
-    // 무한 엔터에 관하여. 예외 처리 해줘야함.
-  };
+  // const handleKeyDown = () => {
+  //   if (editorRef.current) {
+  //     const newCode = editorRef.current.getValue();
+  //     setCode(newCode);
+  //     setCodeLogs((prevLogs) => [...prevLogs, newCode]);
+  //     setTimeStamps((prev) => [...prev, new Date().toISOString()]);
+  //   }
+  // };
 
   const handleSubmit = async () => {
     if (!params.groupId || !params.examId || !params.problemId) {
@@ -157,27 +158,39 @@ export default function WriteCodePageClient({
     }
   };
 
-  const [runResult, setRunResult] = useState<string>("");
-  const [runInput, setRunInput] = useState<string>("");
-  const [isRunning, setIsRunning] = useState(false);
+  // 테스트케이스 실행 관련 상태 (중복 선언 방지)
+  const [testCases, setTestCases] = useState<{ input: string; output: string }[]>([{ input: "", output: "" }]);
+  const [runResults, setRunResults] = useState<{ input: string; expected: string; output: string; passed: boolean }[]>([]);
+  const [isTestRunning, setIsTestRunning] = useState(false);
 
-  const dummyRunCode = async ({ code, language, input }: { code: string; language: string; input: string }) => {
-    if (code.includes("input")) {
-      return { output: input ? input + "\n" : "(입력이 없습니다)\n" };
-    }
-    return { output: "Hello, World!\n" };
+  const handleTestCaseChange = (idx: number, field: "input" | "output", value: string) => {
+    setTestCases((prev) => prev.map((tc, i) => i === idx ? { ...tc, [field]: value } : tc));
   };
+  const addTestCase = () => {
+    setTestCases(prev => {
+      const next = [...prev, { input: "", output: "" }];
+      console.log("테스트케이스 추가됨", next);
+      return next;
+    });
+  };
+  const removeTestCase = (idx: number) => setTestCases((prev) => prev.filter((_, i) => i !== idx));
 
-  const handleRun = async () => {
-    setIsRunning(true);
-    setRunResult("");
+  const handleTestRun = async () => {
+    setIsTestRunning(true);
+    setRunResults([]);
     try {
-      const res = await dummyRunCode({ code, language, input: runInput });
-      setRunResult(res.output ?? "실행 결과 없음");
+      const data = await run_code_api.run_code(
+        language,
+        code,
+        testCases.map(tc => ({ input: tc.input, output: tc.output }))
+      );
+      console.log('run_code_api 반환값:', data);
+      setRunResults(data.results ?? []);
     } catch (err) {
-      setRunResult("실행 중 오류 발생: 더미 결과\nHello, World!\n");
+      console.error('run_code_api 에러:', err);
+      setRunResults([]);
     } finally {
-      setIsRunning(false);
+      setIsTestRunning(false);
     }
   };
 
@@ -210,6 +223,10 @@ export default function WriteCodePageClient({
     // eslint-disable-next-line
   }, [language]);
 
+  useEffect(() => {
+    console.log("testCases 상태 변화:", testCases);
+  }, [testCases]);
+
   return !problem ? (
     <div className="flex items-center gap-2 justify-end">
       {/* <h1 className="text-2xl font-bold">문제를 가져오는 중입니다. </h1> */}
@@ -223,14 +240,14 @@ export default function WriteCodePageClient({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}>
         <motion.button
-          onClick={handleRun}
-          disabled={isRunning}
+          onClick={handleTestRun}
+          disabled={isTestRunning}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className={`flex items-center ${
-            isRunning ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            isTestRunning ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
           } text-white px-10 py-1.5 rounded-xl m-2 text-md`}>
-          {isRunning ? "실행 중..." : "실행하기"}
+          {isTestRunning ? "실행 중..." : "실행하기"}
         </motion.button>
         <motion.button
           onClick={handleSubmit}
@@ -251,29 +268,27 @@ export default function WriteCodePageClient({
                 h-[75vh] sm:h-[70vh] md:h-[70vh] lg:h-[70vh]">
         {/* 문제 설명 영역 (왼쪽) */}
         <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              layout
-              initial={{ flex: 0, opacity: 0 }}
-              animate={{ flex: 2, opacity: 1 }}
-              exit={{ flex: 0, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 100 }}
-              className="overflow-hidden border-r-2 pr-4"
-              style={{ flex: 2, minWidth: 0 }}>
-              <div className="sticky top-0z-10 pb-4">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-                  {problem.title.length > 20 ? `${problem.title.slice(0, 20)}...` : problem.title}
-                </h1>
-                <hr className="border-t-2 border-gray-400" />
-              </div>
-              <div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">
-                <div
-                  className="editor-content"
-                  dangerouslySetInnerHTML={{ __html: problem.description }}
-                />
-              </div>
-            </motion.div>
-          )}
+          <motion.div
+            layout
+            initial={{ flex: 0, opacity: 0 }}
+            animate={{ flex: 2, opacity: 1 }}
+            exit={{ flex: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 100 }}
+            className="overflow-hidden border-r-2 pr-4"
+            style={{ flex: 2, minWidth: 0 }}>
+            <div className="sticky top-0z-10 pb-4">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                {problem.title.length > 20 ? `${problem.title.slice(0, 20)}...` : problem.title}
+              </h1>
+              <hr className="border-t-2 border-gray-400" />
+            </div>
+            <div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">
+              <div
+                className="editor-content"
+                dangerouslySetInnerHTML={{ __html: problem.description }}
+              />
+            </div>
+          </motion.div>
         </AnimatePresence>
         <div className="flex items-start">
           {/* <button
@@ -303,7 +318,7 @@ export default function WriteCodePageClient({
           <div className="bg-white p-0 rounded shadow">
             <MonacoEditor
               key={`${solveId || "default"}-${language}`}
-              height="65vh"
+              height="50vh"
               width="100%"
               language={language}
               value={code ?? ""}
@@ -335,6 +350,68 @@ export default function WriteCodePageClient({
                 });
               }}
             />
+          </div>
+          {/* 테스트케이스 실행 UI */}
+          <div className="w-full bg-white rounded-xl shadow-lg p-6 min-h-[220px] mt-6">
+            <div className="mb-2 font-bold text-lg">테스트케이스 실행</div>
+            {testCases.map((tc, idx) => (
+              <div key={idx} className="flex gap-2 mb-2">
+                <input
+                  value={testCases[idx].input}
+                  onChange={e => handleTestCaseChange(idx, "input", e.target.value)}
+                  placeholder="입력값"
+                  className="border rounded p-2 flex-1 text-base"
+                />
+                <input
+                  value={testCases[idx].output}
+                  onChange={e => handleTestCaseChange(idx, "output", e.target.value)}
+                  placeholder="예상 출력값"
+                  className="border rounded p-2 flex-1 text-base"
+                />
+                <button onClick={() => removeTestCase(idx)} className="px-3 py-2 bg-red-200 rounded text-base">삭제</button>
+              </div>
+            ))}
+            <button onClick={addTestCase} className="px-4 py-2 bg-gray-200 rounded mb-2 text-base cursor-pointer">테스트케이스 추가</button>
+            {runResults.length > 0 && (
+              <div className="mt-6">
+                <table className="w-full text-center border text-lg">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-2">입력값</th>
+                      <th className="px-4 py-2">예상 출력</th>
+                      <th className="px-4 py-2">실제 출력</th>
+                      <th className="px-4 py-2">결과</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {runResults.map((r, idx) => (
+                      <tr key={idx} className={
+                        r.passed === true ? "bg-green-50" :
+                        r.passed === false ? "bg-red-50" : "bg-gray-100"
+                      }>
+                        <td className="border px-4 py-2 font-mono whitespace-pre">{r.input}</td>
+                        <td className="border px-4 py-2 font-mono whitespace-pre">{r.expected ? r.expected : <span className="text-gray-400">-</span>}</td>
+                        <td className="border px-4 py-2 font-mono whitespace-pre">
+                          {r.expected ? r.expected : <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="border px-4 py-2 font-mono whitespace-pre">
+                          {r.output ? r.output : <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="border px-4 py-2 text-2xl">
+                          {r.passed === true ? (
+                            <span className="text-green-600">✔</span>
+                          ) : r.passed === false ? (
+                            <span className="text-red-600">✗</span>
+                          ) : (
+                            <span className="text-gray-500">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -438,6 +515,10 @@ export default function WriteCodePageClient({
 .cmd-output {
   white-space: pre-wrap;
   color: #a6e22e;
+}
+
+.text-gray-400 {
+  pointer-events: none; /* 이 클래스를 가진 요소는 클릭 이벤트를 막지 않음 */
 }
         
         `}
