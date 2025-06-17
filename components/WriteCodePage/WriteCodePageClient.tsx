@@ -240,16 +240,6 @@ export default function WriteCodePageClient({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}>
         <motion.button
-          onClick={handleTestRun}
-          disabled={isTestRunning}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`flex items-center ${
-            isTestRunning ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          } text-white px-10 py-1.5 rounded-xl m-2 text-md`}>
-          {isTestRunning ? "실행 중..." : "실행하기"}
-        </motion.button>
-        <motion.button
           onClick={handleSubmit}
           disabled={loading}
           whileHover={{ scale: 1.05 }}
@@ -353,65 +343,74 @@ export default function WriteCodePageClient({
           </div>
           {/* 테스트케이스 실행 UI */}
           <div className="w-full bg-white rounded-xl shadow-lg p-6 min-h-[220px] mt-6">
-            <div className="mb-2 font-bold text-lg">테스트케이스 실행</div>
-            {testCases.map((tc, idx) => (
-              <div key={idx} className="flex gap-2 mb-2">
-                <input
-                  value={testCases[idx].input}
-                  onChange={e => handleTestCaseChange(idx, "input", e.target.value)}
-                  placeholder="입력값"
-                  className="border rounded p-2 flex-1 text-base"
-                />
-                <input
-                  value={testCases[idx].output}
-                  onChange={e => handleTestCaseChange(idx, "output", e.target.value)}
-                  placeholder="예상 출력값"
-                  className="border rounded p-2 flex-1 text-base"
-                />
-                <button onClick={() => removeTestCase(idx)} className="px-3 py-2 bg-red-200 rounded text-base">삭제</button>
-              </div>
-            ))}
-            <button onClick={addTestCase} className="px-4 py-2 bg-gray-200 rounded mb-2 text-base cursor-pointer">테스트케이스 추가</button>
-            {runResults.length > 0 && (
-              <div className="mt-6">
-                <table className="w-full text-center border text-lg">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2">입력값</th>
-                      <th className="px-4 py-2">예상 출력</th>
-                      <th className="px-4 py-2">실제 출력</th>
-                      <th className="px-4 py-2">결과</th>
+            <div className="flex items-center mb-2">
+              <div className="font-bold text-lg mr-4">테스트케이스 실행</div>
+              <motion.button
+                onClick={handleTestRun}
+                disabled={isTestRunning}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center ${
+                  isTestRunning ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                } text-white px-6 py-1.5 rounded-xl text-md ml-2`}
+                style={{ minWidth: 100 }}
+              >
+                {isTestRunning ? "실행 중..." : "실행하기"}
+              </motion.button>
+            </div>
+            <div className="mt-6">
+              <table className="w-full text-center border text-lg">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2">입력값</th>
+                    <th className="px-4 py-2">예상 출력</th>
+                    <th className="px-4 py-2">실제 출력</th>
+                    <th className="px-4 py-2">결과</th>
+                    <th className="px-4 py-2">삭제</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {testCases.map((tc, idx) => (
+                    <tr key={idx} className={
+                      runResults[idx]?.passed === true ? "bg-green-50" :
+                      runResults[idx]?.passed === false ? "bg-red-50" : "bg-gray-100"
+                    }>
+                      <td className="border px-4 py-2 font-mono whitespace-pre">
+                        <input
+                          value={tc.input}
+                          onChange={e => handleTestCaseChange(idx, "input", e.target.value)}
+                          placeholder="입력값"
+                          className="border rounded p-2 flex-1 text-base"
+                        />
+                      </td>
+                      <td className="border px-4 py-2 font-mono whitespace-pre">
+                        <input
+                          value={tc.output}
+                          onChange={e => handleTestCaseChange(idx, "output", e.target.value)}
+                          placeholder="예상 출력값"
+                          className="border rounded p-2 flex-1 text-base"
+                        />
+                      </td>
+                      <td className="border px-4 py-2 font-mono whitespace-pre">
+                        {runResults[idx]?.output ? runResults[idx].output : <span className="text-gray-400">-</span>}
+                      </td>
+                      <td className="border px-4 py-2 text-2xl">
+                        {runResults[idx]?.passed === true ? (
+                          <span className="text-green-600">✔</span>
+                        ) : runResults[idx]?.passed === false ? (
+                          <span className="text-red-600">✗</span>
+                        ) : (
+                          <span className="text-gray-500">-</span>
+                        )}
+                      </td>
+                      <td><button onClick={() => removeTestCase(idx)} className="px-3 py-2 bg-red-200 rounded text-base">삭제</button></td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {runResults.map((r, idx) => (
-                      <tr key={idx} className={
-                        r.passed === true ? "bg-green-50" :
-                        r.passed === false ? "bg-red-50" : "bg-gray-100"
-                      }>
-                        <td className="border px-4 py-2 font-mono whitespace-pre">{r.input}</td>
-                        <td className="border px-4 py-2 font-mono whitespace-pre">{r.expected ? r.expected : <span className="text-gray-400">-</span>}</td>
-                        <td className="border px-4 py-2 font-mono whitespace-pre">
-                          {r.expected ? r.expected : <span className="text-gray-400">-</span>}
-                        </td>
-                        <td className="border px-4 py-2 font-mono whitespace-pre">
-                          {r.output ? r.output : <span className="text-gray-400">-</span>}
-                        </td>
-                        <td className="border px-4 py-2 text-2xl">
-                          {r.passed === true ? (
-                            <span className="text-green-600">✔</span>
-                          ) : r.passed === false ? (
-                            <span className="text-red-600">✗</span>
-                          ) : (
-                            <span className="text-gray-500">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button onClick={addTestCase} className="px-4 py-2 bg-gray-200 rounded mb-2 text-base cursor-pointer">테스트케이스 추가</button>
+          
           </div>
         </div>
       </main>
