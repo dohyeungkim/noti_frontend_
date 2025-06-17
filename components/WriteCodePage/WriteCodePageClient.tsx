@@ -27,8 +27,32 @@ export default function WriteCodePageClient({
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
 
   // const isTestMode = testExams.some((test) => test.examId === params.examId);
-  const [code, setCode] = useState<string>("");
-  const [language, setLanguage] = useState("python");
+  const searchParams = useSearchParams();
+  const solveId = searchParams.get("solve_id");
+  const queryLanguage = searchParams.get("language");
+
+  // 언어별 디폴트 코드 템플릿
+  const defaultTemplates: { [lang: string]: string } = {
+    python: "",
+    c: "#include<stdio.h>\n\nint main() {\n    return 0;\n}",
+    cpp: "#include<iostream>\n\nint main() {\n    return 0;\n}",
+    java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
+  };
+
+  // 언어/문제별 언어 선택 저장 키
+  const languageStorageKey = `aprofi_language_${params.problemId}`;
+
+  // 언어 초기값: 쿼리파라미터 > localStorage > python
+  const initialLanguage = (typeof window !== "undefined" && (
+    queryLanguage || localStorage.getItem(languageStorageKey)
+  )) || "python";
+  const [language, setLanguage] = useState(initialLanguage);
+
+  // 코드 초기값: localStorage > 템플릿
+  const storageKey = `aprofi_code_${initialLanguage}_${params.problemId}`;
+  const initialCode = (typeof window !== "undefined" && localStorage.getItem(storageKey)) || defaultTemplates[initialLanguage];
+  const [code, setCode] = useState<string>(initialCode);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   // const [isPrevEnter, setPrevIsEnter] = useState(false);
@@ -39,9 +63,19 @@ export default function WriteCodePageClient({
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
-  const searchParams = useSearchParams();
-  const solveId = searchParams.get("solve_id");
-  console.log("solveId:", solveId);
+  // 언어가 바뀔 때 localStorage에 저장
+  useEffect(() => {
+    if (language) {
+      localStorage.setItem(languageStorageKey, language);
+    }
+  }, [language, params.problemId]);
+
+  // 코드가 바뀔 때 localStorage에 저장
+  useEffect(() => {
+    if (language && params.problemId) {
+      localStorage.setItem(`aprofi_code_${language}_${params.problemId}`, code);
+    }
+  }, [code, language, params.problemId]);
 
   // 유저 정보 가져오기
   const fetchUser = useCallback(async () => {
@@ -148,6 +182,13 @@ export default function WriteCodePageClient({
       setCodeLogs([]);
       setTimeStamps([]);
 
+      // 제출 후 해당 문제의 모든 언어 코드 삭제
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('aprofi_code_') && key.endsWith(`_${params.problemId}`)) {
+          localStorage.removeItem(key);
+        }
+      });
+
       router.push(
         `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`
       );
@@ -194,34 +235,13 @@ export default function WriteCodePageClient({
     }
   };
 
-  // 언어별 디폴트 코드 템플릿
-  const defaultTemplates: { [lang: string]: string } = {
-    python: "",
-    c: "int main() {\n    return 0;\n}",
-    cpp: "int main() {\n    return 0;\n}",
-    java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
-  };
-
-  const [codeMap, setCodeMap] = useState<{ [lang: string]: string }>({
-    python: "",
-    c: defaultTemplates.c,
-    cpp: defaultTemplates.cpp,
-    java: defaultTemplates.java,
-  });
-
-  // 언어 변경 핸들러
+  // 언어 변경 핸들러: 코드도 localStorage에서 복원
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLang = e.target.value;
-    setCodeMap((prev) => ({ ...prev, [language]: code })); // 현재 코드 저장
     setLanguage(newLang);
-    setCode(codeMap[newLang] ?? defaultTemplates[newLang]);
+    const saved = localStorage.getItem(`aprofi_code_${newLang}_${params.problemId}`);
+    setCode(saved !== null && saved !== "" ? saved : defaultTemplates[newLang]);
   };
-
-  // 언어가 바뀌면 코드 복원
-  useEffect(() => {
-    setCode(codeMap[language] ?? defaultTemplates[language]);
-    // eslint-disable-next-line
-  }, [language]);
 
   useEffect(() => {
     console.log("testCases 상태 변화:", testCases);

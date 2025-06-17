@@ -188,7 +188,9 @@ export default function FeedbackWithSubmissionPageClient({
           </button>
           <button
             className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-700 transition"
-            onClick={() => router.push(`/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/write?solve_id=${params.resultId}`)}
+            onClick={() => router.push(
+              `/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/write?solve_id=${params.resultId}&language=${solveData?.language?.toLowerCase() || ""}`
+            )}
           >
             다시 풀러 가기
           </button>
