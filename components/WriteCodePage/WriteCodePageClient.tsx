@@ -124,7 +124,7 @@ export default function WriteCodePageClient({
       setTimeStamps([]);
 
       router.push(
-        `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result`
+        `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`
       );
     } catch (err) {
       alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`);

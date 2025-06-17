@@ -7,6 +7,7 @@ import CommentSection from "@/components/ResultPage/CommentSection";
 import { code_log_api, problem_api, solve_api, ai_feeedback_api } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
+import { useRouter } from "next/navigation";
 
 interface SolveData {
   passed: boolean;
@@ -32,6 +33,7 @@ export default function FeedbackWithSubmissionPageClient({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAILoaded, setIsAILoaded] = useState(false);
   const [solveData, setSolveData] = useState<SolveData | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     setSolveData({
@@ -178,6 +180,12 @@ export default function FeedbackWithSubmissionPageClient({
           ) : (
             <p className="text-gray-600 mt-2">{aiFeedback}</p>
           )}
+          <button
+            className="mt-4 px-4 py-2 bg-mygreen text-white rounded-lg shadow hover:bg-green-700 transition"
+            onClick={() => router.push(`/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/result/`)}
+          >
+            전체 제출 보러가기
+          </button>
         </motion.div>
 
         {problem && <ResultPageProblemDetail problem={problem} />}
