@@ -181,6 +181,35 @@ export default function WriteCodePageClient({
     }
   };
 
+  // 언어별 디폴트 코드 템플릿
+  const defaultTemplates: { [lang: string]: string } = {
+    python: "",
+    c: "int main() {\n    return 0;\n}",
+    cpp: "int main() {\n    return 0;\n}",
+    java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
+  };
+
+  const [codeMap, setCodeMap] = useState<{ [lang: string]: string }>({
+    python: "",
+    c: defaultTemplates.c,
+    cpp: defaultTemplates.cpp,
+    java: defaultTemplates.java,
+  });
+
+  // 언어 변경 핸들러
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value;
+    setCodeMap((prev) => ({ ...prev, [language]: code })); // 현재 코드 저장
+    setLanguage(newLang);
+    setCode(codeMap[newLang] ?? defaultTemplates[newLang]);
+  };
+
+  // 언어가 바뀌면 코드 복원
+  useEffect(() => {
+    setCode(codeMap[language] ?? defaultTemplates[language]);
+    // eslint-disable-next-line
+  }, [language]);
+
   return !problem ? (
     <div className="flex items-center gap-2 justify-end">
       {/* <h1 className="text-2xl font-bold">문제를 가져오는 중입니다. </h1> */}
@@ -261,11 +290,12 @@ export default function WriteCodePageClient({
             <h2 className="text-lg font-semibold">나의 코드</h2>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={handleLanguageChange}
               className="border rounded-lg p-2">
               <option value="python">Python</option>
-              {/* <option value="C"> C</option>
-              <option value="C++">C++</option> */}
+              <option value="c">C</option>
+              <option value="cpp">C++</option>
+              <option value="java">Java</option>
             </select>
           </div>
           <div className="border-b-2 border-black my-2"></div>
