@@ -4,8 +4,8 @@ import { useAuth } from "@/stores/auth";
 import { usePathname } from "next/navigation";
 
 import { useState } from "react";
-import DrawerWrapper from "@/components/Layout/DrawerWrapper";
-import PageHeaderWrapper from "@/components/Layout/PageHeaderWrapper";
+import DrawerWrapper from "@/components/layout/DrawerWrapper";
+import PageHeaderWrapper from "@/components/layout/PageHeaderWrapper";
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { isAuth } = useAuth();
   const pathname = usePathname();

@@ -68,7 +68,7 @@ export default function WriteCodePageClient({
     if (language) {
       localStorage.setItem(languageStorageKey, language);
     }
-  }, [language, params.problemId]);
+  }, [language, params.problemId, languageStorageKey]);
 
   // 코드가 바뀔 때 localStorage에 저장
   useEffect(() => {

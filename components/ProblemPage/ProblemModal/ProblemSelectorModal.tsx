@@ -103,7 +103,7 @@ export default function ProblemSelector({
     setIsSubmitting(true);
     try {
       const uniqueProblemIds = Array.from(new Set(selectedProblems.map((p) => p.problem_id)));
-      const res = await problem_ref_api.problem_ref_create(
+      await problem_ref_api.problem_ref_create(
         Number(groupId),
         Number(workbookId),
         uniqueProblemIds
@@ -117,6 +117,7 @@ export default function ProblemSelector({
       });
 
       setRefresh((prev) => !prev);
+      refresh = refresh;
       setIsModalOpen(false);
     } catch (error) {
       console.error("문제지 - 문제 링크에 실패했습니다.", error);
