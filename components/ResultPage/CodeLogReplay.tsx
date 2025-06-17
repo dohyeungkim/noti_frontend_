@@ -10,9 +10,10 @@ export interface CodeLog {
 interface CodeLogReplayProps {
   codeLogs: CodeLog[];
   idx: number;
+  language?: string;
 }
 
-const CodeLogReplay = ({ codeLogs }: CodeLogReplayProps) => {
+const CodeLogReplay = ({ codeLogs, language = "python" }: CodeLogReplayProps) => {
   const [currentLogIndex, setCurrentLogIndex] = useState<number>(codeLogs.length - 1);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(2);
@@ -77,7 +78,7 @@ const CodeLogReplay = ({ codeLogs }: CodeLogReplayProps) => {
         <div className="h-[40vh] border border-gray-200 rounded overflow-hidden">
           <Editor
             height="100%"
-            defaultLanguage="python"
+            defaultLanguage={language}
             value={codeLogs[currentLogIndex]?.code}
             theme="vs-light"
             options={{
