@@ -589,6 +589,28 @@ export const ai_feeedback_api = {
   },
 };
 
+// ====================== 코드 실행(run_code) api ===========================
+export const run_code_api = {
+  async run_code(
+    language: string,
+    code: string,
+    test_cases: { input: string; output?: string }[]
+  ) {
+    const fixedTestCases = test_cases.map(tc => ({
+      input: tc.input,
+      output: tc.output ?? "" // output이 없으면 빈 문자열로 보정
+    }));
+    const res = await fetchWithAuth("/api/proxy/solves/run_code", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language, code, test_cases: fixedTestCases }),
+    });
+    if (!res.ok) throw new Error("코드 실행 실패");
+    return res.json();
+  },
+};
+
 // //====================== workbook manage 관련 api ===========================
 // export const man_workbook_api = {
 //   // workbook_get_by_group: async (groupId: number) => {
