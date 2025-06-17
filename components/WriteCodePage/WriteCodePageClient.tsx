@@ -186,11 +186,11 @@ export default function WriteCodePageClient({
           )}
         </AnimatePresence>
         <div className="flex items-start">
-          <button
+          {/* <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="px-3 py-2 border rounded-lg transition hover:bg-gray-200">
             {isExpanded ? "<" : ">"}
-          </button>
+          </button> */}
         </div>
         {/* 코드 에디터 영역 (오른쪽) */}
         <div

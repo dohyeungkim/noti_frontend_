@@ -96,13 +96,13 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
 
   return (
     <motion.div
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 items-center"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.2 }}>
       {/* ✅ 검색창 UI */}
       <motion.div
-        className="flex flex-wrap items-center gap-2 md:gap-4 justify-between  p-4 mt-10 "
+        className="flex flex-wrap gap-2 md:gap-4 justify-center w-full max-w-2xl p-4 mt-10"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}>
@@ -140,16 +140,16 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
           검색하기
         </button>
       </motion.div>
-      <div className="flex justify-between items-center border-t-2 border-gray-200 " />
+      <div className="w-full flex justify-center items-center border-t-2 border-gray-200 " />
 
       {/* ✅ 검색 결과 없을 때 */}
       {submissions.length === 0 ? (
-        <p className="text-xl text-gray-500 text-center">제출 내역이 없습니다.</p>
+        <p className="text-xl text-gray-500 text-center w-full">제출 내역이 없습니다.</p>
       ) : (
-        <div>
+        <div className="w-full flex justify-center">
           {/* ✅ 제출 내역 테이블 */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto w-full max-w-4xl">
+            <table className="w-full border-collapse rounded-lg shadow-md overflow-hidden mx-auto">
               <thead className="bg-gray-100 text-gray-700 text-sm uppercase">
                 <tr>
                   <th className="px-4 py-3">제출번호</th>
