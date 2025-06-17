@@ -58,6 +58,13 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
           p.workbook_id === Number(params.examId)
       );
 
+      // ✅ 시간, 제출 id 내림차순 정렬
+      res.sort((a, b) => {
+        const t1 = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        if (t1 !== 0) return t1;
+        return b.id - a.id;
+      });
+
       setSubmissions(res);
     } catch (error) {
       console.error("제출 내역을 불러오는 중 오류 발생:", error);
