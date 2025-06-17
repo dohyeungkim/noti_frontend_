@@ -186,6 +186,12 @@ export default function FeedbackWithSubmissionPageClient({
           >
             전체 제출 보러가기
           </button>
+          <button
+            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-700 transition"
+            onClick={() => router.push(`/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/write?solve_id=${params.resultId}`)}
+          >
+            다시 풀러 가기
+          </button>
         </motion.div>
 
         {problem && <ResultPageProblemDetail problem={problem} />}

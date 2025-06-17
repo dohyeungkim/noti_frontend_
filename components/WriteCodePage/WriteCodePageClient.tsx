@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useRef } from "react";
 import { useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -27,7 +27,7 @@ export default function WriteCodePageClient({
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
 
   // const isTestMode = testExams.some((test) => test.examId === params.examId);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState<string>("");
   const [language, setLanguage] = useState("python");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +38,10 @@ export default function WriteCodePageClient({
   const [userId, setUserId] = useState("");
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+
+  const searchParams = useSearchParams();
+  const solveId = searchParams.get("solve_id");
+  console.log("solveId:", solveId);
 
   // 유저 정보 가져오기
   const fetchUser = useCallback(async () => {
@@ -73,6 +77,26 @@ export default function WriteCodePageClient({
   useEffect(() => {
     fetchProblem();
   }, [fetchProblem]); // problemId 변경 시 다시 실행
+
+  useEffect(() => {
+    if (solveId) {
+      console.log("solveId로 코드 불러오기 시도:", solveId);
+      solve_api.solve_get_by_solve_id(Number(solveId))
+        .then(res => {
+          console.log('solve_get_by_solve_id 응답:', res);
+          setCode(res.submitted_code ?? "");
+        })
+        .catch(err => {
+          console.error("solve_get_by_solve_id 에러:", err);
+        });
+    }
+  }, [solveId]);
+
+  useEffect(() => {
+    if (editorRef.current && code !== editorRef.current.getValue()) {
+      editorRef.current.setValue(code);
+    }
+  }, [code]);
 
   const handleKeyDown = () => {
     if (editorRef.current) {
@@ -214,10 +238,11 @@ export default function WriteCodePageClient({
 
           <div className="bg-white p-0 rounded shadow">
             <MonacoEditor
+              key={`${solveId || "default"}-${(code ?? "").length}`}
               height="65vh"
               width="100%"
               language={language}
-              value={code}
+              value={code ?? ""}
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
@@ -321,6 +346,7 @@ export default function WriteCodePageClient({
         
         `}
       </style>
+
     </>
   );
 }
