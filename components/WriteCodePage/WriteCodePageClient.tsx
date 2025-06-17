@@ -157,6 +157,30 @@ export default function WriteCodePageClient({
     }
   };
 
+  const [runResult, setRunResult] = useState<string>("");
+  const [runInput, setRunInput] = useState<string>("");
+  const [isRunning, setIsRunning] = useState(false);
+
+  const dummyRunCode = async ({ code, language, input }: { code: string; language: string; input: string }) => {
+    if (code.includes("input")) {
+      return { output: input ? input + "\n" : "(입력이 없습니다)\n" };
+    }
+    return { output: "Hello, World!\n" };
+  };
+
+  const handleRun = async () => {
+    setIsRunning(true);
+    setRunResult("");
+    try {
+      const res = await dummyRunCode({ code, language, input: runInput });
+      setRunResult(res.output ?? "실행 결과 없음");
+    } catch (err) {
+      setRunResult("실행 중 오류 발생: 더미 결과\nHello, World!\n");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
   return !problem ? (
     <div className="flex items-center gap-2 justify-end">
       {/* <h1 className="text-2xl font-bold">문제를 가져오는 중입니다. </h1> */}
@@ -169,6 +193,16 @@ export default function WriteCodePageClient({
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}>
+        <motion.button
+          onClick={handleRun}
+          disabled={isRunning}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`flex items-center ${
+            isRunning ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          } text-white px-10 py-1.5 rounded-xl m-2 text-md`}>
+          {isRunning ? "실행 중..." : "실행하기"}
+        </motion.button>
         <motion.button
           onClick={handleSubmit}
           disabled={loading}
@@ -343,6 +377,35 @@ export default function WriteCodePageClient({
   border-bottom-right-radius: 12px !important;
 }
 
+.cmd-window {
+  background: #181818;
+  color: #d4d4d4;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  margin-top: 16px;
+  min-height: 120px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.cmd-input-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.cmd-input-row input {
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  margin-left: 8px;
+  padding: 4px 8px;
+  flex: 1;
+}
+.cmd-output {
+  white-space: pre-wrap;
+  color: #a6e22e;
+}
         
         `}
       </style>
