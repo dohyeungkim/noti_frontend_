@@ -157,18 +157,19 @@ export default function WriteCodePageClient({
       {error && <p className="text-red-500 text-center mt-2">{error}</p>}
 
       <main
-        className=" flex flex-1 gap-x-6 mt-3 w-full 
-                h-[65vh] sm:h-[60vh] md:h-[60vh] lg:h-[60vh]">
+        className=" flex flex-1 gap-x-2 mt-3 w-full 
+                h-[75vh] sm:h-[70vh] md:h-[70vh] lg:h-[70vh]">
         {/* 문제 설명 영역 (왼쪽) */}
         <AnimatePresence>
           {isExpanded && (
             <motion.div
               layout
               initial={{ flex: 0, opacity: 0 }}
-              animate={{ flex: 1, opacity: 1 }}
+              animate={{ flex: 2, opacity: 1 }}
               exit={{ flex: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 100 }}
-              className="overflow-hidden border-r-2 pr-4">
+              className="overflow-hidden border-r-2 pr-4"
+              style={{ flex: 2, minWidth: 0 }}>
               <div className="sticky top-0z-10 pb-4">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
                   {problem.title.length > 20 ? `${problem.title.slice(0, 20)}...` : problem.title}
@@ -194,7 +195,7 @@ export default function WriteCodePageClient({
         {/* 코드 에디터 영역 (오른쪽) */}
         <div
           className="flex-1 flex-col min-w-0 transition-all duration-300"
-          style={{ flex: isExpanded ? 1 : 5 }}>
+          style={{ flex: 5, minWidth: 0 }}>
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-lg font-semibold">나의 코드</h2>
             <select
@@ -208,9 +209,10 @@ export default function WriteCodePageClient({
           </div>
           <div className="border-b-2 border-black my-2"></div>
 
-          <div className="bg-white p-4 rounded shadow">
+          <div className="bg-white p-0 rounded shadow">
             <MonacoEditor
-              height="45vh"
+              height="65vh"
+              width="100%"
               language={language}
               value={code}
               options={{

@@ -6,7 +6,7 @@ export default function WriteCodePage({
   params: { groupId: string; examId: string; problemId: string };
 }) {
   return (
-    <div className="w-full max-w-5xl px-6">
+    <div className="w-full max-w-full">
       <WriteCodePageClient params={params}/>
     </div>
   );
