@@ -302,11 +302,12 @@ export default function WriteCodePageClient({
 
           <div className="bg-white p-0 rounded shadow">
             <MonacoEditor
-              key={`${solveId || "default"}-${(code ?? "").length}`}
+              key={`${solveId || "default"}-${language}`}
               height="65vh"
               width="100%"
               language={language}
               value={code ?? ""}
+              onChange={(value) => setCode(value ?? "")}
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
@@ -324,10 +325,12 @@ export default function WriteCodePageClient({
               }}
               onMount={(editor, monaco) => {
                 editorRef.current = editor;
-
                 editor.onKeyDown((event) => {
                   if (event.keyCode === monaco.KeyCode.Enter) {
-                    handleKeyDown();
+                    // setCode는 하지 않고, 로그만 남김
+                    const newCode = editor.getValue();
+                    setCodeLogs((prevLogs) => [...prevLogs, newCode]);
+                    setTimeStamps((prev) => [...prev, new Date().toISOString()]);
                   }
                 });
               }}
