@@ -342,10 +342,7 @@ export default function WriteCodePageClient({
 	if (!problem) return <div>로딩 중...</div>
 
 	return !problem ? (
-		<div className="flex items-center gap-2 justify-end">
-			{/* <h1 className="text-2xl font-bold">문제를 가져오는 중입니다. </h1> */}
-			{/* <p>잘못된 경로로 접근했거나 문제가 삭제되었습니다.</p> */}
-		</div>
+		<div className="flex items-center gap-2 justify-end"></div>
 	) : (
 		<>
 			<motion.div
