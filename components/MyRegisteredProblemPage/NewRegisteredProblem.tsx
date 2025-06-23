@@ -140,26 +140,44 @@ export default function NewRegisteredProblem() {
 		}
 
 		const content = editor.getHTML()
+
+		// 빈 조건들 필터링
+		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
+
 		console.log("📝 저장할 문제 설명:", content)
 		console.log("💻 저장할 코드:", code)
 		console.log("🔤 선택된 언어:", language)
-		console.log("📋 문제 조건:", conditions)
+		console.log("📋 문제 조건:", filteredConditions)
 		console.log("⚖️ 평가 기준:", evaluationCriteria)
 		console.log("🧪 입출력 예제:", inputs)
 
 		try {
-			// API 호출 시 모든 데이터 포함
+			// API 호출 시 조건과 평가 기준 포함
 			await problem_api.problem_create(
 				title,
 				content,
 				"", // input_description (현재 사용하지 않음)
 				"", // output_description (현재 사용하지 않음)
-				inputs.map((input) => ({ input: input.input, output: input.output }))
+				inputs.map((input) => ({ input: input.input, output: input.output })),
+				filteredConditions, // 조건 추가
+				evaluationCriteria // 평가 기준 추가
 			)
+
+			console.log("✅ 문제 등록 성공!")
 			router.back()
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error("❌ 문제 등록 실패:", error)
-			alert("문제 등록 중 오류가 발생했습니다.")
+
+			// TypeScript에서 안전하게 error 처리
+			const errorMessage = error instanceof Error ? error.message : String(error)
+			console.error("❌ 에러 상세:", errorMessage)
+
+			// 네트워크 에러와 백엔드 에러 구분
+			if (errorMessage.includes("문제 생성 실패")) {
+				alert("백엔드에서 문제 처리 중 오류가 발생했습니다. 백엔드 로그를 확인해주세요.")
+			} else {
+				alert(`문제 등록 중 오류가 발생했습니다: ${errorMessage}`)
+			}
 		}
 	}
 
