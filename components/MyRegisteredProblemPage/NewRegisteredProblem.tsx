@@ -1,242 +1,475 @@
-//문제등록페이지입니당
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Heading from "@tiptap/extension-heading";
-import BulletList from "@tiptap/extension-bullet-list";
-import OrderedList from "@tiptap/extension-ordered-list";
-import Highlight from "@tiptap/extension-highlight";
-import Image from "@tiptap/extension-image";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { motion } from "framer-motion";
-import { problem_api } from "@/lib/api";
-import Toolbar from "../markdown/Toolbar";
-import { ResizableTable } from "../markdown/ResizableTable";
-import TableCellExtension from "../markdown/TableCellExtension";
-// import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-// import { dummyProblems } from "@/data/dummy";
-// import HistoryGraph from "@/components/history/HistoryGraph";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { EditorContent, useEditor } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
+import Heading from "@tiptap/extension-heading"
+import BulletList from "@tiptap/extension-bullet-list"
+import OrderedList from "@tiptap/extension-ordered-list"
+import Highlight from "@tiptap/extension-highlight"
+import Image from "@tiptap/extension-image"
+import { TableRow } from "@tiptap/extension-table-row"
+import { TableHeader } from "@tiptap/extension-table-header"
+import { motion } from "framer-motion"
+import { problem_api, run_code_api } from "@/lib/api"
+import Toolbar from "../markdown/Toolbar"
+import { ResizableTable } from "../markdown/ResizableTable"
+import TableCellExtension from "../markdown/TableCellExtension"
+import dynamic from "next/dynamic"
+
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+	ssr: false,
+})
 
 export default function NewRegisteredProblem() {
-  const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [inputs, setInputs] = useState([{ input: "", output: "" }]);
-  // const [isExpandedHistory, setIsExpandedHistory] = useState(true);
+	const router = useRouter()
+	const [title, setTitle] = useState("")
+	const [inputs, setInputs] = useState([{ input: "", output: "", isPublic: false }])
+	const [conditions, setConditions] = useState([""])
+	const [evaluationCriteria, setEvaluationCriteria] = useState("Regex")
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Heading.configure({ levels: [1, 2, 3] }),
-      BulletList,
-      OrderedList,
-      Highlight.configure({ multicolor: true }),
-      Image,
-      ResizableTable, // ✅ 기존 Table 대신 ResizableTable 사용
-      TableRow,
-      TableHeader,
-      TableCellExtension, // ✅ 커스텀 TableCell 적용
-    ],
-    content: " ",
-  });
+	// 테스트 실행 관련 상태
+	const [runResults, setRunResults] = useState<{ input: string; expected: string; output: string; passed: boolean }[]>(
+		[]
+	)
+	const [isTestRunning, setIsTestRunning] = useState(false)
 
-  if (!editor) return null; // 에디터가 로드될 때까지 기다림
+	// 코드 에디터 관련 상태
+	const [language, setLanguage] = useState("python")
+	const [code, setCode] = useState("")
 
-  // ✅ 로컬 이미지를 Base64 URL로 변환하여 삽입
-  const addLocalImage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64Image = reader.result as string;
-        editor.chain().focus().setImage({ src: base64Image }).run();
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+	// 언어별 디폴트 코드 템플릿
+	const defaultTemplates: { [lang: string]: string } = {
+		python: "",
+		c: "#include<stdio.h>\n\nint main() {\n    return 0;\n}",
+		cpp: "#include<iostream>\n\nint main() {\n    return 0;\n}",
+		java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
+	}
 
-  const handleSubmitButtonClick = async () => {
-    if (title.trim() === "") {
-      alert("제목을 입력해주세요");
-      return;
-    }
+	const editor = useEditor({
+		extensions: [
+			StarterKit,
+			Heading.configure({ levels: [1, 2, 3] }),
+			BulletList,
+			OrderedList,
+			Highlight.configure({ multicolor: true }),
+			Image,
+			ResizableTable,
+			TableRow,
+			TableHeader,
+			TableCellExtension,
+		],
+		content: " ",
+	})
 
-    if (!editor) {
-      alert("에디터가 로드되지 않았습니다.");
-      return;
-    }
+	if (!editor) return null
 
-    const content = editor.getHTML();
-    console.log("📝 저장할 문제 설명:", content);
+	// ✅ 로컬 이미지를 Base64 URL로 변환하여 삽입
+	const addLocalImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0]
+		if (file) {
+			const reader = new FileReader()
+			reader.onload = () => {
+				const base64Image = reader.result as string
+				editor.chain().focus().setImage({ src: base64Image }).run()
+			}
+			reader.readAsDataURL(file)
+		}
+	}
 
-    try {
-      await problem_api.problem_create(title, content, "", "", inputs);
-      router.back();
-    } catch (error) {
-      console.error("❌ 문제 등록 실패:", error);
-      alert("문제 등록 중 오류가 발생했습니다.");
-    }
-  };
+	// 언어 변경 핸들러
+	const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const newLang = e.target.value
+		setLanguage(newLang)
+		setCode(defaultTemplates[newLang] || "")
+	}
 
-  return (
-    <div>
-      <motion.div
-        className="flex items-center gap-2 justify-end"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}>
-        <button
-          onClick={handleSubmitButtonClick}
-          className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
+	// 테스트 실행 핸들러
+	const handleTestRun = async () => {
+		if (!code.trim()) {
+			alert("코드를 입력해주세요.")
+			return
+		}
+
+		if (inputs.length === 0) {
+			alert("테스트케이스를 추가해주세요.")
+			return
+		}
+
+		setIsTestRunning(true)
+		setRunResults([])
+
+		try {
+			// run_code_api를 사용하여 실제 코드 실행
+			const testCases = inputs.map((testCase) => ({
+				input: testCase.input,
+				output: testCase.output,
+			}))
+
+			const data = await run_code_api.run_code(language, code, testCases)
+
+			// API 응답 구조에 맞게 결과 매핑
+			const results =
+				data.results?.map((result: any, index: number) => ({
+					input: inputs[index].input,
+					expected: inputs[index].output,
+					output: result.output || result.actual_output || "",
+					passed: result.passed || result.success || false,
+				})) || []
+
+			setRunResults(results)
+		} catch (err) {
+			console.error("테스트 실행 에러:", err)
+			setRunResults([])
+			alert(`테스트 실행 중 오류가 발생했습니다: ${err instanceof Error ? err.message : String(err)}`)
+		} finally {
+			setIsTestRunning(false)
+		}
+	}
+
+	const handleSubmitButtonClick = async () => {
+		if (title.trim() === "") {
+			alert("제목을 입력해주세요")
+			return
+		}
+
+		if (!editor) {
+			alert("에디터가 로드되지 않았습니다.")
+			return
+		}
+
+		const content = editor.getHTML()
+		console.log("📝 저장할 문제 설명:", content)
+		console.log("💻 저장할 코드:", code)
+		console.log("🔤 선택된 언어:", language)
+		console.log("📋 문제 조건:", conditions)
+		console.log("⚖️ 평가 기준:", evaluationCriteria)
+		console.log("🧪 입출력 예제:", inputs)
+
+		try {
+			// API 호출 시 모든 데이터 포함
+			await problem_api.problem_create(
+				title,
+				content,
+				"", // input_description (현재 사용하지 않음)
+				"", // output_description (현재 사용하지 않음)
+				inputs.map((input) => ({ input: input.input, output: input.output }))
+			)
+			router.back()
+		} catch (error) {
+			console.error("❌ 문제 등록 실패:", error)
+			alert("문제 등록 중 오류가 발생했습니다.")
+		}
+	}
+
+	return (
+		<div>
+			<motion.div
+				className="flex items-center gap-2 justify-end mb-8"
+				initial={{ opacity: 0, y: 10 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.3, delay: 0.1 }}
+			>
+				<button
+					onClick={handleSubmitButtonClick}
+					className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
           hover:bg-gray-500 transition-all duration-200 ease-in-out
-          active:scale-95">
-          🚀 등록하기
-        </button>
-      </motion.div>
-      <div className="grid  gap-6 w-full">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2 ">문제 등록</h2>
-          <div className="border-t border-gray-300 my-4"></div>
-          {/* 🔹 문제 제목 입력 */}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="문제 제목"
-            className="w-full px-4 py-2 border rounded-md"
-          />
+          active:scale-95"
+				>
+					🚀 등록하기
+				</button>
+			</motion.div>
 
-          {/* 🔹 Notion 스타일 문제 설명 */}
-          <div className="col-span-2">
-            <div className="border rounded-md mt-2 bg-white">
-              <Toolbar editor={editor} addLocalImage={addLocalImage} />
-              <EditorContent
-                editor={editor}
-                className="p-4 h-[500px] min-h-[500px] max-h-[500px] w-full text-black overflow-y-auto rounded-md"
-              />
-            </div>
-          </div>
-        </div>
-        <div>
-          <h2 className="text-xl font-bold mb-2 "> 입출력 예제</h2>
-          <div className="border-t border-gray-300 my-4"></div>
-          <table className="w-full border-collapse bg-white shadow-md rounded-xl mt-2">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 text-left w-12">#</th>
-                <th className="p-3 text-left">입력값</th>
-                <th className="p-3 text-left">출력값</th>
-                <th className="p-3 text-center w-16">삭제</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inputs.map((pair, index) => (
-                <tr key={index} className="border-t">
-                  <td className="p-3 text-center">{index + 1}</td>
-                  <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
-                      placeholder="입력값"
-                      value={pair.input}
-                      onChange={(e) => {
-                        const newInputs = [...inputs];
-                        newInputs[index].input = e.target.value;
-                        setInputs(newInputs);
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
-                    />
-                  </td>
-                  <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
-                      placeholder="출력값"
-                      value={pair.output}
-                      onChange={(e) => {
-                        const newInputs = [...inputs];
-                        newInputs[index].output = e.target.value;
-                        setInputs(newInputs);
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
-                    />
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => setInputs(inputs.filter((_, i) => i !== index))}
-                      className="bg-red-500 text-white px-3 py-2 rounded-lg">
-                      ✖
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>{" "}
-          {/* 🔹 추가 & 등록 버튼 */}
-          <div className="flex justify-between mt-6">
-            <button
-              onClick={() => setInputs([...inputs, { input: "", output: "" }])}
-              className="bg-green-500 text-white px-4 py-2 rounded-full">
-              + 추가
-            </button>
-          </div>
-        </div>
-      </div>
+			{/* 🔹 전체 좌우 분할 레이아웃 */}
+			<div className="flex gap-6 w-full mb-8">
+				{/* 왼쪽: 문제 등록 영역 */}
+				<div className="w-1/2">
+					<h2 className="text-xl font-bold mb-2">문제 등록</h2>
+					<div className="border-t border-gray-300 my-4"></div>
 
-      {/**⚠️히스토리 주석처리 */}
-      {/* <div className="p-6 bg-white shadow-md rounded-lg mt-10"> */}
-        {/* 문제 제목 */}
-        {/* <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4> */}
+					{/* 🔹 문제 제목 입력 */}
+					<input
+						type="text"
+						value={title}
+						onChange={(e) => setTitle(e.target.value)}
+						placeholder="문제 제목"
+						className="w-full px-4 py-2 border rounded-md mb-4"
+					/>
 
-        {/* 구분선 & 토글 버튼 */}
-        {/* <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
-          <button
-            onClick={() => setIsExpandedHistory(!isExpandedHistory)}
-            className="mt-3 text-gray-700 hover:text-black flex items-center">
-            {isExpandedHistory ? (
-              <>
-                <FaChevronUp className="mr-2" /> 접기
-              </>
-            ) : (
-              <>
-                <FaChevronDown className="mr-2" /> 펼치기
-              </>
-            )}
-          </button>
-        </div> */}
+					{/* 🔹 문제 설명 영역 */}
+					<div className="w-full">
+						<h3 className="text-lg font-semibold mb-2">문제 설명</h3>
+						<div className="border rounded-md bg-white h-[500px] flex flex-col">
+							<Toolbar editor={editor} addLocalImage={addLocalImage} />
+							<EditorContent editor={editor} className="flex-1 p-4 text-black overflow-y-auto rounded-b-md" />
+						</div>
+					</div>
+				</div>
 
-        {/* 토글 대상 영역 (애니메이션 적용) */}
-        {/* <div
-          className={`transition-all duration-300 ${
-            isExpandedHistory ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-          }`}>
-          <HistoryGraph historys={dummyProblems} />
-        </div> */}
-      {/* </div> */}
-      {/* ✅ 스타일 추가 (드래그 핸들) */}
-      <style>
-        {`
+				{/* 오른쪽: 코드 에디터 */}
+				<div className="w-1/2 flex flex-col">
+					<div className="flex justify-between items-center mb-2">
+						<h3 className="text-lg font-semibold">예시 코드</h3>
+						<select value={language} onChange={handleLanguageChange} className="border rounded-lg p-2">
+							<option value="python">Python</option>
+							<option value="c">C</option>
+							<option value="cpp">C++</option>
+							<option value="java">Java</option>
+						</select>
+					</div>
+					<div className="border-b-2 border-black my-2"></div>
+
+					<div className="bg-white p-0 rounded shadow flex-1">
+						<MonacoEditor
+							height="100%"
+							width="100%"
+							language={language}
+							value={code}
+							onChange={(value) => setCode(value ?? "")}
+							options={{
+								minimap: { enabled: false },
+								scrollBeyondLastLine: false,
+								fontSize: 20,
+								lineNumbers: "off",
+								roundedSelection: false,
+								contextmenu: false,
+								automaticLayout: true,
+								copyWithSyntaxHighlighting: false,
+								scrollbar: {
+									vertical: "visible",
+									horizontal: "visible",
+								},
+								padding: { top: 10, bottom: 10 },
+							}}
+						/>
+					</div>
+				</div>
+			</div>
+
+			{/* 🔹 문제 조건 & 평가 기준 섹션 */}
+			<div className="mb-8 flex gap-6">
+				{/* 왼쪽: 문제 조건 */}
+				<div className="flex-1">
+					<h2 className="text-xl font-bold mb-2">문제 조건</h2>
+					<div className="border-t border-gray-300 my-4"></div>
+					<div className="bg-white shadow-md rounded-xl p-4">
+						{conditions.map((condition, index) => (
+							<div key={index} className="flex items-center gap-3 mb-3">
+								<span className="text-lg font-semibold text-gray-700 min-w-[30px]">{index + 1}.</span>
+								<textarea
+									rows={1}
+									value={condition}
+									onChange={(e) => {
+										const newConditions = [...conditions]
+										newConditions[index] = e.target.value
+										setConditions(newConditions)
+									}}
+									onInput={(e) => {
+										const ta = e.currentTarget
+										ta.style.height = "auto"
+										ta.style.height = `${ta.scrollHeight}px`
+									}}
+									placeholder="조건을 입력하세요"
+									className="flex-1 px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
+								/>
+								<button
+									onClick={() => setConditions(conditions.filter((_, i) => i !== index))}
+									className="px-3 py-2 bg-red-200 hover:bg-red-300 text-red-700 rounded-lg text-sm transition-colors"
+								>
+									삭제
+								</button>
+							</div>
+						))}
+
+						{/* 조건 추가 버튼 */}
+						<div className="mt-4">
+							<button
+								onClick={() => setConditions([...conditions, ""])}
+								className="bg-green-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full transition-colors"
+							>
+								+ 조건 추가
+							</button>
+						</div>
+					</div>
+				</div>
+
+				{/* 오른쪽: 평가 기준 */}
+				<div className="w-1/3">
+					<h2 className="text-xl font-bold mb-2">평가 기준</h2>
+					<div className="border-t border-gray-300 my-4"></div>
+					<div className="bg-white shadow-md rounded-xl p-4">
+						<div className="space-y-3">
+							{["Regex", "Space", "Hard"].map((criteria) => (
+								<label key={criteria} className="flex items-center gap-3 cursor-pointer">
+									<input
+										type="radio"
+										name="evaluationCriteria"
+										value={criteria}
+										checked={evaluationCriteria === criteria}
+										onChange={(e) => setEvaluationCriteria(e.target.value)}
+										className="w-4 h-4 text-blue-600"
+									/>
+									<span className="text-lg">{criteria}</span>
+								</label>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* 🔹 입출력 예제 섹션 (하단) */}
+			<div>
+				<h2 className="text-xl font-bold mb-2">입출력 예제</h2>
+				<div className="border-t border-gray-300 my-4"></div>
+				<div className="bg-white shadow-md rounded-xl p-4">
+					{/* 실행하기 버튼 */}
+					<div className="flex items-center mb-4">
+						<div className="font-bold text-lg mr-4">테스트케이스 실행</div>
+						<button
+							onClick={handleTestRun}
+							disabled={isTestRunning}
+							className={`flex items-center ${
+								isTestRunning ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+							} text-white px-6 py-1.5 rounded-xl text-md transition-colors`}
+							style={{ minWidth: 100 }}
+						>
+							{isTestRunning ? "실행 중..." : "실행하기"}
+						</button>
+					</div>
+
+					<div className="space-y-4">
+						{inputs.map((pair, index) => (
+							<div
+								key={index}
+								className={`flex items-start gap-4 p-4 border rounded-lg transition-colors ${
+									runResults[index]?.passed === true
+										? "border-green-300 bg-green-50"
+										: runResults[index]?.passed === false
+										? "border-red-300 bg-red-50"
+										: "border-gray-200"
+								}`}
+							>
+								{/* 번호 */}
+								<div className="flex-shrink-0 w-8 text-center">
+									<span className="text-lg font-semibold text-gray-700">{index + 1}</span>
+								</div>
+
+								{/* 입력값 */}
+								<div className="flex-1">
+									<label className="block text-sm font-medium text-gray-700 mb-1">입력값</label>
+									<textarea
+										rows={1}
+										value={pair.input}
+										onChange={(e) => {
+											const newInputs = [...inputs]
+											newInputs[index].input = e.target.value
+											setInputs(newInputs)
+										}}
+										onInput={(e) => {
+											const ta = e.currentTarget
+											ta.style.height = "auto"
+											ta.style.height = `${ta.scrollHeight}px`
+										}}
+										placeholder="입력값을 입력하세요"
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden font-mono"
+									/>
+								</div>
+
+								{/* 예상 출력값 */}
+								<div className="flex-1">
+									<label className="block text-sm font-medium text-gray-700 mb-1">예상 출력</label>
+									<textarea
+										rows={1}
+										value={pair.output}
+										onChange={(e) => {
+											const newInputs = [...inputs]
+											newInputs[index].output = e.target.value
+											setInputs(newInputs)
+										}}
+										onInput={(e) => {
+											const ta = e.currentTarget
+											ta.style.height = "auto"
+											ta.style.height = `${ta.scrollHeight}px`
+										}}
+										placeholder="예상 출력값을 입력하세요"
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden font-mono"
+									/>
+								</div>
+
+								{/* 실제 출력값 */}
+								<div className="flex-1">
+									<label className="block text-sm font-medium text-gray-700 mb-1">실제 출력</label>
+									<div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono min-h-[42px] flex items-center">
+										{runResults[index]?.output ? (
+											<span className="whitespace-pre-wrap">{runResults[index].output}</span>
+										) : (
+											<span className="text-gray-400">-</span>
+										)}
+									</div>
+								</div>
+
+								{/* 결과 */}
+								<div className="flex-shrink-0 w-16 text-center">
+									<label className="block text-sm font-medium text-gray-700 mb-1">결과</label>
+									<div className="text-2xl mt-1">
+										{runResults[index]?.passed === true ? (
+											<span className="text-green-600">✔</span>
+										) : runResults[index]?.passed === false ? (
+											<span className="text-red-600">✗</span>
+										) : (
+											<span className="text-gray-500">-</span>
+										)}
+									</div>
+								</div>
+
+								{/* 공개여부 */}
+								<div className="flex-shrink-0 w-24">
+									<label className="block text-sm font-medium text-gray-700 mb-1">공개여부</label>
+									<select
+										value={pair.isPublic ? "public" : "private"}
+										onChange={(e) => {
+											const newInputs = [...inputs]
+											newInputs[index].isPublic = e.target.value === "public"
+											setInputs(newInputs)
+										}}
+										className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"
+									>
+										<option value="public">공개</option>
+										<option value="private">비공개</option>
+									</select>
+								</div>
+
+								{/* 삭제 버튼 */}
+								<div className="flex-shrink-0">
+									<label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
+									<button
+										onClick={() => setInputs(inputs.filter((_, i) => i !== index))}
+										className="px-3 py-2 bg-red-200 hover:bg-red-300 text-red-700 rounded-lg text-sm transition-colors"
+									>
+										삭제
+									</button>
+								</div>
+							</div>
+						))}
+					</div>
+
+					{/* 추가 버튼 */}
+					<div className="mt-6">
+						<button
+							onClick={() => setInputs([...inputs, { input: "", output: "", isPublic: false }])}
+							className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition-colors"
+						>
+							+ 예제 추가
+						</button>
+					</div>
+				</div>
+				<div className="pb-20"></div>
+			</div>
+
+			{/* ✅ 스타일 추가 */}
+			<style>
+				{`
   .ProseMirror {
     outline: none;
     min-height: 150px;
@@ -253,22 +486,22 @@ export default function NewRegisteredProblem() {
   .ProseMirror ol { list-style-type: decimal; margin-left: 1.5rem; }
   .ProseMirror li { margin-bottom: 0.5rem; }
 
-  /* ✅ 테이블 스타일 (테두리 추가) */
+  /* ✅ 테이블 스타일 */
   .ProseMirror table {
     width: 100%;
-    border-collapse: collapse; /* ✅ 테이블 셀 사이의 공간 제거 */
+    border-collapse: collapse;
     margin-top: 10px;
-    border: 1px solid #ccc; /* ✅ 전체 테이블 테두리 */
+    border: 1px solid #ccc;
   }
 
   .ProseMirror th, .ProseMirror td {
-    border: 1px solid #ddd; /* ✅ 각 셀 테두리 추가 */
+    border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
   }
 
   .ProseMirror th {
-    background-color: #f4f4f4; /* ✅ 헤더 배경색 추가 */
+    background-color: #f4f4f4;
     font-weight: bold;
   }
 
@@ -299,7 +532,7 @@ export default function NewRegisteredProblem() {
     transform: scale(1.1);
   }
 `}
-      </style>
-    </div>
-  );
+			</style>
+		</div>
+	)
 }
