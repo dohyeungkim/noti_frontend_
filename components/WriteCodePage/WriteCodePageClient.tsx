@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback } from "react"
 import dynamic from "next/dynamic"
 // import { testExams } from "@/data/testmode";
 import { AnimatePresence, motion } from "framer-motion"
-import { auth_api, problem_api, code_log_api, solve_api, ai_feeedback_api, run_code_api } from "@/lib/api"
+import { auth_api, problem_api, code_log_api, solve_api, ai_feedback_api, run_code_api } from "@/lib/api"
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { editor } from "monaco-editor"
 
@@ -174,7 +174,7 @@ export default function WriteCodePageClient({
 			const newCodeLogs = [...codeLogs, newCode]
 			const newTimeStamps = [...timeStamps, new Date().toISOString()]
 
-			const data = await solve_api.sovle_create(
+			const data = await solve_api.solve_create(
 				Number(params.groupId),
 				Number(params.examId),
 				Number(params.problemId),
@@ -183,7 +183,7 @@ export default function WriteCodePageClient({
 				language
 			)
 			await code_log_api.code_log_create(Number(data.solve_id), userId, newCodeLogs, newTimeStamps)
-			ai_feeedback_api.get_ai_feedback(Number(data.solve_id)).catch((err) => {
+			ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch((err) => {
 				console.error("AI 피드백 호출 실패:", err)
 			})
 			console.log("제출 성공:", newCodeLogs, newTimeStamps)
