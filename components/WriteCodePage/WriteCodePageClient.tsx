@@ -25,6 +25,7 @@ export default function WriteCodePageClient({
 	// const [isExpanded, setIsExpanded] = useState(true);
 
 	const [problem, setProblem] = useState<Problem | undefined>(undefined)
+	const [problemConditions, setProblemConditions] = useState<string[]>([]) // 빈 배열로 초기화
 
 	// const isTestMode = testExams.some((test) => test.examId === params.examId);
 	const searchParams = useSearchParams()
@@ -99,8 +100,27 @@ export default function WriteCodePageClient({
 				Number(params.examId),
 				Number(params.problemId)
 			)
-			console.log("문제 API 응답:", res)
+			console.log("📋 전체 문제 API 응답:", res)
+			console.log("📋 조건 데이터:", res.conditions)
+			console.log("📋 조건 타입:", typeof res.conditions)
+			console.log("📋 조건 배열 여부:", Array.isArray(res.conditions))
+			// 평가 기준은 로그에서만 확인하고 UI에는 표시하지 않음
+			console.log("📋 평가 기준 (UI에 표시되지 않음):", res.evaluation_criteria)
+
 			setProblem(res)
+
+			// 문제 조건만 설정 (평가 기준은 제외)
+			if (res.conditions && Array.isArray(res.conditions) && res.conditions.length > 0) {
+				console.log("✅ 조건 설정됨:", res.conditions)
+				setProblemConditions(res.conditions)
+			} else {
+				console.log("❌ 조건 없음 - 백엔드에서 아직 지원하지 않음")
+				// 🔧 임시: 백엔드 개발 전까지 샘플 조건 표시 (UI 확인용)
+				setProblemConditions(["조건1) LC 사용", "조건2) numpy 사용", "조건3) pandas 사용"])
+
+				// 🔧 TODO: 백엔드에서 conditions 필드 지원 시 제거
+				console.log("🚨 백엔드 개발자에게 알림: problems 테이블에 conditions 필드 추가 필요")
+			}
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
@@ -205,6 +225,16 @@ export default function WriteCodePageClient({
 	const removeTestCase = (idx: number) => setTestCases((prev) => prev.filter((_, i) => i !== idx))
 
 	const handleTestRun = async () => {
+		if (!code.trim()) {
+			alert("코드를 입력해주세요.")
+			return
+		}
+
+		if (testCases.length === 0) {
+			alert("테스트케이스를 추가해주세요.")
+			return
+		}
+
 		setIsTestRunning(true)
 		setRunResults([])
 		try {
@@ -214,10 +244,21 @@ export default function WriteCodePageClient({
 				testCases.map((tc) => ({ input: tc.input, output: tc.output }))
 			)
 			console.log("run_code_api 반환값:", data)
-			setRunResults(data.results ?? [])
+
+			// API 응답 구조에 맞게 결과 매핑
+			const results =
+				data.results?.map((result: any, index: number) => ({
+					input: testCases[index].input,
+					expected: testCases[index].output,
+					output: result.output || result.actual_output || "",
+					passed: result.passed || result.success || false,
+				})) || []
+
+			setRunResults(results)
 		} catch (err) {
 			console.error("run_code_api 에러:", err)
 			setRunResults([])
+			alert(`테스트 실행 중 오류가 발생했습니다: ${err instanceof Error ? err.message : String(err)}`)
 		} finally {
 			setIsTestRunning(false)
 		}
@@ -231,30 +272,62 @@ export default function WriteCodePageClient({
 		setCode(saved !== null && saved !== "" ? saved : defaultTemplates[newLang])
 	}
 
-	useEffect(() => {
-		console.log("testCases 상태 변화:", testCases)
-	}, [testCases])
-
 	// **리사이즈 구현**
 	const containerRef = useRef<HTMLDivElement>(null)
 	const isResizing = useRef(false)
-	const [leftWidth, setLeftWidth] = useState<number>(300)
+	const [leftWidth, setLeftWidth] = useState<number>(300) // 왼쪽을 더 작게 (300px로 설정)
+
+	// leftWidth 변경 시 Monaco Editor 리사이즈
+	useEffect(() => {
+		if (editorRef.current) {
+			// 즉시 실행 + requestAnimationFrame으로 더 빠르게
+			editorRef.current.layout()
+			requestAnimationFrame(() => {
+				editorRef.current?.layout()
+			})
+		}
+	}, [leftWidth])
 
 	const onMouseDown = (e: React.MouseEvent) => {
 		e.preventDefault()
 		isResizing.current = true
+		console.log("드래그 시작")
 	}
 
 	const onMouseMove = useCallback((e: MouseEvent) => {
 		if (!isResizing.current || !containerRef.current) return
+
 		const rect = containerRef.current.getBoundingClientRect()
+		const containerWidth = rect.width
 		let newWidth = e.clientX - rect.left
-		newWidth = Math.max(150, Math.min(newWidth, rect.width - 150))
+
+		// 최소/최대 너비 제한
+		const minWidth = 400
+		const maxLeftWidth = 800 // 왼쪽 최대 800px
+		const minRightWidth = 400 // 오른쪽 최소 400px
+		const maxWidth = containerWidth - minRightWidth
+
+		// 왼쪽 영역 제한: 400px ~ 800px 또는 (전체 - 400px) 중 작은 값
+		newWidth = Math.max(minWidth, Math.min(newWidth, Math.min(maxLeftWidth, maxWidth)))
 		setLeftWidth(newWidth)
+
+		// Monaco Editor 리사이즈 트리거 (즉시 실행)
+		if (editorRef.current) {
+			editorRef.current.layout()
+		}
+
+		console.log("드래그 중 - 새 너비:", newWidth, "오른쪽 너비:", containerWidth - newWidth)
 	}, [])
 
 	const onMouseUp = useCallback(() => {
 		isResizing.current = false
+		// 드래그 완료 후 Monaco Editor 리사이즈
+		if (editorRef.current) {
+			setTimeout(() => {
+				editorRef.current?.layout()
+			}, 100)
+		}
+		console.log("드래그 종료")
 	}, [])
 
 	useEffect(() => {
@@ -297,82 +370,125 @@ export default function WriteCodePageClient({
 			{error && <p className="text-red-500 text-center mt-2">{error}</p>}
 
 			<main
-				className="flex flex-1 gap-x-2 mt-3 w-full
+				ref={containerRef}
+				className="flex mt-3 w-full overflow-hidden
               min-h-[75vh] sm:min-h-[70vh] md:min-h-[70vh] lg:min-h-[70vh]
               pb-20"
 			>
 				{/* 문제 설명 영역 (왼쪽) */}
-				<AnimatePresence>
-					<motion.div
-						layout
-						initial={{ flex: 0, opacity: 0 }}
-						animate={{ flex: 2, opacity: 1 }}
-						exit={{ flex: 0, opacity: 0 }}
-						transition={{ type: "spring", stiffness: 100 }}
-						className="overflow-hidden border-r-2 pr-4"
-						style={{ flex: 2, minWidth: 0 }}
-					>
-						<div className="sticky top-0z-10 pb-4">
-							<h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-								{problem.title.length > 20 ? `${problem.title.slice(0, 20)}...` : problem.title}
-							</h1>
-							<hr className="border-t-2 border-gray-400" />
+				<div className="overflow-hidden pr-2" style={{ width: leftWidth, minWidth: 400, maxWidth: 800 }}>
+					<div className="sticky top-0 pb-4">
+						<h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+							{problem.title.length > 20 ? `${problem.title.slice(0, 20)}...` : problem.title}
+						</h1>
+						<hr className="border-t-2 border-gray-400" />
+					</div>
+					<div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">
+						{/* 문제 설명 */}
+						<div
+							className="editor-content prose prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-4 prose-h1:mb-4 prose-h2:text-2xl prose-h2:mt-4 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-4 prose-h3:mb-4 prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6 prose-li:mb-2 mb-6"
+							dangerouslySetInnerHTML={{ __html: problem.description }}
+						/>
+
+						{/* 📌 문제 조건 섹션 */}
+						{problemConditions && problemConditions.length > 0 && (
+							<motion.div
+								initial={{ opacity: 0, y: 20 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.3, delay: 0.1 }}
+								className="bg-white shadow-md rounded-xl p-4 mb-4 border border-gray-200"
+							>
+								<h3 className="text-lg font-bold mb-3 text-gray-800">문제 조건</h3>
+								<div className="border-t border-gray-300 mb-3"></div>
+								<div className="space-y-2">
+									{problemConditions.map((condition, index) => (
+										<div key={index} className="flex items-start gap-3">
+											<span className="text-sm font-semibold text-gray-700 min-w-[20px] mt-0.5">{index + 1}.</span>
+											<p className="text-sm text-gray-700 leading-relaxed">{condition}</p>
+										</div>
+									))}
+								</div>
+
+								{/* 🔧 임시 알림 - 백엔드 개발 완료 시 제거 */}
+								<div className="mt-3 pt-3 border-t border-gray-200">
+									<p className="text-xs text-gray-500 italic">
+										💡 현재는 샘플 조건이 표시됩니다. 백엔드 개발 완료 후 실제 등록된 조건이 표시됩니다.
+									</p>
+								</div>
+							</motion.div>
+						)}
+
+						{/* 🔧 디버깅용 백엔드 상태 알림 - 개발 완료 후 제거 */}
+						<div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+							<h3 className="text-sm font-bold mb-2 text-blue-800">📋 문제 조건 기능 개발 상태</h3>
+							<div className="text-xs text-blue-700">
+								<p>• 프론트엔드: ✅ 완료 (조건 표시 UI 구현됨)</p>
+								<p>• 백엔드: ❌ 개발 필요 (problems 테이블에 conditions 필드 추가 필요)</p>
+								<p>• 현재 표시: 임시 샘플 조건 ({problemConditions?.length || 0}개)</p>
+								<p>• 참고: 평가 기준은 문제 풀이 페이지에서 표시하지 않음</p>
+							</div>
 						</div>
-						<div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">
-							<div className="editor-content" dangerouslySetInnerHTML={{ __html: problem.description }} />
-						</div>
-					</motion.div>
-				</AnimatePresence>
+					</div>
+				</div>
+
 				{/* 드래그 핸들 */}
-				<div onMouseDown={onMouseDown} className="w-1 cursor-col-resize bg-gray-300 hover:bg-gray-400" />
+				<div
+					onMouseDown={onMouseDown}
+					className="w-2 cursor-col-resize bg-gray-300 hover:bg-gray-400 transition-colors flex-shrink-0 border-l border-r border-gray-200"
+				/>
 
-				<div className="flex-1 flex flex-col p-4">
-					{/* 코드 에디터 */}
-					{/* …MonacoEditor 부분 그대로… */}
-
-					{/* 테스트케이스 실행 UI */}
-					{/* …위에서 만든 가로/세로 스크롤 영역 그대로… */}
-					{/* 코드 에디터 영역 (오른쪽) */}
-					<div className="flex-1 flex-col min-w-0 transition-all duration-300" style={{ flex: 5, minWidth: 0 }}>
-						<div className="flex justify-between items-center mb-2">
-							<h2 className="text-lg font-semibold">나의 코드</h2>
-							<select value={language} onChange={handleLanguageChange} className="border rounded-lg p-2">
+				{/* 코드 에디터 영역 (오른쪽) */}
+				<div
+					className="flex flex-col overflow-hidden"
+					style={{
+						width: `calc(100% - ${leftWidth + 10}px)`, // leftWidth + 드래그핸들 + 여백
+						maxWidth: `calc(100% - ${leftWidth + 10}px)`,
+						minWidth: 400,
+					}}
+				>
+					<div className="flex flex-col h-full w-full max-w-full overflow-hidden pl-2">
+						<div className="flex items-center mb-2 max-w-full overflow-hidden">
+							<h2 className="text-lg font-semibold flex-shrink-0 mr-2">나의 코드</h2>
+							<select
+								value={language}
+								onChange={handleLanguageChange}
+								className="border rounded-lg p-2 flex-shrink-0 text-sm"
+							>
 								<option value="python">Python</option>
 								<option value="c">C</option>
 								<option value="cpp">C++</option>
 								<option value="java">Java</option>
 							</select>
 						</div>
-						<div className="border-b-2 border-black my-2"></div>
 
-						<div className="bg-white p-0 rounded shadow">
+						<div className="bg-white rounded shadow flex-1 overflow-hidden max-w-full" style={{ height: "50vh" }}>
 							<MonacoEditor
 								key={`${solveId || "default"}-${language}`}
 								height="50vh"
-								width="100%"
 								language={language}
 								value={code ?? ""}
 								onChange={(value) => setCode(value ?? "")}
 								options={{
 									minimap: { enabled: false },
 									scrollBeyondLastLine: false,
-									fontSize: 20,
+									fontSize: 16,
 									lineNumbers: "off",
 									roundedSelection: false,
 									contextmenu: false,
-									automaticLayout: true,
+									automaticLayout: false, // 자동 레이아웃 비활성화로 성능 개선
 									copyWithSyntaxHighlighting: false,
 									scrollbar: {
 										vertical: "visible",
 										horizontal: "visible",
 									},
 									padding: { top: 10, bottom: 10 },
+									wordWrap: "on",
+									scrollBeyondLastColumn: 0,
 								}}
 								onMount={(editor, monaco) => {
 									editorRef.current = editor
 									editor.onKeyDown((event) => {
 										if (event.keyCode === monaco.KeyCode.Enter) {
-											// setCode는 하지 않고, 로그만 남김
 											const newCode = editor.getValue()
 											setCodeLogs((prevLogs) => [...prevLogs, newCode])
 											setTimeStamps((prev) => [...prev, new Date().toISOString()])
@@ -383,220 +499,123 @@ export default function WriteCodePageClient({
 						</div>
 
 						{/* 📌 테스트케이스 실행 UI */}
-						<div className="w-full bg-white rounded-xl shadow-lg p-6 min-h-[220px] mt-6 mb-6">
-							<div className="flex items-center mb-2">
-								<div className="font-bold text-lg mr-4">테스트케이스 실행</div>
-								<motion.button
+						<div
+							className="bg-white rounded-xl shadow-lg mt-4 overflow-hidden max-w-full"
+							style={{ maxHeight: "calc(50vh - 100px)" }}
+						>
+							{/* 실행하기 버튼 */}
+							<div className="flex items-center p-3 border-b max-w-full overflow-hidden">
+								<div className="font-bold text-sm mr-2 flex-shrink-0">테스트케이스</div>
+								<button
 									onClick={handleTestRun}
 									disabled={isTestRunning}
-									whileHover={{ scale: 1.05 }}
-									whileTap={{ scale: 0.95 }}
 									className={`flex items-center ${
 										isTestRunning ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-									} text-white px-6 py-1.5 rounded-xl text-md ml-2`}
-									style={{ minWidth: 100 }}
+									} text-white px-3 py-1 rounded text-sm transition-colors flex-shrink-0`}
 								>
-									{isTestRunning ? "실행 중..." : "실행하기"}
-								</motion.button>
+									{isTestRunning ? "실행중" : "실행"}
+								</button>
 							</div>
 
-							{/* 가로 스크롤 + 그라데이션 표시 */}
-							<div className="relative mt-6">
-								<div className="overflow-x-auto overflow-y-hidden">
-									<table className="min-w-[800px] w-full table-auto text-center border text-lg whitespace-nowrap">
-										<thead className="bg-gray-100">
-											<tr>
-												<th className="px-4 py-2">입력값</th>
-												<th className="px-4 py-2">예상 출력</th>
-												<th className="px-4 py-2">실제 출력</th>
-												<th className="px-4 py-2">결과</th>
-												<th className="px-4 py-2">삭제</th>
-											</tr>
-										</thead>
-										<tbody>
-											{testCases.map((tc, idx) => (
-												<tr
-													key={idx}
-													className={
-														runResults[idx]?.passed === true
-															? "bg-green-50"
-															: runResults[idx]?.passed === false
-															? "bg-red-50"
-															: "bg-gray-100"
-													}
-												>
-													<td className="border px-4 py-2 font-mono whitespace-pre-wrap">
-														<textarea
-															rows={1}
-															value={tc.input}
-															onChange={(e) => handleTestCaseChange(idx, "input", e.target.value)}
-															onInput={(e) => {
-																const ta = e.currentTarget
-																ta.style.height = "auto"
-																ta.style.height = `${ta.scrollHeight}px`
-															}}
-															placeholder="입력값"
-															className="border rounded p-2 w-full overflow-hidden"
-														/>
-													</td>
-													<td className="border px-4 py-2 font-mono whitespace-pre">
-														<textarea
-															rows={1}
-															value={tc.output}
-															onChange={(e) => handleTestCaseChange(idx, "output", e.target.value)}
-															onInput={(e) => {
-																const ta = e.currentTarget
-																ta.style.height = "auto"
-																ta.style.height = `${ta.scrollHeight}px`
-															}}
-															placeholder="예상 출력값"
-															className="border rounded p-2 w-full overflow-hidden"
-														/>
-													</td>
-													<td className="border px-4 py-2 font-mono whitespace-pre">
-														{runResults[idx]?.output ?? <span className="text-gray-400">-</span>}
-													</td>
-													<td className="border px-4 py-2 text-2xl">
-														{runResults[idx]?.passed === true ? (
+							<div className="p-3 overflow-y-auto max-w-full" style={{ maxHeight: "calc(50vh - 150px)" }}>
+								<div className="space-y-2">
+									{testCases.map((tc, index) => (
+										<div
+											key={index}
+											className={`border rounded p-2 max-w-full overflow-hidden ${
+												runResults[index]?.passed === true
+													? "border-green-300 bg-green-50"
+													: runResults[index]?.passed === false
+													? "border-red-300 bg-red-50"
+													: "border-gray-200"
+											}`}
+										>
+											{/* 헤더 */}
+											<div className="flex items-center justify-between mb-2 max-w-full overflow-hidden">
+												<span className="text-xs font-semibold text-gray-700 flex-shrink-0">#{index + 1}</span>
+												<div className="flex items-center gap-1 flex-shrink-0">
+													<div className="text-xs">
+														{runResults[index]?.passed === true ? (
 															<span className="text-green-600">✔</span>
-														) : runResults[idx]?.passed === false ? (
+														) : runResults[index]?.passed === false ? (
 															<span className="text-red-600">✗</span>
 														) : (
 															<span className="text-gray-500">-</span>
 														)}
-													</td>
-													<td className="border px-4 py-2">
-														<button
-															onClick={() => removeTestCase(idx)}
-															className="px-3 py-2 bg-red-200 rounded text-base"
-														>
-															삭제
-														</button>
-													</td>
-												</tr>
-											))}
-										</tbody>
-									</table>
-								</div>
-								{/* 오른쪽 스크롤 가능 표시용 그라데이션 */}
-								<div className="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white to-transparent" />
-							</div>
+													</div>
+													<button
+														onClick={() => removeTestCase(index)}
+														className="px-1 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 rounded text-xs"
+													>
+														×
+													</button>
+												</div>
+											</div>
 
-							<button onClick={addTestCase} className="px-4 py-2 bg-gray-200 rounded mt-4 text-base cursor-pointer">
-								테스트케이스 추가
-							</button>
+											{/* 입력/출력 영역 */}
+											<div className="space-y-1 max-w-full overflow-hidden">
+												<div className="max-w-full overflow-hidden">
+													<label className="block text-xs text-gray-600 mb-1">입력</label>
+
+													<textarea
+														rows={1}
+														value={tc.input}
+														onChange={(e) => handleTestCaseChange(index, "input", e.target.value)}
+														onInput={(e) => {
+															const ta = e.currentTarget
+															ta.style.height = "auto"
+															ta.style.height = `${ta.scrollHeight}px`
+														}}
+														placeholder="입력"
+														className="w-full px-1 py-1 border border-gray-300 rounded text-xs resize-none font-mono"
+														style={{ maxWidth: "100%" }}
+													/>
+												</div>
+
+												<div className="max-w-full overflow-hidden">
+													<label className="block text-xs text-gray-600 mb-1">예상</label>
+													<textarea
+														rows={1}
+														value={tc.output}
+														onChange={(e) => handleTestCaseChange(index, "output", e.target.value)}
+														onInput={(e) => {
+															const ta = e.currentTarget
+															ta.style.height = "auto"
+															ta.style.height = `${ta.scrollHeight}px`
+														}}
+														placeholder="예상 출력"
+														className="w-full px-1 py-1 border border-gray-300 rounded text-xs resize-none font-mono"
+														style={{ maxWidth: "100%" }}
+													/>
+												</div>
+
+												{runResults[index]?.output && (
+													<div className="max-w-full overflow-hidden">
+														<label className="block text-xs text-gray-600 mb-1">실제</label>
+														<div className="w-full px-1 py-1 border border-gray-200 rounded bg-gray-50 font-mono text-xs overflow-hidden">
+															<span className="break-all">{runResults[index].output}</span>
+														</div>
+													</div>
+												)}
+											</div>
+										</div>
+									))}
+								</div>
+
+								{/* 추가 버튼 */}
+								<div className="mt-3">
+									<button
+										onClick={addTestCase}
+										className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs transition-colors"
+									>
+										+ 추가
+									</button>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 			</main>
-
-			{/* ✅ 테이블 테두리 강제 적용 */}
-			<style>
-				{`
-          .editor-content h1 { font-size: 2rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
-          .editor-content h2 { font-size: 1.5rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
-          .editor-content h3 { font-size: 1.25rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
-          .editor-content ul { list-style-type: disc; margin-left: 1.5rem; }
-          .editor-content ol { list-style-type: decimal; margin-left: 1.5rem; }
-
-         /* ✅ 전체 테이블 스타일 */
-.editor-content table {
-  width: 100%;
-  border-collapse: collapse !important; /* ✅ 테두리 겹침 방지 */
-  border-spacing: 0 !important; /* ✅ 셀 간격 제거 */
-  margin-top: 10px !important;
-  border: 2px solid #d4d4d4 !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  background-color: #f9f9f9 !important;
-}
-
-/* ✅ 헤더 스타일 */
-.editor-content th {
-  background-color: #f1f1f1 !important;
-  font-weight: 600 !important;
-  text-align: center !important;
-  color: #333 !important;
-  padding: 14px !important;
-  border-bottom: 1.5px solid #d4d4d4 !important;
-  border-right: 1px solid #d4d4d4 !important; /* ✅ 오른쪽 테두리 조정 */
-}
-
-/* ✅ 내부 셀 스타일 */
-.editor-content td {
-  background-color: #ffffff !important;
-  border: 1px solid #e0e0e0 !important;
-  padding: 12px !important;
-  text-align: left !important;
-  font-size: 1rem !important;
-  color: #444 !important;
-  transition: background 0.2s ease-in-out !important;
-  border-radius: 0 !important;
-}
-
-/* ✅ 강조된 셀 (제목 스타일) */
-.editor-content td[data-header="true"] {
-  background-color: #e7e7e7 !important;
-  font-weight: bold !important;
-  text-align: center !important;
-  color: #222 !important;
-}
-
-/* ✅ 마우스 오버 효과 */
-.editor-content td:hover {
-  background-color: #f5f5f5 !important;
-}
-
-/* ✅ 테이블 전체 둥글게 조정 */
-.editor-content tr:first-child th:first-child {
-  border-top-left-radius: 12px !important;
-}
-.editor-content tr:first-child th:last-child {
-  border-top-right-radius: 12px !important;
-}
-.editor-content tr:last-child td:first-child {
-  border-bottom-left-radius: 12px !important;
-}
-.editor-content tr:last-child td:last-child {
-  border-bottom-right-radius: 12px !important;
-}
-
-.cmd-window {
-  background: #181818;
-  color: #d4d4d4;
-  border-radius: 8px;
-  padding: 16px;
-  font-family: 'Fira Mono', 'Consolas', monospace;
-  margin-top: 16px;
-  min-height: 120px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-.cmd-input-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.cmd-input-row input {
-  background: #222;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  margin-left: 8px;
-  padding: 4px 8px;
-  flex: 1;
-}
-.cmd-output {
-  white-space: pre-wrap;
-  color: #a6e22e;
-}
-
-.text-gray-400 {
-  pointer-events: none; /* 이 클래스를 가진 요소는 클릭 이벤트를 막지 않음 */
-}
-        
-        `}
-			</style>
 		</>
 	)
 }
