@@ -273,6 +273,7 @@ export default function NewRegisteredProblem() {
 				requestData.conditions,
 				requestData.evaluation_criteria
 			)
+
 			console.log("✅ 문제 등록 성공!")
 			router.back()
 		} catch (error: unknown) {
@@ -474,7 +475,6 @@ export default function NewRegisteredProblem() {
 							</button>
 						</div>
 					</div>
-				</div>
 
 				{/* 오른쪽: 평가 기준 */}
 				<div className="w-1/3">
@@ -552,7 +552,14 @@ export default function NewRegisteredProblem() {
 										placeholder="입력값을 입력하세요"
 										className="w-full px-2 py-1 border border-gray-300 rounded-lg resize-none overflow-hidden font-mono text-sm"
 									/>
+									<button
+										onClick={() => setConditions(conditions.filter((_, i) => i !== index))}
+										className="px-3 py-2 bg-red-200 hover:bg-red-300 text-red-700 rounded-lg text-sm transition-colors"
+									>
+										삭제
+									</button>
 								</div>
+							))}
 
 								{/* 예상 출력값 */}
 								<div className="flex-1">
@@ -589,7 +596,6 @@ export default function NewRegisteredProblem() {
 											<span className="text-gray-400">-</span>
 										)}
 									</div>
-								</div>
 
 								{/* 결과 */}
 								<div className="flex-shrink-0 w-12 text-center">
@@ -602,8 +608,8 @@ export default function NewRegisteredProblem() {
 										) : (
 											<span className="text-gray-500">-</span>
 										)}
+
 									</div>
-								</div>
 
 								{/* 샘플 여부 */}
 								<div className="flex-shrink-0 w-16">
@@ -626,9 +632,8 @@ export default function NewRegisteredProblem() {
 										삭제
 									</button>
 								</div>
-							</div>
-						))}
-					</div>
+							))}
+						</div>
 
 					{/* 추가 버튼 */}
 					<div className="mt-4">
@@ -639,6 +644,7 @@ export default function NewRegisteredProblem() {
 							+ 테스트 케이스 추가
 						</button>
 					</div>
+					<div className="pb-20"></div>
 				</div>
 				<div className="pb-15"></div>
 			</div>

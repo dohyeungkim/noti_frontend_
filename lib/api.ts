@@ -374,6 +374,7 @@ export const problem_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "내 문제 정보 가져오기 실패")
 		}
+
 		return res.json()
 	},
 
@@ -387,6 +388,7 @@ export const problem_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "문제 정보 가져오기 실패")
 		}
+
 		return res.json()
 	},
 
@@ -438,6 +440,7 @@ export const problem_api = {
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "내 문제 정보 가져오기 실패")
+
 		}
 		return res.json()
 	},
@@ -446,16 +449,15 @@ export const problem_api = {
 		id: string | string[],
 		title: string,
 		description: string,
-		testcase: { input: string; output: string }[],
-		conditions?: string[],
-		evaluation_criteria?: string
+		testcase: { input: string; output: string; isvisible: boolean }[], // 백엔드 스키마에 맞는 testcase 타입
+		conditions?: string[], // 조건 필드 추가 (선택적)
+		evaluation_criteria?: string // 평가 기준 필드 추가 (선택적)
 	) {
 		const requestBody: any = {
 			title,
 			description,
 			testcase,
 		}
-
 		if (conditions && conditions.length > 0) {
 			requestBody.conditions = conditions
 		}
@@ -471,8 +473,9 @@ export const problem_api = {
 		})
 
 		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 업데이트 실패")
+			const errorText = await response.text()
+			console.error("API 응답 에러:", errorText)
+			throw new Error("문제 업데이트 실패")
 		}
 		return response.json()
 	},
@@ -486,6 +489,7 @@ export const problem_api = {
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "문제 통계를 불러오지 못했습니다.")
+
 		}
 		return response.json()
 	},
@@ -661,6 +665,7 @@ export const enhanced_problem_api = {
 }
 
 // ====================== problem_ref 관련 API ===========================
+
 export const problem_ref_api = {
 	async problem_ref_get(group_id: number, workbook_id: number) {
 		const res = await fetchWithAuth("/api/proxy/problems_ref/get", {
@@ -677,6 +682,7 @@ export const problem_ref_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "문제 참조 가져오기 실패")
 		}
+
 		return res.json()
 	},
 
@@ -696,11 +702,13 @@ export const problem_ref_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "문제 연결 실패")
 		}
+
 		return res.json()
 	},
 }
 
 // ====================== problem_like 관련 API ===========================
+
 export const problem_like_api = {
 	async problem_like(problem_id: number, group_id: number, workbook_id: number) {
 		const res = await fetchWithAuth("/api/proxy/problems_like", {
@@ -718,11 +726,13 @@ export const problem_like_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "좋아요 실패")
 		}
+
 		return res.json()
 	},
 }
 
 // ====================== group 관련 API ===========================
+
 export const group_api = {
 	async group_create(group_name: string, group_private_state: boolean) {
 		const res = await fetchWithAuth("/api/proxy/groups", {
@@ -791,7 +801,6 @@ export const group_api = {
 				group_private_state,
 			}),
 		})
-
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "그룹 업데이트 실패")
@@ -804,11 +813,11 @@ export const group_api = {
 			method: "DELETE",
 			credentials: "include",
 		})
-
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "그룹 삭제 실패")
 		}
+
 		return res.json()
 	},
 }
@@ -825,6 +834,7 @@ export const group_member_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "멤버 정보 가져오기 실패")
 		}
+
 		return res.json()
 	},
 
@@ -871,12 +881,13 @@ export const group_member_api = {
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "그룹원 추방 실패")
+
 		}
 		return res.json()
 	},
 }
-
 // ====================== workbook 관련 API ===========================
+
 export const workbook_api = {
 	async workbook_create(group_id: number, workbook_name: string, description: string) {
 		const res = await fetchWithAuth("/api/proxy/workbook", {
@@ -894,6 +905,7 @@ export const workbook_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "문제지 생성 실패")
 		}
+
 		return res.json()
 	},
 
@@ -922,6 +934,7 @@ export const workbook_api = {
 		}
 		return res.json()
 	},
+
 
 	async workbook_update(workbook_id: number, workbook_name: string, description: string) {
 		const res = await fetchWithAuth(`/api/proxy/workbook/${workbook_id}`, {
@@ -993,6 +1006,7 @@ export const solve_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "채점 내용 가져오기 실패")
 		}
+
 		return res.json()
 	},
 
@@ -1006,6 +1020,7 @@ export const solve_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "제출 내용 가져오기 실패")
 		}
+
 		return res.json()
 	},
 
@@ -1019,6 +1034,7 @@ export const solve_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "제출 내용 가져오기 실패")
 		}
+
 		return res.json()
 	},
 }
@@ -1055,11 +1071,13 @@ export const code_log_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "코드 로그 내용 가져오기 실패")
 		}
+
 		return res.json()
 	},
 }
 
 // ====================== comments 관련 API ===========================
+
 export const comment_api = {
 	async comment_create(
 		user_id: string,
@@ -1089,6 +1107,7 @@ export const comment_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "코멘트 작성 실패")
 		}
+
 		return res.json()
 	},
 
@@ -1105,6 +1124,7 @@ export const comment_api = {
 		return res.json()
 	},
 
+
 	async comments_get_by_solve_id(solve_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/comments/solve_id/${solve_id}`, {
 			method: "GET",
@@ -1115,11 +1135,13 @@ export const comment_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "코멘트 불러오기 실패")
 		}
+
 		return res.json()
 	},
 }
 
 // ====================== member_request 관련 API ===========================
+
 export const member_request_api = {
 	async member_request_create(group_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/member_request/${group_id}`, {
@@ -1131,6 +1153,7 @@ export const member_request_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "멤버 요청 생성 실패")
 		}
+
 		return res.json()
 	},
 
@@ -1144,12 +1167,14 @@ export const member_request_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "그룹의 요청 정보 가져오기 실패")
 		}
+
 		return res.json()
 	},
 }
 
 // ====================== AI 피드백 관련 API ===========================
 export const ai_feedback_api = {
+
 	async get_ai_feedback(solve_id: number) {
 		const res = await fetch(`/api/proxy/feedback/${solve_id}`, {
 			method: "GET",
@@ -1160,11 +1185,12 @@ export const ai_feedback_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "AI 피드백 불러오기 실패")
 		}
+
 		return res.json()
 	},
 }
-
 // ====================== 코드 실행(run_code) API ===========================
+
 export const run_code_api = {
 	async run_code(language: string, code: string, test_cases: { input: string; output?: string }[]) {
 		const fixedTestCases = test_cases.map((tc) => ({
