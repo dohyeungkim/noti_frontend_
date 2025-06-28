@@ -41,6 +41,7 @@ interface ProfileInfo {
 interface ExtendedUserRegisterRequest {
 	email: string
 	password: string
+	user_id: string
 	username: string
 	full_name: string
 	profile_info: ProfileInfo
