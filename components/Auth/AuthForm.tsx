@@ -55,6 +55,7 @@ interface ProfileInfo {
 interface BasicUserInfo {
 	email: string
 	password: string
+	user_id: string
 	username: string
 	full_name: string
 }
@@ -62,6 +63,7 @@ interface BasicUserInfo {
 interface ExtendedUserRegisterRequest {
 	email: string
 	password: string
+	user_id: string
 	username: string
 	full_name: string
 	profile_info: ProfileInfo
@@ -162,6 +164,7 @@ export default function AuthForm() {
 	const [basicInfo, setBasicInfo] = useState<BasicUserInfo>({
 		email: "",
 		password: "",
+		user_id: "",
 		username: "",
 		full_name: "",
 	})
@@ -231,7 +234,7 @@ export default function AuthForm() {
 		setError(null)
 
 		if (currentStep === 1) {
-			if (!basicInfo.username || !basicInfo.full_name || !basicInfo.email || !basicInfo.password || !confirmPassword) {
+			if (!basicInfo.user_id || !basicInfo.username || !basicInfo.full_name || !basicInfo.email || !basicInfo.password || !confirmPassword) {
 				setError("모든 필드를 입력해주세요.")
 				return
 			}
@@ -252,6 +255,10 @@ export default function AuthForm() {
 	// 건너뛰기
 	const handleSkip = () => {
 		setCurrentStep((prev) => prev + 1)
+		// console.log(currentStep)
+		if (currentStep == 3) {
+			handleRegister()
+		}
 	}
 
 	// 회원가입 완료 - 새로운 확장된 API 사용
@@ -329,6 +336,7 @@ export default function AuthForm() {
 		setBasicInfo({
 			email: "",
 			password: "",
+			user_id: "",
 			username: "",
 			full_name: "",
 		})
@@ -466,8 +474,21 @@ export default function AuthForm() {
 											<input
 												className="w-full bg-transparent outline-none"
 												type="text"
+												name="user_id"
+												placeholder="사용자 ID *"
+												value={basicInfo.user_id}
+												onChange={handleBasicChange}
+												disabled={isLoading}
+												required
+											/>
+										</div>
+
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+											<input
+												className="w-full bg-transparent outline-none"
+												type="text"
 												name="username"
-												placeholder="사용자명 (ID) *"
+												placeholder="사용자명 (닉네임) *"
 												value={basicInfo.username}
 												onChange={handleBasicChange}
 												disabled={isLoading}

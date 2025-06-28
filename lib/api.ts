@@ -127,6 +127,8 @@ export const auth_api = {
 		user_id: number
 		profile_completion: number
 	}> {
+		console.log("Sending registration data:", JSON.stringify(registerData, null, 2))
+		
 		const res = await fetch(`/api/proxy/user/register`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -135,7 +137,22 @@ export const auth_api = {
 
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "회원가입 실패")
+			console.error("Registration error details:", JSON.stringify({
+				status: res.status,
+				statusText: res.statusText,
+				errorData: errorData,
+				detail: errorData.detail
+			}, null, 2))
+			
+			// detail 배열의 각 항목을 개별적으로 출력
+			if (errorData.detail && Array.isArray(errorData.detail)) {
+				console.error("Validation errors:")
+				errorData.detail.forEach((error: any, index: number) => {
+					console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2))
+				})
+			}
+			
+			throw new Error(errorData.detail?.msg || errorData.message || `회원가입 실패 (${res.status})`)
 		}
 		return res.json()
 	},

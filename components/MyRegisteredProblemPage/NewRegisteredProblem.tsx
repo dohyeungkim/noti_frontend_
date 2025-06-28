@@ -45,6 +45,17 @@ interface RunResult {
 	passed: boolean
 }
 
+// API 응답 타입 정의
+interface ApiResult {
+	success: boolean
+	output?: string
+	actual_output?: string
+	error?: string
+	execution_time?: number
+	memory_usage?: number
+	passed?: boolean
+}
+
 export default function NewRegisteredProblem() {
 	const router = useRouter()
 	const [title, setTitle] = useState("")
@@ -215,7 +226,7 @@ export default function NewRegisteredProblem() {
 
 			// API 응답을 RunResult 형식으로 변환
 			const results: RunResult[] =
-				data.results?.map((result: any, index: number) => ({
+				data.results?.map((result: ApiResult, index: number) => ({
 					test_case_index: index,
 					status: result.success ? "success" : "error",
 					output: result.output || result.actual_output || "",
@@ -475,6 +486,7 @@ export default function NewRegisteredProblem() {
 							</button>
 						</div>
 					</div>
+				</div>
 
 				{/* 오른쪽: 평가 기준 */}
 				<div className="w-1/3">
@@ -552,14 +564,7 @@ export default function NewRegisteredProblem() {
 										placeholder="입력값을 입력하세요"
 										className="w-full px-2 py-1 border border-gray-300 rounded-lg resize-none overflow-hidden font-mono text-sm"
 									/>
-									<button
-										onClick={() => setConditions(conditions.filter((_, i) => i !== index))}
-										className="px-3 py-2 bg-red-200 hover:bg-red-300 text-red-700 rounded-lg text-sm transition-colors"
-									>
-										삭제
-									</button>
 								</div>
-							))}
 
 								{/* 예상 출력값 */}
 								<div className="flex-1">
@@ -596,6 +601,7 @@ export default function NewRegisteredProblem() {
 											<span className="text-gray-400">-</span>
 										)}
 									</div>
+								</div>
 
 								{/* 결과 */}
 								<div className="flex-shrink-0 w-12 text-center">
@@ -608,8 +614,8 @@ export default function NewRegisteredProblem() {
 										) : (
 											<span className="text-gray-500">-</span>
 										)}
-
 									</div>
+								</div>
 
 								{/* 샘플 여부 */}
 								<div className="flex-shrink-0 w-16">
@@ -632,8 +638,9 @@ export default function NewRegisteredProblem() {
 										삭제
 									</button>
 								</div>
-							))}
-						</div>
+							</div>
+						))}
+					</div>
 
 					{/* 추가 버튼 */}
 					<div className="mt-4">
