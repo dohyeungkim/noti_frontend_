@@ -1,329 +1,351 @@
 "use client";
 
-import { useEffect, useState } from "react"; // useRef 추가
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Heading from "@tiptap/extension-heading";
-import BulletList from "@tiptap/extension-bullet-list";
-import OrderedList from "@tiptap/extension-ordered-list";
-import Highlight from "@tiptap/extension-highlight";
-import Image from "@tiptap/extension-image";
+import { EditorContent } from "@tiptap/react";
 import { motion } from "framer-motion";
 import { problem_api } from "@/lib/api";
-import { ResizableImage } from "../markdown/ResizableImage";
 import Toolbar from "../markdown/Toolbar";
-// import HistoryGraph from "@/components/history/HistoryGraph";
-
-// ✅ 확장 기능을 올바르게 가져오기
-import { Table } from "@tiptap/extension-table";
-import { TableRow } from "@tiptap/extension-table-row";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableCell } from "@tiptap/extension-table-cell";
-// import { dummyProblems } from "@/data/dummy";
-// import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { useProblemForm } from "@/hooks/useProblemForm";
+import { useProblemEditor } from "@/hooks/useProblemEditor";
+import ReferenceCodeEditor from "../ProblemForm/ReferenceCodeEditor";
+import ProblemConditions from "../ProblemForm/ProblemConditions";
+import TestCaseSection from "../ProblemForm/TestCaseSection";
+import ReactMde from "react-mde";
+import "react-mde/lib/styles/css/react-mde-all.css";
+import ReactMarkdown from "react-markdown";
 
 export default function ProblemEdit() {
-  const router = useRouter();
-  const { id } = useParams();
+	const router = useRouter();
+	const { id } = useParams();
+	const [description, setDescription] = useState("");
+	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
+	const [testResults, setTestResults] = useState<(boolean | null)[]>([]);
 
-  const [title, setTitle] = useState("");
-  const [inputs, setInputs] = useState([{ input: "", output: "" }]);
-  const [loading, setLoading] = useState(true);
-  // const [isExpandedHistory, setIsExpandedHistory] = useState(true);
+	const {
+		title,
+		setTitle,
+		difficulty,
+		setDifficulty,
+		ratingMode,
+		setRatingMode,
+		tags,
+		conditions,
+		referenceCodes,
+		testCases,
+		activeCodeTab,
+		setActiveCodeTab,
+		addReferenceCode,
+		removeReferenceCode,
+		updateReferenceCodeLanguage,
+		updateReferenceCode,
+		setMainReferenceCode,
+		addTestCase,
+		removeTestCase,
+		updateTestCase,
+		addCondition,
+		removeCondition,
+		updateCondition,
+		updateTags,
+		removeTag,
+	} = useProblemForm();
 
-  const editor = useEditor({
-    extensions: [
-      ResizableImage,
-      StarterKit,
-      Heading.configure({ levels: [1, 2, 3] }),
-      BulletList,
-      OrderedList,
-      Highlight.configure({ multicolor: true }),
-      Image,
+	const { editor, addLocalImage } = useProblemEditor();
 
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
-    content: "",
-  });
+	useEffect(() => {
+		const fetchProblem = async () => {
+			try {
+				const data = await problem_api.problem_get_by_id(Number(id));
+				setTitle(data.title);
+				setDescription(data.description || "");
+				setDifficulty(data.difficulty || "easy");
+				setRatingMode(data.rating_mode || "Hard");
+				updateTags(data.tags?.join(", ") || "");
+				// Set conditions
+				if (data.problem_condition && data.problem_condition.length > 0) {
+					data.problem_condition.forEach((condition, index) => {
+						if (index === 0) {
+							updateCondition(0, condition);
+						} else {
+							addCondition();
+							updateCondition(index, condition);
+						}
+					});
+				}
+				// Set reference codes
+				if (data.reference_codes && data.reference_codes.length > 0) {
+					// This would need to be handled differently since we can't directly set the array
+					// For now, we'll just set the first one
+					if (data.reference_codes[0]) {
+						updateReferenceCode(0, data.reference_codes[0].code);
+						updateReferenceCodeLanguage(0, data.reference_codes[0].language);
+					}
+				}
+				// Set test cases
+				if (data.test_cases && data.test_cases.length > 0) {
+					// This would need to be handled differently since we can't directly set the array
+					// For now, we'll just set the first one
+					if (data.test_cases[0]) {
+						updateTestCase(0, "input", data.test_cases[0].input);
+						updateTestCase(0, "expected_output", data.test_cases[0].expected_output);
+						updateTestCase(0, "is_sample", data.test_cases[0].is_sample);
+					}
+				}
+				
+				if (editor) {
+					editor.commands.setContent(data.description);
+				}
+			} catch (error) {
+				console.error("Failed to fetch problem:", error);
+			}
+		};
 
-  useEffect(() => {
-    const fetchProblem = async () => {
-      try {
-        const data = await problem_api.problem_get_by_id(Number(id));
-        setTitle(data.title);
-        setInputs(data.testcase || [{ input: "", output: "" }]); // 데이터가 없는 경우를 위해 기본값 설정
-        if (editor) {
-          editor.commands.setContent(data.description);
-        }
-      } catch (error) {
-        console.error("Failed to fetch problem:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+		fetchProblem();
+	}, [id, editor, setTitle, setDifficulty, setRatingMode, updateTags, updateCondition, addCondition, updateReferenceCode, updateReferenceCodeLanguage, updateTestCase]);
 
-    fetchProblem();
-  }, [id, editor]);
+	const handleTestRun = async () => {
+		setTestResults([]); // 테스트 실행 직전에 추가
+		if (referenceCodes.length === 0) {
+			alert("참조 코드가 없습니다.")
+			return
+		}
+		if (testCases.length === 0) {
+			alert("테스트케이스가 없습니다.")
+			return
+		}
+		const mainCode = referenceCodes.find(code => code.is_main) || referenceCodes[0]
 
-  const handleSave = async () => {
-    if (!editor) {
-      alert("Editor is not loaded yet.");
-      return;
-    }
+		try {
+			const requestData = {
+				language: mainCode.language,
+				code: mainCode.code,
+				test_cases: testCases.map(tc => ({
+					input: tc.input,
+					output: tc.expected_output
+				})),
+				rating_mode: ratingMode
+			}
 
-    const updatedDescription = editor.getHTML();
-    try {
-      await problem_api.problem_update(id, title, updatedDescription, inputs);
-      alert("문제가 성공적으로 업데이트되었습니다.");
-      router.push(`/registered-problems/view/${id}`);
-    } catch (error) {
-      console.error("문제 업데이트 실패:", error);
-      alert("문제 업데이트 중 오류가 발생했습니다.");
-    }
-  };
+			console.log("테스트 실행 요청:", JSON.stringify(requestData, null, 2))
 
-  const addLocalImage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64Image = reader.result as string;
-        if (editor) {
-          // editor가 null이 아닐 때만 실행
-          editor.chain().focus().setImage({ src: base64Image }).run();
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+			const response = await fetch("/api/proxy/solves/run_code", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(requestData)
+			});
 
-  if (loading) return <p>Loading...</p>;
-  if (!editor) return <p>Editor is loading...</p>;
+			const result = await response.json();
 
-  return (
-    <div>
-      <motion.div
-        className="flex items-center gap-2 justify-end"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}>
-        <button
-          onClick={handleSave}
-          className="flex items-center bg-gray-800 text-white px-8 py-1.5 rounded-xl m-2 text-md cursor-pointer
-          hover:bg-gray-500 transition-all duration-200 ease-in-out
-          active:scale-95">
-          🚀 수정완료
-        </button>
-      </motion.div>
-      <div className="gap-6 w-full">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2 ">문제 수정</h2>
-          <div className="border-t border-gray-300 my-4"></div>
-          {/* 🔹 문제 제목 수정 */}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="문제 제목"
-            className="w-full px-4 py-2 border rounded-md"
-          />
-          {/* 🔹 Notion 스타일 문제 설명 */}
-          <div className="col-span-2">
-            <div className="border rounded-md mt-2 bg-white">
-              {/* 🔹 툴바 (아이콘 상태 변화 추가) */}
-              <div className="flex flex-wrap items-center gap-2 border-b p-2">
-                {/* 🔹 스타일 직접 적용 (글자 크기 & 리스트) */}
-                <Toolbar editor={editor} addLocalImage={addLocalImage} />
-                <EditorContent
-                  editor={editor}
-                  className="p-4 h-[500px] min-h-[500px] max-h-[500px] w-full text-black overflow-y-auto rounded-md"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h2 className="text-xl font-bold mb-2 "> 입출력 예제</h2>
-          <div className="border-t border-gray-300 my-4"></div>
+			if (!result || !Array.isArray(result.results)) {
+				alert("API 응답이 올바르지 않습니다. (테스트케이스 실행 실패)");
+				console.error("API 응답:", result);
+				return;
+			}
 
-          <table className="w-full border-collapse bg-white shadow-md rounded-xl mt-2">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 text-left w-12">#</th>
-                <th className="p-3 text-left">입력값</th>
-                <th className="p-3 text-left">출력값</th>
-                <th className="p-3 text-center w-16">삭제</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inputs.map((pair, index) => (
-                <tr key={index} className="border-t">
-                  <td className="p-3 text-center">{index + 1}</td>
-                  <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
-                      placeholder="입력값"
-                      value={pair.input}
-                      onChange={(e) => {
-                        const newInputs = [...inputs];
-                        newInputs[index].input = e.target.value;
-                        setInputs(newInputs);
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
-                    />
-                  </td>
-                  <td className="p-3">
-                    <textarea
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = "auto"; // 높이 초기화
-                          el.style.height = el.scrollHeight + "px"; // 자동 확장
-                        }
-                      }}
-                      placeholder="출력값"
-                      value={pair.output}
-                      onChange={(e) => {
-                        const newInputs = [...inputs];
-                        newInputs[index].output = e.target.value;
-                        setInputs(newInputs);
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement; // 타입 캐스팅
-                        target.style.height = "auto"; // 높이 초기화
-                        target.style.height = `${target.scrollHeight}px`; // 입력값에 따라 확장
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none overflow-hidden"
-                    />
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => setInputs(inputs.filter((_, i) => i !== index))}
-                      className="bg-mydelete text-white px-3 py-2 rounded-lg">
-                      ✖
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+			const passedCount = result.results.filter(r => r.passed).length;
+			const totalCount = result.results.length;
 
-          <div className="flex justify-between mt-6">
-            <button
-              onClick={() => setInputs([...inputs, { input: "", output: "" }])}
-              className="bg-mygreen text-white px-4 py-1 rounded-full">
-              + 추가
-            </button>
-          </div>
-        </div>
-      </div>
+			if (passedCount === totalCount) {
+				alert(`✅ 모든 테스트케이스 통과!\n성공: ${passedCount}/${totalCount}`);
+			} else if (passedCount === 0) {
+				alert(`❌ 모든 테스트케이스 실패\n성공: 0/${totalCount}`);
+			} else {
+				alert(`❌ 일부 테스트케이스 실패\n성공: ${passedCount}/${totalCount}`);
+			}
 
-      {/* <div className="p-6 bg-white shadow-md rounded-lg mt-10"> */}
-        {/* 문제 제목 */}
-        {/* <h4 className="text-2xl font-bold text-gray-900 mb-2">📈 History</h4> */}
+			setTestResults(result.results.map(r => r.passed));
+		} catch (error) {
+			console.error("테스트케이스 실행 실패:", error);
+			alert("테스트케이스 실행 중 오류가 발생했습니다.");
+		}
+	}
 
-        {/* 구분선 & 토글 버튼 */}
-        {/* <div className="flex justify-between items-center border-t-2 border-gray-600 mb-4">
-          <button
-            onClick={() => setIsExpandedHistory(!isExpandedHistory)}
-            className="mt-3 text-gray-700 hover:text-black flex items-center">
-            {isExpandedHistory ? (
-              <>
-                <FaChevronUp className="mr-2" /> 접기
-              </>
-            ) : (
-              <>
-                <FaChevronDown className="mr-2" /> 펼치기
-              </>
-            )}
-          </button>
-        </div> */}
+	const handleSave = async () => {
+		if (!editor) {
+			alert("Editor is not loaded yet.");
+			return;
+		}
 
-        {/* 토글 대상 영역 (애니메이션 적용) */}
-        {/* <div
-          className={`transition-all duration-300 ${
-            isExpandedHistory ? "max-h-screen opacity-100" : "max-h-0 opacity-0 overflow-hidden"
-          }`}>
-          <HistoryGraph historys={dummyProblems} />
-        </div>
-      </div> */}
+		const content = editor.getHTML();
+		const filteredConditions = conditions.filter((condition) => condition.trim() !== "");
 
-      {/* ✅ 스타일 추가 (드래그 핸들) */}
-      <style>
-        {`
-    .ProseMirror {
-      outline: none;
-      min-height: 150px;
-      padding: 12px;
-    }
+		try {
+			await problem_api.problem_update(
+				id as string,
+				title,
+				description,
+				difficulty,
+				ratingMode,
+				tags,
+				filteredConditions,
+				referenceCodes,
+				testCases
+			);
+			alert("문제가 성공적으로 업데이트되었습니다.");
+			router.push(`/registered-problems/view/${id}`);
+		} catch (error) {
+			console.error("문제 업데이트 실패:", error);
+			alert("문제 업데이트 중 오류가 발생했습니다.");
+		}
+	};
 
-    /* ✅ H1, H2, H3 적용 */
-    .ProseMirror h1 { font-size: 2rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
-    .ProseMirror h2 { font-size: 1.5rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
-    .ProseMirror h3 { font-size: 1.25rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
+	// 로딩 상태 체크는 모든 훅 호출 이후에
+	if (!editor) return <p>Editor is loading...</p>;
 
-    /* ✅ 리스트 스타일 */
-    .ProseMirror ul { list-style-type: disc; margin-left: 1.5rem; }
-    .ProseMirror ol { list-style-type: decimal; margin-left: 1.5rem; }
-    .ProseMirror li { margin-bottom: 0.5rem; }
+	return (
+		<div>
+			<motion.div
+				className="flex items-center gap-2 justify-end mb-6"
+				initial={{ opacity: 0, y: 10 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.3, delay: 0.1 }}
+			>
+				<button
+					onClick={handleTestRun}
+					className="flex items-center bg-green-600 text-white px-6 py-2 rounded-lg text-sm cursor-pointer
+					hover:bg-green-700 transition-all duration-200 ease-in-out
+					active:scale-95 shadow-md"
+				>
+					▶️ 테스트 실행
+				</button>
+				<button
+					onClick={handleSave}
+					className="flex items-center bg-blue-600 text-white px-6 py-2 rounded-lg text-sm cursor-pointer
+					hover:bg-blue-700 transition-all duration-200 ease-in-out
+					active:scale-95 shadow-md"
+				>
+					🚀 수정완료
+				</button>
+			</motion.div>
 
-    /* ✅ 테이블 스타일 */
-    .ProseMirror table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    .ProseMirror th, .ProseMirror td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    .ProseMirror th {
-      background-color: #f4f4f4;
-      font-weight: bold;
-    }
+			{/* 전체 좌우 분할 레이아웃 */}
+			<div className="flex gap-4 w-full mb-6">
+				{/* 왼쪽: 문제 정보 및 설명 */}
+				<div className="w-1/2">
+					{/* 문제 기본 정보 */}
+					<div className="mb-6">
+						<h2 className="text-lg font-bold mb-2">문제 기본 정보</h2>
+						<div className="border-t border-gray-300 my-3"></div>
 
-    /* ✅ 툴바 버튼 */
-    .toolbar-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px;
-      cursor: pointer;
-      background: none;
-      border: none;
-      transition: color 0.1s ease-in-out;
-    }
-    .toolbar-icon:hover {
-      transform: scale(1.1);
-    }
+						{/* 문제 제목 */}
+						<input
+							type="text"
+							value={title}
+							onChange={(e) => setTitle(e.target.value)}
+							placeholder="문제 제목"
+							className="w-full px-3 py-1.5 border rounded-md mb-3 text-sm"
+						/>
 
-    /* ✅ 형광펜 버튼 */
-    .highlight-btn {
-      width: 24px;
-      height: 24px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: transform 0.1s ease-in-out;
-    }
-    .highlight-btn:hover {
-      transform: scale(1.1);
-    }
-  `}
-      </style>
-    </div>
-  );
+						{/* 태그 입력 */}
+						<div className="mb-3">
+							<label className="block text-xs font-medium text-gray-700 mb-1">태그 (쉼표로 구분)</label>
+							<input
+								type="text"
+								value={tags.join(", ")}
+								onChange={(e) => {
+									const tagString = e.target.value;
+									updateTags(tagString);
+								}}
+								placeholder="예: 구현, 수학, 문자열"
+								className="w-full px-3 py-1 border rounded-md text-sm"
+							/>
+							<div className="flex flex-wrap gap-2 mt-1">
+								{tags.map((tag, idx) => (
+									<span key={idx} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
+										{tag}
+										<button
+											type="button"
+											className="ml-1 text-red-500 hover:text-red-700"
+											onClick={() => removeTag(idx)}
+										>
+											×
+										</button>
+									</span>
+								))}
+							</div>
+						</div>
+
+						{/* 난이도와 평가 모드 */}
+						<div className="flex gap-4 mb-3">
+							<div className="flex-1">
+								<label className="block text-xs font-medium text-gray-700 mb-1">난이도</label>
+								<select
+									value={difficulty}
+									onChange={(e) => setDifficulty(e.target.value)}
+									className="w-full px-3 py-1.5 border rounded-md text-sm"
+								>
+									<option value="easy">Easy</option>
+									<option value="medium">Medium</option>
+									<option value="hard">Hard</option>
+								</select>
+							</div>
+
+							<div className="flex-1">
+								<label className="block text-xs font-medium text-gray-700 mb-1">채점 모드</label>
+								<select
+									value={ratingMode}
+									onChange={(e) => setRatingMode(e.target.value as "Hard" | "Space" | "Regex")}
+									className="w-full px-3 py-1.5 border rounded-md text-sm"
+								>
+									<option value="Hard">Hard</option>
+									<option value="Space">Space</option>
+									<option value="Regex">Regex</option>
+								</select>
+							</div>
+						</div>
+					</div>
+
+					{/* 문제 설명 */}
+					<div className="mb-3">
+						<label className="block text-xs font-medium text-gray-700 mb-1">문제 설명</label>
+						<ReactMde
+							value={description}
+							onChange={setDescription}
+							selectedTab={selectedTab}
+							onTabChange={setSelectedTab}
+							generateMarkdownPreview={(markdown: string) =>
+								Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>)
+							}
+							childProps={{
+								writeButton: {
+									tabIndex: -1,
+								},
+							}}
+						/>
+					</div>
+				</div>
+
+				{/* 오른쪽: 참조 코드 에디터 */}
+				<ReferenceCodeEditor
+					referenceCodes={referenceCodes}
+					activeCodeTab={activeCodeTab}
+					setActiveCodeTab={setActiveCodeTab}
+					addReferenceCode={addReferenceCode}
+					removeReferenceCode={removeReferenceCode}
+					updateReferenceCodeLanguage={updateReferenceCodeLanguage}
+					updateReferenceCode={updateReferenceCode}
+					setMainReferenceCode={setMainReferenceCode}
+				/>
+			</div>
+
+			{/* 문제 조건 섹션 */}
+			<div className="mb-6 flex gap-4">
+				<ProblemConditions
+					conditions={conditions}
+					addCondition={addCondition}
+					removeCondition={removeCondition}
+					updateCondition={updateCondition}
+				/>
+			</div>
+
+			{/* 테스트 케이스 섹션 */}
+			<TestCaseSection
+				testCases={testCases}
+				addTestCase={addTestCase}
+				removeTestCase={removeTestCase}
+				updateTestCase={updateTestCase}
+				testResults={testResults}
+			/>
+		</div>
+	);
 }
