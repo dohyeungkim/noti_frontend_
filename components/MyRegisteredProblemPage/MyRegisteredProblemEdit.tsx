@@ -48,6 +48,7 @@ export default function ProblemEdit() {
 		updateCondition,
 		updateTags,
 		removeTag,
+		setInitialData,
 	} = useProblemForm();
 
 	const { editor, addLocalImage } = useProblemEditor();
@@ -56,41 +57,27 @@ export default function ProblemEdit() {
 		const fetchProblem = async () => {
 			try {
 				const data = await problem_api.problem_get_by_id(Number(id));
-				setTitle(data.title);
+				
+				// 초기 데이터 설정
+				setInitialData({
+					title: data.title,
+					difficulty: data.difficulty || "easy",
+					ratingMode: data.rating_mode || "Hard",
+					tags: data.tags || [],
+					conditions: data.problem_condition || [""],
+					referenceCodes: data.reference_codes?.length > 0 ? data.reference_codes.map((code: any, index: number) => ({
+						language: code.language,
+						code: code.code,
+						is_main: index === 0
+					})) : [{ language: "python", code: "", is_main: true }],
+					testCases: data.test_cases?.length > 0 ? data.test_cases.map((tc: any) => ({
+						input: tc.input,
+						expected_output: tc.expected_output,
+						is_sample: tc.is_sample
+					})) : [{ input: "", expected_output: "", is_sample: true }]
+				});
+				
 				setDescription(data.description || "");
-				setDifficulty(data.difficulty || "easy");
-				setRatingMode(data.rating_mode || "Hard");
-				updateTags(data.tags?.join(", ") || "");
-				// Set conditions
-				if (data.problem_condition && data.problem_condition.length > 0) {
-					data.problem_condition.forEach((condition, index) => {
-						if (index === 0) {
-							updateCondition(0, condition);
-						} else {
-							addCondition();
-							updateCondition(index, condition);
-						}
-					});
-				}
-				// Set reference codes
-				if (data.reference_codes && data.reference_codes.length > 0) {
-					// This would need to be handled differently since we can't directly set the array
-					// For now, we'll just set the first one
-					if (data.reference_codes[0]) {
-						updateReferenceCode(0, data.reference_codes[0].code);
-						updateReferenceCodeLanguage(0, data.reference_codes[0].language);
-					}
-				}
-				// Set test cases
-				if (data.test_cases && data.test_cases.length > 0) {
-					// This would need to be handled differently since we can't directly set the array
-					// For now, we'll just set the first one
-					if (data.test_cases[0]) {
-						updateTestCase(0, "input", data.test_cases[0].input);
-						updateTestCase(0, "expected_output", data.test_cases[0].expected_output);
-						updateTestCase(0, "is_sample", data.test_cases[0].is_sample);
-					}
-				}
 				
 				if (editor) {
 					editor.commands.setContent(data.description);
@@ -101,7 +88,7 @@ export default function ProblemEdit() {
 		};
 
 		fetchProblem();
-	}, [id, editor, setTitle, setDifficulty, setRatingMode, updateTags, updateCondition, addCondition, updateReferenceCode, updateReferenceCodeLanguage, updateTestCase]);
+	}, [id, editor, setInitialData]);
 
 	const handleTestRun = async () => {
 		setTestResults([]); // 테스트 실행 직전에 추가

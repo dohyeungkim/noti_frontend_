@@ -40,6 +40,25 @@ export function useProblemForm() {
 	const [testCases, setTestCases] = useState<TestCase[]>([{ input: "", expected_output: "", is_sample: true }]);
 	const [activeCodeTab, setActiveCodeTab] = useState(0);
 
+	// 초기 데이터 설정 함수
+	const setInitialData = useCallback((data: {
+		title?: string;
+		difficulty?: string;
+		ratingMode?: "Hard" | "Space" | "Regex";
+		tags?: string[];
+		conditions?: string[];
+		referenceCodes?: ReferenceCode[];
+		testCases?: TestCase[];
+	}) => {
+		if (data.title !== undefined) setTitle(data.title);
+		if (data.difficulty !== undefined) setDifficulty(data.difficulty);
+		if (data.ratingMode !== undefined) setRatingMode(data.ratingMode);
+		if (data.tags !== undefined) setTags(data.tags);
+		if (data.conditions !== undefined) setConditions(data.conditions);
+		if (data.referenceCodes !== undefined) setReferenceCodes(data.referenceCodes);
+		if (data.testCases !== undefined) setTestCases(data.testCases);
+	}, []);
+
 	// 드래프트 로드 함수를 useCallback으로 메모이제이션
 	const loadDraft = useCallback(() => {
 		const draft = localStorage.getItem("problemDraft");
@@ -203,5 +222,8 @@ export function useProblemForm() {
 		// 드래프트 핸들러
 		loadDraft,
 		saveDraft,
+
+		// 초기 데이터 설정
+		setInitialData,
 	}
 } 
