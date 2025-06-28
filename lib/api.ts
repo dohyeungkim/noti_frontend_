@@ -148,7 +148,7 @@ export const auth_api = {
 			// detail 배열의 각 항목을 개별적으로 출력
 			if (errorData.detail && Array.isArray(errorData.detail)) {
 				console.error("Validation errors:")
-				errorData.detail.forEach((error: any, index: number) => {
+				errorData.detail.forEach((error: { type: string; loc: string[]; msg: string; input: Record<string, unknown> }, index: number) => {
 					console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2))
 				})
 			}
@@ -334,7 +334,7 @@ export const auth_api = {
 
 			// 성공하면 true 반환
 			return true
-		} catch (error) {
+		} catch {
 			// 네트워크 에러 등은 조용히 false 반환
 			return false
 		}
@@ -346,26 +346,22 @@ export const problem_api = {
 	async problem_create(
 		title: string,
 		description: string,
-		input_description: string,
-		output_description: string,
-		testcase: { input: string; output: string }[],
-		conditions?: string[],
-		evaluation_criteria?: string
+		difficulty: string,
+		rating_mode: "Hard" | "Space" | "Regex",
+		tags: string[],
+		problem_condition: string[],
+		reference_codes: ReferenceCodeRequest[],
+		test_cases: TestCaseRequest[]
 	) {
-		const requestBody: any = {
+		const requestBody: EnhancedProblemCreateRequest = {
 			title,
 			description,
-			input_description,
-			output_description,
-			testcase,
-		}
-
-		if (conditions && conditions.length > 0) {
-			requestBody.conditions = conditions
-		}
-
-		if (evaluation_criteria) {
-			requestBody.evaluation_criteria = evaluation_criteria
+			difficulty,
+			rating_mode,
+			tags,
+			problem_condition,
+			reference_codes,
+			test_cases,
 		}
 
 		const res = await fetchWithAuth("/api/proxy/problems", {
@@ -467,21 +463,22 @@ export const problem_api = {
 		id: string | string[],
 		title: string,
 		description: string,
-		testcase: { input: string; output: string; isvisible: boolean }[], // 백엔드 스키마에 맞는 testcase 타입
-		conditions?: string[], // 조건 필드 추가 (선택적)
-		evaluation_criteria?: string // 평가 기준 필드 추가 (선택적)
+		difficulty: string,
+		rating_mode: "Hard" | "Space" | "Regex",
+		tags: string[],
+		problem_condition: string[],
+		reference_codes: ReferenceCodeRequest[],
+		test_cases: TestCaseRequest[]
 	) {
-		const requestBody: any = {
+		const requestBody: EnhancedProblemCreateRequest = {
 			title,
 			description,
-			testcase,
-		}
-		if (conditions && conditions.length > 0) {
-			requestBody.conditions = conditions
-		}
-
-		if (evaluation_criteria) {
-			requestBody.evaluation_criteria = evaluation_criteria
+			difficulty,
+			rating_mode,
+			tags,
+			problem_condition,
+			reference_codes,
+			test_cases,
 		}
 
 		const response = await fetchWithAuth(`/api/proxy/problems/${id}`, {
@@ -565,7 +562,7 @@ export const additional_problem_api_functions = {
 		source_problem_id: number,
 		new_title?: string
 	): Promise<EnhancedProblemResponse> {
-		const requestData: any = { source_problem_id }
+		const requestData: { source_problem_id: number; new_title?: string } = { source_problem_id }
 		if (new_title) {
 			requestData.new_title = new_title
 		}
@@ -1413,15 +1410,15 @@ interface TestCaseRequest {
 	is_sample: boolean
 }
 
-interface EnhancedProblemCreateRequest {
+export interface EnhancedProblemCreateRequest {
 	title: string
 	description: string
 	difficulty: string
+	rating_mode: "Hard" | "Space" | "Regex"
 	tags: string[]
+	problem_condition: string[]
 	reference_codes: ReferenceCodeRequest[]
 	test_cases: TestCaseRequest[]
-	conditions?: string[]
-	evaluation_criteria?: string
 }
 
 interface ReferenceCodeResponse {
@@ -1433,17 +1430,19 @@ interface ReferenceCodeResponse {
 }
 
 interface EnhancedProblemResponse {
-	id: number
+	problem_id: number
+	maker_id: string
 	title: string
 	description: string
 	difficulty: string
+	rating_mode: "Hard" | "Space" | "Regex"
 	tags: string[]
+	problem_condition: string[]
 	reference_codes: ReferenceCodeResponse[]
 	test_cases: TestCaseRequest[]
-	conditions?: string[]
-	evaluation_criteria?: string
-	created_at: string
-	updated_at: string
+	parent_problem_id: number | null
+	root_problem_id: number
+	make_at: string
 }
 
 interface RunCodeForProblemRequest {

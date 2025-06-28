@@ -12,7 +12,7 @@ import Image from "@tiptap/extension-image"
 import { TableRow } from "@tiptap/extension-table-row"
 import { TableHeader } from "@tiptap/extension-table-header"
 import { motion } from "framer-motion"
-import { problem_api, run_code_api } from "@/lib/api"
+import { problem_api, run_code_api, EnhancedProblemCreateRequest } from "@/lib/api"
 import Toolbar from "../markdown/Toolbar"
 import { ResizableTable } from "../markdown/ResizableTable"
 import TableCellExtension from "../markdown/TableCellExtension"
@@ -69,7 +69,7 @@ export default function NewRegisteredProblem() {
 	])
 
 	const [conditions, setConditions] = useState([""])
-	const [evaluationCriteria, setEvaluationCriteria] = useState("Regex")
+	const [evaluationCriteria, setEvaluationCriteria] = useState("Hard")
 
 	// 테스트 실행 관련 상태
 	const [runResults, setRunResults] = useState<RunResult[]>([])
@@ -261,28 +261,31 @@ export default function NewRegisteredProblem() {
 		const content = editor.getHTML()
 		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
 
-		// 새로운 API 형식에 맞게 데이터 구성 (난이도, 태그 제거)
-		const requestData = {
+		// 새로운 API 형식에 맞게 데이터 구성
+		const requestData: EnhancedProblemCreateRequest = {
 			title,
 			description: content,
+			difficulty: "easy", // 기본값 설정
+			rating_mode: evaluationCriteria as "Hard" | "Space" | "Regex",
+			tags: [], // 기본 빈 배열
+			problem_condition: filteredConditions,
 			reference_codes: referenceCodes,
 			test_cases: testCases,
-			conditions: filteredConditions,
-			evaluation_criteria: evaluationCriteria,
 		}
 
 		console.log("📝 저장할 문제 데이터:", requestData)
 
 		try {
-			// 기존 API 사용 (새 API가 구현되기 전까지)
+			// 새로운 API 사용
 			await problem_api.problem_create(
 				requestData.title,
 				requestData.description,
-				"", // input_description
-				"", // output_description
-				requestData.test_cases.map((tc) => ({ input: tc.input, output: tc.expected_output })),
-				requestData.conditions,
-				requestData.evaluation_criteria
+				requestData.difficulty,
+				requestData.rating_mode,
+				requestData.tags,
+				requestData.problem_condition,
+				requestData.reference_codes,
+				requestData.test_cases
 			)
 
 			console.log("✅ 문제 등록 성공!")
@@ -494,7 +497,7 @@ export default function NewRegisteredProblem() {
 					<div className="border-t border-gray-300 my-3"></div>
 					<div className="bg-white shadow-md rounded-xl p-3">
 						<div className="space-y-2">
-							{["Regex", "Space", "Hard"].map((criteria) => (
+							{["Hard", "Space", "Regex"].map((criteria) => (
 								<label key={criteria} className="flex items-center gap-2 cursor-pointer">
 									<input
 										type="radio"
