@@ -172,7 +172,10 @@ export default function NewRegisteredProblem() {
 					▶️ 테스트 실행
 				</button>
 				<button
-					onClick={handleSave}
+					onClick={async () => {
+						await handleSave();
+						router.back();
+					}}
 					className="flex items-center bg-blue-600 text-white px-6 py-2 rounded-lg text-sm cursor-pointer
 					hover:bg-blue-700 transition-all duration-200 ease-in-out
 					active:scale-95 shadow-md"

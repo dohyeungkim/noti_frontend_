@@ -23,7 +23,7 @@ interface DrawerProps {
 }
 
 export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
-	const { userName } = useAuth()
+	const { userName, checkAuthStatus } = useAuth()
 	const [groups, setGroups] = useState<
 		{
 			group_id: number
@@ -54,8 +54,10 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
 	}
 
 	useEffect(() => {
+		// 컴포넌트 마운트 시 인증 상태 확인
+		checkAuthStatus()
 		fetchGroup()
-	}, [])
+	}, [checkAuthStatus])
 
 	const truncateText = (text: string, maxLength: number) =>
 		text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
