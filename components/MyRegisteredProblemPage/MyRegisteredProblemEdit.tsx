@@ -30,6 +30,7 @@ export default function ProblemEdit() {
 		ratingMode,
 		setRatingMode,
 		tags,
+		setTags,
 		conditions,
 		referenceCodes,
 		testCases,
@@ -225,24 +226,53 @@ export default function ProblemEdit() {
 
 						{/* 태그 입력 */}
 						<div className="mb-3">
-							<label className="block text-xs font-medium text-gray-700 mb-1">태그 (쉼표로 구분)</label>
-							<input
-								type="text"
-								value={tags.join(", ")}
-								onChange={(e) => {
-									const tagString = e.target.value;
-									updateTags(tagString);
-								}}
-								placeholder="예: 구현, 수학, 문자열"
-								className="w-full px-3 py-1 border rounded-md text-sm"
-							/>
-							<div className="flex flex-wrap gap-2 mt-1">
+							<label className="block text-xs font-medium text-gray-700 mb-1">태그 추가</label>
+							<div className="flex gap-2 mb-2">
+								<input
+									type="text"
+									placeholder="태그 입력 후 Enter 또는 쉼표"
+									className="flex-1 px-3 py-1 border rounded-md text-sm"
+									onKeyPress={(e) => {
+										if (e.key === 'Enter' || e.key === ',') {
+											e.preventDefault();
+											const input = e.target as HTMLInputElement;
+											const newTag = input.value.trim();
+											if (newTag && !tags.includes(newTag)) {
+												setTags([...tags, newTag]);
+												input.value = '';
+											}
+										}
+									}}
+									onBlur={(e) => {
+										const newTag = e.target.value.trim();
+										if (newTag && !tags.includes(newTag)) {
+											setTags([...tags, newTag]);
+											e.target.value = '';
+										}
+									}}
+								/>
+								<button
+									type="button"
+									onClick={(e) => {
+										const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+										const newTag = input.value.trim();
+										if (newTag && !tags.includes(newTag)) {
+											setTags([...tags, newTag]);
+											input.value = '';
+										}
+									}}
+									className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600"
+								>
+									추가
+								</button>
+							</div>
+							<div className="flex flex-wrap gap-2">
 								{tags.map((tag, idx) => (
-									<span key={idx} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
+									<span key={idx} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded flex items-center gap-1">
 										{tag}
 										<button
 											type="button"
-											className="ml-1 text-red-500 hover:text-red-700"
+											className="text-red-500 hover:text-red-700"
 											onClick={() => removeTag(idx)}
 										>
 											×

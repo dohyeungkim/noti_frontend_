@@ -176,7 +176,13 @@ export function useProblemForm() {
 
 	// 태그 관리
 	const updateTags = (tagString: string) => {
-		setTags(tagString.split(",").map(tag => tag.trim()).filter(Boolean))
+		// 쉼표와 엔터로 구분하여 태그 추출
+		const newTags = tagString
+			.split(/[,,\n]/) // 쉼표 또는 엔터로 분할
+			.map(tag => tag.trim())
+			.filter(tag => tag.length > 0)
+			.filter((tag, index, arr) => arr.indexOf(tag) === index); // 중복 제거
+		setTags(newTags);
 	}
 
 	const removeTag = (index: number) => {
@@ -192,6 +198,7 @@ export function useProblemForm() {
 		ratingMode,
 		setRatingMode,
 		tags,
+		setTags,
 		conditions,
 		referenceCodes,
 		testCases,
