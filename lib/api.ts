@@ -409,6 +409,7 @@ export const problem_api = {
 	async problem_get_by_id_group(group_id: number, workbook_id: number, problem_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`, {
 			method: "GET",
+			
 			credentials: "include",
 		})
 
@@ -1207,17 +1208,17 @@ export const ai_feedback_api = {
 // ====================== 코드 실행(run_code) API ===========================
 
 export const run_code_api = {
-	async run_code(language: string, code: string, test_cases: { input: string; output?: string }[]) {
-		const fixedTestCases = test_cases.map((tc) => ({
-			input: tc.input,
-			output: tc.output ?? "",
-		}))
-
+	async run_code(requestData: {
+		language: string
+		code: string
+		rating_mode: string
+		test_cases: { input: string; expected_output: string }[]
+	}) {
 		const res = await fetchWithAuth("/api/proxy/solves/run_code", {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ language, code, test_cases: fixedTestCases }),
+			body: JSON.stringify(requestData),
 		})
 
 		if (!res.ok) {
@@ -1250,7 +1251,7 @@ export const enhanced_run_code_api = {
 	async run_code(language: string, code: string, test_cases: { input: string; output?: string }[]) {
 		const fixedTestCases = test_cases.map((tc) => ({
 			input: tc.input,
-			output: tc.output ?? "",
+			expected: tc.output ?? "",
 		}))
 
 		const res = await fetchWithAuth("/api/proxy/solves/run_code", {

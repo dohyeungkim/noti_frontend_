@@ -109,7 +109,7 @@ export default function ProblemEdit() {
 				code: mainCode.code,
 				test_cases: testCases.map(tc => ({
 					input: tc.input,
-					output: tc.expected_output
+					expected_output: tc.expected_output
 				})),
 				rating_mode: ratingMode
 			}

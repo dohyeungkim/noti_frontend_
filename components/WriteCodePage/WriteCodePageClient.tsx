@@ -101,25 +101,41 @@ export default function WriteCodePageClient({
 				Number(params.problemId)
 			)
 			console.log("📋 전체 문제 API 응답:", res)
-			console.log("📋 조건 데이터:", res.conditions)
-			console.log("📋 조건 타입:", typeof res.conditions)
-			console.log("📋 조건 배열 여부:", Array.isArray(res.conditions))
+			console.log("📋 조건 데이터:", res.problem_condition)
+			console.log("📋 조건 타입:", typeof res.problem_condition)
+			console.log("�� 조건 배열 여부:", Array.isArray(res.problem_condition))
 			// 평가 기준은 로그에서만 확인하고 UI에는 표시하지 않음
 			console.log("📋 평가 기준 (UI에 표시되지 않음):", res.evaluation_criteria)
 
 			setProblem(res)
 
-			// 문제 조건만 설정 (평가 기준은 제외)
-			if (res.conditions && Array.isArray(res.conditions) && res.conditions.length > 0) {
-				console.log("✅ 조건 설정됨:", res.conditions)
-				setProblemConditions(res.conditions)
-			} else {
-				console.log("❌ 조건 없음 - 백엔드에서 아직 지원하지 않음")
-				// 🔧 임시: 백엔드 개발 전까지 샘플 조건 표시 (UI 확인용)
-				setProblemConditions(["조건1) LC 사용", "조건2) numpy 사용", "조건3) pandas 사용"])
+			// // 문제 조건만 설정 (problem_condition 사용)
+			// if (res.problem_condition && Array.isArray(res.problem_condition) && res.problem_condition.length > 0) {
+			// 	console.log("✅ 조건 설정됨:", res.problem_condition)
+			// 	setProblemConditions(res.problem_condition)
+			// } else {
+			// 	console.log("❌ 조건 없음 - 백엔드에서 아직 지원하지 않음")
+			// 	// 🔧 임시: 백엔드 개발 전까지 샘플 조건 표시 (UI 확인용)
+			// 	setProblemConditions(["조건1) LC 사용", "조건2) numpy 사용", "조건3) pandas 사용"])
 
-				// 🔧 TODO: 백엔드에서 conditions 필드 지원 시 제거
-				console.log("🚨 백엔드 개발자에게 알림: problems 테이블에 conditions 필드 추가 필요")
+			// 	// 🔧 TODO: 백엔드에서 conditions 필드 지원 시 제거
+			// 	console.log("🚨 백엔드 개발자에게 알림: problems 테이블에 conditions 필드 추가 필요")
+			// }
+
+			// 샘플 테스트케이스만 추출
+			const sampleTestCases = (res.test_cases || [])
+				.filter((tc: any) => tc.is_sample)
+				.map((tc: any) => ({
+					input: tc.input,
+					output: tc.expected_output,
+					isSample: true,
+				}));
+
+			// 샘플이 하나라도 있으면 그걸로, 없으면 기존처럼 빈 테스트케이스
+			if (sampleTestCases.length > 0) {
+				setTestCases(sampleTestCases);
+			} else {
+				setTestCases([{ input: "", output: "" }]);
 			}
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
@@ -206,7 +222,7 @@ export default function WriteCodePageClient({
 	}
 
 	// 테스트케이스 실행 관련 상태 (중복 선언 방지)
-	const [testCases, setTestCases] = useState<{ input: string; output: string }[]>([{ input: "", output: "" }])
+	const [testCases, setTestCases] = useState<{ input: string; output: string; isSample?: boolean }[]>([])
 	const [runResults, setRunResults] = useState<{ input: string; expected: string; output: string; passed: boolean }[]>(
 		[]
 	)
@@ -225,27 +241,34 @@ export default function WriteCodePageClient({
 	const removeTestCase = (idx: number) => setTestCases((prev) => prev.filter((_, i) => i !== idx))
 
 	const handleTestRun = async () => {
+		if (!problem) {
+			alert("문제 정보가 없습니다.");
+			return;
+		}
 		if (!code.trim()) {
-			alert("코드를 입력해주세요.")
-			return
+			alert("코드를 입력해주세요.");
+			return;
+		}
+		if (!Array.isArray(testCases) || testCases.length === 0) {
+			alert("테스트케이스를 추가해주세요.");
+			return;
 		}
 
-		if (testCases.length === 0) {
-			alert("테스트케이스를 추가해주세요.")
-			return
-		}
-
-		setIsTestRunning(true)
-		setRunResults([])
+		setIsTestRunning(true);
+		setRunResults([]);
 		try {
-			const data = await run_code_api.run_code(
-				language,
-				code,
-				testCases.map((tc) => ({ input: tc.input, output: tc.output }))
-			)
+			const data = await run_code_api.run_code({
+				language: language,
+				code: code,
+				rating_mode: problem.rating_mode,
+				test_cases: Array.isArray(testCases) ? testCases.map(tc => ({
+					input: tc.input,
+					expected_output: tc.output
+				})) : []
+				});
+
 			console.log("run_code_api 반환값:", data)
 
-			// API 응답 구조에 맞게 결과 매핑
 			const results =
 				data.results?.map((result: any, index: number) => ({
 					input: testCases[index].input,
@@ -339,7 +362,9 @@ export default function WriteCodePageClient({
 		}
 	}, [onMouseMove, onMouseUp])
 
-	if (!problem) return <div>로딩 중...</div>
+	if (!problem || !Array.isArray(testCases)) {
+		return <div>로딩 중...</div>
+	}
 
 	return !problem ? (
 		<div className="flex items-center gap-2 justify-end"></div>
@@ -406,17 +431,17 @@ export default function WriteCodePageClient({
 									))}
 								</div>
 
-								{/* 🔧 임시 알림 - 백엔드 개발 완료 시 제거 */}
+								{/* 🔧 임시 알림 - 백엔드 개발 완료 시 제거
 								<div className="mt-3 pt-3 border-t border-gray-200">
 									<p className="text-xs text-gray-500 italic">
 										💡 현재는 샘플 조건이 표시됩니다. 백엔드 개발 완료 후 실제 등록된 조건이 표시됩니다.
 									</p>
-								</div>
+								</div> */}
 							</motion.div>
 						)}
 
 						{/* 🔧 디버깅용 백엔드 상태 알림 - 개발 완료 후 제거 */}
-						<div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+						{/* <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
 							<h3 className="text-sm font-bold mb-2 text-blue-800">📋 문제 조건 기능 개발 상태</h3>
 							<div className="text-xs text-blue-700">
 								<p>• 프론트엔드: ✅ 완료 (조건 표시 UI 구현됨)</p>
@@ -424,7 +449,7 @@ export default function WriteCodePageClient({
 								<p>• 현재 표시: 임시 샘플 조건 ({problemConditions?.length || 0}개)</p>
 								<p>• 참고: 평가 기준은 문제 풀이 페이지에서 표시하지 않음</p>
 							</div>
-						</div>
+						</div> */}
 					</div>
 				</div>
 
@@ -540,12 +565,15 @@ export default function WriteCodePageClient({
 															<span className="text-gray-500">-</span>
 														)}
 													</div>
-													<button
-														onClick={() => removeTestCase(index)}
-														className="px-1 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 rounded text-xs"
-													>
-														×
-													</button>
+													{/* 샘플 테스트케이스는 삭제 불가 */}
+													{!tc.isSample && (
+														<button
+															onClick={() => removeTestCase(index)}
+															className="px-1 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 rounded text-xs"
+														>
+															×
+														</button>
+													)}
 												</div>
 											</div>
 
