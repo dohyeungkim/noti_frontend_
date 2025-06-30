@@ -1,0 +1,280 @@
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  padding: 20px;
+  overflow: auto;
+}
+.setting_container {
+  margin-top: 40px;
+}
+.group_container {
+  margin-top: 35px;
+}
+.buttons_container {
+  display: flex;
+  justify-content: center;
+  margin-top: 80px;
+  gap: 10px;
+}
+.problem_container {
+  margin-top: 35px;
+}
+.man_public {
+  display: flex;
+  justify-content: space-between;
+  background-color: rgb(230, 230, 230);
+  width: 100%;
+  height: 50px;
+  padding: 1cap;
+
+  border-radius: 10px;
+  align-items: center;
+}
+.sel_pub {
+  background-color: rgb(184, 184, 184);
+  border-radius: 10px;
+  width: 70px;
+  height: 33px;
+  text-align: center;
+}
+
+.man_edit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgb(230, 230, 230);
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 10px;
+}
+.edit_name {
+  width: 250px;
+  height: 33px;
+  align-content: center;
+  align-items: center;
+  padding-left: 10px;
+  /* margin-right: 10px; */
+  resize: none;
+  border-radius: 10px;
+  text-align: center;
+}
+.edit_intro {
+  display: flex;
+  width: 100%;
+  height: 100px;
+  align-content: center;
+  align-items: center;
+  padding: 10px;
+  margin-right: 10px;
+  resize: none;
+  border-radius: 10px;
+  overflow: auto;
+  /* text-align: center; */
+}
+.btn_edit {
+  background-color: rgb(184, 184, 184);
+  width: 70px;
+  height: 33px;
+  border-radius: 10px;
+}
+
+.man_group {
+  justify-content: space-between;
+  background-color: rgb(230, 230, 230);
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  border-radius: 10px;
+}
+.man_group_menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.man_problem {
+  justify-content: space-between;
+  background-color: rgb(230, 230, 230);
+  margin-top: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 10px;
+  border-radius: 10px;
+  /* text-align: center; */
+}
+.man_problem_menu {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  /* align-items: center; */
+}
+.man_problem_menu2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-top: 3px; */
+  /* flex-direction: column; */
+}
+.problem_table_container {
+  width: 100%;
+  margin-top: 20px;
+  overflow: auto;
+  min-height: 100px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background-color: transparent;
+  border-radius: 10px;
+
+  /* display: flex;
+  justify-content: space-between;
+  align-items: center; */
+  /* justify-content: space-between; */
+}
+.man_problem_name {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.man_problem_intro {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.man_stu {
+  justify-content: space-between;
+  background-color: rgb(230, 230, 230);
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 10px;
+  align-items: center;
+}
+.man_stu_menu {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.man_delete {
+  display: flex;
+  justify-content: space-between;
+  background-color: rgb(230, 230, 230);
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  margin-top: 25px;
+  border-radius: 10px;
+  align-items: center;
+}
+.btn_del {
+  background-color: #b99d9d;
+  width: 70px;
+  height: 33px;
+  border-radius: 10px;
+}
+.btn_info1 {
+  background-color: rgb(184, 184, 184);
+  width: 70px;
+  height: 33px;
+  border-radius: 10px;
+}
+.btn_info2 {
+  background-color: rgb(184, 184, 184);
+  width: 110px;
+  height: 33px;
+  border-radius: 10px;
+}
+
+/* 그룹원 조회 관련 스타일시트 */
+.members_table_container {
+  margin-top: 20px;
+  overflow: auto;
+  max-height: 300px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background-color: transparent;
+  border-radius: 10px;
+}
+.members_table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.members_table th,
+.members_table td {
+  border: 1px #6c6c6c;
+  padding: 8px;
+  text-align: left;
+}
+
+.btn_cancle {
+  background-color: #868c88;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 10px;
+}
+
+.btn_save {
+  background-color: #497658;
+  color: white;
+  padding: 5px 15px;
+  border-radius: 10px;
+}
+
+/* 📌 모달 관련 css */
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal_overlay_ban {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal_content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 18px;
+  text-align: center;
+  min-width: 300px;
+}
+.modal_btn_container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  gap: 5px;
+}
+.modal_content_txt {
+  justify-items: center;
+}
+
+.modal_btn_no {
+  background-color: rgb(193, 200, 221);
+  padding: 5px 15px;
+  border-radius: 10px;
+}
+.modal_btn_yes {
+  background-color: rgb(169, 189, 255);
+  padding: 5px 15px;
+  border-radius: 10px;
+}

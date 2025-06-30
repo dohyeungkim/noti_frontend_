@@ -1,0 +1,306 @@
+interface Problems {
+    problemId: string;
+    groupId: string;
+    examId: string;
+    examName: string;
+    title: string;
+    description: string;
+    input: string;
+    output: string;
+    difficulty: string;
+    createdAt: string
+} 
+export const problems = [
+        // MY문제
+        {
+            problemId: 'CA00-01',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: 'test',
+            title: 'CPU 동작 원리',
+            description: 'a+b',
+            input: '1 2',
+            output: '3',
+            difficulty: '하',
+            createdAt: '2022-05-05' 
+        },
+        {
+            problemId: 'CA00-02',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: '컴퓨터 구조 문제지',
+            title: '메모리 구조',
+            description: '메모리 계층 구조를 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '중',
+            createdAt: '2022-05-05' 
+
+        },
+        {
+            problemId: 'CA00-03',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: '컴퓨터 구조 문제지',
+            title: '캐시 메모리',
+            description: '캐시 메모리의 동작 방식을 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '상',
+            createdAt: '2022-05-05' 
+
+        },
+        {
+            problemId: 'CA00-04',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: '컴퓨터 구조 문제지',
+            title: '프로세서 설계',
+            description: '프로세서 설계의 주요 개념을 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '중',
+            createdAt: '2022-05-05' 
+
+        },
+        {
+            problemId: 'CA00-05',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: '컴퓨터 구조 문제지',
+            title: '컴퓨터 성능 평가',
+            description: '컴퓨터 성능 평가 방법을 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '하',
+            createdAt: '2022-05-05' 
+
+        },
+        {
+            problemId: 'DS00-01',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: '자료구조 문제지',
+            title: '스택 구현',
+            description: '스택의 구현 방법을 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '하',
+            createdAt: '2022-05-05' 
+
+        },
+        {
+            problemId: 'DS00-02',//
+            groupId: 'MY',//
+            examId: 'MY00',//
+            examName: '자료구조 문제지',
+            title: '스택과 큐 비교',//
+            description: '스택과 큐의 차이점을 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '중',
+            createdAt: '2022-05-05' 
+
+        },
+        {
+            problemId: 'DS00-03',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: '자료구조 문제지',
+            title: '스택의 응용',
+            description: '스택의 응용 사례를 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '상',
+            createdAt: '2022-05-05' 
+
+        },
+        {
+            problemId: 'DS00-04',
+            groupId: 'MY',
+            examId: 'MY00',
+            examName: '자료구조 문제지',
+            title: '스택의 시간 복잡도',
+            description: '스택의 연산에 따른 시간 복잡도를 설명하세요.',
+            input: '예시 입력 데이터',
+            output: '예시 출력 데이터',
+            difficulty: '중',
+            createdAt: '2022-05-05' 
+
+        },
+       
+//나의문제 끝
+    
+    // CA00 문제
+    {
+        problemId: 'CA00-01',
+        groupId: 'CA',
+        examId: 'CA00',
+        examName: 'test',
+        title: 'CPU 동작 원리',
+        description: 'a+b',
+        input: '1 2',
+        output: '3',
+        difficulty: '하',
+        createdAt: '2022-05-05' 
+
+    },
+    
+    
+    {
+        problemId: 'CA00-02',
+        groupId: 'CA',
+
+        examId: 'CA00',
+        examName: '컴퓨터 구조 문제지',
+        title: '메모리 구조',
+        description: '메모리 계층 구조를 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '중',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'CA00-03',
+        groupId: 'CA',
+
+        examId: 'CA00',
+        examName: '컴퓨터 구조 문제지',
+        title: '캐시 메모리',
+        description: '캐시 메모리의 동작 방식을 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '상',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'CA00-04',
+        groupId: 'CA',
+
+        examId: 'CA00',
+        examName: '컴퓨터 구조 문제지',
+        title: '프로세서 설계',
+        description: '프로세서 설계의 주요 개념을 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '중',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'CA00-05',
+        examId: 'CA00',
+        examName: '컴퓨터 구조 문제지',
+        title: '컴퓨터 성능 평가',
+        description: '컴퓨터 성능 평가 방법을 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '하',
+        createdAt: '2022-05-05' 
+
+    },
+
+    // DS00 문제
+    {
+        problemId: 'DS00-01',
+        groupId: 'DS',
+
+        examId: 'DS00',
+        examName: '자료구조 문제지',
+        title: '스택 구현',
+        description: '스택의 구현 방법을 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '하',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'DS00-02',
+        groupId: 'DS',
+        examId: 'DS00',
+        examName: '자료구조 문제지',
+        title: '스택과 큐 비교',
+        description: '스택과 큐의 차이점을 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '중',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'DS00-03',
+        groupId: 'DS',
+
+        examId: 'DS00',
+        examName: '자료구조 문제지',
+        title: '스택의 응용',
+        description: '스택의 응용 사례를 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '상',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'DS00-04',
+        groupId: 'DS',
+
+        examId: 'DS00',
+        examName: '자료구조 문제지',
+        title: '스택의 시간 복잡도',
+        description: '스택의 연산에 따른 시간 복잡도를 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '중',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'DS00-05',
+        groupId: 'DS',
+
+        examId: 'DS00',
+        examName: '자료구조 문제지',
+        title: '스택 오버플로우',
+        description: '스택 오버플로우의 원인과 해결 방법을 설명하세요.',
+        input: '예시 입력 데이터',
+        output: '예시 출력 데이터',
+        difficulty: '하',
+        createdAt: '2022-05-05' 
+
+    },
+
+    // 추가 문제
+    {
+        problemId: 'PY01-0001',
+        groupId: 'PY',
+
+        examId: 'PY01',
+        examName: '파이썬 기초 문제지 3번',
+        title: 'OX퀴즈',
+        description:
+            '"OOXXOXXOOO"와 같은 OX퀴즈의 결과가 있다. O는 문제를 맞은 것이고, X는 문제를 틀린 것이다. ...',
+        input: '2\nOOXXOXXOOO\nOOXXOOXXOO',
+        output: '10\n9',
+        difficulty: '보통',
+        createdAt: '2022-05-05' 
+
+    },
+    {
+        problemId: 'DS01-0001',
+        groupId: 'PY',
+
+        examId: 'DS01',
+        examName: '자료구조 문제지 1번',
+        title: '스택 문제',
+        description: '정수 배열이 주어졌을 때, 스택을 사용하여 배열을 뒤집는 코드를 작성하세요.',
+        input: '5\n1 2 3 4 5',
+        output: '5 4 3 2 1',
+        difficulty: '쉬움',
+        createdAt: '2022-05-05' 
+
+    },
+];
