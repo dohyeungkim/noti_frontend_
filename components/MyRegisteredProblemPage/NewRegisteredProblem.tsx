@@ -100,8 +100,6 @@ export default function NewRegisteredProblem() {
 			});
 
 			const result = await response.json();
-			console.log("여기용----------------------------");
-			console.log(result.results);
 
 			if (!result || !Array.isArray(result.results)) {
 				alert("API 응답이 올바르지 않습니다. (테스트케이스 실행 실패)");

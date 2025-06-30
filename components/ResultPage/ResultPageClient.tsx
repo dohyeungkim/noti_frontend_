@@ -128,6 +128,8 @@ export default function FeedbackWithSubmissionPageClient({
 			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
 			setSolveData(res)
 			
+			console.log("여기용")
+			console.log(res)
 			// AI 피드백이 solveData에 포함되어 있다면 사용
 			if (res.ai_feedback && !aiFeedback) {
 				setAiFeedback(res.ai_feedback)
