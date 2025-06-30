@@ -1216,7 +1216,6 @@ export const run_code_api = {
 	}) {
 		const res = await fetchWithAuth("/api/proxy/solves/run_code", {
 			method: "POST",
-			credentials: "include",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(requestData),
 		})

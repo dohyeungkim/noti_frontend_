@@ -3,17 +3,69 @@
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay"
-import CommentSection from "@/components/ResultPage/CommentSection"
-import { code_log_api, problem_api, solve_api, ai_feedback_api } from "@/lib/api"
+import { code_log_api, problem_api, solve_api, ai_feedback_api, comment_api, auth_api } from "@/lib/api"
 import ResultPageProblemDetail from "./ResultPageProblemDetail"
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { useRouter } from "next/navigation"
+import { formatTimestamp } from "../util/dageUtils"
+import { UserIcon } from "lucide-react"
 
 interface SolveData {
-	passed: boolean
+	solve_id: number
 	user_id: string
-	language: string
-	code_length: number
+	group_id: number
+	group_name: string
+	workbook_id: number
+	workbook_name: string
+	problem_id: number
+	problem_name: string
+	submitted_code: string
+	code_language: string
+	code_len: number
+	result: boolean
+	passed: boolean
+	timestamp: string
+	rating_mode: string
+	test_cases: any[]
+	test_results: any[]
+	overall_status: string
+	execution_time: number
+	condition_check_results: {
+		condition: string
+		is_required: boolean
+		check_type: string
+		description: string
+		passed: boolean
+		feedback: string
+	}[]
+	ai_feedback: string
+	test_success_rate: number
+	condition_success_rate: number
+	passed_count?: number
+	total_count?: number
+	success_rate?: number
+}
+
+interface ConditionResult {
+	id: number
+	condition: string
+	is_required: boolean
+	check_type: string
+	description: string
+	passed: boolean
+	feedback: string
+	status: 'pass' | 'fail'
+}
+
+interface Comment {
+	user_id: string
+	problem_id: number
+	solve_id: number
+	comment: string
+	is_anonymous: boolean
+	nickname: string
+	is_problem_message: boolean
+	timestamp?: string
 }
 
 export default function FeedbackWithSubmissionPageClient({
@@ -26,26 +78,22 @@ export default function FeedbackWithSubmissionPageClient({
 		resultId: string
 	}
 }) {
-	const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 	const [problem, setProblem] = useState<Problem | null>(null)
 	const [codeLogs, setCodeLogs] = useState<CodeLog[]>([])
 	const [aiFeedback, setAiFeedback] = useState<string>("")
 	const [isLoaded, setIsLoaded] = useState(false)
 	const [isAILoaded, setIsAILoaded] = useState(false)
 	const [solveData, setSolveData] = useState<SolveData | null>(null)
+	const [conditionResults, setConditionResults] = useState<ConditionResult[]>([])
+	const [isConditionLoaded, setIsConditionLoaded] = useState(false)
+	const [comments, setComments] = useState<Comment[]>([])
+	const [newComment, setNewComment] = useState("")
+	const [isAnonymous, setIsAnonymous] = useState(false)
+	const [activeTab, setActiveTab] = useState<'problem' | 'submission'>('submission')
+	const [userId, setUserId] = useState<string>("")
 	const router = useRouter()
 
-	useEffect(() => {
-		setSolveData({
-			user_id: "user123",
-			passed: false,
-			language: "Python",
-			code_length: 250,
-		})
-
-		// setAiFeedback("❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다.");
-	}, [])
-
+	// AI 피드백 가져오기
 	useEffect(() => {
 		const fetchAiFeedback = async () => {
 			try {
@@ -54,6 +102,8 @@ export default function FeedbackWithSubmissionPageClient({
 				setIsAILoaded(true)
 			} catch (error) {
 				console.error("AI 피드백 가져오기 실패:", error)
+				// solveData에서 AI 피드백을 사용하는 경우를 대비
+				setIsAILoaded(true)
 			}
 		}
 
@@ -77,10 +127,48 @@ export default function FeedbackWithSubmissionPageClient({
 		try {
 			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
 			setSolveData(res)
+			
+			// AI 피드백이 solveData에 포함되어 있다면 사용
+			if (res.ai_feedback && !aiFeedback) {
+				setAiFeedback(res.ai_feedback)
+				setIsAILoaded(true)
+			}
+
+			// 조건 검사 결과 처리
+			if (res.condition_check_results && res.condition_check_results.length > 0) {
+				// condition_check_results 상세 정보 활용
+				const conditionCheckResults = res.condition_check_results.map((conditionResult: any, index: number) => ({
+					id: index + 1,
+					condition: conditionResult.condition || `조건 ${index + 1}`,
+					is_required: conditionResult.is_required || false,
+					check_type: conditionResult.check_type || 'unknown',
+					description: conditionResult.description || '',
+					passed: conditionResult.passed || false,
+					feedback: conditionResult.feedback || '',
+					status: conditionResult.passed ? 'pass' : 'fail'
+				}))
+				setConditionResults(conditionCheckResults)
+			} else if (problem && problem.problem_condition && problem.problem_condition.length > 0) {
+				// problem_condition을 기반으로 조건 결과 생성
+				const problemConditionResults = problem.problem_condition.map((condition: string, index: number) => ({
+					id: index + 1,
+					condition: condition,
+					is_required: true,
+					check_type: 'problem_requirement',
+					description: '문제에서 요구하는 조건입니다',
+					passed: res.passed || false, // 전체 통과 여부를 기반으로 설정
+					feedback: res.passed ? '조건을 만족했습니다.' : '조건을 확인해주세요.',
+					status: res.passed ? 'pass' : 'fail'
+				}))
+				setConditionResults(problemConditionResults)
+			} else {
+				// 조건이 없으면 빈 배열로 설정
+				setConditionResults([])
+			}
 		} catch (error) {
 			console.error("제출 기록 불러오기 중 오류 발생:", error)
 		}
-	}, [params.resultId])
+	}, [params.resultId, aiFeedback])
 
 	const fetchCodeLogs = useCallback(async () => {
 		try {
@@ -91,17 +179,123 @@ export default function FeedbackWithSubmissionPageClient({
 		}
 	}, [params.resultId])
 
+	// 댓글 가져오기
+	const fetchComments = useCallback(async () => {
+		try {
+			console.log(`댓글 조회 시작: ${activeTab}, problemId: ${params.problemId}, resultId: ${params.resultId}`)
+			
+			const data = activeTab === "problem"
+				? await comment_api.comments_get_by_problem_id(Number(params.problemId))
+				: await comment_api.comments_get_by_solve_id(Number(params.resultId))
+
+			console.log('댓글 조회 결과:', data)
+			setComments(data || [])
+		} catch (error) {
+			console.error(`코멘트 불러오기 오류:`, error)
+			setComments([])
+		}
+	}, [activeTab, params.problemId, params.resultId])
+
+	// 사용자 정보 가져오기
+	const fetchUserId = useCallback(async () => {
+		try {
+			console.log('사용자 정보 조회 시작')
+			const user = await auth_api.getUser()
+			console.log('사용자 정보:', user)
+			setUserId(user.user_id)
+		} catch (error) {
+			console.error("사용자 아이디 불러오기 실패:", error)
+		}
+	}, [])
+
 	useEffect(() => {
 		fetchProblem()
 		fetchSolve()
 		fetchCodeLogs()
 	}, [fetchProblem, fetchSolve, fetchCodeLogs])
 
+	// 컴포넌트 마운트시 사용자 정보 먼저 가져오기
+	useEffect(() => {
+		fetchUserId()
+	}, [fetchUserId])
+
+	// 사용자 정보 로드 후 댓글 가져오기
+	useEffect(() => {
+		if (userId) {
+			console.log('사용자 ID 확인됨, 댓글 조회:', userId)
+			fetchComments()
+		}
+	}, [userId, fetchComments])
+
+	// activeTab 변경시에만 댓글 새로고침
+	useEffect(() => {
+		if (userId) {
+			console.log('탭 변경됨, 댓글 새로고침:', activeTab)
+			fetchComments()
+		}
+	}, [activeTab])
+
 	useEffect(() => {
 		if (problem && solveData && codeLogs) {
-			setIsLoaded(true) // ✅ UI 크기 유지
+			setIsLoaded(true)
 		}
 	}, [problem, solveData, codeLogs])
+
+	// 댓글 전송 핸들러
+	const handleAddComment = async () => {
+		if (!newComment.trim()) {
+			alert("댓글을 입력하세요.")
+			return
+		}
+
+		if (!userId) {
+			alert("사용자 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.")
+			return
+		}
+
+		try {
+			console.log('댓글 생성 시작:', {
+				userId,
+				problemId: params.problemId,
+				resultId: params.resultId,
+				comment: newComment,
+				isAnonymous,
+				isProblemMessage: activeTab === "problem"
+			})
+
+			await comment_api.comment_create(
+				userId,
+				Number(params.problemId),
+				Number(params.resultId),
+				newComment,
+				isAnonymous,
+				"익명",
+				activeTab === "problem"
+			)
+
+			console.log('댓글 생성 완료, 목록 새로고침')
+			await fetchComments()
+			setNewComment("")
+		} catch (error) {
+			console.error("코멘트 생성 오류:", error)
+			alert("댓글 작성에 실패했습니다.")
+		}
+	}
+
+	const handleKeyPress = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault()
+			handleAddComment()
+		}
+	}
+
+	// 긴 문자열을 줄 바꿈하는 함수
+	const formatCommentWithLineBreaks = (comment: string, maxLength: number = 50) => {
+		return comment.split("").reduce((acc, char, idx) => {
+			if (idx > 0 && idx % maxLength === 0) acc += "\n"
+			return acc + char
+		}, "")
+	}
 
 	if (!isLoaded) {
 		return (
@@ -117,69 +311,370 @@ export default function FeedbackWithSubmissionPageClient({
 	}
 
 	return (
-		<>
-			<motion.div
-				className={`fixed right-6 bottom-30 rounded-l-xl z-50 h-90`} // 화면 높이의 약 2/3 차지
-				initial={{ opacity: 0, scale: 0, x: "50vw" }}
-				animate={{
-					opacity: isSidebarOpen ? 1 : 0,
-					scale: isSidebarOpen ? 1 : 0,
-					x: isSidebarOpen ? 0 : "50vw",
-				}}
-				exit={{ opacity: 0, scale: 0, x: "50vw" }}
-				transition={{ duration: 0.5, type: "spring" }}
-			>
-				{isSidebarOpen && <CommentSection params={params} />}
-			</motion.div>
-
-			{/* 버튼을 독립적으로 레이아웃에 포함 */}
-			<motion.button
-				className="fixed bottom-6 right-6 bg-mygreen text-white
-             p-3 sm:p-4 w-12 h-12 sm:w-14 sm:h-14
-             rounded-full shadow-lg hover:bg-gray-700 transition-all duration-200
-             z-[10001]" // z-index를 채팅창보다 높게 설정
-				onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-				initial={{ scale: 0 }}
-				animate={{ scale: 1 }}
-				whileHover={{ scale: 1.1 }}
-				whileTap={{ scale: 0.9 }}
-			>
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-					<path d="M12 3C6.477 3 2 7.03 2 12c0 2.038.786 3.95 2.095 5.454L4 21l3.682-1.96A10.12 10.12 0 0 0 12 20c5.523 0 10-4.03 10-9s-4.477-9-10-9zM7 11h10v2H7v-2z" />
-				</svg>
-			</motion.button>
-
-			<motion.div
-				className="w-full p-6 rounded-lg min-h-screen"
-				initial={{ opacity: 0 }} // ✅ 크기 변화 없음
-				animate={{ opacity: 1 }} // ✅ 투명도만 변경 (scale 변화 X)
-				transition={{ duration: 0.4, delay: 0.2 }}
-			>
-				<div className="mt-6 mb-3">
-					<span className={`text-sm font-bold ${solveData?.passed ? "text-mygreen" : "text-yellow-600"}`}>
-						{solveData?.passed ? "🟢 맞았습니다" : "🟡 틀렸습니다."}
-					</span>
-				</div>
-
-				<motion.div className="w-full  border-b-2 border-gray-400 mb-2" />
-
-				<CodeLogReplay codeLogs={codeLogs} idx={0} />
-
-				{/* AI 피드백 */}
+		<div className="flex min-h-screen bg-gray-50">
+			{/* 메인 컨텐츠 영역 */}
+			<div className="flex-1 max-w-7xl mx-auto p-6">
+				{/* 헤더 */}
 				<motion.div
-					className="p-4  bg-gray-100 rounded-lg shadow-md border-l-4  mb-4"
-					initial={{ opacity: 0, y: -10 }}
+					className="mb-6"
+					initial={{ opacity: 0, y: -20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.4 }}
 				>
-					<h3 className="text-lg font-semibold text-gray-700">🧠 AI 피드백</h3>
-					{!isAILoaded ? (
-						<p className="text-gray-600 mt-2">ai_feedback 불러오는 중</p>
-					) : (
-						<p className="text-gray-600 mt-2">{aiFeedback}</p>
-					)}
+					<div className="flex items-center gap-2 mb-2">
+						<div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+							<span className="text-white font-bold text-sm">📘</span>
+						</div>
+						<h1 className="text-xl font-bold text-gray-800">
+							문제 {solveData?.problem_name || solveData?.problem_id || 'PY31-0001'} 문제의 피드백
+						</h1>
+					</div>
+					<div className="flex items-center gap-4">
+						<span className="text-sm text-gray-600">🔥 열심히다.</span>
+						{solveData && (
+							<>
+								<span className={`text-sm font-bold ${solveData.passed ? "text-green-600" : "text-red-600"}`}>
+									{solveData.passed ? "🟢 맞았습니다" : "🔴 틀렸습니다"}
+								</span>
+								<span className="text-sm text-gray-500">
+									언어: {solveData.code_language} | 길이: {solveData.code_len}자
+								</span>
+								{solveData.execution_time && (
+									<span className="text-sm text-gray-500">
+										실행시간: {solveData.execution_time}ms
+									</span>
+								)}
+							</>
+						)}
+					</div>
+				</motion.div>
+
+				{/* 레이아웃 그리드 */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{/* 왼쪽: 코드 로그 - 높이 확장 */}
+					<motion.div
+						className="bg-white rounded-lg shadow-sm border p-4 h-[600px]"
+						initial={{ opacity: 0, x: -20 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ duration: 0.4, delay: 0.1 }}
+					>
+						<div className="h-full">
+							<CodeLogReplay codeLogs={codeLogs} idx={0} />
+						</div>
+					</motion.div>
+
+					{/* 오른쪽: 조건 및 AI 피드백 - 높이 맞춤 */}
+					<div className="space-y-6 h-[600px] flex flex-col">
+						{/* 조건 검사 결과 섹션 - 높이 확장 */}
+						<motion.div
+							className="bg-white rounded-lg shadow-sm border flex-1"
+							initial={{ opacity: 0, x: 20 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ duration: 0.4, delay: 0.2 }}
+						>
+							<div className="p-4 border-b">
+								<h3 className="font-semibold text-gray-800">조건 검사 결과</h3>
+								{solveData && (
+									<div className="flex items-center gap-4 mt-2 flex-wrap">
+										{solveData.condition_success_rate !== undefined && (
+											<span className="text-sm text-gray-600">
+												조건 성공률: {Math.round(solveData.condition_success_rate * 100)}%
+											</span>
+										)}
+										{solveData.success_rate !== undefined && (
+											<span className="text-sm text-gray-600">
+												전체 성공률: {Math.round(solveData.success_rate * 100)}%
+											</span>
+										)}
+										{solveData.passed_count !== undefined && solveData.total_count !== undefined && (
+											<span className="text-sm text-gray-600">
+												통과: {solveData.passed_count}/{solveData.total_count}
+											</span>
+										)}
+										<span className={`text-xs px-2 py-1 rounded ${
+											solveData.overall_status === 'all_passed' || solveData.overall_status === 'success' 
+												? 'bg-green-100 text-green-800' 
+												: 'bg-red-100 text-red-800'
+										}`}>
+											{solveData.overall_status}
+										</span>
+									</div>
+								)}
+							</div>
+							<div className="p-4 space-y-4 h-full overflow-y-auto">
+								{!isConditionLoaded ? (
+									// 조건 로딩 중
+									<div className="flex items-center justify-center h-32">
+										<div className="flex items-center gap-3 text-gray-500">
+											<div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+											<div className="text-center">
+												<p className="text-sm font-medium">조건 검사 결과를 불러오는 중...</p>
+												<p className="text-xs mt-1">잠시만 기다려주세요.</p>
+											</div>
+										</div>
+									</div>
+								) : conditionResults.length === 0 ? (
+									// 조건이 없을 때
+									<div className="flex items-center justify-center h-32 text-gray-500">
+										<div className="text-center">
+											<p className="text-sm">조건 검사 결과가 없습니다.</p>
+											<p className="text-xs mt-1">코드가 실행되지 않았거나 조건이 설정되지 않았습니다.</p>
+										</div>
+									</div>
+								) : (
+									// 조건 목록
+									conditionResults.map((condition) => (
+										<motion.div
+											key={condition.id}
+											className={`p-4 rounded-lg border-l-4 ${
+												condition.status === 'pass' 
+													? 'bg-green-50 border-l-green-500 border border-green-200' 
+													: 'bg-red-50 border-l-red-500 border border-red-200'
+											}`}
+											initial={{ opacity: 0, y: 10 }}
+											animate={{ opacity: 1, y: 0 }}
+											transition={{ duration: 0.3, delay: condition.id * 0.1 }}
+										>
+											{/* 조건 헤더 */}
+											<div className="flex items-start justify-between mb-3">
+												<div className="flex-1">
+													<div className="flex items-center gap-2 mb-1">
+														<h4 className="font-semibold text-gray-800 text-base">
+															조건 {condition.id}
+														</h4>
+														{condition.is_required && (
+															<span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+																필수
+															</span>
+														)}
+														<span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+															{condition.check_type}
+														</span>
+													</div>
+													<p className="font-medium text-gray-700 text-sm">
+														{condition.condition}
+													</p>
+												</div>
+												<div className="ml-3">
+													{condition.status === 'pass' ? (
+														<div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+															<span className="text-white text-lg">✓</span>
+														</div>
+													) : (
+														<div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+															<span className="text-white text-lg">✗</span>
+														</div>
+													)}
+												</div>
+											</div>
+											
+											{/* 조건 설명 */}
+											{condition.description && (
+												<div className="mb-3">
+													<p className="text-sm text-gray-600 leading-relaxed">
+														📋 {condition.description}
+													</p>
+												</div>
+											)}
+											
+											{/* AI 피드백 */}
+											{condition.feedback && (
+												<div className={`p-3 rounded-lg ${
+													condition.status === 'pass' 
+														? 'bg-green-100 text-green-800 border border-green-200' 
+														: 'bg-red-100 text-red-800 border border-red-200'
+												}`}>
+													<div className="flex items-start gap-2">
+														<span className="text-base">💬</span>
+														<p className="text-sm font-medium leading-relaxed">
+															{condition.feedback}
+														</p>
+													</div>
+												</div>
+											)}
+										</motion.div>
+									))
+								)}
+							</div>
+						</motion.div>
+
+						{/* AI 피드백 섹션 - 고정 높이 */}
+						<motion.div
+							className="bg-white rounded-lg shadow-sm border h-48"
+							initial={{ opacity: 0, x: 20 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ duration: 0.4, delay: 0.3 }}
+						>
+							<div className="p-4 border-b">
+								<h3 className="font-semibold text-gray-800">AI 피드백</h3>
+							</div>
+							<div className="p-4 h-32 overflow-y-auto">
+								{!isAILoaded ? (
+									<div className="flex items-center gap-2 text-gray-500">
+										<div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+										<span className="text-sm">AI 피드백을 불러오는 중...</span>
+									</div>
+								) : (
+									<p className="text-gray-700 text-sm leading-relaxed">
+										{aiFeedback || solveData?.ai_feedback || "❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다."}
+									</p>
+								)}
+							</div>
+						</motion.div>
+					</div>
+				</div>
+
+				{/* 하단: 문제별 | 제출별 탭과 코멘트 */}
+				<motion.div
+					className="mt-6 bg-white rounded-lg shadow-sm border"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.4, delay: 0.4 }}
+				>
+					{/* 탭 헤더 */}
+					<div className="border-b">
+						<div className="flex">
+							<button 
+								className={`px-6 py-3 text-sm font-medium ${
+									activeTab === 'submission' 
+										? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
+										: 'text-gray-500 hover:text-gray-700'
+								}`}
+								onClick={() => {
+									console.log('제출별 탭 클릭')
+									setActiveTab('submission')
+								}}
+							>
+								제출별
+							</button>
+							<button 
+								className={`px-6 py-3 text-sm font-medium ${
+									activeTab === 'problem' 
+										? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
+										: 'text-gray-500 hover:text-gray-700'
+								}`}
+								onClick={() => {
+									console.log('문제별 탭 클릭')
+									setActiveTab('problem')
+								}}
+							>
+								문제별
+							</button>
+						</div>
+					</div>
+
+					{/* 코멘트 섹션 */}
+					<div className="p-6">
+						<h4 className="font-semibold text-gray-800 mb-4">
+							{activeTab === "problem"
+								? `📝 문제 ${params.problemId}번의 댓글`
+								: `💬 제출별 댓글`}
+						</h4>
+						
+						{/* 기존 코멘트 목록 */}
+						<div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+							{comments.length === 0 ? (
+								<div className="bg-gray-50 rounded-lg p-6 text-center">
+									<div className="flex items-center justify-center gap-2 text-gray-500">
+										<p className="text-sm">댓글이 없습니다.</p>
+									</div>
+								</div>
+							) : (
+								comments.map((comment, index) => (
+									<motion.div
+										key={`${comment.user_id}-${comment.timestamp}-${index}`}
+										className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg"
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ duration: 0.3, delay: index * 0.05 }}
+									>
+										{/* 프로필 아이콘 */}
+										<div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+											<UserIcon className="w-6 h-6 text-gray-600" />
+										</div>
+
+										{/* 댓글 내용 */}
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center space-x-2 mb-1">
+												<strong className="text-gray-900 text-sm">
+													{comment.is_anonymous ? comment.nickname : comment.user_id}
+												</strong>
+												{comment.is_anonymous && (
+													<span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">
+														익명
+													</span>
+												)}
+												<span className="text-xs text-gray-500">
+													{comment.timestamp ? formatTimestamp(comment.timestamp) : '방금 전'}
+												</span>
+											</div>
+											<p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap break-words">
+												{formatCommentWithLineBreaks(comment.comment, 50)}
+											</p>
+										</div>
+									</motion.div>
+								))
+							)}
+						</div>
+
+						{/* 새 코멘트 작성 */}
+						<div className="border-t pt-6">
+							<div className="space-y-3">
+								<div className="flex items-center gap-4 mb-3">
+									<label className="block text-sm font-medium text-gray-700">
+										새 댓글 작성
+									</label>
+									{/* 익명 체크박스 */}
+									<label className="flex items-center space-x-2 cursor-pointer">
+										<input
+											type="checkbox"
+											className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+											checked={isAnonymous}
+											onChange={(e) => setIsAnonymous(e.target.checked)}
+										/>
+										<span className="text-sm text-gray-700">익명으로 작성</span>
+									</label>
+								</div>
+								
+								<div className="flex items-end gap-3">
+									<textarea
+										value={newComment}
+										onChange={(e) => setNewComment(e.target.value)}
+										onKeyPress={handleKeyPress}
+										placeholder="댓글을 입력하세요... (Shift+Enter로 줄바꿈, Enter로 등록)"
+										className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+										rows={3}
+									/>
+									<div className="flex flex-col gap-2">
+										<button
+											onClick={handleAddComment}
+											disabled={!newComment.trim()}
+											className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+										>
+											등록
+										</button>
+										<button
+											onClick={() => setNewComment("")}
+											className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+										>
+											취소
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</motion.div>
+
+				{/* 액션 버튼들 */}
+				<motion.div
+					className="mt-6 flex gap-3"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.4, delay: 0.5 }}
+				>
 					<button
-						className="mt-4 px-4 py-2 bg-mygreen text-white rounded-lg shadow hover:bg-green-700 transition"
+						className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-colors"
 						onClick={() =>
 							router.push(`/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/result/`)
 						}
@@ -187,12 +682,12 @@ export default function FeedbackWithSubmissionPageClient({
 						전체 제출 보러가기
 					</button>
 					<button
-						className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-700 transition"
+						className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors"
 						onClick={() =>
 							router.push(
 								`/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/write?solve_id=${
 									params.resultId
-								}&language=${solveData?.language?.toLowerCase() || ""}`
+								}&language=${solveData?.code_language?.toLowerCase() || ""}`
 							)
 						}
 					>
@@ -200,8 +695,18 @@ export default function FeedbackWithSubmissionPageClient({
 					</button>
 				</motion.div>
 
-				{problem && <ResultPageProblemDetail problem={problem} />}
-			</motion.div>
-		</>
+				{/* 문제 상세 정보 */}
+				{problem && (
+					<motion.div
+						className="mt-6"
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.4, delay: 0.6 }}
+					>
+						<ResultPageProblemDetail problem={problem} />
+					</motion.div>
+				)}
+			</div>
+		</div>
 	)
 }

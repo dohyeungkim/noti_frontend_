@@ -105,22 +105,22 @@ export default function WriteCodePageClient({
 			console.log("📋 조건 타입:", typeof res.problem_condition)
 			console.log("�� 조건 배열 여부:", Array.isArray(res.problem_condition))
 			// 평가 기준은 로그에서만 확인하고 UI에는 표시하지 않음
-			console.log("📋 평가 기준 (UI에 표시되지 않음):", res.evaluation_criteria)
+			console.log("📋 평가 기준 (UI에 표시되지 않음):", res.rating_mode)
 
 			setProblem(res)
 
-			// // 문제 조건만 설정 (problem_condition 사용)
-			// if (res.problem_condition && Array.isArray(res.problem_condition) && res.problem_condition.length > 0) {
-			// 	console.log("✅ 조건 설정됨:", res.problem_condition)
-			// 	setProblemConditions(res.problem_condition)
-			// } else {
-			// 	console.log("❌ 조건 없음 - 백엔드에서 아직 지원하지 않음")
-			// 	// 🔧 임시: 백엔드 개발 전까지 샘플 조건 표시 (UI 확인용)
-			// 	setProblemConditions(["조건1) LC 사용", "조건2) numpy 사용", "조건3) pandas 사용"])
+			// 문제 조건만 설정 (problem_condition 사용)
+			if (res.problem_condition && Array.isArray(res.problem_condition) && res.problem_condition.length > 0) {
+				console.log("✅ 조건 설정됨:", res.problem_condition)
+				setProblemConditions(res.problem_condition)
+			} else {
+				console.log("❌ 조건 없음 - 백엔드에서 아직 지원하지 않음")
+				// 🔧 임시: 백엔드 개발 전까지 샘플 조건 표시 (UI 확인용)
+				setProblemConditions(["조건1) LC 사용", "조건2) numpy 사용", "조건3) pandas 사용"])
 
-			// 	// 🔧 TODO: 백엔드에서 conditions 필드 지원 시 제거
-			// 	console.log("🚨 백엔드 개발자에게 알림: problems 테이블에 conditions 필드 추가 필요")
-			// }
+				// 🔧 TODO: 백엔드에서 conditions 필드 지원 시 제거
+				console.log("🚨 백엔드 개발자에게 알림: problems 테이블에 conditions 필드 추가 필요")
+			}
 
 			// 샘플 테스트케이스만 추출
 			const sampleTestCases = (res.test_cases || [])
@@ -256,16 +256,17 @@ export default function WriteCodePageClient({
 
 		setIsTestRunning(true);
 		setRunResults([]);
+		
 		try {
 			const data = await run_code_api.run_code({
-				language: language,
-				code: code,
-				rating_mode: problem.rating_mode,
-				test_cases: Array.isArray(testCases) ? testCases.map(tc => ({
-					input: tc.input,
-					expected_output: tc.output
-				})) : []
-				});
+			language: language,
+			code: code,
+			rating_mode: problem.rating_mode,
+			test_cases: testCases.map(tc => ({
+				input: tc.input,
+				expected_output: tc.output
+			}))
+			});
 
 			console.log("run_code_api 반환값:", data)
 
