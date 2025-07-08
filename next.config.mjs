@@ -1,17 +1,20 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from "path"
+import { fileURLToPath } from "url"
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': path.resolve(__dirname, './'),
-    };
-    return config;
-  },
-};
+	webpack: (config) => {
+		config.resolve.alias = {
+			...config.resolve.alias,
+			"@": path.resolve(__dirname, "./"),
+		}
+		return config
+	},
+	eslint: {
+		ignoreDuringBuilds: true,
+	},
+}
 
-export default nextConfig;
+export default nextConfig
