@@ -645,3 +645,23 @@ export default function WriteCodePageClient({
 		</>
 	)
 }
+
+import { usePresence } from "../../hooks/usePresence";
+
+interface Props {
+	pageId: string;
+	user: {
+	  userId: string;
+	  nickname: string;
+	};
+  }
+
+export const PresenceIndicator: React.FC<Props> = ({ pageId, user }) => {
+	const participants = usePresence(pageId, user);
+  
+	return (
+		<div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-md text-sm text-gray-700 border border-gray-300">
+		  현재 접속 인원: <span className="font-semibold">{participants.length}</span>명
+		</div>
+	);
+};

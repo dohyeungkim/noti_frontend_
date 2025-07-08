@@ -12,6 +12,7 @@ export interface TestCase {
 	is_sample: boolean
 }
 
+
 export const defaultTemplates: { [lang: string]: string } = {
 	python: "# Python 코드를 작성하세요\n",
 	c: "#include<stdio.h>\n\nint main() {\n    return 0;\n}",
