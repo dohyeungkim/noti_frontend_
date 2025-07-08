@@ -5,29 +5,71 @@ import { useRef } from "react"
 import { useParams } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
 import dynamic from "next/dynamic"
-// import { testExams } from "@/data/testmode";
 import { AnimatePresence, motion } from "framer-motion"
 import { auth_api, problem_api, code_log_api, solve_api, ai_feedback_api, run_code_api } from "@/lib/api"
-import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { editor } from "monaco-editor"
+// 🔥 CHANGE 1: 새로운 PresenceIndicator import 추가
+import { PresenceIndicator } from "./PresenceIndicator"
+
+// Problem 타입 정의 (확장)
+interface Problem {
+	id: number
+	title: string
+	description: string
+	problem_condition?: string[]
+	rating_mode?: string
+	test_cases?: Array<{
+		input: string
+		expected_output: string
+		is_sample: boolean
+	}>
+}
+
+// TestCase 타입 정의
+interface TestCase {
+	input: string
+	output: string
+	isSample?: boolean
+}
+
+// RunResult 타입 정의
+interface RunResult {
+	input: string
+	expected: string
+	output: string
+	passed: boolean
+}
+
+// WriteCodePageClient Props 인터페이스
+interface WriteCodePageClientProps {
+	params: {
+		problemId: string
+		examId: string
+		groupId: string
+	}
+}
+
+// 🔥 CHANGE 2: 기존 inline PresenceIndicator 컴포넌트 제거 (삭제됨)
+// export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({ pageId, user }) => {
+//   const participantsCount = usePresence(pageId, user)
+//   return (
+//     <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-md text-sm text-gray-700 border border-gray-300">
+//       현재 접속 인원: <span className="font-semibold">{participantsCount}</span>명
+//     </div>
+//   )
+// }
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 	ssr: false,
 })
 
-export default function WriteCodePageClient({
-	params,
-}: {
-	params: { problemId: string; examId: string; groupId: string }
-}) {
+export default function WriteCodePageClient({ params }: WriteCodePageClientProps) {
 	const router = useRouter()
 	const { groupId } = useParams()
-	// const [isExpanded, setIsExpanded] = useState(true);
 
 	const [problem, setProblem] = useState<Problem | undefined>(undefined)
 	const [problemConditions, setProblemConditions] = useState<string[]>([]) // 빈 배열로 초기화
 
-	// const isTestMode = testExams.some((test) => test.examId === params.examId);
 	const searchParams = useSearchParams()
 	const solveId = searchParams.get("solve_id")
 	const queryLanguage = searchParams.get("language")
@@ -56,11 +98,11 @@ export default function WriteCodePageClient({
 
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState("")
-	// const [isPrevEnter, setPrevIsEnter] = useState(false);
 	const [codeLogs, setCodeLogs] = useState<string[]>([])
 	const [timeStamps, setTimeStamps] = useState<string[]>([])
 
 	const [userId, setUserId] = useState("")
+	const [userNickname, setUserNickname] = useState("")
 
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
@@ -81,15 +123,16 @@ export default function WriteCodePageClient({
 	// 유저 정보 가져오기
 	const fetchUser = useCallback(async () => {
 		if (userId === "") {
-			// userId가 비어 있을 때만 실행
 			try {
 				const res = await auth_api.getUser()
 				setUserId(res.user_id)
+				// nickname 속성이 없으므로 username 또는 full_name 사용
+				setUserNickname(res.username || res.full_name || "사용자")
 			} catch (error) {
 				console.error("유저 정보를 불러오는 중 오류 발생:", error)
 			}
 		}
-	}, [userId]) // userId 변경 시만 실행
+	}, [userId])
 
 	// 문제 정보 가져오기
 	const fetchProblem = useCallback(async () => {
@@ -103,8 +146,7 @@ export default function WriteCodePageClient({
 			console.log("📋 전체 문제 API 응답:", res)
 			console.log("📋 조건 데이터:", res.problem_condition)
 			console.log("📋 조건 타입:", typeof res.problem_condition)
-			console.log("�� 조건 배열 여부:", Array.isArray(res.problem_condition))
-			// 평가 기준은 로그에서만 확인하고 UI에는 표시하지 않음
+			console.log("📋 조건 배열 여부:", Array.isArray(res.problem_condition))
 			console.log("📋 평가 기준 (UI에 표시되지 않음):", res.rating_mode)
 
 			setProblem(res)
@@ -129,26 +171,26 @@ export default function WriteCodePageClient({
 					input: tc.input,
 					output: tc.expected_output,
 					isSample: true,
-				}));
+				}))
 
 			// 샘플이 하나라도 있으면 그걸로, 없으면 기존처럼 빈 테스트케이스
 			if (sampleTestCases.length > 0) {
-				setTestCases(sampleTestCases);
+				setTestCases(sampleTestCases)
 			} else {
-				setTestCases([{ input: "", output: "" }]);
+				setTestCases([{ input: "", output: "" }])
 			}
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
-	}, [params.groupId, params.examId, params.problemId]) // problemId 변경 시 실행
+	}, [params.groupId, params.examId, params.problemId])
 
 	useEffect(() => {
 		fetchUser()
-	}, [fetchUser]) // userId가 변경되면 다시 실행
+	}, [fetchUser])
 
 	useEffect(() => {
 		fetchProblem()
-	}, [fetchProblem]) // problemId 변경 시 다시 실행
+	}, [fetchProblem])
 
 	useEffect(() => {
 		if (solveId) {
@@ -221,11 +263,9 @@ export default function WriteCodePageClient({
 		}
 	}
 
-	// 테스트케이스 실행 관련 상태 (중복 선언 방지)
-	const [testCases, setTestCases] = useState<{ input: string; output: string; isSample?: boolean }[]>([])
-	const [runResults, setRunResults] = useState<{ input: string; expected: string; output: string; passed: boolean }[]>(
-		[]
-	)
+	// 테스트케이스 실행 관련 상태
+	const [testCases, setTestCases] = useState<TestCase[]>([])
+	const [runResults, setRunResults] = useState<RunResult[]>([])
 	const [isTestRunning, setIsTestRunning] = useState(false)
 
 	const handleTestCaseChange = (idx: number, field: "input" | "output", value: string) => {
@@ -242,31 +282,31 @@ export default function WriteCodePageClient({
 
 	const handleTestRun = async () => {
 		if (!problem) {
-			alert("문제 정보가 없습니다.");
-			return;
+			alert("문제 정보가 없습니다.")
+			return
 		}
 		if (!code.trim()) {
-			alert("코드를 입력해주세요.");
-			return;
+			alert("코드를 입력해주세요.")
+			return
 		}
 		if (!Array.isArray(testCases) || testCases.length === 0) {
-			alert("테스트케이스를 추가해주세요.");
-			return;
+			alert("테스트케이스를 추가해주세요.")
+			return
 		}
 
-		setIsTestRunning(true);
-		setRunResults([]);
-		
+		setIsTestRunning(true)
+		setRunResults([])
+
 		try {
 			const data = await run_code_api.run_code({
-			language: language,
-			code: code,
-			rating_mode: problem.rating_mode,
-			test_cases: testCases.map(tc => ({
-				input: tc.input,
-				expected_output: tc.output
-			}))
-			});
+				language: language,
+				code: code,
+				rating_mode: problem.rating_mode || "default",
+				test_cases: testCases.map((tc) => ({
+					input: tc.input,
+					expected_output: tc.output,
+				})),
+			})
 
 			console.log("run_code_api 반환값:", data)
 
@@ -367,16 +407,28 @@ export default function WriteCodePageClient({
 		return <div>로딩 중...</div>
 	}
 
+	// 실시간 사용자 현황을 위한 pageId와 user 데이터 생성
+	const pageId = `problem-${params.groupId}-${params.examId}-${params.problemId}`
+	const currentUser = {
+		userId: userId,
+		nickname: userNickname,
+	}
+
 	return !problem ? (
 		<div className="flex items-center gap-2 justify-end"></div>
 	) : (
 		<>
+			{/* 상단 영역: 제출 버튼과 실시간 사용자 현황 */}
 			<motion.div
-				className="flex items-center gap-2 justify-end"
+				className="flex items-center gap-2 justify-between"
 				initial={{ opacity: 0, scale: 0.9 }}
 				animate={{ opacity: 1, scale: 1 }}
 				transition={{ delay: 0.2 }}
 			>
+				{/* 🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용 */}
+				{userId && userNickname && <PresenceIndicator pageId={pageId} user={currentUser} />}
+
+				{/* 제출 버튼 (오른쪽) */}
 				<motion.button
 					onClick={handleSubmit}
 					disabled={loading}
@@ -431,26 +483,8 @@ export default function WriteCodePageClient({
 										</div>
 									))}
 								</div>
-
-								{/* 🔧 임시 알림 - 백엔드 개발 완료 시 제거
-								<div className="mt-3 pt-3 border-t border-gray-200">
-									<p className="text-xs text-gray-500 italic">
-										💡 현재는 샘플 조건이 표시됩니다. 백엔드 개발 완료 후 실제 등록된 조건이 표시됩니다.
-									</p>
-								</div> */}
 							</motion.div>
 						)}
-
-						{/* 🔧 디버깅용 백엔드 상태 알림 - 개발 완료 후 제거 */}
-						{/* <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-							<h3 className="text-sm font-bold mb-2 text-blue-800">📋 문제 조건 기능 개발 상태</h3>
-							<div className="text-xs text-blue-700">
-								<p>• 프론트엔드: ✅ 완료 (조건 표시 UI 구현됨)</p>
-								<p>• 백엔드: ❌ 개발 필요 (problems 테이블에 conditions 필드 추가 필요)</p>
-								<p>• 현재 표시: 임시 샘플 조건 ({problemConditions?.length || 0}개)</p>
-								<p>• 참고: 평가 기준은 문제 풀이 페이지에서 표시하지 않음</p>
-							</div>
-						</div> */}
 					</div>
 				</div>
 
@@ -645,23 +679,3 @@ export default function WriteCodePageClient({
 		</>
 	)
 }
-
-import { usePresence } from "../../hooks/usePresence";
-
-interface Props {
-	pageId: string;
-	user: {
-	  userId: string;
-	  nickname: string;
-	};
-  }
-
-export const PresenceIndicator: React.FC<Props> = ({ pageId, user }) => {
-	const participants = usePresence(pageId, user);
-  
-	return (
-		<div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-md text-sm text-gray-700 border border-gray-300">
-		  현재 접속 인원: <span className="font-semibold">{participants.length}</span>명
-		</div>
-	);
-};
