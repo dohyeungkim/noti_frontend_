@@ -20,6 +20,8 @@ export function usePresence(pageId: string, currentUser: { userId: string; nickn
 	})
 
 	useEffect(() => {
+		if (!currentUser.userId) return
+
 		const ws = new WebSocket(`wss://210.115.227.15/ws/presence/${pageId}`)
 
 		ws.onopen = () => {
