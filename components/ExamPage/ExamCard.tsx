@@ -6,7 +6,7 @@ import { ExamCardData } from "@/data/examCardDummy"
 interface ExamCardProps {
 	data: ExamCardData
 	onClick: () => void
-	isGroupOwner?: boolean // 그룹장 여부
+	isGroupOwner?: boolean // 그룹장 여부 추가
 }
 
 export default function ExamCard({ data, onClick, isGroupOwner = false }: ExamCardProps) {
@@ -58,36 +58,32 @@ export default function ExamCard({ data, onClick, isGroupOwner = false }: ExamCa
 			{/* 상단: 제목 및 상태 */}
 			<div className="flex-shrink-0">
 				<div className="flex items-start justify-between mb-3">
-					<h2 className="text-xl font-semibold flex-1 overflow-hidden text-ellipsis" title={workbook.workbook_name}>
-						📄{" "}
+					<h2 className="text-xl font-semibold flex-1 overflow-hidden text-ellipsis">
+						📄
 						{workbook.workbook_name.length > 20 ? `${workbook.workbook_name.slice(0, 20)}...` : workbook.workbook_name}
 					</h2>
 
-					{/* 시험 상태 뱃지 (exam이 있을 때만) */}
+					{/* 시험 모드 상태 표시 - isExamMode 조건 제거 */}
 					{exam && examStatus && (
 						<span className={`px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0 ${examStatus.color}`}>
 							{examStatus.text}
 						</span>
 					)}
 				</div>
-			</div>
+				{/* 중간: 설명 */}
+				<div className="flex-1 flex flex-col justify-center my-4">
+					<p title={workbook.description} className="text-gray-600 text-sm overflow-hidden text-ellipsis line-clamp-3">
+						{workbook.description}
+					</p>
+				</div>
 
-			{/* 중간: 설명 */}
-			<div className="flex-1 flex flex-col justify-center my-4">
-				<p title={workbook.description} className="text-gray-600 text-sm overflow-hidden text-ellipsis line-clamp-3">
-					{workbook.description}
-				</p>
-			</div>
-
-			{/* 시험 정보 표시: 시험모드이고 그룹장일 때만 */}
-			{isExamMode && isGroupOwner && exam && (
+				{/* 시험 정보 표시 - isExamMode와 isGroupOwner 조건 제거하고 항상 표시 - 일단 시험모드 없으니까 조건 다 제거하고 항상 쯔게 함*/}
 				<div className="bg-blue-50 rounded-lg p-4 mb-4 space-y-2">
-					{/* 시험 모드 배너 */}
 					<div className="flex items-center gap-2 text-sm">
 						<span className="font-medium text-blue-800">🎯 시험 모드</span>
 					</div>
 
-					{/* 문제지 게시 일시 */}
+					{/* 문제지 게시 기간 */}
 					<div className="text-xs text-gray-700">
 						<span className="font-medium">📅 게시 일시:</span>
 						<div className="ml-2 mt-1">{formatDate(workbook.creation_date)}</div>
@@ -97,20 +93,28 @@ export default function ExamCard({ data, onClick, isGroupOwner = false }: ExamCa
 					<div className="text-xs text-gray-700">
 						<span className="font-medium">📝 제출 기간:</span>
 						<div className="ml-2 mt-1">
-							<>
-								{formatDate(exam.startTime)} ~<br />
-								{formatDate(exam.endTime)}
-							</>
+							{exam ? (
+								<>
+									{formatDate(exam.startTime)} ~<br />
+									{formatDate(exam.endTime)}
+								</>
+							) : (
+								"미설정"
+							)}
 						</div>
 					</div>
 
 					{/* 문제 수 및 총 배점 */}
 					<div className="flex items-center justify-between text-xs text-gray-700">
 						<span>📌 문제 수: {workbook.problem_cnt}개</span>
-						<span>💯 총 배점: {exam.totalScore}점</span>
+					</div>
+
+					{/* 총 배점 */}
+					<div className="flex items-center justify-between text-xs text-gray-700">
+						<span>💯 총 배점: {exam ? `${exam.totalScore}점` : "미설정"}</span>
 					</div>
 				</div>
-			)}
+			</div>
 
 			{/* 하단: 버튼 */}
 			<div className="flex-shrink-0">
