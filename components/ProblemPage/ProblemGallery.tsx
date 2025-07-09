@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import { Heart, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { studentSubmission } from "@/data/gradingDummy"
 
 interface Problem {
 	problem_id: number
@@ -38,6 +39,8 @@ export default function ProblemGallery({
 
 	// 시험 모드는 아직 미완성이지만 UI는 보이도록 함 (개발용)
 	const isExamMode = true // 개발 중이므로 항상 true로 설정 (실제로는 props나 context에서 가져와야 함)
+	// 더미데이터ㅓ 한 학생 제출 데이터, 문제별 점수 가젿오기
+	const mySubmissions = studentSubmission.submissions
 
 	const toggleLike = async (problemId: number) => {
 		try {
@@ -68,6 +71,21 @@ export default function ProblemGallery({
 	return (
 		<section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 m-2">
 			{currentProblems.map((p) => {
+				// 이 문제에 대한 내 점수 찾기
+				const myEntry = mySubmissions.find((s) => s.problemId === p.problem_id)
+				const score = myEntry?.score ?? 0
+				// p.problem_score 가 있으면 그걸 최대점수로, 없으면 10점 기본
+				const maxScore = p.problem_score ?? 10
+				// 성적에 따라 배경색 결정 (교수뷰나 시험모드가 아닐 때만 적용)
+				const cardBgColor =
+					!isGroupOwner && isExamMode
+						? score === maxScore
+							? "bg-green-50"
+							: score === 0
+							? "bg-red-50"
+							: "bg-yellow-50"
+						: "bg-white"
+
 				const isLiked = likedProblems[p.problem_id] ?? p.is_like
 
 				// 버튼 텍스트: 시험모드에서 그룹장일 경우 "문제 보기", 그 외에는 "도전하기"

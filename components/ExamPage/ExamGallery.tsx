@@ -1,6 +1,8 @@
 "use client"
+
 import ExamCard from "@/components/ExamPage/ExamCard"
 import { ExamCardData } from "@/data/examCardDummy"
+import { gradingDummy } from "@/data/gradingDummy" // ← 여기에 더미 채점 데이터 import
 
 interface ExamGalleryProps {
 	examData: ExamCardData[]
@@ -13,6 +15,9 @@ export default function ExamGallery({ examData, handleEnterExam, isGroupOwner = 
 		return <p className="text-center text-gray-500 text-lg">등록된 문제지가 없습니다.</p>
 	}
 
+	// 개발 중에는 첫 번째 학생의 채점 정보만 사용
+	const dummyPerformance = gradingDummy[0]
+
 	return (
 		<section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 m-2 minW">
 			{examData.map((data) => (
@@ -21,6 +26,8 @@ export default function ExamGallery({ examData, handleEnterExam, isGroupOwner = 
 					data={data}
 					onClick={() => handleEnterExam(data.exam?.examId || String(data.workbook.workbook_id))}
 					isGroupOwner={isGroupOwner}
+					// 그룹장이 아니면 더미 채점 정보 넘겨주기
+					studentPerformance={!isGroupOwner ? dummyPerformance : undefined}
 				/>
 			))}
 		</section>
