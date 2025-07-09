@@ -2,6 +2,7 @@
 
 import { ExamCardData } from "@/data/examCardDummy"
 import { GradingStudent, gradingDetailDummy } from "@/data/gradingDummy"
+// !!!!!!!!!! 이거 채점 결과에 따라 색 달라지는 UI 관련 코드들은 더미데이터 gradingDummy 21번줄인 이승현 더미데이터로 적용되어 있습니다. !!!!!!!!
 
 interface ExamCardProps {
 	data: ExamCardData
@@ -96,7 +97,7 @@ export default function ExamCard({ data, onClick, isGroupOwner = false, studentP
 				</div>
 
 				{/* 학생별 문제 정답 상태 인디케이터 (점수에 따라 색상 표시) */}
-				{!isGroupOwner && studentPerformance && (
+				{isGroupOwner && studentPerformance && (
 					<div className="flex items-center space-x-1 mt-2">
 						{studentPerformance.problemScores.map((score, idx) => {
 							const color = score === maxScorePerProblem ? "bg-green-500" : score === 0 ? "bg-red-500" : "bg-yellow-500"
