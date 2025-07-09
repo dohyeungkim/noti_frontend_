@@ -9,6 +9,11 @@ import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { useRouter } from "next/navigation"
 import { formatTimestamp } from "../util/dageUtils"
 import { UserIcon } from "lucide-react"
+// 시험 모드 isExamMode 로 시험모드 상태관리 가능 - 홍
+import { useExamMode } from "@/hooks/useExamMode"
+// 시험 모드 관련 임시 더미데이터 - 홍
+import { feedbackDummy } from "@/data/examModeFeedbackDummy"
+import ReactMarkdown from "react-markdown"
 
 interface SolveData {
 	solve_id: number
@@ -54,7 +59,7 @@ interface ConditionResult {
 	description: string
 	passed: boolean
 	feedback: string
-	status: 'pass' | 'fail'
+	status: "pass" | "fail"
 }
 
 interface Comment {
@@ -89,9 +94,16 @@ export default function FeedbackWithSubmissionPageClient({
 	const [comments, setComments] = useState<Comment[]>([])
 	const [newComment, setNewComment] = useState("")
 	const [isAnonymous, setIsAnonymous] = useState(false)
-	const [activeTab, setActiveTab] = useState<'problem' | 'submission'>('submission')
+	const [activeTab, setActiveTab] = useState<"problem" | "submission">("submission")
 	const [userId, setUserId] = useState<string>("")
 	const router = useRouter()
+	const { isExamMode } = useExamMode()
+
+	// 시험모드 더미데이터 총점, 각 조건별 최대 배점과 획득 점수 정보 배열, Markdown 형식 교수 피드백 - 홍
+	const { totalScore, maxScore, professorFeedback: dummyProfessorFeedback } = feedbackDummy
+	// const { conditionScores } = feedbackDummy
+
+	const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
 
 	// AI 피드백 가져오기
 	useEffect(() => {
@@ -127,7 +139,7 @@ export default function FeedbackWithSubmissionPageClient({
 		try {
 			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
 			setSolveData(res)
-			
+
 			console.log("여기용")
 			console.log(res)
 			// AI 피드백이 solveData에 포함되어 있다면 사용
@@ -143,11 +155,11 @@ export default function FeedbackWithSubmissionPageClient({
 					id: index + 1,
 					condition: conditionResult.condition || `조건 ${index + 1}`,
 					is_required: conditionResult.is_required || false,
-					check_type: conditionResult.check_type || 'unknown',
-					description: conditionResult.description || '',
+					check_type: conditionResult.check_type || "unknown",
+					description: conditionResult.description || "",
 					passed: conditionResult.passed || false,
-					feedback: conditionResult.feedback || '',
-					status: conditionResult.passed ? 'pass' : 'fail'
+					feedback: conditionResult.feedback || "",
+					status: conditionResult.passed ? "pass" : "fail",
 				}))
 				setConditionResults(conditionCheckResults)
 			} else if (problem && problem.problem_condition && problem.problem_condition.length > 0) {
@@ -156,11 +168,11 @@ export default function FeedbackWithSubmissionPageClient({
 					id: index + 1,
 					condition: condition,
 					is_required: true,
-					check_type: 'problem_requirement',
-					description: '문제에서 요구하는 조건입니다',
+					check_type: "problem_requirement",
+					description: "문제에서 요구하는 조건입니다",
 					passed: res.passed || false, // 전체 통과 여부를 기반으로 설정
-					feedback: res.passed ? '조건을 만족했습니다.' : '조건을 확인해주세요.',
-					status: res.passed ? 'pass' : 'fail'
+					feedback: res.passed ? "조건을 만족했습니다." : "조건을 확인해주세요.",
+					status: res.passed ? "pass" : "fail",
 				}))
 				setConditionResults(problemConditionResults)
 			} else {
@@ -185,12 +197,13 @@ export default function FeedbackWithSubmissionPageClient({
 	const fetchComments = useCallback(async () => {
 		try {
 			console.log(`댓글 조회 시작: ${activeTab}, problemId: ${params.problemId}, resultId: ${params.resultId}`)
-			
-			const data = activeTab === "problem"
-				? await comment_api.comments_get_by_problem_id(Number(params.problemId))
-				: await comment_api.comments_get_by_solve_id(Number(params.resultId))
 
-			console.log('댓글 조회 결과:', data)
+			const data =
+				activeTab === "problem"
+					? await comment_api.comments_get_by_problem_id(Number(params.problemId))
+					: await comment_api.comments_get_by_solve_id(Number(params.resultId))
+
+			console.log("댓글 조회 결과:", data)
 			setComments(data || [])
 		} catch (error) {
 			console.error(`코멘트 불러오기 오류:`, error)
@@ -201,9 +214,9 @@ export default function FeedbackWithSubmissionPageClient({
 	// 사용자 정보 가져오기
 	const fetchUserId = useCallback(async () => {
 		try {
-			console.log('사용자 정보 조회 시작')
+			console.log("사용자 정보 조회 시작")
 			const user = await auth_api.getUser()
-			console.log('사용자 정보:', user)
+			console.log("사용자 정보:", user)
 			setUserId(user.user_id)
 		} catch (error) {
 			console.error("사용자 아이디 불러오기 실패:", error)
@@ -224,7 +237,7 @@ export default function FeedbackWithSubmissionPageClient({
 	// 사용자 정보 로드 후 댓글 가져오기
 	useEffect(() => {
 		if (userId) {
-			console.log('사용자 ID 확인됨, 댓글 조회:', userId)
+			console.log("사용자 ID 확인됨, 댓글 조회:", userId)
 			fetchComments()
 		}
 	}, [userId, fetchComments])
@@ -232,7 +245,7 @@ export default function FeedbackWithSubmissionPageClient({
 	// activeTab 변경시에만 댓글 새로고침
 	useEffect(() => {
 		if (userId) {
-			console.log('탭 변경됨, 댓글 새로고침:', activeTab)
+			console.log("탭 변경됨, 댓글 새로고침:", activeTab)
 			fetchComments()
 		}
 	}, [activeTab])
@@ -256,13 +269,13 @@ export default function FeedbackWithSubmissionPageClient({
 		}
 
 		try {
-			console.log('댓글 생성 시작:', {
+			console.log("댓글 생성 시작:", {
 				userId,
 				problemId: params.problemId,
 				resultId: params.resultId,
 				comment: newComment,
 				isAnonymous,
-				isProblemMessage: activeTab === "problem"
+				isProblemMessage: activeTab === "problem",
 			})
 
 			await comment_api.comment_create(
@@ -275,7 +288,7 @@ export default function FeedbackWithSubmissionPageClient({
 				activeTab === "problem"
 			)
 
-			console.log('댓글 생성 완료, 목록 새로고침')
+			console.log("댓글 생성 완료, 목록 새로고침")
 			await fetchComments()
 			setNewComment("")
 		} catch (error) {
@@ -285,7 +298,7 @@ export default function FeedbackWithSubmissionPageClient({
 	}
 
 	const handleKeyPress = (e: React.KeyboardEvent) => {
-		if (e.key === 'Enter' && !e.shiftKey) {
+		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault()
 			handleAddComment()
 		}
@@ -328,11 +341,16 @@ export default function FeedbackWithSubmissionPageClient({
 							<span className="text-white font-bold text-sm">📘</span>
 						</div>
 						<h1 className="text-xl font-bold text-gray-800">
-							문제 {solveData?.problem_name || solveData?.problem_id || 'PY31-0001'} 문제의 피드백
+							문제 {solveData?.problem_name || solveData?.problem_id || "PY31-0001"} 문제의 피드백
 						</h1>
 					</div>
 					<div className="flex items-center gap-4">
 						<span className="text-sm text-gray-600">🔥 열심히다.</span>
+						{isExamMode && (
+							<span className="text-sm text-gray-600">
+								✔️ 점수: {totalScore}/{maxScore}점
+							</span>
+						)}
 						{solveData && (
 							<>
 								<span className={`text-sm font-bold ${solveData.passed ? "text-green-600" : "text-red-600"}`}>
@@ -342,9 +360,7 @@ export default function FeedbackWithSubmissionPageClient({
 									언어: {solveData.code_language} | 길이: {solveData.code_len}자
 								</span>
 								{solveData.execution_time && (
-									<span className="text-sm text-gray-500">
-										실행시간: {solveData.execution_time}ms
-									</span>
+									<span className="text-sm text-gray-500">실행시간: {solveData.execution_time}ms</span>
 								)}
 							</>
 						)}
@@ -365,7 +381,7 @@ export default function FeedbackWithSubmissionPageClient({
 						</div>
 					</motion.div>
 
-					{/* 오른쪽: 조건 및 AI 피드백 - 높이 맞춤 */}
+					{/* 오른쪽: 조건 및 AI 피드백 조건 뜨는 창*/}
 					<div className="space-y-6 h-[600px] flex flex-col">
 						{/* 조건 검사 결과 섹션 - 높이 확장 */}
 						<motion.div
@@ -393,11 +409,13 @@ export default function FeedbackWithSubmissionPageClient({
 												통과: {solveData.passed_count}/{solveData.total_count}
 											</span>
 										)}
-										<span className={`text-xs px-2 py-1 rounded ${
-											solveData.overall_status === 'all_passed' || solveData.overall_status === 'success' 
-												? 'bg-green-100 text-green-800' 
-												: 'bg-red-100 text-red-800'
-										}`}>
+										<span
+											className={`text-xs px-2 py-1 rounded ${
+												solveData.overall_status === "all_passed" || solveData.overall_status === "success"
+													? "bg-green-100 text-green-800"
+													: "bg-red-100 text-red-800"
+											}`}
+										>
 											{solveData.overall_status}
 										</span>
 									</div>
@@ -429,9 +447,9 @@ export default function FeedbackWithSubmissionPageClient({
 										<motion.div
 											key={condition.id}
 											className={`p-4 rounded-lg border-l-4 ${
-												condition.status === 'pass' 
-													? 'bg-green-50 border-l-green-500 border border-green-200' 
-													: 'bg-red-50 border-l-red-500 border border-red-200'
+												condition.status === "pass"
+													? "bg-green-50 border-l-green-500 border border-green-200"
+													: "bg-red-50 border-l-red-500 border border-red-200"
 											}`}
 											initial={{ opacity: 0, y: 10 }}
 											animate={{ opacity: 1, y: 0 }}
@@ -441,9 +459,7 @@ export default function FeedbackWithSubmissionPageClient({
 											<div className="flex items-start justify-between mb-3">
 												<div className="flex-1">
 													<div className="flex items-center gap-2 mb-1">
-														<h4 className="font-semibold text-gray-800 text-base">
-															조건 {condition.id}
-														</h4>
+														<h4 className="font-semibold text-gray-800 text-base">조건 {condition.id}</h4>
 														{condition.is_required && (
 															<span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
 																필수
@@ -453,12 +469,14 @@ export default function FeedbackWithSubmissionPageClient({
 															{condition.check_type}
 														</span>
 													</div>
-													<p className="font-medium text-gray-700 text-sm">
-														{condition.condition}
-													</p>
+													<p className="font-medium text-gray-700 text-sm">{condition.condition}</p>
 												</div>
-												<div className="ml-3">
-													{condition.status === 'pass' ? (
+												{/* 오른쪽: 점수 / 아이콘 */}
+												<div className="ml-3 text-right">
+													{/* 이 3/5 부분은 시험모드일 때만 뜨도록 해야됨 - 홍 */}
+													{isExamMode && <div className="text-xs font-medium mb-1">3/5점</div>}
+													{/* pass/fail 아이콘 */}
+													{condition.status === "pass" ? (
 														<div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
 															<span className="text-white text-lg">✓</span>
 														</div>
@@ -469,28 +487,26 @@ export default function FeedbackWithSubmissionPageClient({
 													)}
 												</div>
 											</div>
-											
+
 											{/* 조건 설명 */}
 											{condition.description && (
 												<div className="mb-3">
-													<p className="text-sm text-gray-600 leading-relaxed">
-														📋 {condition.description}
-													</p>
+													<p className="text-sm text-gray-600 leading-relaxed">📋 {condition.description}</p>
 												</div>
 											)}
-											
+
 											{/* AI 피드백 */}
 											{condition.feedback && (
-												<div className={`p-3 rounded-lg ${
-													condition.status === 'pass' 
-														? 'bg-green-100 text-green-800 border border-green-200' 
-														: 'bg-red-100 text-red-800 border border-red-200'
-												}`}>
+												<div
+													className={`p-3 rounded-lg ${
+														condition.status === "pass"
+															? "bg-green-100 text-green-800 border border-green-200"
+															: "bg-red-100 text-red-800 border border-red-200"
+													}`}
+												>
 													<div className="flex items-start gap-2">
 														<span className="text-base">💬</span>
-														<p className="text-sm font-medium leading-relaxed">
-															{condition.feedback}
-														</p>
+														<p className="text-sm font-medium leading-relaxed">{condition.feedback}</p>
 													</div>
 												</div>
 											)}
@@ -507,19 +523,41 @@ export default function FeedbackWithSubmissionPageClient({
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.4, delay: 0.3 }}
 						>
-							<div className="p-4 border-b">
-								<h3 className="font-semibold text-gray-800">AI 피드백</h3>
+							{/* 탭 헤더 */}
+							<div className="p-2 flex space-x-2 border-b">
+								<button
+									className={`px-4 py-1 text-sm font-medium ${
+										activeFeedbackTab === "ai" ? "bg-blue-100 text-blue-700  border-b-white" : "text-gray-600 "
+									}`}
+									onClick={() => setActiveFeedbackTab("ai")}
+								>
+									AI 피드백
+								</button>
+								<button
+									className={`px-4 py-1 text-sm font-medium ${
+										activeFeedbackTab === "professor" ? "bg-blue-100 text-blue-700 border-b-white" : "text-gray-600"
+									}`}
+									onClick={() => setActiveFeedbackTab("professor")}
+								>
+									교수 피드백
+								</button>
 							</div>
+
+							{/* 탭 내용 */}
 							<div className="p-4 h-32 overflow-y-auto">
-								{!isAILoaded ? (
+								{!isAILoaded && activeFeedbackTab === "ai" ? (
 									<div className="flex items-center gap-2 text-gray-500">
 										<div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
 										<span className="text-sm">AI 피드백을 불러오는 중...</span>
 									</div>
 								) : (
-									<p className="text-gray-700 text-sm leading-relaxed">
-										{aiFeedback || solveData?.ai_feedback || "❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다."}
-									</p>
+									<div className="prose prose-sm max-w-none text-gray-800">
+										<ReactMarkdown>
+											{activeFeedbackTab === "ai"
+												? aiFeedback || solveData?.ai_feedback || "AI 피드백이 없습니다."
+												: dummyProfessorFeedback}
+										</ReactMarkdown>
+									</div>
 								)}
 							</div>
 						</motion.div>
@@ -536,28 +574,28 @@ export default function FeedbackWithSubmissionPageClient({
 					{/* 탭 헤더 */}
 					<div className="border-b">
 						<div className="flex">
-							<button 
+							<button
 								className={`px-6 py-3 text-sm font-medium ${
-									activeTab === 'submission' 
-										? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-										: 'text-gray-500 hover:text-gray-700'
+									activeTab === "submission"
+										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
-									console.log('제출별 탭 클릭')
-									setActiveTab('submission')
+									console.log("제출별 탭 클릭")
+									setActiveTab("submission")
 								}}
 							>
 								제출별
 							</button>
-							<button 
+							<button
 								className={`px-6 py-3 text-sm font-medium ${
-									activeTab === 'problem' 
-										? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-										: 'text-gray-500 hover:text-gray-700'
+									activeTab === "problem"
+										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
-									console.log('문제별 탭 클릭')
-									setActiveTab('problem')
+									console.log("문제별 탭 클릭")
+									setActiveTab("problem")
 								}}
 							>
 								문제별
@@ -568,11 +606,9 @@ export default function FeedbackWithSubmissionPageClient({
 					{/* 코멘트 섹션 */}
 					<div className="p-6">
 						<h4 className="font-semibold text-gray-800 mb-4">
-							{activeTab === "problem"
-								? `📝 문제 ${params.problemId}번의 댓글`
-								: `💬 제출별 댓글`}
+							{activeTab === "problem" ? `📝 문제 ${params.problemId}번의 댓글` : `💬 제출별 댓글`}
 						</h4>
-						
+
 						{/* 기존 코멘트 목록 */}
 						<div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
 							{comments.length === 0 ? (
@@ -602,12 +638,10 @@ export default function FeedbackWithSubmissionPageClient({
 													{comment.is_anonymous ? comment.nickname : comment.user_id}
 												</strong>
 												{comment.is_anonymous && (
-													<span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">
-														익명
-													</span>
+													<span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">익명</span>
 												)}
 												<span className="text-xs text-gray-500">
-													{comment.timestamp ? formatTimestamp(comment.timestamp) : '방금 전'}
+													{comment.timestamp ? formatTimestamp(comment.timestamp) : "방금 전"}
 												</span>
 											</div>
 											<p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap break-words">
@@ -623,9 +657,7 @@ export default function FeedbackWithSubmissionPageClient({
 						<div className="border-t pt-6">
 							<div className="space-y-3">
 								<div className="flex items-center gap-4 mb-3">
-									<label className="block text-sm font-medium text-gray-700">
-										새 댓글 작성
-									</label>
+									<label className="block text-sm font-medium text-gray-700">새 댓글 작성</label>
 									{/* 익명 체크박스 */}
 									<label className="flex items-center space-x-2 cursor-pointer">
 										<input
@@ -637,7 +669,7 @@ export default function FeedbackWithSubmissionPageClient({
 										<span className="text-sm text-gray-700">익명으로 작성</span>
 									</label>
 								</div>
-								
+
 								<div className="flex items-end gap-3">
 									<textarea
 										value={newComment}

@@ -1,17 +1,17 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { useRouter, useParams } from "next/navigation";
-import { motion } from "framer-motion";
-import ProblemStatistics from "../ui/ProblemStatistics";
-import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
-import { problem_api } from "@/lib/api";
-import dynamic from "next/dynamic";
+import { useEffect, useState } from "react"
+import { FaChevronDown, FaChevronUp } from "react-icons/fa"
+import { useRouter, useParams } from "next/navigation"
+import { motion } from "framer-motion"
+import ProblemStatistics from "../ui/ProblemStatistics"
+import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal"
+import { problem_api } from "@/lib/api"
+import dynamic from "next/dynamic"
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 	ssr: false,
-});
+})
 
 interface Problem {
 	problem_id: number
@@ -45,85 +45,85 @@ const languageDisplayNames = {
 }
 
 export default function ProblemView() {
-	const router = useRouter();
-	const { id } = useParams<{ id: string }>();
-	const [problem, setProblem] = useState<Problem | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [isExpanded, setIsExpanded] = useState(true);
-	const [isExpandedstatis, setisExpandedstatis] = useState(true);
-	const [isConfirming, setIsConfirming] = useState(false);
-	const [targetProblemId, setTargetProblemId] = useState<number | null>(null);
-	const [activeCodeTab, setActiveCodeTab] = useState(0);
+	const router = useRouter()
+	const { id } = useParams<{ id: string }>()
+	const [problem, setProblem] = useState<Problem | null>(null)
+	const [loading, setLoading] = useState(true)
+	const [isExpanded, setIsExpanded] = useState(true)
+	const [isExpandedstatis, setisExpandedstatis] = useState(true)
+	const [isConfirming, setIsConfirming] = useState(false)
+	const [targetProblemId, setTargetProblemId] = useState<number | null>(null)
+	const [activeCodeTab, setActiveCodeTab] = useState(0)
 
 	useEffect(() => {
 		const fetchProblem = async () => {
-			setLoading(true);
+			setLoading(true)
 			try {
-				const data = await problem_api.problem_get_by_id(Number(id));
-				setProblem(data);
+				const data = await problem_api.problem_get_by_id(Number(id))
+				setProblem(data)
 			} catch (error) {
-				console.error("Failed to fetch problem:", error);
+				console.error("Failed to fetch problem:", error)
 			} finally {
-				setLoading(false);
+				setLoading(false)
 			}
-		};
+		}
 
 		if (id) {
-			fetchProblem();
+			fetchProblem()
 		}
-	}, [id]);
+	}, [id])
 
-	if (loading) return <p>Loading...</p>;
-	if (!problem) return <p>문제 정보를 불러올 수 없습니다.</p>;
+	if (loading) return <p>Loading...</p>
+	if (!problem) return <p>문제 정보를 불러올 수 없습니다.</p>
 
 	const handleDeleteButtonClick = async (problem_id: number) => {
 		try {
-			await problem_api.problem_delete(problem_id);
-			alert("문제가 삭제되었습니다.");
-			router.push("/registered-problems");
+			await problem_api.problem_delete(problem_id)
+			alert("문제가 삭제되었습니다.")
+			router.push("/registered-problems")
 		} catch (error) {
-			console.error("삭제 실패:", error);
-			alert(`⚠️ 이 문제를 참조하는 문제지가 있어 삭제가 불가합니다.`);
+			console.error("삭제 실패:", error)
+			alert(`⚠️ 이 문제를 참조하는 문제지가 있어 삭제가 불가합니다.`)
 		}
-	};
+	}
 
 	const openDeleteModal = (problem_id: number) => {
-		setTargetProblemId(problem_id);
-		setIsConfirming(true);
-	};
+		setTargetProblemId(problem_id)
+		setIsConfirming(true)
+	}
 
 	const handleDelete = async () => {
 		if (targetProblemId !== null) {
-			await handleDeleteButtonClick(targetProblemId);
+			await handleDeleteButtonClick(targetProblemId)
 		}
-		setIsConfirming(false);
-	};
+		setIsConfirming(false)
+	}
 
 	const getDifficultyColor = (difficulty: string) => {
 		switch (difficulty.toLowerCase()) {
 			case "easy":
-				return "bg-green-500";
+				return "bg-green-500"
 			case "medium":
-				return "bg-yellow-500";
+				return "bg-yellow-500"
 			case "hard":
-				return "bg-red-500";
+				return "bg-red-500"
 			default:
-				return "bg-gray-500";
+				return "bg-gray-500"
 		}
-	};
+	}
 
 	const getRatingModeColor = (mode: string) => {
 		switch (mode) {
 			case "Hard":
-				return "bg-red-500";
+				return "bg-red-500"
 			case "Space":
-				return "bg-blue-500";
+				return "bg-blue-500"
 			case "Regex":
-				return "bg-purple-500";
+				return "bg-purple-500"
 			default:
-				return "bg-gray-500";
+				return "bg-gray-500"
 		}
-	};
+	}
 
 	return (
 		<>
@@ -142,9 +142,7 @@ export default function ProblemView() {
 			<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 				<div className="flex justify-between items-start mb-4">
 					<div className="flex-1">
-						<h1 className="text-2xl font-bold text-gray-900 mb-2">
-							{problem.title}
-						</h1>
+						<h1 className="text-2xl font-bold text-gray-900 mb-2">{problem.title}</h1>
 						<div className="flex items-center gap-2 mb-2">
 							<span className={`text-white text-xs px-2 py-1 rounded ${getDifficultyColor(problem.difficulty)}`}>
 								{problem.difficulty.toUpperCase()}
@@ -206,9 +204,7 @@ export default function ProblemView() {
 					<div className="space-y-2">
 						{problem.problem_condition.map((condition, index) => (
 							<div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-								<span className="text-sm font-semibold text-gray-700 min-w-[20px] mt-0.5">
-									{index + 1}.
-								</span>
+								<span className="text-sm font-semibold text-gray-700 min-w-[20px] mt-0.5">{index + 1}.</span>
 								<span className="text-sm text-gray-700 flex-1">{condition}</span>
 							</div>
 						))}
@@ -220,7 +216,7 @@ export default function ProblemView() {
 			{problem.reference_codes && problem.reference_codes.length > 0 && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 					<h3 className="text-lg font-semibold mb-4">참조 코드</h3>
-					
+
 					{/* 코드 탭 */}
 					<div className="flex gap-1 mb-4 overflow-x-auto">
 						{problem.reference_codes.map((refCode, index) => (
@@ -232,9 +228,7 @@ export default function ProblemView() {
 									onClick={() => setActiveCodeTab(index)}
 								>
 									{languageDisplayNames[refCode.language as keyof typeof languageDisplayNames] || refCode.language}
-									{refCode.is_main && (
-										<span className="text-xs bg-yellow-500 text-white px-1 rounded">메인</span>
-									)}
+									{refCode.is_main && <span className="text-xs bg-yellow-500 text-white px-1 rounded">메인</span>}
 								</div>
 							</div>
 						))}
@@ -247,8 +241,8 @@ export default function ProblemView() {
 								height="400px"
 								width="100%"
 								language={
-									problem.reference_codes[activeCodeTab].language === "cpp" 
-										? "cpp" 
+									problem.reference_codes[activeCodeTab].language === "cpp"
+										? "cpp"
 										: problem.reference_codes[activeCodeTab].language
 								}
 								value={problem.reference_codes[activeCodeTab].code}
@@ -282,27 +276,19 @@ export default function ProblemView() {
 						{problem.test_cases.map((testCase, index) => (
 							<div key={index} className="border border-gray-200 rounded-lg p-4">
 								<div className="flex items-center justify-between mb-3">
-									<span className="text-sm font-semibold text-gray-700">
-										테스트 케이스 {index + 1}
-									</span>
+									<span className="text-sm font-semibold text-gray-700">테스트 케이스 {index + 1}</span>
 									{testCase.is_sample && (
-										<span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-											샘플
-										</span>
+										<span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">샘플</span>
 									)}
 								</div>
 								<div className="grid grid-cols-2 gap-4">
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">입력</label>
-										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-											{testCase.input}
-										</pre>
+										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">{testCase.input}</pre>
 									</div>
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">예상 출력</label>
-										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-											{testCase.expected_output}
-										</pre>
+										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">{testCase.expected_output}</pre>
 									</div>
 								</div>
 							</div>
@@ -411,5 +397,5 @@ export default function ProblemView() {
 				}
 			`}</style>
 		</>
-	);
+	)
 }

@@ -142,11 +142,25 @@ export default function ExamsClient() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.3, delay: 0.3 }}
 				>
+					{/* 더미데이터로 바꾸면서 이 코드로 수정했음 - 홍 */}
 					{viewMode === "gallery" ? (
-						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+						<ExamGallery
+							examData={workbooks.map((workbook) => ({
+								workbook,
+								exam: null, // 또는 실제 exam 데이터가 있는 경우 해당 데이터 연결
+							}))}
+							handleEnterExam={handleEnterExam}
+						/>
 					) : (
 						<ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
 					)}
+
+					{/* 밑에가 기존 코드입니다ㅏ */}
+					{/* {viewMode === "gallery" ? (
+						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+					) : (
+						<ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+					)} */}
 				</motion.div>
 
 				{/* 모달 */}

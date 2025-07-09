@@ -16,12 +16,24 @@ import "react-mde/lib/styles/css/react-mde-all.css"
 import { useState, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
 
+// 문제 유형 옵션
+const PROBLEM_TYPES = [
+	{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
+	{ value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
+	{ value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
+	{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
+]
+
 export default function NewRegisteredProblem() {
 	const router = useRouter()
 	const [description, setDescription] = useState("")
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write")
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([])
-	
+
+	// 문제 유형 및 배점 추가
+	const [problemType, setProblemType] = useState<string>("코딩")
+	const [problemScore, setProblemScore] = useState<number>(10)
+
 	const {
 		title,
 		setTitle,
@@ -57,19 +69,19 @@ export default function NewRegisteredProblem() {
 
 	// 컴포넌트 마운트 시 드래프트 로드
 	useEffect(() => {
-		loadDraft();
-	}, [loadDraft]);
+		loadDraft()
+	}, [loadDraft])
 
 	// 상태 변경 시 드래프트 저장
 	useEffect(() => {
-		saveDraft();
-	}, [saveDraft]);
+		saveDraft()
+	}, [saveDraft])
 
 	// 로딩 상태 체크는 모든 훅 호출 이후에
 	if (!editor) return <p>Editor is loading...</p>
 
 	const handleTestRun = async () => {
-		setTestResults([]); // 테스트 실행 직전에 추가
+		setTestResults([]) // 테스트 실행 직전에 추가
 		if (referenceCodes.length === 0) {
 			alert("참조 코드가 없습니다.")
 			return
@@ -78,17 +90,17 @@ export default function NewRegisteredProblem() {
 			alert("테스트케이스가 없습니다.")
 			return
 		}
-		const mainCode = referenceCodes.find(code => code.is_main) || referenceCodes[0]
+		const mainCode = referenceCodes.find((code) => code.is_main) || referenceCodes[0]
 
 		try {
 			const requestData = {
 				language: mainCode.language,
 				code: mainCode.code,
-				test_cases: testCases.map(tc => ({
+				test_cases: testCases.map((tc) => ({
 					input: tc.input,
-					expected_output: tc.expected_output
+					expected_output: tc.expected_output,
 				})),
-				rating_mode: ratingMode
+				rating_mode: ratingMode,
 			}
 
 			console.log("테스트 실행 요청:", JSON.stringify(requestData))
@@ -96,32 +108,32 @@ export default function NewRegisteredProblem() {
 			const response = await fetch("/api/proxy/solves/run_code", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(requestData)
-			});
+				body: JSON.stringify(requestData),
+			})
 
-			const result = await response.json();
+			const result = await response.json()
 
 			if (!result || !Array.isArray(result.results)) {
-				alert("API 응답이 올바르지 않습니다. (테스트케이스 실행 실패)");
-				console.error("API 응답:", result);
-				return;
+				alert("API 응답이 올바르지 않습니다. (테스트케이스 실행 실패)")
+				console.error("API 응답:", result)
+				return
 			}
 
-			const passedCount = result.results.filter(r => r.passed).length;
-			const totalCount = result.results.length;
+			const passedCount = result.results.filter((r) => r.passed).length
+			const totalCount = result.results.length
 
 			if (passedCount === totalCount) {
-				alert(`✅ 모든 테스트케이스 통과!\n성공: ${passedCount}/${totalCount}`);
+				alert(`✅ 모든 테스트케이스 통과!\n성공: ${passedCount}/${totalCount}`)
 			} else if (passedCount === 0) {
-				alert(`❌ 모든 테스트케이스 실패\n성공: 0/${totalCount}`);
+				alert(`❌ 모든 테스트케이스 실패\n성공: 0/${totalCount}`)
 			} else {
-				alert(`❌ 일부 테스트케이스 실패\n성공: ${passedCount}/${totalCount}`);
+				alert(`❌ 일부 테스트케이스 실패\n성공: ${passedCount}/${totalCount}`)
 			}
 
-			setTestResults(result.results.map(r => r.passed));
+			setTestResults(result.results.map((r) => r.passed))
 		} catch (error) {
-			console.error("테스트케이스 실행 실패:", error);
-			alert("테스트케이스 실행 중 오류가 발생했습니다.");
+			console.error("테스트케이스 실행 실패:", error)
+			alert("테스트케이스 실행 중 오류가 발생했습니다.")
 		}
 	}
 
@@ -135,6 +147,7 @@ export default function NewRegisteredProblem() {
 		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
 
 		try {
+			// 문제 유형과 배점을 추가하여 API 호출
 			await problem_api.problem_create(
 				title,
 				description,
@@ -143,7 +156,9 @@ export default function NewRegisteredProblem() {
 				tags,
 				filteredConditions,
 				referenceCodes,
-				testCases
+				testCases,
+				problemType, // 문제 유형 추가
+				problemScore // 배점 추가
 			)
 			alert("문제가 성공적으로 등록되었습니다.")
 			// 성공 시 드래프트 삭제
@@ -173,8 +188,8 @@ export default function NewRegisteredProblem() {
 				</button>
 				<button
 					onClick={async () => {
-						await handleSave();
-						router.back();
+						await handleSave()
+						router.back()
 					}}
 					className="flex items-center bg-blue-600 text-white px-6 py-2 rounded-lg text-sm cursor-pointer
 					hover:bg-blue-700 transition-all duration-200 ease-in-out
@@ -202,6 +217,26 @@ export default function NewRegisteredProblem() {
 							className="w-full px-3 py-1.5 border rounded-md mb-3 text-sm"
 						/>
 
+						{/* 문제 유형 선택 (추가) */}
+						<div className="mb-3">
+							<label className="block text-xs font-medium text-gray-700 mb-1">문제 유형</label>
+							<div className="grid grid-cols-4 gap-2">
+								{PROBLEM_TYPES.map((type) => (
+									<button
+										key={type.value}
+										onClick={() => setProblemType(type.value)}
+										className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+											problemType === type.value
+												? `${type.color} font-medium`
+												: "bg-gray-100 text-gray-700 hover:bg-gray-200"
+										}`}
+									>
+										{type.label}
+									</button>
+								))}
+							</div>
+						</div>
+
 						{/* 태그 입력 */}
 						<div className="mb-3">
 							<label className="block text-xs font-medium text-gray-700 mb-1">태그 추가</label>
@@ -211,32 +246,32 @@ export default function NewRegisteredProblem() {
 									placeholder="태그 입력 후 Enter 또는 쉼표"
 									className="flex-1 px-3 py-1 border rounded-md text-sm"
 									onKeyPress={(e) => {
-										if (e.key === 'Enter' || e.key === ',') {
-											e.preventDefault();
-											const input = e.target as HTMLInputElement;
-											const newTag = input.value.trim();
+										if (e.key === "Enter" || e.key === ",") {
+											e.preventDefault()
+											const input = e.target as HTMLInputElement
+											const newTag = input.value.trim()
 											if (newTag && !tags.includes(newTag)) {
-												setTags([...tags, newTag]);
-												input.value = '';
+												setTags([...tags, newTag])
+												input.value = ""
 											}
 										}
 									}}
 									onBlur={(e) => {
-										const newTag = e.target.value.trim();
+										const newTag = e.target.value.trim()
 										if (newTag && !tags.includes(newTag)) {
-											setTags([...tags, newTag]);
-											e.target.value = '';
+											setTags([...tags, newTag])
+											e.target.value = ""
 										}
 									}}
 								/>
 								<button
 									type="button"
 									onClick={(e) => {
-										const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-										const newTag = input.value.trim();
+										const input = e.currentTarget.previousElementSibling as HTMLInputElement
+										const newTag = input.value.trim()
 										if (newTag && !tags.includes(newTag)) {
-											setTags([...tags, newTag]);
-											input.value = '';
+											setTags([...tags, newTag])
+											input.value = ""
 										}
 									}}
 									className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600"
@@ -246,13 +281,12 @@ export default function NewRegisteredProblem() {
 							</div>
 							<div className="flex flex-wrap gap-2">
 								{tags.map((tag, idx) => (
-									<span key={idx} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded flex items-center gap-1">
+									<span
+										key={idx}
+										className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded flex items-center gap-1"
+									>
 										{tag}
-										<button
-											type="button"
-											className="text-red-500 hover:text-red-700"
-											onClick={() => removeTag(idx)}
-										>
+										<button type="button" className="text-red-500 hover:text-red-700" onClick={() => removeTag(idx)}>
 											×
 										</button>
 									</span>
@@ -288,6 +322,23 @@ export default function NewRegisteredProblem() {
 								</select>
 							</div>
 						</div>
+
+						{/* 배점 설정 (텍스트 입력 방식으로 변경) */}
+						<div className="mb-3">
+							<label className="block text-xs font-medium text-gray-700 mb-1">배점</label>
+							<div className="flex items-center">
+								<input
+									type="number"
+									min="1"
+									max="100"
+									value={problemScore}
+									onChange={(e) => setProblemScore(parseInt(e.target.value) || 1)}
+									className="w-full px-3 py-1.5 border rounded-md text-sm"
+									placeholder="배점을 입력하세요 (1~100점)"
+								/>
+								<span className="ml-2 text-sm text-gray-600">점</span>
+							</div>
+						</div>
 					</div>
 
 					{/* 문제 설명 */}
@@ -298,9 +349,7 @@ export default function NewRegisteredProblem() {
 							onChange={setDescription}
 							selectedTab={selectedTab}
 							onTabChange={setSelectedTab}
-							generateMarkdownPreview={(markdown: string) =>
-								Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>)
-							}
+							generateMarkdownPreview={(markdown: string) => Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>)}
 							childProps={{
 								writeButton: {
 									tabIndex: -1,
@@ -341,7 +390,6 @@ export default function NewRegisteredProblem() {
 				updateTestCase={updateTestCase}
 				testResults={testResults}
 			/>
-
 		</div>
 	)
 }

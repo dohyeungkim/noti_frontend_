@@ -156,12 +156,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 				console.log("✅ 조건 설정됨:", res.problem_condition)
 				setProblemConditions(res.problem_condition)
 			} else {
-				console.log("❌ 조건 없음 - 백엔드에서 아직 지원하지 않음")
-				// 🔧 임시: 백엔드 개발 전까지 샘플 조건 표시 (UI 확인용)
-				setProblemConditions(["조건1) LC 사용", "조건2) numpy 사용", "조건3) pandas 사용"])
-
-				// 🔧 TODO: 백엔드에서 conditions 필드 지원 시 제거
-				console.log("🚨 백엔드 개발자에게 알림: problems 테이블에 conditions 필드 추가 필요")
+				setProblemConditions(["해당 문제는 조건이 없"])
 			}
 
 			// 샘플 테스트케이스만 추출
