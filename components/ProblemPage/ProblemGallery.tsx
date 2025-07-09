@@ -92,7 +92,7 @@ export default function ProblemGallery({
 							</button>
 						)}
 
-						{/* 문제 유형 및 배점 표시 */}
+						{/* 문제 유형 및 배점 표시 -> 시험모드일때, 교수: 문제보기 학생: 결과보기 */}
 						<div className="flex items-center gap-2 mb-2">
 							{/* 문제 유형 - 실제 데이터가 없으면 기본값 표시 */}
 							<span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

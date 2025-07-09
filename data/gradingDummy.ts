@@ -29,46 +29,17 @@ export const gradingDummy: GradingStudent[] = [
 	},
 	{
 		studentId: "student-002",
-		studentName: "김민준",
+		studentName: "홍서연",
 		problemScores: [4, 3, 5, 2, 5],
 		problemStatus: [true, true, false, false, false],
 		submittedAt: "2025-07-09T10:45:00+09:00",
 	},
 	{
 		studentId: "student-003",
-		studentName: "박서연",
+		studentName: "조완익",
 		problemScores: [5, 4, 5, 5, 4],
 		problemStatus: [true, true, true, false, false],
 		submittedAt: "2025-07-09T11:00:00+09:00",
-	},
-	{
-		studentId: "student-004",
-		studentName: "최지우",
-		problemScores: [3, 4, 2, 3, 4],
-		problemStatus: [true, true, true, true, false],
-		submittedAt: "2025-07-09T11:15:00+09:00",
-	},
-	{
-		studentId: "student-005",
-		studentName: "정도윤",
-		problemScores: [5, 5, 4, 5, 5],
-		problemStatus: [true, true, true, true, true], // 모든 문제 검토 완료
-		submittedAt: "2025-07-09T11:20:00+09:00",
-		totalScore: 24, // 총점 예시
-	},
-	{
-		studentId: "student-006",
-		studentName: "강하은",
-		problemScores: [4, 3, 3, 4, 5],
-		problemStatus: [true, false, false, true, false],
-		submittedAt: "2025-07-09T11:30:00+09:00",
-	},
-	{
-		studentId: "student-007",
-		studentName: "윤서준",
-		problemScores: [5, 4, 5, 3, 4],
-		problemStatus: [true, true, true, false, false],
-		submittedAt: "2025-07-09T11:40:00+09:00",
 	},
 ]
 
@@ -269,7 +240,7 @@ export function ThemedButton() {
 export const studentSubmissionsCollection = {
 	"student-002": {
 		studentId: "student-002",
-		studentName: "김민준",
+		studentName: "홍서연",
 		examId: "exam-001",
 		workbookId: 1,
 		groupId: 101,
@@ -372,7 +343,7 @@ export function UserProvider({ children }) {
 	},
 	"student-003": {
 		studentId: "student-003",
-		studentName: "박서연",
+		studentName: "조완익",
 		examId: "exam-001",
 		workbookId: 1,
 		groupId: 101,
