@@ -17,7 +17,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 	// 좌우 패딩 조절 값 (열리면 사이드바 너비 고려)
 	const leftPadding = isDrawerOpen
 		? "ml-[20%] mr-[10%]"
-		: "ml-[10%] mr-[5%] md:ml-[20%] md:mr-[8%] lg:ml-[10%] lg:mr-[10%]"
+		: "ml-[13%] mr-[5%] md:ml-[15%] md:mr-[8%] lg:ml-[13%] lg:mr-[10%]"
 
 	if (isAuthPage) {
 		return <div className="min-h-screen w-full">{children}</div>

@@ -93,7 +93,7 @@ export default function DynamicTitle({ pathname, userName, problem, exam, group 
 	const title = getTitle(pathname, userName, problem, exam, group)
 
 	return (
-		<h1 className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-bold flex justify-start items-start gap-1.5 sm:pt-3 md:pt-4 lg:pt-6 xl:pt-8">
+		<h1 className="text-base sm:text-xl md:text-2xl lg:text-3xl xl:text-3xl 2xl:text-4xl font-bold flex justify-start items-start gap-1.5 sm:pt-3 md:pt-4 lg:pt-6 xl:pt-8">
 			{title}
 		</h1>
 	)
