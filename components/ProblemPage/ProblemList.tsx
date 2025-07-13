@@ -1,4 +1,4 @@
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";//훅, 모듈 추가
 import { useState } from "react";
 import { problem_api } from "@/lib/api";
 import { Problem } from "./ProblemModal/ProblemSelectorModal";
@@ -36,7 +36,7 @@ const ProblemList = ({
     }
   };
 
-  return (
+  return (//사용자 UI
     <section>
       <div className="w-full overflow-x-auto">
         <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">

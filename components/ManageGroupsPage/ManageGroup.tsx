@@ -1,24 +1,24 @@
-"use client";
+"use client"; //클라이언트 컴포넌트
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react"; //사용할 모듈 훅 추가
 import Modal from "./Modal/manageModal";
 import { useParams, useRouter } from "next/navigation";
 import { group_api, group_member_api, workbook_api } from "@/lib/api";
 
-interface GroupMember {
+interface GroupMember { //groupmember 타입 선언
   user_id: string;
   username: string;
   email: string;
   timestamp: string;
 }
 
-interface GroupMemberReq {
+interface GroupMemberReq {//groupmemberreq 타입 선언
   user_id: string;
   user_nickname: string;
   timestamp: string;
 }
 
-interface Workbook {
+interface Workbook {//workbook 타입 선언
   workbook_id: number;
   group_id: number;
   workbook_name: string;
@@ -27,12 +27,12 @@ interface Workbook {
   description: string;
 }
 
-export default function ManageGroup() {
-  const router = useRouter();
-  const { groupId } = useParams() as { groupId: string };
+export default function ManageGroup() { //외부에서 접근가능하게 managegroup선언
+  const router = useRouter(); //라우팅을 위해 
+  const { groupId } = useParams() as { groupId: string };//groupid추출
 
   // 그룹 관련 상태
-  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]); 
   const [groupInvMembers, setGroupInvMembers] = useState<GroupMemberReq[]>([]);
   const [groupName, setGroupName] = useState("");
   const [groupPrivacy, setGroupPrivacy] = useState("public");
@@ -250,7 +250,7 @@ export default function ManageGroup() {
   const toggleInvMembers = () => setShowInvitationMembers((prev) => !prev);
   const toggleProblemList = () => setShowProblemList((prev) => !prev);
 
-  return (
+  return (//사용자 UI
     <div className="w-full flex flex-col bg-transparent p-5 overflow-auto">
       <h1 className="text-2xl font-bold">{groupId} 그룹 관리 페이지</h1>
 

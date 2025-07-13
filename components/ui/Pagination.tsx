@@ -1,6 +1,6 @@
-"use client";
+"use client";//클라이언트사용
 
-interface PaginationProps {
+interface PaginationProps {//훅, 모듈 추가
   className?: string;
 
   totalItems: number; // 전체 항목 수
@@ -17,7 +17,7 @@ export default function Pagination({
 }: PaginationProps) {
   const totalPages = Math.ceil(totalItems / itemsPerPage); // 전체 페이지 수 계산
 
-  return (
+  return (//사용자UI
     <div className="flex items-center justify-center space-x-2 mt-6">
       {/* 이전 페이지 버튼 */}
       <button

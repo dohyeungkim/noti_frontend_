@@ -1,5 +1,5 @@
-"use client"
-
+"use client" //클라이언트 컴포넌트(훅을 사용하기위함)  
+//사용할 모듈, 훅들 추가
 import { useRouter, useParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 
@@ -14,7 +14,7 @@ import OpenModalButton from "../ui/OpenModalButton"
 import { useAuth } from "@/stores/auth"
 import { group_api, workbook_api } from "@/lib/api"
 
-interface WorkbookType {
+interface WorkbookType { //workbooktype의 타입선언
 	workbook_id: number
 	group_id: number
 	workbook_name: string
@@ -23,71 +23,73 @@ interface WorkbookType {
 	creation_date: string
 }
 
-export default function ExamsClient() {
-	const router = useRouter()
-	const { userName } = useAuth()
-	const { groupId } = useParams() as {
-		groupId: string
+export default function ExamsClient() {// 컴포넌트 선언
+	const router = useRouter() //페이지이동함수
+	const { userName } = useAuth() //로그인 되어있는 정보중 userName을 가지고오기
+	const { groupId } = useParams() as { 
+		groupId: string	// groupid추출
 	}
-
-	const [workbooks, setWorkbooks] = useState<WorkbookType[]>([])
-	const [isModalOpen, setIsModalOpen] = useState(false)
+	//문제지에 관한 변수들
+	const [workbooks, setWorkbooks] = useState<WorkbookType[]>([]) //전체 문제지 목록저장
+	const [isModalOpen, setIsModalOpen] = useState(false) //모달열림 여부확인
 	const [workBookName, setWorkBookName] = useState("")
 	const [workBookDescription, setWorkBookDescription] = useState("")
 	const [searchQuery, setSearchQuery] = useState("")
-	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
-	const [filteredWorkbooks, setFilteredWorkbooks] = useState<WorkbookType[]>([])
+	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")//보기모드 전환
+	const [filteredWorkbooks, setFilteredWorkbooks] = useState<WorkbookType[]>([])//필터링된 문제지 목록
 	const [refresh, setRefresh] = useState(false)
 
 	// 그룹장의 유저명 저장 (해당 그룹의 그룹장 ID를 저장)
-	const [groupOwner, setGroupOwner] = useState<string | null>(null)
+	const [groupOwner, setGroupOwner] = useState<string | null>(null) 
 
 	// 그룹장인지 확인하는 함수
 	const isGroupOwner = userName === groupOwner
 
 	// 문제지 가져오기 (useCallback 적용)
-	const fetchWorkbooks = useCallback(async () => {
+	const fetchWorkbooks = useCallback(async () => { // 문제지 가져오는 함수
 		try {
-			const data = await workbook_api.workbook_get(Number(groupId))
-			setWorkbooks(data)
-		} catch (error) {
-			console.error("문제지 데이터를 가져오는 데 실패했습니다:", error)
+			const data = await workbook_api.workbook_get(Number(groupId))  //gropuid를 가져오기
+			setWorkbooks(data) //groupid저장
+		} catch (error) { //에러인경우
+			console.error("문제지 데이터를 가져오는 데 실패했습니다:", error) 
 		}
 	}, [groupId])
 
-	const handleEnterExam = (examId: string) => {
+	const handleEnterExam = (examId: string) => { //groupid에 해당하는 페이지로 이동
 		router.push(`/mygroups/${groupId}/exams/${examId}`)
 	}
 
-	const handleClick = () => {
+	const handleClick = () => { //페이지 이동
 		router.push(`/manage/${groupId}`)
 	}
 
 	// 그룹장 정보 가져오기 (useCallback 적용)
-	const fetchMyOwner = useCallback(async () => {
+	const fetchMyOwner = useCallback(async () => { //비동기함수 선언 (await을 위해)
 		try {
-			const data = await group_api.my_group_get()
+			const data = await group_api.my_group_get() //data에 내가 속한그룹목록 가져옴
 			const currentGroup = data.find((group: { group_id: number }) => group.group_id === Number(groupId))
-			setGroupOwner(currentGroup?.group_owner || null)
-		} catch (error) {
+			//현재그룹에서 그룹id를 찾아봄 
+			setGroupOwner(currentGroup?.group_owner || null)//setGroupOwner를 통해 찾은 그룹id를 저장함 없으면 null
+		} catch (error) {//에러처리
 			console.error("그룹장 불러오기 중 오류:", error)
 		}
 	}, [groupId])
 
-	useEffect(() => {
+	useEffect(() => { //searchQuery, workbooks, groupId내용 중 하나라도 바뀌면 코드가 실행됨 
 		const filteredWorkbooksdata = workbooks
-			.filter((wb) => wb.group_id === Number(groupId))
-			.filter((wb) => wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase()))
-		setFilteredWorkbooks(filteredWorkbooksdata)
+			.filter((wb) => wb.group_id === Number(groupId)) //그룹id와 같은 것만 추출
+			.filter((wb) => wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase()))//workbookname이 검색어를 포함하는 거을 추출 추가로 대소문자 구분하지않게끔
+		setFilteredWorkbooks(filteredWorkbooksdata)//필터링된 것들을 토대로 저장
 	}, [searchQuery, workbooks, groupId])
 
-	useEffect(() => {
-		if (!groupId) return
-		fetchWorkbooks()
+	useEffect(() => { 
+		if (!groupId) //그룹id가 없다면
+		return
+		fetchWorkbooks() 
 		fetchMyOwner()
-	}, [refresh, groupId, fetchWorkbooks, fetchMyOwner])
+	}, [refresh, groupId, fetchWorkbooks, fetchMyOwner]) //의존성배열로 이 중 하나라도 바뀌면 useEffect실행
 
-	return (
+	return ( //사용자 UI
 		<div>
 			<motion.div>
 				<div>

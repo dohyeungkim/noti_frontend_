@@ -1,6 +1,6 @@
-"use client";
+"use client";//클라이언트 사용
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";//훅, 모듈 추가
 import ProblemSelector, { Problem } from "@/components/ProblemPage/ProblemModal/ProblemSelectorModal";
 import OpenModalButton from "@/components/ui/OpenModalButton";
 import SearchBar from "@/components/ui/SearchBar";
@@ -75,7 +75,7 @@ export default function ProblemStructure({
     setFilteredProblems(filtered);
   }, [searchQuery, selectedProblems, refresh]);
 
-  return (
+  return (//사용자 UI
     <>
       {/* 문제 추가 버튼: 그룹 오너일 때만 보임 */}
       <motion.div

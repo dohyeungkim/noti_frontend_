@@ -1,6 +1,6 @@
-"use client";
+"use client";//클라이언트 사용
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";//훅 모듈추가
 import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
 import { solve_api } from "@/lib/api";
@@ -101,7 +101,7 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
     return <p className="text-red-500">⚠️ 잘못된 접근입니다.</p>;
   }
 
-  return (
+  return ( //사용자 UI
     <motion.div
       className="flex flex-col gap-4 items-center"
       initial={{ opacity: 0, scale: 0.9 }}

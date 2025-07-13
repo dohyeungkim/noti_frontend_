@@ -1,13 +1,14 @@
-"use client"
-
+"use client" //클라이언트 컴포넌트
+//사용할 훅, 모듈 추가
 import { useAuth } from "@/stores/auth"
 import { usePathname } from "next/navigation"
 
 import { useState } from "react"
 import DrawerWrapper from "@/components/Layout/DrawerWrapper"
 import PageHeaderWrapper from "@/components/Layout/PageHeaderWrapper"
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
-	const { isAuth } = useAuth()
+
+export default function ClientLayout({ children }: { children: React.ReactNode }) {//외부에서 접근가능하게
+	const { isAuth } = useAuth() 
 	const pathname = usePathname()
 	const isAuthPage = pathname.startsWith("/auth")
 
@@ -23,7 +24,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 		return <div className="min-h-screen w-full">{children}</div>
 	}
 
-	return (
+	return ( //사용자 UI
 		<div className="flex flex-col min-h-screen">
 			{isAuth ? (
 				<div className="flex-grow flex w-full">

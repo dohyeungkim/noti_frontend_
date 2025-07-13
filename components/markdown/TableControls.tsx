@@ -1,4 +1,4 @@
-import { Editor } from "@tiptap/react";
+import { Editor } from "@tiptap/react"; //모듈과 훅 추가
 import {
   Grid2x2Plus, Rows, ArrowUpToLine, Columns, ArrowLeftToLine, Trash2, Grid2x2Check
 } from "lucide-react";
@@ -7,8 +7,8 @@ interface TableControlsProps {
   editor: Editor | null;
 }
 
-export default function TableControls({ editor }: TableControlsProps) {
-  if (!editor) return null;
+export default function TableControls({ editor }: TableControlsProps) {//외부사용가능하게 
+  if (!editor) return null; //없는 경우 null
 
   const toggleHeaderStyle = () => {
     if (!editor) return;
@@ -16,7 +16,7 @@ export default function TableControls({ editor }: TableControlsProps) {
     editor.chain().focus().setCellAttribute("isHeader", !isHeader).run();
   };
 
-  return (
+  return ( //사용자 UI
     <div className="flex items-center space-x-2 p-4">
       <style>
         {`

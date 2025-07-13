@@ -1,6 +1,6 @@
-"use client"
+"use client"//클라이언트 사용
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback } from "react"//훅, 모듈 추가
 import { motion } from "framer-motion"
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay"
 import { code_log_api, problem_api, solve_api, ai_feedback_api, comment_api, auth_api } from "@/lib/api"
@@ -11,7 +11,7 @@ import { formatTimestamp } from "../util/dageUtils"
 import { UserIcon } from "lucide-react"
 import { TestCase } from "@/hooks/useProblemForm"
 
-interface SolveData {
+interface SolveData {//타입선언
 	solve_id: number
 	user_id: string
 	group_id: number
@@ -316,7 +316,7 @@ export default function FeedbackWithSubmissionPageClient({
 		)
 	}
 
-	return (
+	return (//사용자 UI
 		<div className="flex min-h-screen bg-gray-50">
 			{/* 메인 컨텐츠 영역 */}
 			<div className="flex-1 max-w-7xl mx-auto p-6">

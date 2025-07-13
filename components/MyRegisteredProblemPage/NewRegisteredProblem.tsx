@@ -1,6 +1,6 @@
-"use client"
+"use client"//클라이언트사용
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation" //사용할 모듈, 훅 추가
 import { motion } from "framer-motion"
 import { problem_api, } from "@/lib/api"
 import { useProblemForm } from "@/hooks/useProblemForm"
@@ -14,21 +14,21 @@ import { useState, useEffect, useCallback } from "react"
 import ReactMarkdown from "react-markdown"
 
 // 타입 정의
-interface TestResult {
+interface TestResult {//타입선언
 	passed: boolean;
 }
 
-interface ApiResponse {
+interface ApiResponse {//타입선언
 	results: TestResult[];
 }
 
-export default function NewRegisteredProblem() {
+export default function NewRegisteredProblem() {//외부에서 사용가능하게끔
 	const router = useRouter()
 	const [description, setDescription] = useState("")
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write")
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([])
 	
-	const {
+	const {//모든폼 상태 함수들을 가져옴
 		title,
 		setTitle,
 		difficulty,
@@ -204,7 +204,7 @@ export default function NewRegisteredProblem() {
 		}
 	};
 
-	return (
+	return (//사용자 UI
 		<div>
 			<motion.div
 				className="flex items-center gap-2 justify-end mb-6"

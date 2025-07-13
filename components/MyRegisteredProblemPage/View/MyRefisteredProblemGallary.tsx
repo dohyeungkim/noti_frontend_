@@ -1,9 +1,9 @@
-"use client"
+"use client"//클라이언트 사용
 
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation" //훅과 모듈을 추가
 import { motion } from "framer-motion"
 
-interface Question {
+interface Question { //question의 타입정의
 	problem_id: number
 	title: string
 	group: string
@@ -12,7 +12,7 @@ interface Question {
 	description?: string
 }
 
-interface GalleryViewProps {
+interface GalleryViewProps { //Galleryview props속성타입정의
 	filteredData: Question[]
 	selectedProblem: Question | null
 	handleCloseDetail: () => void
@@ -24,7 +24,7 @@ interface GalleryViewProps {
 export default function GalleryView({ filteredData, selectedProblem }: GalleryViewProps) {
 	const router = useRouter()
 
-	return (
+	return ( //사용자UI
 		<>
 			<motion.div className="flex transition-all duration-300">
 				<motion.div

@@ -1,5 +1,5 @@
-"use client";
-
+"use client"; //클라이언트 사용
+//모듈 훅 추가
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Heading from "@tiptap/extension-heading";

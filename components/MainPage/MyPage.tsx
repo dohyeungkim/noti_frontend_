@@ -1,12 +1,12 @@
-"use client"
+"use client" //클라이언트 컴포넌트 추가
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react" //사용할 모듈 훅 추가
 import { motion } from "framer-motion"
 import { group_api, member_request_api } from "@/lib/api"
 import SearchBar from "../ui/SearchBar"
 import SortButton from "../ui/SortButton"
 
-interface Group {
+interface Group { //group의 타입선언
 	group_id: number
 	group_name: string
 	group_owner: string
@@ -16,10 +16,10 @@ interface Group {
 	member_count: number
 }
 
-type SortType = "title" | "notJoined"
+type SortType = "title" | "notJoined" //정렬방식 타입정의
 
-export default function MyPage() {
-	const [groups, setGroups] = useState<Group[]>([])
+export default function MyPage() {// 외부접근가능한 mypage
+	const [groups, setGroups] = useState<Group[]>([]) 
 	const [filteredGroups, setFilteredGroups] = useState<Group[]>([])
 	const [sortType, setSortType] = useState<SortType>("title")
 	const [loading, setLoading] = useState(true)
@@ -29,12 +29,12 @@ export default function MyPage() {
 	useEffect(() => {
 		const fetchGroups = async () => {
 			try {
-				const data: Group[] = await group_api.group_get()
-				setGroups(data)
-				setFilteredGroups(data)
+				const data: Group[] = await group_api.group_get() //group 데이터 가져오기
+				setGroups(data) //data저장
+				setFilteredGroups(data) 
 			} catch {
-				setError("그룹 정보를 가져오는 중 오류가 발생했습니다.")
-			} finally {
+				setError("그룹 정보를 가져오는 중 오류가 발생했습니다.") //에러
+			} finally {  //로딩 종료
 				setLoading(false)
 			}
 		}
@@ -43,29 +43,29 @@ export default function MyPage() {
 	}, [])
 
 	const filterGroups = useCallback(() => {
-		const sortedGroups = [...groups]
+		const sortedGroups = [...groups]//기존 groups배열 저장
 
-		if (sortType === "title") {
-			sortedGroups.sort((a, b) => a.group_name.localeCompare(b.group_name))
+		if (sortType === "title") { //title 이라면
+			sortedGroups.sort((a, b) => a.group_name.localeCompare(b.group_name))//이름순으로 정렬
 		} else if (sortType === "notJoined") {
 			sortedGroups.sort((a, b) => Number(a.is_member) - Number(b.is_member))
 		}
 
 		return sortedGroups.filter((item) => item.group_name.toLowerCase().includes(search.toLowerCase()))
-	}, [search, groups, sortType])
+	}, [search, groups, sortType]) // 이 값들 변경시 
 
 	useEffect(() => {
 		setFilteredGroups(filterGroups())
-	}, [filterGroups])
+	}, [filterGroups])//변경시 실행
 
-	const handleClickPublicJoinButton = async (group_id: number) => {
+	const handleClickPublicJoinButton = async (group_id: number) => {//비동기 선언 
 		if (window.confirm("그룹에 참여하시겠습니까?")) {
-			const res = await member_request_api.member_request_create(group_id)
-			alert(res.message)
+			const res = await member_request_api.member_request_create(group_id) //
+			alert(res.message)//res 띄우기
 		}
 	}
 
-	return (
+	return ( //사용자 UI
 		<motion.div className="scale-90 origin-top-left w-[111%]">
 			<motion.div className="flex items-center gap-4 mb-4 w-full">
 				<SearchBar searchQuery={search} setSearchQuery={setSearch} />

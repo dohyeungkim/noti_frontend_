@@ -1,6 +1,6 @@
-"use client";
+"use client"; //클라이언트 사용
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"; //모듈, 훅 추가
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -10,10 +10,10 @@ import { problem_api } from "@/lib/api";
 import dynamic from "next/dynamic";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
-	ssr: false,
+	ssr: false,//서버사이드?? 렌더링안하게끔
 });
 
-interface Problem {
+interface Problem {//problem의 타입선언
 	problem_id: number
 	title: string
 	description: string
@@ -36,7 +36,7 @@ interface Problem {
 	make_at: string
 }
 
-const languageDisplayNames = {
+const languageDisplayNames = { //보여질 언어 매핑
 	python: "Python",
 	java: "Java",
 	cpp: "C++",
@@ -44,7 +44,7 @@ const languageDisplayNames = {
 	javascript: "JavaScript",
 }
 
-export default function ProblemView() {
+export default function ProblemView() { //외부에서 사용가능한 문제 상세보기 컴포넌트
 	const router = useRouter();
 	const { id } = useParams<{ id: string }>();
 	const [problem, setProblem] = useState<Problem | null>(null);
@@ -57,14 +57,14 @@ export default function ProblemView() {
 
 	useEffect(() => {
 		const fetchProblem = async () => {
-			setLoading(true);
+			setLoading(true);//로딩시작
 			try {
 				const data = await problem_api.problem_get_by_id(Number(id));
-				setProblem(data);
+				setProblem(data); //상태 저장
 			} catch (error) {
 				console.error("Failed to fetch problem:", error);
 			} finally {
-				setLoading(false);
+				setLoading(false);//로딩 종료
 			}
 		};
 
@@ -73,12 +73,12 @@ export default function ProblemView() {
 		}
 	}, [id]);
 
-	if (loading) return <p>Loading...</p>;
-	if (!problem) return <p>문제 정보를 불러올 수 없습니다.</p>;
+	if (loading) return <p>Loading...</p>; //로딩중이면 
+	if (!problem) return <p>문제 정보를 불러올 수 없습니다.</p>;//문제가 없으면
 
 	const handleDeleteButtonClick = async (problem_id: number) => {
 		try {
-			await problem_api.problem_delete(problem_id);
+			await problem_api.problem_delete(problem_id); //problem_id호출
 			alert("문제가 삭제되었습니다.");
 			router.push("/registered-problems");
 		} catch (error) {
@@ -125,7 +125,7 @@ export default function ProblemView() {
 		}
 	};
 
-	return (
+	return (//사용자 UI
 		<>
 			<div className="flex items-center gap-2 justify-end mb-6">
 				<motion.button

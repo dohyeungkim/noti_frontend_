@@ -1,31 +1,31 @@
-"use client";
-
+"use client";//클라이언트 컴포넌트선언
+//필요한 훅,모듈 추가
 import React, { useState, forwardRef, useImperativeHandle } from "react";
 import { auth_api } from "@/lib/api";
 import { useAuth } from "@/stores/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUnlockAlt } from "@fortawesome/free-solid-svg-icons";
 
-export interface PasswordChangeHandles {
+export interface PasswordChangeHandles { //외부에서도 사용가능하게 
   openModal: () => void;
 }
 
-const PasswordChange = forwardRef<PasswordChangeHandles>((props, ref) => {
-  const [open, setOpen] = useState(false);
+const PasswordChange = forwardRef<PasswordChangeHandles>((props, ref) => {//컴포넌트 정의 ref로 제어가능
+  const [open, setOpen] = useState(false); //내부 상태정의
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { userName } = useAuth();
 
-  const handleOpenModal = () => {
+  const handleOpenModal = () => { //모달 초기화
     setCurrentPassword("");
     setNewPassword("");
     setError("");
     setOpen(true);
   };
 
-  const handlePasswordChange = async () => {
+  const handlePasswordChange = async () => { //비밀번호 변경오청처리
     setError("");
     if (!userName) {
       setError("사용자 이름을 확인할 수 없습니다.");
@@ -57,7 +57,7 @@ const PasswordChange = forwardRef<PasswordChangeHandles>((props, ref) => {
     openModal: handleOpenModal,
   }));
 
-  return (
+  return ( //보여지는 UI
     <>
       {open && (
         <div

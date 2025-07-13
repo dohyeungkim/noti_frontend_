@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "framer-motion";//훅, 모듈 추가
 import { useState } from "react";
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
 // import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
@@ -11,7 +11,7 @@ function ResultPageProblemDetail({ problem }: { problem: Problem | null }) {
   if (!problem) {
     return null; // 또는 로딩 메시지: <div>문제 데이터를 불러오는 중...</div>
   }
-  return (
+  return (//사용자 UI
     <div>
       <button
         onClick={toggleDescription}

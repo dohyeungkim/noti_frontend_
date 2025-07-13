@@ -1,6 +1,6 @@
-"use client";
+"use client"; //클라이언트 사용
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"; //훅,모듈 추가
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { problem_api } from "@/lib/api";
@@ -13,14 +13,14 @@ import ReactMde from "react-mde";
 import "react-mde/lib/styles/css/react-mde-all.css";
 import ReactMarkdown from "react-markdown";
 
-export default function ProblemEdit() {
-	const router = useRouter();
-	const { id } = useParams();
-	const [description, setDescription] = useState("");
+export default function ProblemEdit() { //외부에서 접근가능하게
+	const router = useRouter();//페이지 이동용
+	const { id } = useParams();//id를 가져옴
+	const [description, setDescription] = useState("");//문제설명상태
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([]);
 
-	const {
+	const { //각종 문제들을 가져옴
 		title,
 		setTitle,
 		difficulty,
@@ -49,8 +49,8 @@ export default function ProblemEdit() {
 		setInitialData,
 	} = useProblemForm();
 
-	const { editor } = useProblemEditor();
-	interface SampleCode {
+	const { editor } = useProblemEditor(); //editor가져오기
+	interface SampleCode { //samplecode 타입선언
 		language: string, 
 		code: string, 
 		is_main: boolean
@@ -79,20 +79,20 @@ export default function ProblemEdit() {
 					})) : [{ input: "", expected_output: "", is_sample: true }]
 				});
 				
-				setDescription(data.description || "");
-				
+				setDescription(data.description || ""); //상태 저장
+				//에디터 내용 삽입
 				if (editor) {
 					editor.commands.setContent(data.description);
 				}
-			} catch (error) {
+			} catch (error) { //에러시
 				console.error("Failed to fetch problem:", error);
 			}
 		};
 
 		fetchProblem();
-	}, [id, editor, setInitialData]);
+	}, [id, editor, setInitialData]); //3가지가 갱신되는경우 실행
 
-	const handleTestRun = async () => {
+	const handleTestRun = async () => {//비동기 함수 테스트실행
 		setTestResults([]); // 테스트 실행 직전에 추가
 		if (referenceCodes.length === 0) {
 			alert("참조 코드가 없습니다.")
@@ -156,7 +156,7 @@ export default function ProblemEdit() {
 		}
 	}
 
-	const handleSave = async () => {
+	const handleSave = async () => { //문제저장 
 		if (!editor) {
 			alert("Editor is not loaded yet.");
 			return;
@@ -187,7 +187,7 @@ export default function ProblemEdit() {
 	// 로딩 상태 체크는 모든 훅 호출 이후에
 	if (!editor) return <p>Editor is loading...</p>;
 
-	return (
+	return ( //사용자 UI
 		<div>
 			<motion.div
 				className="flex items-center gap-2 justify-end mb-6"

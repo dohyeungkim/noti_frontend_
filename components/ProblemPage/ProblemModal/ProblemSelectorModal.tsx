@@ -1,9 +1,9 @@
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";//모듈 훅 추가
 import { problem_api, problem_ref_api } from "@/lib/api";
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 
-export interface Problem {
+export interface Problem { //외부에서접근가능하게, 타입선언
   problem_id: number;
   title: string;
   description: string;

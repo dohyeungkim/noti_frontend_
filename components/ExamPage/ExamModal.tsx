@@ -1,9 +1,9 @@
-"use client";
-
+"use client"; //클라이언트 컴포넌트
+//사용할 모듈, 컴포넌트, 훅 추가 
 import { workbook_api } from "@/lib/api";
 import { useState } from "react";
 
-interface WorkBookCreateModalProps {
+interface WorkBookCreateModalProps { //workbook...의 props타입 정의
   isModalOpen: boolean;
   setIsModalOpen: (isOpen: boolean) => void;
   WorkBookName: string;
@@ -17,7 +17,7 @@ interface WorkBookCreateModalProps {
   // setIsPublic: (value: boolean) => void;
 }
 
-export default function WorkBookCreateModal({
+export default function WorkBookCreateModal({//다른곳에서도 import해서 사용할 수 있게
   isModalOpen,
   setIsModalOpen,
   WorkBookName,
@@ -28,42 +28,42 @@ export default function WorkBookCreateModal({
   setRefresh,
   group_id,
 
-}: WorkBookCreateModalProps) {
+}: WorkBookCreateModalProps) { //타입을 WorkBookCrateModalProps인터페이스로 지정 
   // const [isPublic, setIsPublic] = useState(true); // 또는 초기 상태에 따라 false일 수 있습니다.
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); //set함수를 통해 값 변경
   const [isConfirming, setIsConfirming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 추가
 
-  const handleCreateWorkbook = async () => {
-    if (!WorkBookName.trim()) {
+  const handleCreateWorkbook = async () => { //비동기함수 선언
+    if (!WorkBookName.trim()) { //trim으로 앞 뒤 공백을 제거 하고 workbookname이 비어있으면 실행
       setErrorMessage("📌 문제지 이름을 입력해주세요!");
       return;
     }
 
-    if (!WorkBookDescription.trim()) {
+    if (!WorkBookDescription.trim()) { //workbookdescription이 비어있으면 실행
       setErrorMessage("📌 문제지 소개를 입력해주세요!");
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true); //로딩시작
     setErrorMessage(null); // ✅ 에러 메시지 초기화
 
     try {
       await workbook_api.workbook_create(group_id, WorkBookName.trim(), WorkBookDescription.trim());
-
-      setWorkBookName("");
+      //await을 이용하여 workbook에 관한 응답을 받을때까지 기다림
+      setWorkBookName(""); //초기화
       setWorkBookDescription("");
       setIsModalOpen(false);
       setRefresh(!refresh);
     } catch (error) {
-      console.error("문제지 생성 실패:", error);
-    } finally {
+      console.error("문제지 생성 실패:", error); //에러의 경우처리
+    } finally { // 로딩 종료
       setIsLoading(false);
     }
   };
 
-  if (!isModalOpen) return null;
+  if (!isModalOpen) return null; //모달이 닫혀있다면 null: 이 컴포넌트를 표시안함
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">

@@ -1,6 +1,6 @@
-"use client"
+"use client" //클라이언트 사용
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"//모듈 훅 추가
 import { useRef } from "react"
 import { useParams } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
@@ -11,13 +11,13 @@ import { auth_api, problem_api, code_log_api, solve_api, ai_feedback_api, run_co
 import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { editor } from "monaco-editor"
 
-interface TestCase {
+interface TestCase { //타입선언
 	is_sample: boolean
 	input: string
 	expected_output: string
 }
 
-interface RunResult {
+interface RunResult {//타입선언
 	output?: string
 	actual_output?: string
 	passed?: boolean

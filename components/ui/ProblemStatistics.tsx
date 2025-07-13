@@ -1,6 +1,6 @@
-"use client";
+"use client";//클라이언트 사용
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";//훅, 모듈 추가
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { problem_api } from "@/lib/api";
@@ -66,7 +66,7 @@ export default function ProblemStatistics({ problem_id }: { problem_id: number }
 
   console.log("📊 groupedByProblemId:", groupedByProblemId);
 
-  return (
+  return (//사용자UI
     <div className="p-6 space-y-12">
       {Object.entries(groupedByProblemId).map(([pid, statsList]) => {
         // ✅ 전체 통계 (합산)

@@ -1,17 +1,17 @@
-interface ProblemConditionsProps {
+interface ProblemConditionsProps { //props입력값들 정의 
 	conditions: string[]
 	addCondition: () => void
 	removeCondition: (index: number) => void
 	updateCondition: (index: number, value: string) => void
 }
 
-export default function ProblemConditions({
+export default function ProblemConditions({//외부에서접근가능하게
 	conditions,
 	addCondition,
 	removeCondition,
 	updateCondition,
 }: ProblemConditionsProps) {
-	return (
+	return (//사용자 UI
 		<div className="flex-1">
 			<h2 className="text-lg font-bold mb-2">문제 조건</h2>
 			<div className="border-t border-gray-300 my-3"></div>

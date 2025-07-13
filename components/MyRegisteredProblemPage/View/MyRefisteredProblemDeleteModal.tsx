@@ -1,14 +1,14 @@
-"use client";
-
+"use client";//클라이언트 사용
+//모듈, 훅 추가
 import { useState } from "react";
 
-interface ConfirmationModalProps {
+interface ConfirmationModalProps {//confiemationmodalprops받아야하는 정보들을 타입으로 정의
   message: string;
   onConfirm: () => Promise<void>; // ✅ 비동기 함수로 변경
   onCancel: () => void;
 }
 type ApiErrorDetail = {
-  msg?: string;
+  msg?: string; 
   ref_cnt?: number;
 };
 
@@ -16,7 +16,7 @@ type ApiError = {
   detail?: ApiErrorDetail;
 };
 
-export default function ConfirmationModal({
+export default function ConfirmationModal({ //외부에서도 사용가능하게 ..
   message,
   onConfirm,
   onCancel,
@@ -25,7 +25,7 @@ export default function ConfirmationModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // ✅ 에러 메시지 상태 추가
   const [refCount, setRefCount] = useState<number | null>(null); // ✅ 참조 개수 상태 추가
 
-  const handleDelete = async () => {
+  const handleDelete = async () => { //비동기 선언
     try {
       setIsConfirming(false);
       await onConfirm();
@@ -54,7 +54,7 @@ export default function ConfirmationModal({
     }
   };
 
-  return (
+  return (//사용자 UI
     <div
       className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
       onClick={onCancel} // ✅ 바깥 클릭 시 닫기

@@ -1,14 +1,15 @@
-"use client"
-
-import { useEffect, useCallback } from "react"
+"use client" //클라이언트 컴포넌트 선언
+//훅, 모듈 가져오기
+import { useEffect, useCallback } from "react" 
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/stores/auth"
 
 const PROTECTED_PATHS = ["/", "/registered-problems"] as const // 보호된 페이지 목록
+//로그인 해야지만 접근가능
 const AUTH_PATHS = ["/auth"] as const
-
-export default function AuthNavigator() {
-	const { isAuth, checkAuthStatus } = useAuth()
+//??..
+export default function AuthNavigator() {//컴포넌트 정의
+	const { isAuth, checkAuthStatus } = useAuth() //인증여부 확인
 	const pathname = usePathname()
 	const router = useRouter()
 
@@ -40,4 +41,4 @@ export default function AuthNavigator() {
 	}, [isAuth, pathname, router])
 
 	return null
-}
+}//로그인 한 사람과 하지않은 사람의 페이지 이동을 설계..

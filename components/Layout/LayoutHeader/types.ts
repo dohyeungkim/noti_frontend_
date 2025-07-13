@@ -1,17 +1,17 @@
-"use client";
+"use client"; //클라이언트 컴포넌트 추가
 
 import { Problem } from "@/components/ProblemPage/ProblemModal/ProblemSelectorModal";
+//모듈 훅 추가
 
-
-export interface Exam {
+export interface Exam { //외부에서 사용가능하게 workbook_name의 정보를 담음
   workbook_name: string;
 }
 
-interface Group {
+interface Group { //group_name의 정보를 담음
   group_name: string;
 }
 
-export interface DynamicTitleProps {
+export interface DynamicTitleProps {// 외부에서 사용가능하게하는 dynamictitleprops의 정보타임들 선언
   pathname: string;
   userName?: string;
   problem?: Problem;
@@ -19,8 +19,7 @@ export interface DynamicTitleProps {
   group?: Group;
 }
 
-export interface BreadcrumbsProps {
-  pathname: string;
+export interface BreadcrumbsProps {//breadcrumbs에서 사용하는 props의 타입선언
   userName?: string; // 선택적 속성으로 추가
   group?: {
     group_name: string;

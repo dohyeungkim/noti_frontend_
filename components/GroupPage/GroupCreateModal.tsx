@@ -1,8 +1,9 @@
 "use client";
-import { group_api } from "@/lib/api";
+//클라이언트 컴포넌트 사용
+import { group_api } from "@/lib/api"; //사용할 모듈 훅 추가
 import { useState, useEffect, useCallback } from "react";
 
-interface GroupCreateModalProps {
+interface GroupCreateModalProps { //groupCreatemodalProps 의 props 타입정의
   isOpen: boolean;
   onClose: () => void;
   groupName: string;
@@ -14,7 +15,7 @@ interface GroupCreateModalProps {
   setRefresh: (refresh: boolean) => void;
 }
 
-export default function GroupCreateModal({
+export default function GroupCreateModal({//컴포넌트르 외부에서 사용가능하게 
   isOpen,
   onClose,
   groupName,
@@ -24,7 +25,7 @@ export default function GroupCreateModal({
   onCreate,
   refresh,
   setRefresh,
-}: GroupCreateModalProps) {
+}: GroupCreateModalProps) { // 타입은 groupvreatmodalprops로
   const [isConfirming, setIsConfirming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   // const [showPastGroups, setShowPastGroups] = useState(false);
@@ -34,7 +35,7 @@ export default function GroupCreateModal({
   // 예제: 과거 그룹 리스트
   // const pastGroups = ["컴퓨터 구조", "알고리즘", "인공지능 기초"];
 
-  const resetState = useCallback(() => {
+  const resetState = useCallback(() => { //값들 초기화 및 에러 메세지 초기화
     setGroupName("");
     setIsPublic(true);
     setIsConfirming(false);
@@ -44,15 +45,15 @@ export default function GroupCreateModal({
     setErrorMessage(null); // ✅ 에러 메시지도 초기화
   }, [setGroupName, setIsPublic]);
 
-  useEffect(() => {
+  useEffect(() => { // isOpen에 따른 변화
     if (!isOpen) {
-      resetState();
+      resetState(); //함수실행
     }
-  }, [isOpen, resetState]);
+  }, [isOpen, resetState]); //배열의 두 값이 변하는 경우
 
-  if (!isOpen) return null;
+  if (!isOpen) return null; //isopen이 false인경우 null
 
-  const handleCreate = async () => {
+  const handleCreate = async () => { //비동기함수 선언
     if (!groupName.trim()) {
       // ✅ 공백 확인 (trim()으로 공백만 입력된 경우 방지)
       setErrorMessage("그룹 이름을 입력하세요!");
@@ -61,23 +62,23 @@ export default function GroupCreateModal({
 
     console.log("그룹 이름:", groupName);
     console.log("공개 여부:", isPublic ? "공개" : "비공개");
-    setIsLoading(true);
+    setIsLoading(true); //로딩 켜기
     setErrorMessage(null); // ✅ 에러 메시지 초기화
 
     try {
-      await group_api.group_create(groupName.trim(), !isPublic);
+      await group_api.group_create(groupName.trim(), !isPublic); //서버함수 사용
       setRefresh(!refresh);
       onCreate();
       resetState();
       onClose();
-    } catch (error) {
+    } catch (error) { //에러의 경우
       console.error("그룹 생성 중 오류:", error);
-    } finally {
+    } finally { //로딩 끄기
       setIsLoading(false);
     }
   };
 
-  return (
+  return ( //UI
     <div
       className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
       onClick={onClose}>

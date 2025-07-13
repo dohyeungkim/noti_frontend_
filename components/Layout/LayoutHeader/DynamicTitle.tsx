@@ -1,6 +1,6 @@
-"use client"
+"use client" //클라이언트 컴포넌트 사용
 
-interface DynamicTitleProps {
+interface DynamicTitleProps { //필요한 것들 추가
 	pathname: string
 	userName?: string
 	problem?: { title: string }
@@ -8,12 +8,12 @@ interface DynamicTitleProps {
 	group?: { group_name: string }
 }
 
-function truncateText(text?: string, maxLength = 15): string {
-	if (!text) return ""
-	return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
+function truncateText(text?: string, maxLength = 15): string { //문자열을 자르는 기능 
+ 	if (!text) return "" //!text인경우 ""반환
+	return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text//길이가 초과하는경우 짤라내고 ...
 }
 
-function getTitle(
+function getTitle(//페이지경로에 따라 페이지 상단의 제목을 넣어주는 함수
 	pathname: string,
 	userName?: string,
 	problem?: { title: string },
@@ -21,7 +21,7 @@ function getTitle(
 	group?: { group_name: string }
 ): string {
 	//홈
-	if (pathname.startsWith("/mypage")) {
+	if (pathname.startsWith("/mypage")) { //마이 페이지인경우
 		return `🚀 ${truncateText(userName || "사용자")}님의 페이지`
 	}
 
@@ -92,7 +92,7 @@ function getTitle(
 export default function DynamicTitle({ pathname, userName, problem, exam, group }: DynamicTitleProps) {
 	const title = getTitle(pathname, userName, problem, exam, group)
 
-	return (
+	return ( //UI
 		<h1 className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-bold flex justify-start items-start gap-1.5 sm:pt-3 md:pt-4 lg:pt-6 xl:pt-8">
 			{title}
 		</h1>

@@ -1,6 +1,6 @@
-"use client"
+"use client" //클라이언트 사용
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react" //모듈, 훅 추가
 import { useRouter } from "next/navigation"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faPlus } from "@fortawesome/free-solid-svg-icons"
@@ -23,7 +23,7 @@ interface Question {
 	description?: string
 }
 
-export default function MyRegisteredProblemView() {
+export default function MyRegisteredProblemView() {//외부에서 사용할 수 있게 
 	const router = useRouter()
 	const [search, setSearch] = useState("")
 	const [questions, setQuestions] = useState<Question[]>([])
@@ -74,7 +74,7 @@ export default function MyRegisteredProblemView() {
 		router.push("/registered-problems/create")
 	}
 
-	return (
+	return ( //사용자 UI
 		<div className="space-y-2">
 			{/* 🔹 문제 만들기 버튼 */}
 			<motion.div

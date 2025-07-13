@@ -1,6 +1,6 @@
-"use client"
+"use client" //클라이언트 사용
 
-import SearchBar from "@/components/ui/SearchBar"
+import SearchBar from "@/components/ui/SearchBar" //모듈,훅 추가
 import SortButton from "@/components/ui/SortButton"
 import ViewToggle from "@/components/ui/ViewToggle"
 import Link from "next/link"
@@ -22,7 +22,7 @@ interface ProblemSolve {
 	timestamp?: string
 }
 
-export default function MySolved() {
+export default function MySolved() { //외부에서접근가능하게
 	const [search, setSearch] = useState<string>("")
 	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
 	const [sortOrder, setSortOrder] = useState("제목순")
@@ -88,7 +88,7 @@ export default function MySolved() {
 		return 0
 	})
 
-	return (
+	return (//사용자UI
 		<motion.div className="scale-90 origin-top-left w-[111%]">
 			{/* 🔍 검색, 보기 방식 변경, 정렬 버튼 */}
 			<motion.div

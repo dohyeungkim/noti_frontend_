@@ -1,4 +1,4 @@
-import { problem_like_api, problem_api } from "@/lib/api";
+import { problem_like_api, problem_api } from "@/lib/api"; //모듈 , 훅 추가
 import { motion } from "framer-motion";
 import { Heart, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -53,7 +53,7 @@ export default function ProblemGallery({
     }
   };
 
-  return (
+  return (//사용자UI
     <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 m-2">
       {currentProblems.map((p) => {
         const isLiked = likedProblems[p.problem_id] ?? p.is_like;

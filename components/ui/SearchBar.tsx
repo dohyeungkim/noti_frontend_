@@ -1,6 +1,6 @@
-"use client";
+"use client";//클라이언트 사용
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";//훅, 모듈 추가
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 
 interface SearchBarProps {
@@ -14,7 +14,7 @@ export default function SearchBar({
   searchQuery,
   setSearchQuery,
 }: SearchBarProps) {
-  return (
+  return (//사용자UI
     <div
       className="flex items-center border border-gray-300 rounded-lg m-2 px-4 py-1.5 w-full 
           flex-grow min-w-0 max-w-none

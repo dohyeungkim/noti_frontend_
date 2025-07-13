@@ -1,11 +1,11 @@
-import { ReferenceCode, languageDisplayNames } from "@/hooks/useProblemForm";
+import { ReferenceCode, languageDisplayNames } from "@/hooks/useProblemForm";//모듈, 훅 추가
 import dynamic from "next/dynamic";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
-	ssr: false,
+	ssr: false,//서버사이드? 렌더링 시 클라이언트에서 로드
 });
 
-interface ReferenceCodeEditorProps {
+interface ReferenceCodeEditorProps {//여러개의 참조코드를 탭 형식으로..
 	referenceCodes: ReferenceCode[]
 	activeCodeTab: number
 	setActiveCodeTab: (index: number) => void
@@ -16,7 +16,7 @@ interface ReferenceCodeEditorProps {
 	setMainReferenceCode: (index: number) => void
 }
 
-export default function ReferenceCodeEditor({
+export default function ReferenceCodeEditor({//외부에서 접근가능하게
 	referenceCodes,
 	activeCodeTab,
 	setActiveCodeTab,
@@ -26,7 +26,7 @@ export default function ReferenceCodeEditor({
 	updateReferenceCode,	
 	setMainReferenceCode,
 }: ReferenceCodeEditorProps) {
-	return (
+	return (//사용자 UI
 		<div className="w-1/2 flex flex-col">
 			<div className="flex justify-between items-center mb-2">
 				<h3 className="text-lg font-semibold">참조 코드</h3>

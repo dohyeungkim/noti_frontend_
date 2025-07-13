@@ -1,7 +1,7 @@
 "use client";
 
 interface ExamCardProps {
-  workbook: {
+  workbook: {//workbook 정의  
     workbook_id: number;
     group_id: number;
     workbook_name: string;
@@ -9,17 +9,17 @@ interface ExamCardProps {
     description: string;
     creation_date: string;
   };
-  exam?: {
+  exam?: { //workbook을 통해 사용한 시간과 문제번호등
     examId: string;
     startTime: string;
     endTime: string;
   } | null;
-  onClick: () => void;
+  onClick: () => void; //클릭됐을때 실행되는 함수
 }
 
 
 export default function ExamCard({ workbook, onClick }: ExamCardProps) {
-  return (
+  return (//사용자 UI
     <div
       onClick={onClick}
       className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer 

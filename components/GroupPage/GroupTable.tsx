@@ -1,7 +1,7 @@
-"use client";
+"use client"; //클라이언트 컴포넌트 사용
 
-import { useRouter } from "next/navigation";
-interface Group {
+import { useRouter } from "next/navigation"; //모듈 훅 추가
+interface Group { //group 타입정의
   group_id: number;
   group_name: string;
   group_owner: string;
@@ -11,14 +11,14 @@ interface Group {
   is_member: boolean;
 }
 
-interface GroupTableProps {
+interface GroupTableProps { //grouptableprops group객체배열을 props로 받는 컴포넌트
   groups: Group[];
 }
-export default function GroupTable({ groups }: GroupTableProps) {
+export default function GroupTable({ groups }: GroupTableProps) { //외부에서 접근 가능하게 
   const router = useRouter();
   const filteredGroups = groups.filter((group) => group.is_member);
 
-  return (
+  return ( //UI
     <div className="w-full overflow-x-auto">
       <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">
         <thead className="bg-gray-200">
