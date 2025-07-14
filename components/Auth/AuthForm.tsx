@@ -74,7 +74,12 @@ interface CardProps {
 	className?: string
 }
 
-const Card: React.FC<CardProps> = ({ children, className }) => (
+interface OptionType {
+	value: string
+	label: string
+}
+
+const Card: React.FC<CardProps> = ({ children, className = "" }) => (
 	<div
 		className={`max-w-2xl w-full text-center p-10 bg-white rounded-xl border border-gray-200 shadow-xl ${className}`}
 	>
@@ -83,7 +88,7 @@ const Card: React.FC<CardProps> = ({ children, className }) => (
 )
 
 // 옵션 데이터
-const ageRangeOptions = [
+const ageRangeOptions: OptionType[] = [
 	{ value: "under_18", label: "18세 미만" },
 	{ value: "18_24", label: "18-24세" },
 	{ value: "25_29", label: "25-29세" },
@@ -92,7 +97,7 @@ const ageRangeOptions = [
 	{ value: "over_40", label: "40세 이상" },
 ]
 
-const academicYearOptions = [
+const academicYearOptions: OptionType[] = [
 	{ value: "high_school", label: "고등학생" },
 	{ value: "freshman", label: "대학교 1년" },
 	{ value: "sophomore", label: "대학교 2년" },
@@ -103,7 +108,7 @@ const academicYearOptions = [
 	{ value: "other", label: "기타" },
 ]
 
-const interestOptions = [
+const interestOptions: OptionType[] = [
 	{ value: "web_development", label: "웹 개발" },
 	{ value: "mobile_app", label: "모바일 앱" },
 	{ value: "data_science", label: "데이터 사이언스" },
@@ -113,7 +118,7 @@ const interestOptions = [
 	{ value: "other", label: "기타" },
 ]
 
-const learningGoalOptions = [
+const learningGoalOptions: OptionType[] = [
 	{ value: "career_preparation", label: "취업 준비" },
 	{ value: "academic_improvement", label: "학업 향상" },
 	{ value: "skill_enhancement", label: "기술 향상" },
@@ -123,7 +128,7 @@ const learningGoalOptions = [
 	{ value: "other", label: "기타" },
 ]
 
-const preferredFieldOptions = [
+const preferredFieldOptions: OptionType[] = [
 	{ value: "algorithms", label: "알고리즘" },
 	{ value: "data_structures", label: "자료구조" },
 	{ value: "web_backend", label: "웹 백엔드" },
@@ -135,13 +140,13 @@ const preferredFieldOptions = [
 	{ value: "other", label: "기타" },
 ]
 
-const programmingExperienceOptions = [
+const programmingExperienceOptions: OptionType[] = [
 	{ value: "beginner", label: "초급자" },
 	{ value: "intermediate", label: "중급자" },
 	{ value: "advanced", label: "고급자" },
 ]
 
-const preferredLanguageOptions = [
+const preferredLanguageOptions: OptionType[] = [
 	{ value: "python", label: "Python" },
 	{ value: "java", label: "Java" },
 	{ value: "cpp", label: "C++" },
@@ -203,17 +208,20 @@ export default function AuthForm() {
 	}
 
 	// 개인정보 입력 핸들러
-	const handlePersonalChange = (field: keyof typeof personalInfo, value: any) => {
+	const handlePersonalChange = (field: keyof typeof personalInfo, value: string) => {
 		setPersonalInfo((prev) => ({ ...prev, [field]: value }))
 	}
 
 	// 학습정보 배열 토글 핸들러
-	const toggleLearningArrayField = (field: keyof typeof learningInfo, value: any) => {
+	const toggleLearningArrayField = (field: keyof typeof learningInfo, value: string) => {
 		if (field === "programming_experience") {
-			setLearningInfo((prev) => ({ ...prev, [field]: value }))
+			setLearningInfo((prev) => ({
+				...prev,
+				[field]: value as ProfileInfo["programming_experience"],
+			}))
 		} else {
 			setLearningInfo((prev) => {
-				const currentArray = prev[field] as any[]
+				const currentArray = prev[field] as string[]
 				const newArray = currentArray.includes(value)
 					? currentArray.filter((item) => item !== value)
 					: [...currentArray, value]
@@ -234,7 +242,14 @@ export default function AuthForm() {
 		setError(null)
 
 		if (currentStep === 1) {
-			if (!basicInfo.user_id || !basicInfo.username || !basicInfo.full_name || !basicInfo.email || !basicInfo.password || !confirmPassword) {
+			if (
+				!basicInfo.user_id ||
+				!basicInfo.username ||
+				!basicInfo.full_name ||
+				!basicInfo.email ||
+				!basicInfo.password ||
+				!confirmPassword
+			) {
 				setError("모든 필드를 입력해주세요.")
 				return
 			}
@@ -256,7 +271,7 @@ export default function AuthForm() {
 	const handleSkip = () => {
 		setCurrentStep((prev) => prev + 1)
 		// console.log(currentStep)
-		if (currentStep == 3) {
+		if (currentStep === 3) {
 			handleRegister()
 		}
 	}
@@ -297,9 +312,10 @@ export default function AuthForm() {
 				console.warn("Failed to generate initial recommendations:", recommendationError)
 				// 추천 생성 실패는 회원가입 성공에 영향을 주지 않음
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error("회원가입 실패:", err)
-			setError(err.message || "회원가입에 실패했습니다. 다시 시도해주세요.")
+			const errorMessage = err instanceof Error ? err.message : "회원가입에 실패했습니다. 다시 시도해주세요."
+			setError(errorMessage)
 		} finally {
 			setIsLoading(false)
 		}
@@ -321,9 +337,10 @@ export default function AuthForm() {
 
 			setIsAuth(true)
 			router.push("/")
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error("로그인 실패:", err)
-			setError(err.message || "아이디 또는 비밀번호를 확인해주세요.")
+			const errorMessage = err instanceof Error ? err.message : "아이디 또는 비밀번호를 확인해주세요."
+			setError(errorMessage)
 		} finally {
 			setIsLoading(false)
 		}
@@ -687,7 +704,7 @@ export default function AuthForm() {
 														onClick={() => toggleLearningArrayField("interests", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.interests.includes(option.value as any)
+															learningInfo.interests.includes(option.value as ProfileInfo["interests"][number])
 																? "bg-emerald-600 text-white border-emerald-600"
 																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
 														}`}
@@ -709,7 +726,9 @@ export default function AuthForm() {
 														onClick={() => toggleLearningArrayField("learning_goals", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.learning_goals.includes(option.value as any)
+															learningInfo.learning_goals.includes(
+																option.value as ProfileInfo["learning_goals"][number]
+															)
 																? "bg-emerald-600 text-white border-emerald-600"
 																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
 														}`}
@@ -731,7 +750,9 @@ export default function AuthForm() {
 														onClick={() => toggleLearningArrayField("preferred_fields", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.preferred_fields.includes(option.value as any)
+															learningInfo.preferred_fields.includes(
+																option.value as ProfileInfo["preferred_fields"][number]
+															)
 																? "bg-emerald-600 text-white border-emerald-600"
 																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
 														}`}
@@ -779,7 +800,9 @@ export default function AuthForm() {
 														onClick={() => toggleLearningArrayField("preferred_languages", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.preferred_languages.includes(option.value as any)
+															learningInfo.preferred_languages.includes(
+																option.value as ProfileInfo["preferred_languages"][number]
+															)
 																? "bg-emerald-600 text-white border-emerald-600"
 																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
 														}`}

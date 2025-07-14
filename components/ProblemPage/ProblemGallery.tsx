@@ -126,7 +126,7 @@ export default function ProblemGallery({
 						<h2 className="text-xl font-semibold text-gray-800 truncate">{p.title}</h2>
 
 						{/* 좋아요 버튼 */}
-						<motion.button
+						{/* <motion.button
 							whileTap={{ scale: 0.9 }}
 							onClick={(e) => {
 								e.stopPropagation()
@@ -145,7 +145,7 @@ export default function ProblemGallery({
 							>
 								<Heart fill={isLiked ? "#ff4757" : "none"} strokeWidth={2} size={24} />
 							</motion.div>
-						</motion.button>
+						</motion.button> */}
 
 						<button
 							onClick={(e) => {

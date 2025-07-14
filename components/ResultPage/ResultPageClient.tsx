@@ -326,9 +326,9 @@ export default function FeedbackWithSubmissionPageClient({
 	}
 
 	return (
-		<div className="flex min-h-screen bg-gray-50">
+		<div className="flex min-h-screen">
 			{/* 메인 컨텐츠 영역 */}
-			<div className="flex-1 max-w-7xl mx-auto p-6">
+			<div className="flex-1 max-w-7xl mx-auto">
 				{/* 헤더 */}
 				<motion.div
 					className="mb-6"
@@ -336,16 +336,16 @@ export default function FeedbackWithSubmissionPageClient({
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.4 }}
 				>
-					<div className="flex items-center gap-2 mb-2">
-						<div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
-							<span className="text-white font-bold text-sm">📘</span>
+					<div className="flex items-center gap-2 mb-2 mt-8">
+						<div className="w-8 h-8 rounded flex items-center justify-center">
+							<span className="text-xl">📓</span>
 						</div>
 						<h1 className="text-xl font-bold text-gray-800">
 							문제 {solveData?.problem_name || solveData?.problem_id || "PY31-0001"} 문제의 피드백
 						</h1>
 					</div>
-					<div className="flex items-center gap-4">
-						<span className="text-sm text-gray-600">🔥 열심히다.</span>
+					<div className="flex items-center gap-4 ml-2">
+						{/* <span className="text-sm text-gray-600">🔥 열심히다.</span> */}
 						{isExamMode && (
 							<span className="text-sm text-gray-600">
 								✔️ 점수: {totalScore}/{maxScore}점
@@ -527,7 +527,7 @@ export default function FeedbackWithSubmissionPageClient({
 							<div className="p-2 flex space-x-2 border-b">
 								<button
 									className={`px-4 py-1 text-sm font-medium ${
-										activeFeedbackTab === "ai" ? "bg-blue-100 text-blue-700  border-b-white" : "text-gray-600 "
+										activeFeedbackTab === "ai" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600 "
 									}`}
 									onClick={() => setActiveFeedbackTab("ai")}
 								>
@@ -535,7 +535,7 @@ export default function FeedbackWithSubmissionPageClient({
 								</button>
 								<button
 									className={`px-4 py-1 text-sm font-medium ${
-										activeFeedbackTab === "professor" ? "bg-blue-100 text-blue-700 border-b-white" : "text-gray-600"
+										activeFeedbackTab === "professor" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600"
 									}`}
 									onClick={() => setActiveFeedbackTab("professor")}
 								>
@@ -577,7 +577,7 @@ export default function FeedbackWithSubmissionPageClient({
 							<button
 								className={`px-6 py-3 text-sm font-medium ${
 									activeTab === "submission"
-										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										? "text-green-600 border-b-2 border-green-600 bg-green-50"
 										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
@@ -590,7 +590,7 @@ export default function FeedbackWithSubmissionPageClient({
 							<button
 								className={`px-6 py-3 text-sm font-medium ${
 									activeTab === "problem"
-										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										? "text-green-600 border-b-2 border-green-600 bg-green-50"
 										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
@@ -662,7 +662,7 @@ export default function FeedbackWithSubmissionPageClient({
 									<label className="flex items-center space-x-2 cursor-pointer">
 										<input
 											type="checkbox"
-											className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+											className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
 											checked={isAnonymous}
 											onChange={(e) => setIsAnonymous(e.target.checked)}
 										/>
@@ -683,7 +683,7 @@ export default function FeedbackWithSubmissionPageClient({
 										<button
 											onClick={handleAddComment}
 											disabled={!newComment.trim()}
-											className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+											className="px-4 py-2 bg-mygreen text-white text-sm rounded-lg hover:bg-mydarkgreen disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
 										>
 											등록
 										</button>
@@ -708,7 +708,7 @@ export default function FeedbackWithSubmissionPageClient({
 					transition={{ duration: 0.4, delay: 0.5 }}
 				>
 					<button
-						className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-colors"
+						className="px-6 py-2 bg-mygreen text-white rounded-lg shadow hover:bg-mydarkgreen transition-colors"
 						onClick={() =>
 							router.push(`/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/result/`)
 						}

@@ -13,6 +13,7 @@ export default function Mysol() {
 	return (
 		<header className="flex flex-col items-start w-full mb-4 sm:mb-3 md:mb-4 lg:mb-4 mt-2 sm:mt-2 md:mt-2 lg:mt-4">
 			{" "}
+			{/* 👻 시험모드 진행중이면, 이 위치에 빨간색으로 시험모드입니다 하고 안내 해주기 */}
 			{/* 노션처럼 현재 페이지 경로 표시 */}
 			<Breadcrumbs
 				pathname={pathname}

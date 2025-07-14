@@ -142,8 +142,15 @@ export default function ExamsClient() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.3, delay: 0.3 }}
 				>
-					{/* 더미데이터로 바꾸면서 이 코드로 수정했음 - 홍 */}
+					{/* 밑에가 기존 코드입니다ㅏ */}
 					{viewMode === "gallery" ? (
+						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
+					) : (
+						<ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+					)}
+
+					{/* 더미데이터로 바꾸면서 이 코드로 수정했음 - 홍 */}
+					{/* {viewMode === "gallery" ? (
 						<ExamGallery
 							examData={workbooks.map((workbook) => ({
 								workbook,
@@ -151,13 +158,6 @@ export default function ExamsClient() {
 							}))}
 							handleEnterExam={handleEnterExam}
 						/>
-					) : (
-						<ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
-					)}
-
-					{/* 밑에가 기존 코드입니다ㅏ */}
-					{/* {viewMode === "gallery" ? (
-						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
 					) : (
 						<ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
 					)} */}

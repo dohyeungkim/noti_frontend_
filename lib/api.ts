@@ -129,7 +129,7 @@ export const auth_api = {
 		profile_completion: number
 	}> {
 		console.log("Sending registration data:", JSON.stringify(registerData, null, 2))
-		
+
 		const res = await fetch(`/api/proxy/user/register`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -138,98 +138,107 @@ export const auth_api = {
 
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
-			console.error("Registration error details:", JSON.stringify({
-				status: res.status,
-				statusText: res.statusText,
-				errorData: errorData,
-				detail: errorData.detail
-			}, null, 2))
-			
+			console.error(
+				"Registration error details:",
+				JSON.stringify(
+					{
+						status: res.status,
+						statusText: res.statusText,
+						errorData: errorData,
+						detail: errorData.detail,
+					},
+					null,
+					2
+				)
+			)
+
 			// detail 배열의 각 항목을 개별적으로 출력
 			if (errorData.detail && Array.isArray(errorData.detail)) {
 				console.error("Validation errors:")
-				errorData.detail.forEach((error: { type: string; loc: string[]; msg: string; input: Record<string, unknown> }, index: number) => {
-					console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2))
-				})
+				errorData.detail.forEach(
+					(error: { type: string; loc: string[]; msg: string; input: Record<string, unknown> }, index: number) => {
+						console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2))
+					}
+				)
 			}
-			
+
 			throw new Error(errorData.detail?.msg || errorData.message || `회원가입 실패 (${res.status})`)
 		}
 		return res.json()
 	},
 
-	// 프로필 정보 업데이트
-	async updateProfile(profileInfo: ProfileInfo): Promise<ProfileUpdateResponse> {
-		const requestData: ProfileUpdateRequest = {
-			profile_info: profileInfo,
-		}
+	// 프로필 정보 업데이트 - 👻 지금 안 쓰는 api
+	// async updateProfile(profileInfo: ProfileInfo): Promise<ProfileUpdateResponse> {
+	// 	const requestData: ProfileUpdateRequest = {
+	// 		profile_info: profileInfo,
+	// 	}
 
-		const res = await fetchWithAuth(`/api/proxy/user/profile`, {
-			method: "PUT",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(requestData),
-		})
+	// 	const res = await fetchWithAuth(`/api/proxy/user/profile`, {
+	// 		method: "PUT",
+	// 		headers: { "Content-Type": "application/json" },
+	// 		body: JSON.stringify(requestData),
+	// 	})
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "프로필 업데이트 실패")
-		}
-		return res.json()
-	},
+	// 	if (!res.ok) {
+	// 		const errorData = await res.json().catch(() => ({}))
+	// 		throw new Error(errorData.detail?.msg || errorData.message || "프로필 업데이트 실패")
+	// 	}
+	// 	return res.json()
+	// },
 
-	// 프로필 정보 조회
-	async getProfile(userId?: string): Promise<UserProfileResponse> {
-		const url = userId ? `/api/proxy/users/${userId}/profile` : `/api/proxy/user/profile`
+	// 프로필 정보 조회 - 👻 지금 안 쓰는 api
+	// async getProfile(userId?: string): Promise<UserProfileResponse> {
+	// 	const url = userId ? `/api/proxy/users/${userId}/profile` : `/api/proxy/user/profile`
 
-		const res = await fetchWithAuth(url, {
-			method: "GET",
-		})
+	// 	const res = await fetchWithAuth(url, {
+	// 		method: "GET",
+	// 	})
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "프로필 조회 실패")
-		}
-		return res.json()
-	},
+	// 	if (!res.ok) {
+	// 		const errorData = await res.json().catch(() => ({}))
+	// 		throw new Error(errorData.detail?.msg || errorData.message || "프로필 조회 실패")
+	// 	}
+	// 	return res.json()
+	// },
 
-	// 개인화 추천 가져오기 (미완성 기능)
-	async getRecommendations(
-		type: "problems" | "courses" | "paths" = "problems",
-		limit: number = 10
-	): Promise<RecommendationResponse> {
-		const params = new URLSearchParams({
-			type,
-			limit: limit.toString(),
-			refresh: "true",
-		})
+	// 개인화 추천 가져오기 (미완성 기능) - 👻 지금 안 쓰는 api
+	// async getRecommendations(
+	// 	type: "problems" | "courses" | "paths" = "problems",
+	// 	limit: number = 10
+	// ): Promise<RecommendationResponse> {
+	// 	const params = new URLSearchParams({
+	// 		type,
+	// 		limit: limit.toString(),
+	// 		refresh: "true",
+	// 	})
 
-		const res = await fetchWithAuth(`/api/proxy/user/recommendations?${params}`, {
-			method: "GET",
-		})
+	// 	const res = await fetchWithAuth(`/api/proxy/user/recommendations?${params}`, {
+	// 		method: "GET",
+	// 	})
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "추천 정보 조회 실패")
-		}
-		return res.json()
-	},
+	// 	if (!res.ok) {
+	// 		const errorData = await res.json().catch(() => ({}))
+	// 		throw new Error(errorData.detail?.msg || errorData.message || "추천 정보 조회 실패")
+	// 	}
+	// 	return res.json()
+	// },
 
-	// 추천 새로고침 (미완성 기능)
-	async refreshRecommendations(): Promise<{
-		success: boolean
-		message: string
-		recommendations_generated: number
-	}> {
-		const res = await fetchWithAuth("/api/proxy/user/recommendations/refresh", {
-			method: "POST",
-		})
+	// 추천 새로고침 (미완성 기능) - 👻 지금 안 쓰는 api
+	// async refreshRecommendations(): Promise<{
+	// 	success: boolean
+	// 	message: string
+	// 	recommendations_generated: number
+	// }> {
+	// 	const res = await fetchWithAuth("/api/proxy/user/recommendations/refresh", {
+	// 		method: "POST",
+	// 	})
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "추천 새로고침 실패")
-		}
-		return res.json()
-	},
+	// 	if (!res.ok) {
+	// 		const errorData = await res.json().catch(() => ({}))
+	// 		throw new Error(errorData.detail?.msg || errorData.message || "추천 새로고침 실패")
+	// 	}
+	// 	return res.json()
+	// },
 
 	// 로그인
 	async login(userId: string, password: string) {
@@ -409,7 +418,7 @@ export const problem_api = {
 	async problem_get_by_id_group(group_id: number, workbook_id: number, problem_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`, {
 			method: "GET",
-			
+
 			credentials: "include",
 		})
 
@@ -455,7 +464,6 @@ export const problem_api = {
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "내 문제 정보 가져오기 실패")
-
 		}
 		return res.json()
 	},
@@ -505,7 +513,6 @@ export const problem_api = {
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "문제 통계를 불러오지 못했습니다.")
-
 		}
 		return response.json()
 	},
@@ -897,7 +904,6 @@ export const group_member_api = {
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "그룹원 추방 실패")
-
 		}
 		return res.json()
 	},
@@ -950,7 +956,6 @@ export const workbook_api = {
 		}
 		return res.json()
 	},
-
 
 	async workbook_update(workbook_id: number, workbook_name: string, description: string) {
 		const res = await fetchWithAuth(`/api/proxy/workbook/${workbook_id}`, {
@@ -1140,7 +1145,6 @@ export const comment_api = {
 		return res.json()
 	},
 
-
 	async comments_get_by_solve_id(solve_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/comments/solve_id/${solve_id}`, {
 			method: "GET",
@@ -1190,7 +1194,6 @@ export const member_request_api = {
 
 // ====================== AI 피드백 관련 API ===========================
 export const ai_feedback_api = {
-
 	async get_ai_feedback(solve_id: number) {
 		const res = await fetch(`/api/proxy/feedback/${solve_id}`, {
 			method: "GET",

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/stores/auth"
 import { group_api } from "@/lib/api"
 import { ArrowLeft } from "lucide-react"
@@ -13,9 +13,15 @@ interface GradingListPageProps {
 	examId: string
 }
 
-export default function GradingListPage({ groupId, examId }: GradingListPageProps) {
+export default function GradingListPage() {
 	const router = useRouter()
 	const { userName } = useAuth()
+
+	const { groupId, examId } = useParams() as {
+		groupId: string
+		examId: string
+		// studentId: string
+	}
 
 	// 그룹장 여부 판별
 	const [groupOwner, setGroupOwner] = useState<string | null>(null)
