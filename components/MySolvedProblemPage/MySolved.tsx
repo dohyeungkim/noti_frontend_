@@ -10,16 +10,32 @@ import { solve_api } from "@/lib/api"
 import { formatTimestamp } from "../util/dageUtils"
 
 // ✅ 문제 풀이 데이터 타입 정의
+// interface ProblemSolve {
+// 	group_id: number
+// 	problem_id: number
+// 	workbook_id: number
+// 	workbook_name: string
+// 	group_name: string
+// 	problem_name: string
+// 	passed: boolean
+// 	solve_id: number
+// 	timestamp?: string
+// }
+
 interface ProblemSolve {
-	group_id: number
-	problem_id: number
-	workbook_id: number
-	workbook_name: string
+	id: number // 고유 DB ID
+	solve_id: number // 제출 ID
+	problem_id: number // 문제 ID
+	problem_name: string // 문제 제목
+	user_id: string // 제출자 ID
+	passed: boolean // 통과 여부
+	code_language: string // 언어 (python, cpp, etc)
+	code_len: number // 코드 길이 (문자수)
+	timestamp: string // 제출 시간 (ISO8601)
+	group_id: number // 그룹 ID
 	group_name: string
-	problem_name: string
-	passed: boolean
-	solve_id: number
-	timestamp?: string
+	workbook_id: number // 문제집 ID
+	workbook_name: string
 }
 
 export default function MySolved() {

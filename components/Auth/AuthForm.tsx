@@ -16,16 +16,8 @@ import {
 import Image from "next/image"
 
 interface ProfileInfo {
-	age_range: "under_18" | "18_24" | "25_29" | "30_34" | "35_39" | "over_40"
-	academic_year:
-		| "high_school"
-		| "freshman"
-		| "sophomore"
-		| "junior"
-		| "senior"
-		| "graduate"
-		| "working_professional"
-		| "other"
+	age: "under_18" | "18_24" | "25_29" | "30_34" | "35_39" | "over_40"
+	grade: "high_school" | "freshman" | "sophomore" | "junior" | "senior" | "graduate" | "working_professional" | "other"
 	major: string
 	interests: ("web_development" | "mobile_app" | "data_science" | "ai_ml" | "game_development" | "embedded" | "other")[]
 	learning_goals: (
@@ -48,24 +40,24 @@ interface ProfileInfo {
 		| "system_programming"
 		| "other"
 	)[]
-	programming_experience: "beginner" | "intermediate" | "advanced"
-	preferred_languages: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
+	programming_experience_level: "beginner" | "intermediate" | "advanced"
+	preferred_programming_language: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
 }
 
 interface BasicUserInfo {
-	email: string
 	password: string
 	user_id: string
 	username: string
-	full_name: string
+	gender: string
+	email: string
 }
 
 interface ExtendedUserRegisterRequest {
-	email: string
-	password: string
 	user_id: string
 	username: string
-	full_name: string
+	email: string
+	password: string
+	gender: string
 	profile_info: ProfileInfo
 }
 
@@ -80,9 +72,7 @@ interface OptionType {
 }
 
 const Card: React.FC<CardProps> = ({ children, className = "" }) => (
-	<div
-		className={`max-w-2xl w-full text-center p-10 bg-white rounded-xl border border-gray-200 shadow-xl ${className}`}
-	>
+	<div className={`max-w-xl w-full text-center p-8 bg-white rounded-xl border border-gray-200 shadow-xl ${className}`}>
 		{children}
 	</div>
 )
@@ -167,17 +157,17 @@ export default function AuthForm() {
 
 	// 기본 회원가입 정보
 	const [basicInfo, setBasicInfo] = useState<BasicUserInfo>({
-		email: "",
 		password: "",
 		user_id: "",
 		username: "",
-		full_name: "",
+		gender: "",
+		email: "",
 	})
 
 	// 개인 정보
 	const [personalInfo, setPersonalInfo] = useState({
-		age_range: "18_24" as ProfileInfo["age_range"],
-		academic_year: "freshman" as ProfileInfo["academic_year"],
+		age: "18_24" as ProfileInfo["age"],
+		grade: "freshman" as ProfileInfo["grade"],
 		major: "",
 	})
 
@@ -186,8 +176,8 @@ export default function AuthForm() {
 		interests: [] as ProfileInfo["interests"],
 		learning_goals: [] as ProfileInfo["learning_goals"],
 		preferred_fields: [] as ProfileInfo["preferred_fields"],
-		programming_experience: "beginner" as ProfileInfo["programming_experience"],
-		preferred_languages: [] as ProfileInfo["preferred_languages"],
+		programming_experience_level: "beginner" as ProfileInfo["programming_experience_level"],
+		preferred_programming_language: [] as ProfileInfo["preferred_programming_language"],
 	})
 
 	const [confirmPassword, setConfirmPassword] = useState("")
@@ -198,8 +188,8 @@ export default function AuthForm() {
 	}
 
 	// 기본 정보 입력 핸들러
-	const handleBasicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const { name, value } = e.target
+	const handleBasicChange = (e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }) => {
+		const { name, value } = "target" in e ? e.target : e
 		setBasicInfo((prev) => ({ ...prev, [name]: value }))
 
 		if (name === "password" && confirmPassword) {
@@ -214,10 +204,10 @@ export default function AuthForm() {
 
 	// 학습정보 배열 토글 핸들러
 	const toggleLearningArrayField = (field: keyof typeof learningInfo, value: string) => {
-		if (field === "programming_experience") {
+		if (field === "programming_experience_level") {
 			setLearningInfo((prev) => ({
 				...prev,
-				[field]: value as ProfileInfo["programming_experience"],
+				[field]: value as ProfileInfo["programming_experience_level"],
 			}))
 		} else {
 			setLearningInfo((prev) => {
@@ -242,14 +232,7 @@ export default function AuthForm() {
 		setError(null)
 
 		if (currentStep === 1) {
-			if (
-				!basicInfo.user_id ||
-				!basicInfo.username ||
-				!basicInfo.full_name ||
-				!basicInfo.email ||
-				!basicInfo.password ||
-				!confirmPassword
-			) {
+			if (!basicInfo.user_id || !basicInfo.username || !basicInfo.email || !basicInfo.password || !confirmPassword) {
 				setError("모든 필드를 입력해주세요.")
 				return
 			}
@@ -305,13 +288,13 @@ export default function AuthForm() {
 			setCurrentStep(4)
 
 			// 회원가입 성공 후 자동으로 개인화 추천 생성
-			try {
-				await auth_api.refreshRecommendations()
-				console.log("Personalized recommendations generated successfully")
-			} catch (recommendationError) {
-				console.warn("Failed to generate initial recommendations:", recommendationError)
-				// 추천 생성 실패는 회원가입 성공에 영향을 주지 않음
-			}
+			// try {
+			// 	await auth_api.refreshRecommendations()
+			// 	console.log("Personalized recommendations generated successfully")
+			// } catch (recommendationError) {
+			// 	console.warn("Failed to generate initial recommendations:", recommendationError)
+			// 	// 추천 생성 실패는 회원가입 성공에 영향을 주지 않음
+			// }
 		} catch (err: unknown) {
 			console.error("회원가입 실패:", err)
 			const errorMessage = err instanceof Error ? err.message : "회원가입에 실패했습니다. 다시 시도해주세요."
@@ -355,33 +338,33 @@ export default function AuthForm() {
 			password: "",
 			user_id: "",
 			username: "",
-			full_name: "",
+			gender: "",
 		})
 		setPersonalInfo({
-			age_range: "18_24",
-			academic_year: "freshman",
+			age: "18_24",
+			grade: "freshman",
 			major: "",
 		})
 		setLearningInfo({
 			interests: [],
 			learning_goals: [],
 			preferred_fields: [],
-			programming_experience: "beginner",
-			preferred_languages: [],
+			programming_experience_level: "beginner",
+			preferred_programming_language: [],
 		})
 		setConfirmPassword("")
 		setSuccess(false)
 	}
 
 	return (
-		<div className="w-full min-h-screen flex flex-col items-center justify-center bg-cover bg-center bg-[url('/bg.jpg')]">
+		<div className="w-full min-h-screen flex flex-col items-center justify-center bg-cover bg-center bg-mygreen">
 			{/* 헤더 */}
-			<header className="absolute top-0 left-0 p-4">
-				<Image src="/APROFI-logo.png" alt="APROFI Logo" width={160} height={40} priority />
+			<header className="text-white absolute top-0 left-0 p-4">
+				<Image src="/APROFI-logo.png" alt="APROFI Logo" width={120} height={30} priority />
 			</header>
 
 			{/* 본문 섹션 */}
-			<section className="flex items-center justify-center w-full px-6">
+			<section className="flex items-center justify-center w-full px-10 pt-10">
 				<Card>
 					{!isRegistering ? (
 						// 로그인 폼
@@ -389,7 +372,7 @@ export default function AuthForm() {
 							<h2 className="text-3xl font-bold mb-8">LOGIN</h2>
 							<form onSubmit={handleLogin} className="flex flex-col">
 								<div>
-									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 										<input
 											className="w-full bg-transparent outline-none"
 											type="text"
@@ -402,7 +385,7 @@ export default function AuthForm() {
 										/>
 										<FontAwesomeIcon icon={faUser} className="text-lg w-5 h-5" />
 									</div>
-									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 										<input
 											className="w-full bg-transparent outline-none"
 											type="password"
@@ -420,7 +403,7 @@ export default function AuthForm() {
 								<button
 									type="submit"
 									disabled={isLoading}
-									className="w-full p-3 mb-4 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+									className="w-full p-3 mb-4 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
 								>
 									{isLoading ? "로그인 중..." : "로그인"}
 								</button>
@@ -428,7 +411,7 @@ export default function AuthForm() {
 									type="button"
 									onClick={() => setIsRegistering(true)}
 									disabled={isLoading}
-									className="w-full p-3 text-emerald-600 font-semibold rounded-md border border-gray-300 hover:border-emerald-700 disabled:text-gray-400 disabled:border-gray-200 transition-colors"
+									className="w-full p-3 text-mygreen font-semibold rounded-md border border-gray-300 hover:border-mygreen disabled:text-gray-400 disabled:border-gray-200 transition-colors"
 								>
 									회원가입
 								</button>
@@ -439,7 +422,7 @@ export default function AuthForm() {
 						<div className="text-center py-8">
 							<div className="mb-6">
 								<div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-									<FontAwesomeIcon icon={faCheck} className="w-10 h-10 text-emerald-600" />
+									<FontAwesomeIcon icon={faCheck} className="w-10 h-10 text-mygreen" />
 								</div>
 							</div>
 							<h3 className="text-2xl font-bold text-gray-900 mb-4">🎉 회원가입 완료!</h3>
@@ -448,7 +431,7 @@ export default function AuthForm() {
 
 							<div className="bg-emerald-50 rounded-lg p-4 mb-6">
 								<h4 className="font-semibold text-emerald-800 mb-2">🚀 시작할 준비 완료</h4>
-								<ul className="text-sm text-emerald-700 text-left space-y-1">
+								<ul className="text-sm text-mygreen text-left space-y-1">
 									<li>• 맞춤형 문제 추천 시스템 활성화</li>
 									<li>• 개인화된 학습 경로 생성</li>
 									<li>• 실시간 학습 분석 및 피드백</li>
@@ -458,7 +441,7 @@ export default function AuthForm() {
 
 							<button
 								onClick={handleCompleteRegistration}
-								className="w-full p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 transition-colors"
+								className="w-full p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen transition-colors"
 							>
 								로그인 하러 가기
 							</button>
@@ -474,7 +457,7 @@ export default function AuthForm() {
 								</div>
 								<div className="w-full bg-gray-200 rounded-full h-2">
 									<div
-										className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
+										className="bg-gradient-to-r from-mygreen to-mygreen h-2 rounded-full transition-all duration-300"
 										style={{ width: `${getProgress()}%` }}
 									></div>
 								</div>
@@ -486,8 +469,9 @@ export default function AuthForm() {
 									<h2 className="text-3xl font-bold mb-2">기본 정보</h2>
 									<p className="text-gray-600 mb-8">계정 생성을 위한 기본 정보를 입력해주세요</p>
 
+									{/* user_id */}
 									<div className="flex flex-col space-y-4">
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="text"
@@ -500,7 +484,8 @@ export default function AuthForm() {
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										{/* username */}
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="text"
@@ -513,20 +498,36 @@ export default function AuthForm() {
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
-											<input
-												className="w-full bg-transparent outline-none"
-												type="text"
-												name="full_name"
-												placeholder="실명 *"
-												value={basicInfo.full_name}
-												onChange={handleBasicChange}
+										{/* gender */}
+										<div className="flex items-center w-full gap-2 px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
+											<button
+												type="button"
+												onClick={() => handleBasicChange({ name: "gender", value: "male" })}
 												disabled={isLoading}
-												required
-											/>
+												className={`flex-1 px-4 py-1 rounded-full text-center transition-all ${
+													basicInfo.gender === "male"
+														? "bg-mygreen text-white font-semibold"
+														: "bg-white text-gray-600 hover:bg-gray-50"
+												}`}
+											>
+												남성
+											</button>
+											<button
+												type="button"
+												onClick={() => handleBasicChange({ name: "gender", value: "female" })}
+												disabled={isLoading}
+												className={`flex-1 px-4 py-2 rounded-full text-center transition-all ${
+													basicInfo.gender === "female"
+														? "bg-mygreen text-white font-semibold"
+														: "bg-white text-gray-600 hover:bg-gray-50"
+												}`}
+											>
+												여성
+											</button>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										{/* email */}
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="email"
@@ -539,7 +540,8 @@ export default function AuthForm() {
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										{/* password */}
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="password"
@@ -552,7 +554,7 @@ export default function AuthForm() {
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="password"
@@ -571,7 +573,7 @@ export default function AuthForm() {
 												type="button"
 												onClick={() => setIsRegistering(false)}
 												disabled={isLoading}
-												className="flex-1 p-3 text-emerald-600 font-semibold rounded-md border border-gray-300 hover:border-emerald-600 disabled:text-gray-400 disabled:border-gray-200 transition-colors"
+												className="flex-1 p-3 text-mygreen font-semibold rounded-md border border-gray-300 hover:border-mygreen disabled:text-gray-400 disabled:border-gray-200 transition-colors"
 											>
 												로그인하기
 											</button>
@@ -579,7 +581,7 @@ export default function AuthForm() {
 												type="button"
 												onClick={handleNextStep}
 												disabled={isLoading}
-												className="flex-1 p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 transition-colors flex items-center justify-center"
+												className="flex-1 p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 transition-colors flex items-center justify-center"
 											>
 												다음 <FontAwesomeIcon icon={faChevronRight} className="ml-2 w-4 h-4" />
 											</button>
@@ -605,12 +607,12 @@ export default function AuthForm() {
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => handlePersonalChange("age_range", option.value)}
+														onClick={() => handlePersonalChange("age", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															personalInfo.age_range === option.value
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															personalInfo.age === option.value
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -629,12 +631,12 @@ export default function AuthForm() {
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => handlePersonalChange("academic_year", option.value)}
+														onClick={() => handlePersonalChange("grade", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															personalInfo.academic_year === option.value
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															personalInfo.grade === option.value
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -652,7 +654,7 @@ export default function AuthForm() {
 												onChange={(e) => handlePersonalChange("major", e.target.value)}
 												placeholder="예: 컴퓨터공학과"
 												disabled={isLoading}
-												className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:border-emerald-600 focus:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+												className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:border-mygreen focus:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 											/>
 										</div>
 
@@ -677,7 +679,7 @@ export default function AuthForm() {
 												type="button"
 												onClick={handleNextStep}
 												disabled={isLoading}
-												className="flex-1 p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 transition-colors flex items-center justify-center"
+												className="flex-1 p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 transition-colors flex items-center justify-center"
 											>
 												다음 <FontAwesomeIcon icon={faChevronRight} className="ml-2 w-4 h-4" />
 											</button>
@@ -705,8 +707,8 @@ export default function AuthForm() {
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
 															learningInfo.interests.includes(option.value as ProfileInfo["interests"][number])
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -729,8 +731,8 @@ export default function AuthForm() {
 															learningInfo.learning_goals.includes(
 																option.value as ProfileInfo["learning_goals"][number]
 															)
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -753,8 +755,8 @@ export default function AuthForm() {
 															learningInfo.preferred_fields.includes(
 																option.value as ProfileInfo["preferred_fields"][number]
 															)
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -773,12 +775,12 @@ export default function AuthForm() {
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => toggleLearningArrayField("programming_experience", option.value)}
+														onClick={() => toggleLearningArrayField("programming_experience_level", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-sm rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.programming_experience === option.value
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															learningInfo.programming_experience_level === option.value
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -797,14 +799,14 @@ export default function AuthForm() {
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => toggleLearningArrayField("preferred_languages", option.value)}
+														onClick={() => toggleLearningArrayField("preferred_programming_language", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.preferred_languages.includes(
-																option.value as ProfileInfo["preferred_languages"][number]
+															learningInfo.preferred_programming_language.includes(
+																option.value as ProfileInfo["preferred_programming_language"][number]
 															)
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -837,7 +839,7 @@ export default function AuthForm() {
 											type="button"
 											onClick={handleRegister}
 											disabled={isLoading}
-											className="flex-1 p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 transition-colors"
+											className="flex-1 p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 transition-colors"
 										>
 											{isLoading ? "가입 중..." : "가입 완료"}
 										</button>

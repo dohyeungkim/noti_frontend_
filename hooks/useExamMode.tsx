@@ -39,7 +39,7 @@ export function useExamMode() {
 
 		console.log("시험 모드 활성화 여부:", isExamActive)
 
-		// ✅ 불필요한 상태 변경 방지 (이전 값과 다를 때만 업데이트)
+		// 불필요한 상태 변경 방지 (이전 값과 다를 때만 업데이트)
 		setIsExamMode((prev) => (prev !== isExamActive ? isExamActive : prev))
 		setExamId((prev) => (prev !== extractedExamId ? extractedExamId : prev))
 		setGroupId((prev) => (prev !== extractedGroupId ? extractedGroupId : prev))

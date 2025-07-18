@@ -6,6 +6,7 @@ import { group_api, member_request_api } from "@/lib/api"
 import SearchBar from "../ui/SearchBar"
 import SortButton from "../ui/SortButton"
 
+// group_get에서 받아와야되는 정보들
 interface Group {
 	group_id: number
 	group_name: string
@@ -58,6 +59,7 @@ export default function MyPage() {
 		setFilteredGroups(filterGroups())
 	}, [filterGroups])
 
+	// 그룹에 참가 요청 보내는 버튼 - 여기서 요청시간 타임스탬프 찍어서 넘겨야됨.
 	const handleClickPublicJoinButton = async (group_id: number) => {
 		if (window.confirm("그룹에 참여하시겠습니까?")) {
 			const res = await member_request_api.member_request_create(group_id)

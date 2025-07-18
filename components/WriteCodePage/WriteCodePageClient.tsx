@@ -126,8 +126,8 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 			try {
 				const res = await auth_api.getUser()
 				setUserId(res.user_id)
-				// nickname 속성이 없으므로 username 또는 full_name 사용
-				setUserNickname(res.username || res.full_name || "사용자")
+				// nickname 속성이 없으므로 username 사용
+				setUserNickname(res.username || "사용자")
 			} catch (error) {
 				console.error("유저 정보를 불러오는 중 오류 발생:", error)
 			}

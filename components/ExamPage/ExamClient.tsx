@@ -21,6 +21,12 @@ interface WorkbookType {
 	problem_cnt: number
 	description: string
 	creation_date: string
+	// 시험모드 관련 필드 추가
+	is_test_mode: boolean
+	test_start_time: any
+	test_end_time: any
+	publication_start_time: any
+	publication_end_time: any
 }
 
 export default function ExamsClient() {
@@ -45,7 +51,7 @@ export default function ExamsClient() {
 	// 그룹장인지 확인하는 함수
 	const isGroupOwner = userName === groupOwner
 
-	// 문제지 가져오기 (useCallback 적용)
+	// 문제지에 대한 모든 정보 가져오기 -> 시험모드 정보들도 가져와야됨! 👻
 	const fetchWorkbooks = useCallback(async () => {
 		try {
 			const data = await workbook_api.workbook_get(Number(groupId))

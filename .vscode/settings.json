@@ -1,0 +1,11 @@
+{
+	"editor.minimap.maxColumn": 100,
+	"editor.minimap.renderCharacters": false,
+	"editor.minimap.scale": 1,
+	"editor.minimap.sectionHeaderFontSize": 9,
+	"editor.minimap.showMarkSectionHeaders": true,
+	"editor.minimap.showSlider": "mouseover",
+	"editor.minimap.size": "proportional",
+	"editor.minimap.enabled": true,
+	"editor.minimap.autohide": true
+}

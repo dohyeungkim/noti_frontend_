@@ -10,6 +10,8 @@ interface ExamGalleryProps {
 		problem_cnt: number
 		description: string
 		creation_date: string
+		is_test_mode: number
+		workbook_total_points: number
 	}[]
 	handleEnterExam: (examId: string) => void
 	isGroupOwner: boolean

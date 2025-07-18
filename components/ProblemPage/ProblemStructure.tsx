@@ -17,8 +17,8 @@ interface Problem {
 	problem_id: number
 	title: string
 	description: string
-	attempt_count: number
-	pass_count: number
+	attempt_count: number // 리스트뷰에만 UI상으로 존재 👻
+	pass_count: number // 리스트뷰에만 UI상으로 존재 👻
 	is_like: boolean
 }
 

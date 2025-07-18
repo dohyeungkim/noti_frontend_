@@ -1,4 +1,4 @@
-import { problem_like_api, problem_api } from "@/lib/api"
+import { problem_like_api, problem_api, problem_ref_api } from "@/lib/api"
 import { motion } from "framer-motion"
 import { Heart, X } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -59,7 +59,7 @@ export default function ProblemGallery({
 	const deleteProblem = async (problemId: number) => {
 		if (!confirm("정말 삭제하시겠습니까?")) return
 		try {
-			await problem_api.problem_ref_delete(problemId, groupId, workbookId)
+			await problem_ref_api.problem_ref_delete(problemId, groupId, workbookId)
 			setCurrentProblems((prev) => prev.filter((p) => p.problem_id !== problemId))
 			setRefresh(!refresh) // Trigger refresh by toggling the state
 		} catch (error) {

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { EditorContent } from "@tiptap/react"
 import { motion } from "framer-motion"
-import { problem_api, enhanced_run_code_api } from "@/lib/api"
+import { problem_api } from "@/lib/api"
 import Toolbar from "../markdown/Toolbar"
 import { useProblemForm } from "@/hooks/useProblemForm"
 import { useProblemEditor } from "@/hooks/useProblemEditor"
@@ -22,6 +22,7 @@ const PROBLEM_TYPES = [
 	{ value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
 	{ value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
 	{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
+	{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
 ]
 
 export default function NewRegisteredProblem() {
@@ -31,7 +32,9 @@ export default function NewRegisteredProblem() {
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([])
 
 	// 문제 유형 및 배점 추가
-	const [problemType, setProblemType] = useState<string>("코딩")
+	type ProblemType = "코딩" | "객관식" | "주관식" | "단답형" | "디버깅"
+	const [problemType, setProblemType] = useState<ProblemType>("코딩")
+
 	const [problemScore, setProblemScore] = useState<number>(10)
 
 	const {
@@ -220,7 +223,7 @@ export default function NewRegisteredProblem() {
 						{/* 문제 유형 선택 (추가) */}
 						<div className="mb-3">
 							<label className="block text-xs font-medium text-gray-700 mb-1">문제 유형</label>
-							<div className="grid grid-cols-4 gap-2">
+							<div className="grid grid-cols-5 gap-2">
 								{PROBLEM_TYPES.map((type) => (
 									<button
 										key={type.value}
@@ -295,7 +298,8 @@ export default function NewRegisteredProblem() {
 						</div>
 
 						{/* 난이도와 평가 모드 */}
-						<div className="flex gap-4 mb-3">
+						<div className="flex gap-4 mb-13">
+							{/* 문제 난이도 */}
 							<div className="flex-1">
 								<label className="block text-xs font-medium text-gray-700 mb-1">난이도</label>
 								<select
@@ -309,34 +313,37 @@ export default function NewRegisteredProblem() {
 								</select>
 							</div>
 
+							{/* 문제 채점 모드 */}
+							{/* 채점 모드 None 추가 - 👻 */}
 							<div className="flex-1">
 								<label className="block text-xs font-medium text-gray-700 mb-1">채점 모드</label>
 								<select
 									value={ratingMode}
-									onChange={(e) => setRatingMode(e.target.value as "Hard" | "Space" | "Regex")}
+									onChange={(e) => setRatingMode(e.target.value as "Hard" | "Space" | "Regex" | "None")}
 									className="w-full px-3 py-1.5 border rounded-md text-sm"
 								>
 									<option value="Hard">Hard</option>
 									<option value="Space">Space</option>
 									<option value="Regex">Regex</option>
+									<option value="None">None</option>
 								</select>
 							</div>
-						</div>
 
-						{/* 배점 설정 (텍스트 입력 방식으로 변경) */}
-						<div className="mb-3">
-							<label className="block text-xs font-medium text-gray-700 mb-1">배점</label>
-							<div className="flex items-center">
-								<input
-									type="number"
-									min="1"
-									max="100"
-									value={problemScore}
-									onChange={(e) => setProblemScore(parseInt(e.target.value) || 1)}
-									className="w-full px-3 py-1.5 border rounded-md text-sm"
-									placeholder="배점을 입력하세요 (1~100점)"
-								/>
-								<span className="ml-2 text-sm text-gray-600">점</span>
+							{/* 배점 설정 (텍스트 입력 방식으로 변경) */}
+							<div className="mb-3">
+								<label className="block text-xs font-medium text-gray-700 mb-1">배점</label>
+								<div className="flex items-center">
+									<input
+										type="number"
+										min="1"
+										max="100"
+										value={problemScore}
+										onChange={(e) => setProblemScore(parseInt(e.target.value) || 1)}
+										className="w-full px-3 py-1.5 border rounded-md text-sm"
+										placeholder="배점을 입력하세요 (1~100점)"
+									/>
+									<span className="ml-2 text-sm text-gray-600">점</span>
+								</div>
 							</div>
 						</div>
 					</div>

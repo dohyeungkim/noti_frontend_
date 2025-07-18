@@ -150,7 +150,7 @@ const UserIcon: React.FC<{
 		const colors = [
 			"#3B82F6", // blue-500
 			"#EF4444", // red-500
-			"#10B981", // emerald-500
+			"#10B981", // mygreen
 			"#F59E0B", // amber-500
 			"#8B5CF6", // violet-500
 			"#06B6D4", // cyan-500

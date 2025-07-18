@@ -8,6 +8,7 @@ interface ExamCardProps {
 		problem_cnt: number
 		description: string
 		creation_date: string
+		workbook_total_points: number
 	}
 	exam?: {
 		examId: string
@@ -68,9 +69,9 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 						<p className="font-medium">📌 문제 수: {workbook.problem_cnt}개</p>
 					</div>
 
-					{/* 문제 배점 */}
+					{/* 문제 배점 - Problem쪽에 total_points DB 필드가 있음. 이 문제지의 총 배점 나타내는 */}
 					<div className="text-xs text-gray-700">
-						<span className="font-medium">✔️ 총 배점:</span>
+						<span className="font-medium">✔️ 총 배점: {workbook.workbook_total_points}</span>
 					</div>
 				</div>
 			)}

@@ -1,4 +1,5 @@
 "use client"
+// 문제지 생성하는 모달창
 
 import { workbook_api } from "@/lib/api"
 import { useState } from "react"
@@ -10,6 +11,7 @@ interface WorkBookCreateModalProps {
 	setWorkBookName: (name: string) => void
 	WorkBookDescription: string
 	setWorkBookDescription: (description: string) => void
+
 	group_id: number
 	refresh: boolean
 	setRefresh: (refresh: boolean) => void
@@ -22,6 +24,7 @@ export default function WorkBookCreateModal({
 	setWorkBookName,
 	WorkBookDescription,
 	setWorkBookDescription,
+
 	refresh,
 	setRefresh,
 	group_id,
@@ -32,12 +35,12 @@ export default function WorkBookCreateModal({
 
 	// 시험모드 관련 상태 (UI 구현용)
 	const [isExamMode, setIsExamMode] = useState(false)
-	const [publicationStartDate, setPublicationStartDate] = useState<string>(new Date().toISOString().slice(0, 16))
-	const [publicationEndDate, setPublicationEndDate] = useState<string>(
+	const [publication_start_time, setPublicationStartDate] = useState<string>(new Date().toISOString().slice(0, 16))
+	const [publication_end_time, setPublicationEndDate] = useState<string>(
 		new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) // 7일 후
 	)
-	const [submitStartDate, setSubmitStartDate] = useState<string>(new Date().toISOString().slice(0, 16))
-	const [submitEndDate, setSubmitEndDate] = useState<string>(
+	const [test_start_time, setSubmitStartDate] = useState<string>(new Date().toISOString().slice(0, 16))
+	const [test_end_time, setSubmitEndDate] = useState<string>(
 		new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16) // 1일 후
 	)
 
@@ -54,10 +57,10 @@ export default function WorkBookCreateModal({
 
 		// 시험모드인 경우 UI 유효성 검증 (백엔드 연동 전 UI만 체크)
 		if (isExamMode) {
-			const pubStartDate = new Date(publicationStartDate)
-			const pubEndDate = new Date(publicationEndDate)
-			const startDate = new Date(submitStartDate)
-			const endDate = new Date(submitEndDate)
+			const pubStartDate = new Date(publication_start_time)
+			const pubEndDate = new Date(publication_end_time)
+			const startDate = new Date(test_start_time)
+			const endDate = new Date(test_end_time)
 
 			// 현재 시간
 			const now = new Date()
@@ -92,16 +95,30 @@ export default function WorkBookCreateModal({
 		setErrorMessage(null)
 
 		try {
-			// 기본 문제지 생성 API 호출 (백엔드 연동은 나중에 구현)
-			await workbook_api.workbook_create(group_id, WorkBookName.trim(), WorkBookDescription.trim())
+			// 기본 문제지 생성 API 호출 (백엔드 연동은 나중에 구현) - is_exam_mode, test_start_time, test_end_time
+			await workbook_api.workbook_create(
+				group_id,
+				WorkBookName.trim(),
+				WorkBookDescription.trim(),
+				isExamMode,
+				test_start_time,
+				test_end_time,
+				publication_start_time,
+				publication_end_time
+				// workbook_total_points
+			)
 
 			// 시험모드 설정 정보 (백엔드 연동 없이 UI만 구현)
 			if (isExamMode) {
 				console.log("시험 모드 정보 (아직 백엔드 연동 안됨):", {
-					publicationStartDate,
-					publicationEndDate,
-					submitStartDate,
-					submitEndDate,
+					test_start_time,
+					test_end_time,
+					publication_start_time,
+					publication_end_time,
+					// publicationStartDate,
+					// publicationEndDate,
+					// submitStartDate,
+					// submitEndDate,
 				})
 			}
 
@@ -195,7 +212,7 @@ export default function WorkBookCreateModal({
 									<label className="text-sm text-gray-700 font-medium">📅 게시 시작 일시</label>
 									<input
 										type="datetime-local"
-										value={publicationStartDate}
+										value={publication_start_time}
 										onChange={(e) => setPublicationStartDate(e.target.value)}
 										className="w-full p-2 border rounded-md text-sm"
 									/>
@@ -207,7 +224,7 @@ export default function WorkBookCreateModal({
 									<label className="text-sm text-gray-700 font-medium">📅 게시 종료 일시</label>
 									<input
 										type="datetime-local"
-										value={publicationEndDate}
+										value={publication_end_time}
 										onChange={(e) => setPublicationEndDate(e.target.value)}
 										className="w-full p-2 border rounded-md text-sm"
 									/>
@@ -219,7 +236,7 @@ export default function WorkBookCreateModal({
 									<label className="text-sm text-gray-700 font-medium">📝 제출 시작 일시</label>
 									<input
 										type="datetime-local"
-										value={submitStartDate}
+										value={test_start_time}
 										onChange={(e) => setSubmitStartDate(e.target.value)}
 										className="w-full p-2 border rounded-md text-sm"
 									/>
@@ -231,7 +248,7 @@ export default function WorkBookCreateModal({
 									<label className="text-sm text-gray-700 font-medium">🏁 제출 종료 일시</label>
 									<input
 										type="datetime-local"
-										value={submitEndDate}
+										value={test_end_time}
 										onChange={(e) => setSubmitEndDate(e.target.value)}
 										className="w-full p-2 border rounded-md text-sm"
 									/>
