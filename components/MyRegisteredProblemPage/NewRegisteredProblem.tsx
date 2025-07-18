@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { EditorContent } from "@tiptap/react"
 import { motion } from "framer-motion"
@@ -13,16 +14,15 @@ import ProblemConditions from "../ProblemForm/ProblemConditions"
 import TestCaseSection from "../ProblemForm/TestCaseSection"
 import ReactMde from "react-mde"
 import "react-mde/lib/styles/css/react-mde-all.css"
-import { useState, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
 
 // 문제 유형 옵션
 const PROBLEM_TYPES = [
 	{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
+	{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
 	{ value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
 	{ value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
 	{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
-	{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
 ]
 
 export default function NewRegisteredProblem() {
@@ -32,9 +32,8 @@ export default function NewRegisteredProblem() {
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([])
 
 	// 문제 유형 및 배점 추가
-	type ProblemType = "코딩" | "객관식" | "주관식" | "단답형" | "디버깅"
+	type ProblemType = "코딩" | "디버깅" | "객관식" | "주관식" | "단답형"
 	const [problemType, setProblemType] = useState<ProblemType>("코딩")
-
 	const [problemScore, setProblemScore] = useState<number>(10)
 
 	const {
@@ -322,10 +321,28 @@ export default function NewRegisteredProblem() {
 									onChange={(e) => setRatingMode(e.target.value as "Hard" | "Space" | "Regex" | "None")}
 									className="w-full px-3 py-1.5 border rounded-md text-sm"
 								>
-									<option value="Hard">Hard</option>
-									<option value="Space">Space</option>
-									<option value="Regex">Regex</option>
-									<option value="None">None</option>
+									{problemType === "객관식" ? (
+										<option value="None">None</option>
+									) : problemType === "단답형" ? (
+										<>
+											<option value="exact">exact</option>
+											<option value="partial">partial</option>
+											<option value="soft">soft</option>
+											<option value="none">none</option>
+										</>
+									) : problemType === "주관식" ? (
+										<>
+											<option value="active">active</option>
+											<option value="deactive">deactive</option>
+										</>
+									) : (
+										<>
+											<option value="Hard">Hard</option>
+											<option value="Space">Space</option>
+											<option value="Regex">Regex</option>
+											<option value="None">None</option>
+										</>
+									)}
 								</select>
 							</div>
 
@@ -335,12 +352,12 @@ export default function NewRegisteredProblem() {
 								<div className="flex items-center">
 									<input
 										type="number"
-										min="1"
-										max="100"
+										min="10"
+										max="10"
 										value={problemScore}
 										onChange={(e) => setProblemScore(parseInt(e.target.value) || 1)}
 										className="w-full px-3 py-1.5 border rounded-md text-sm"
-										placeholder="배점을 입력하세요 (1~100점)"
+										placeholder="배점dms 10접입니다."
 									/>
 									<span className="ml-2 text-sm text-gray-600">점</span>
 								</div>

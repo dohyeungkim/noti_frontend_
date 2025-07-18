@@ -161,79 +161,6 @@ export const auth_api = {
 		return res.json()
 	},
 
-	// 프로필 정보 업데이트 - 👻 지금 안 쓰는 api
-	// async updateProfile(profileInfo: ProfileInfo): Promise<ProfileUpdateResponse> {
-	// 	const requestData: ProfileUpdateRequest = {
-	// 		profile_info: profileInfo,
-	// 	}
-
-	// 	const res = await fetchWithAuth(`/api/proxy/user/profile`, {
-	// 		method: "PUT",
-	// 		headers: { "Content-Type": "application/json" },
-	// 		body: JSON.stringify(requestData),
-	// 	})
-
-	// 	if (!res.ok) {
-	// 		const errorData = await res.json().catch(() => ({}))
-	// 		throw new Error(errorData.detail?.msg || errorData.message || "프로필 업데이트 실패")
-	// 	}
-	// 	return res.json()
-	// },
-
-	// 프로필 정보 조회 - 👻 지금 안 쓰는 api
-	// async getProfile(userId?: string): Promise<UserProfileResponse> {
-	// 	const url = userId ? `/api/proxy/users/${userId}/profile` : `/api/proxy/user/profile`
-
-	// 	const res = await fetchWithAuth(url, {
-	// 		method: "GET",
-	// 	})
-
-	// 	if (!res.ok) {
-	// 		const errorData = await res.json().catch(() => ({}))
-	// 		throw new Error(errorData.detail?.msg || errorData.message || "프로필 조회 실패")
-	// 	}
-	// 	return res.json()
-	// },
-
-	// 개인화 추천 가져오기 (미완성 기능) - 👻 지금 안 쓰는 api
-	// async getRecommendations(
-	// 	type: "problems" | "courses" | "paths" = "problems",
-	// 	limit: number = 10
-	// ): Promise<RecommendationResponse> {
-	// 	const params = new URLSearchParams({
-	// 		type,
-	// 		limit: limit.toString(),
-	// 		refresh: "true",
-	// 	})
-
-	// 	const res = await fetchWithAuth(`/api/proxy/user/recommendations?${params}`, {
-	// 		method: "GET",
-	// 	})
-
-	// 	if (!res.ok) {
-	// 		const errorData = await res.json().catch(() => ({}))
-	// 		throw new Error(errorData.detail?.msg || errorData.message || "추천 정보 조회 실패")
-	// 	}
-	// 	return res.json()
-	// },
-
-	// 추천 새로고침 (미완성 기능) - 👻 지금 안 쓰는 api
-	// async refreshRecommendations(): Promise<{
-	// 	success: boolean
-	// 	message: string
-	// 	recommendations_generated: number
-	// }> {
-	// 	const res = await fetchWithAuth("/api/proxy/user/recommendations/refresh", {
-	// 		method: "POST",
-	// 	})
-
-	// 	if (!res.ok) {
-	// 		const errorData = await res.json().catch(() => ({}))
-	// 		throw new Error(errorData.detail?.msg || errorData.message || "추천 새로고침 실패")
-	// 	}
-	// 	return res.json()
-	// },
-
 	// 로그인
 	async login(userId: string, password: string) {
 		const res = await fetch("/api/proxy/user/login", {
@@ -344,7 +271,106 @@ export const auth_api = {
 }
 
 // ====================== problem 관련 API ===========================
+
+export type ProblemType = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
+
+export type RatingMode = "Hard" | "Space" | "Regex" | "None" | "exact" | "partial" | "soft"
+
+export interface ProblemBase {
+	problem_id: number
+	maker_id: string
+	title: string
+	description: string
+	difficulty: string
+	tags: string[]
+	problem_condition: string[]
+	created_at: string
+	deleted_at?: string | null
+	problemType: ProblemType
+}
+
+// 코딩/디버깅 공통
+export interface CodingProblem extends ProblemBase {
+	problemType: "코딩" | "디버깅"
+	rating_mode: RatingMode
+	reference_codes: ReferenceCodeRequest[]
+	test_cases: TestCaseRequest[]
+}
+
+// 객관식
+export interface MultipleChoiceProblem extends ProblemBase {
+	problemType: "객관식"
+	choices: string[]
+	correct_answers: number[]
+}
+
+// 단답형
+export interface ShortAnswerProblem extends ProblemBase {
+	problemType: "단답형"
+	rating_mode: RatingMode
+	answer_text: string[]
+}
+
+// 주관식
+export interface SubjectiveProblem extends ProblemBase {
+	problemType: "주관식"
+}
+
+// —————————————— Update Request 타입들 ——————————————
+export type CodingProblemUpdateRequest = {
+	title: string
+	description: string
+	difficulty: string
+	rating_mode: RatingMode
+	tags: string[]
+	problem_condition: string[]
+	reference_codes: ReferenceCodeRequest[]
+	test_cases: TestCaseRequest[]
+	problemType: "코딩" | "디버깅"
+}
+
+export type MultipleChoiceProblemUpdateRequest = {
+	title: string
+	description: string
+	difficulty: string
+	tags: string[]
+	options: string[]
+	correct_answers: number[]
+	problemType: "객관식"
+}
+
+export type ShortAnswerProblemUpdateRequest = {
+	title: string
+	description: string
+	difficulty: string
+	rating_mode: RatingMode // exact|partial|soft|None
+	tags: string[]
+	answer_texts: string[]
+	problemType: "단답형"
+}
+
+export type SubjectiveProblemUpdateRequest = {
+	title: string
+	description: string
+	difficulty: string
+	rating_mode: RatingMode // active|deactive
+	tags: string[]
+	problemType: "주관식"
+}
+
+// 전체 리턴 타입 (discriminated union)
+export type ProblemDetail = CodingProblem | MultipleChoiceProblem | ShortAnswerProblem | SubjectiveProblem
+// 문제 업데이트 전체 리턴 타입
+export type ProblemUpdateRequest =
+	| CodingProblemUpdateRequest
+	| MultipleChoiceProblemUpdateRequest
+	| ShortAnswerProblemUpdateRequest
+	| SubjectiveProblemUpdateRequest
+
 export const problem_api = {
+	//
+	// ✨ 코딩·디버깅 문제 생성 (기존과 동일하게 problem_condition 포함)
+	//
 	async problem_create(
 		title: string,
 		description: string,
@@ -354,326 +380,250 @@ export const problem_api = {
 		problem_condition: string[],
 		reference_codes: ReferenceCodeRequest[],
 		test_cases: TestCaseRequest[],
-		problemType: "코딩" | "객관식" | "주관식" | "단답형" | "디버깅" // 문제 유형 추가
+		problemType: "코딩" | "디버깅"
 	) {
-		const requestBody: EnhancedProblemCreateRequest = {
+		const body = {
 			title,
 			description,
 			difficulty,
 			rating_mode,
 			tags,
 			problem_condition,
+			problemType,
 			reference_codes,
 			test_cases,
-			problemType, // 문제 유형 추가
 		}
-
 		const res = await fetchWithAuth("/api/proxy/problems", {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(requestBody),
+			body: JSON.stringify(body),
 		})
-
 		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 생성 실패")
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "코딩·디버깅 문제 생성 실패")
 		}
 		return res.json()
 	},
 
-	// 내가 등록한 문제 리스트 조회. 내가 등록한 문제들 페이지 + 문제지에 문제 등록할때 문제 선택하는 모달창에서 씀
-	async problem_get() {
-		const res = await fetchWithAuth("/api/proxy/problems/me", {
-			method: "GET",
-			credentials: "include",
-		})
-
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "내 문제 정보 가져오기 실패")
-		}
-
-		return res.json()
-	},
-
-	async problem_get_by_id(problem_id: number) {
-		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
-			method: "GET",
-			credentials: "include",
-		})
-
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 정보 가져오기 실패")
-		}
-
-		return res.json()
-	},
-
-	async problem_get_by_id_group(group_id: number, workbook_id: number, problem_id: number) {
-		const res = await fetchWithAuth(`/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`, {
-			method: "GET",
-
-			credentials: "include",
-		})
-
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 정보 가져오기 실패")
-		}
-		return res.json()
-	},
-
-	async problem_delete(problem_id: number) {
-		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
-			method: "DELETE",
-			credentials: "include",
-		})
-
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 지우기 실패")
-		}
-		return res.json()
-	},
-
-	// async problem_get_small() {
-	// 	const res = await fetchWithAuth("/api/proxy/problems/me/small", {
-	// 		method: "GET",
-	// 		credentials: "include",
-	// 	})
-
-	// 	if (!res.ok) {
-	// 		const errorData = await res.json().catch(() => ({}))
-	// 		throw new Error(errorData.detail?.msg || errorData.message || "내 문제 정보 가져오기 실패")
-	// 	}
-	// 	return res.json()
-	// },
-
-	async problem_update(
-		id: string | string[],
+	//
+	// 📝 객관식 문제 생성 (problem_condition 삭제, rating_mode 없음)
+	//
+	async problem_create_multiple_choice(
 		title: string,
 		description: string,
 		difficulty: string,
-		rating_mode: "Hard" | "Space" | "Regex" | "None",
 		tags: string[],
-		problem_condition: string[],
-		reference_codes: ReferenceCodeRequest[],
-		test_cases: TestCaseRequest[],
-		problemType: "코딩" | "객관식" | "주관식" | "단답형" | "디버깅" // 문제 유형 추가
-		// problemScore: number // 배점 추가
+		options: string[],
+		correct_answers: number[] // 복수 정답 지원
 	) {
-		const requestBody: EnhancedProblemCreateRequest = {
+		const body = {
+			title,
+			description,
+			difficulty,
+			tags,
+			problemType: "객관식",
+			options,
+			correct_answers,
+		}
+		const res = await fetchWithAuth("/api/proxy/problems", {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "객관식 문제 생성 실패")
+		}
+		return res.json()
+	},
+
+	//
+	// ✏️ 단답형 문제 생성 (grading_criterion 제거, rating_mode 에만 exact/partial/soft/none)
+	//
+	async problem_create_short_answer(
+		title: string,
+		description: string,
+		difficulty: string,
+		rating_mode: "exact" | "partial" | "soft" | "none",
+		tags: string[],
+		answer_text: string[]
+	) {
+		const body = {
 			title,
 			description,
 			difficulty,
 			rating_mode,
 			tags,
-			problem_condition,
-			reference_codes,
-			test_cases,
-			problemType, // 문제 유형 추가
-			// problemScore, // 배점 추가
+			problemType: "단답형",
+			answer_text,
 		}
+		const res = await fetchWithAuth("/api/proxy/problems", {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "단답형 문제 생성 실패")
+		}
+		return res.json()
+	},
 
-		const response = await fetchWithAuth(`/api/proxy/problems/${id}`, {
+	//
+	// 📄 주관식 문제 생성 (problem_condition 삭제, ai 평가 모드만 rating_mode에 사용)
+	//
+	async problem_create_subjective(
+		title: string,
+		description: string,
+		difficulty: string,
+		rating_mode: "active" | "deactive",
+		tags: string[]
+	) {
+		const body = {
+			title,
+			description,
+			difficulty,
+			rating_mode,
+			tags,
+			problemType: "주관식",
+		}
+		const res = await fetchWithAuth("/api/proxy/problems", {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "주관식 문제 생성 실패")
+		}
+		return res.json()
+	},
+
+	// ---------------------- GET/DELETE ----------------------
+
+	/** 내가 등록한 모든 문제 조회 */
+	async problem_get(): Promise<ProblemDetail[]> {
+		const res = await fetchWithAuth("/api/proxy/problems/me", {
+			method: "GET",
+			credentials: "include",
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "내 문제 정보 가져오기 실패")
+		}
+		return res.json()
+	},
+
+	/** 문제 ID 단일 조회 */
+	async problem_get_by_id(problem_id: number): Promise<ProblemDetail> {
+		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
+			method: "GET",
+			credentials: "include",
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "문제 정보 가져오기 실패")
+		}
+		return res.json()
+	},
+
+	/** 그룹/시험/문제별 조회 */
+	async problem_get_by_id_group(group_id: number, workbook_id: number, problem_id: number): Promise<ProblemDetail> {
+		const res = await fetchWithAuth(`/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`, {
+			method: "GET",
+			credentials: "include",
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "문제 정보 가져오기 실패")
+		}
+		return res.json()
+	},
+
+	/** 문제 삭제 */
+	async problem_delete(problem_id: number): Promise<{ success: boolean }> {
+		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
+			method: "DELETE",
+			credentials: "include",
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "문제 삭제 실패")
+		}
+		return res.json()
+	},
+
+	// async problem_update(
+	// 	id: string | string[],
+	// 	title: string,
+	// 	description: string,
+	// 	difficulty: string,
+	// 	rating_mode: "Hard" | "Space" | "Regex" | "None",
+	// 	tags: string[],
+	// 	problem_condition: string[],
+	// 	reference_codes: ReferenceCodeRequest[],
+	// 	test_cases: TestCaseRequest[],
+	// 	problemType: "코딩" | "객관식" | "주관식" | "단답형" | "디버깅" // 문제 유형 추가
+	// 	// problemScore: number // 배점 추가
+	// ) {
+	// 	const requestBody: EnhancedProblemCreateRequest = {
+	// 		title,
+	// 		description,
+	// 		difficulty,
+	// 		rating_mode,
+	// 		tags,
+	// 		problem_condition,
+	// 		reference_codes,
+	// 		test_cases,
+	// 		problemType, // 문제 유형 추가
+	// 	}
+
+	// 	const response = await fetchWithAuth(`/api/proxy/problems/${id}`, {
+	// 		method: "PUT",
+	// 		headers: { "Content-Type": "application/json" },
+	// 		body: JSON.stringify(requestBody),
+	// 	})
+
+	// 	if (!response.ok) {
+	// 		const errorText = await response.text()
+	// 		console.error("API 응답 에러:", errorText)
+	// 		throw new Error("문제 업데이트 실패")
+	// 	}
+	// 	return response.json()
+	// },
+
+	/** 문제 수정 */
+	async problem_update(id: string | string[], requestBody: ProblemUpdateRequest): Promise<ProblemDetail> {
+		const res = await fetchWithAuth(`/api/proxy/problems/${id}`, {
 			method: "PUT",
+			credentials: "include",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(requestBody),
 		})
-
-		if (!response.ok) {
-			const errorText = await response.text()
-			console.error("API 응답 에러:", errorText)
-			throw new Error("문제 업데이트 실패")
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "문제 업데이트 실패")
 		}
-		return response.json()
+		return res.json()
 	},
 
-	async problem_get_stats(problem_id: number) {
-		const response = await fetchWithAuth(`/api/proxy/problems/stats/${problem_id}`, {
+	/** 문제 통계 조회 */
+	async problem_get_stats(problem_id: number): Promise<Record<string, any>> {
+		const res = await fetchWithAuth(`/api/proxy/problems/stats/${problem_id}`, {
 			method: "GET",
-			headers: { "Content-Type": "application/json" },
+			credentials: "include",
 		})
-
-		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 통계를 불러오지 못했습니다.")
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "문제 통계 가져오기 실패")
 		}
-		return response.json()
+		return res.json()
 	},
 }
-
-// 이거 밑에 api들 AI의 잔재임... 👻
-// export const additional_problem_api_functions = {
-// 	// 확장된 문제 생성 (기존 problem_create를 대체)
-// 	async problem_create_enhanced(requestData: EnhancedProblemCreateRequest) {
-// 		const res = await fetchWithAuth("/api/proxy/problems", {
-// 			method: "POST",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(requestData),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "문제 생성 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 참조 코드와 함께 문제 조회
-// 	async problem_get_with_reference_codes(problem_id: number): Promise<EnhancedProblemResponse> {
-// 		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}?include_reference_codes=true`, {
-// 			method: "GET",
-// 			credentials: "include",
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "문제 정보 가져오기 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 확장된 문제 업데이트 (기존 problem_update를 대체)
-// 	async problem_update_enhanced(problem_id: string | number, requestData: EnhancedProblemCreateRequest) {
-// 		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
-// 			method: "PUT",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(requestData),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "문제 업데이트 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 문제 복사 (참조 코드 포함)
-// 	async problem_copy_with_reference_codes(
-// 		source_problem_id: number,
-// 		new_title?: string
-// 	): Promise<EnhancedProblemResponse> {
-// 		const requestData: { source_problem_id: number; new_title?: string } = { source_problem_id }
-// 		if (new_title) {
-// 			requestData.new_title = new_title
-// 		}
-
-// 		const res = await fetchWithAuth("/api/proxy/problems/copy", {
-// 			method: "POST",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(requestData),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "문제 복사 실패")
-// 		}
-// 		return res.json()
-// 	},
-// }
-
-// ====================== 기존 problem_api에 추가할 함수들 ===========================
-// export const enhanced_problem_api = {
-// 	// 확장된 문제 생성 API
-// 	async problem_create_enhanced(requestData: EnhancedProblemCreateRequest): Promise<EnhancedProblemResponse> {
-// 		const res = await fetchWithAuth("/api/proxy/problems", {
-// 			method: "POST",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(requestData),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "확장 문제 생성 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 확장된 문제 조회 API (참조 코드 포함)
-// 	async problem_get_enhanced(problem_id: number): Promise<EnhancedProblemResponse> {
-// 		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
-// 			method: "GET",
-// 			credentials: "include",
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "확장 문제 정보 가져오기 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 확장된 문제 업데이트 API
-// 	async problem_update_enhanced(
-// 		problem_id: number,
-// 		requestData: EnhancedProblemCreateRequest
-// 	): Promise<EnhancedProblemResponse> {
-// 		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}`, {
-// 			method: "PUT",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(requestData),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "확장 문제 업데이트 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 참조 코드 관리 API
-// 	async reference_codes_get(problem_id: number): Promise<ReferenceCodeResponse[]> {
-// 		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}/reference_codes`, {
-// 			method: "GET",
-// 			credentials: "include",
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "참조 코드 가져오기 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	async reference_codes_update(
-// 		problem_id: number,
-// 		reference_codes: ReferenceCodeRequest[]
-// 	): Promise<ReferenceCodeResponse[]> {
-// 		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}/reference_codes`, {
-// 			method: "PUT",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify({ reference_codes }),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "참조 코드 업데이트 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	async reference_codes_delete(problem_id: number, code_id: number): Promise<{ success: boolean }> {
-// 		const res = await fetchWithAuth(`/api/proxy/problems/${problem_id}/reference_codes/${code_id}`, {
-// 			method: "DELETE",
-// 			credentials: "include",
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "참조 코드 삭제 실패")
-// 		}
-// 		return res.json()
-// 	},
-// } 👻 Ai잔재 쌰갈 뭐임 대체 이게;;
 
 // ====================== problem_ref 관련 API ===========================
 
@@ -1259,8 +1209,11 @@ export const run_code_api = {
 }
 
 // ====================== 새로운 타입 정의 ===========================
-interface ReferenceCodeRequest {
-	language: "python" | "java" | "cpp" | "c" | "javascript"
+export type SupportedLanguage = "python" | "javascript" | "c" | "cpp" | "java"
+// 필요하면 더 추가
+
+export interface ReferenceCodeRequest {
+	language: SupportedLanguage
 	code: string
 	is_main: boolean
 }
@@ -1284,218 +1237,49 @@ export interface EnhancedProblemCreateRequest {
 	// problemScore: number // 배점 추가
 }
 
-interface ReferenceCodeResponse {
-	id: number
-	language: string
-	code: string
-	is_main: boolean
-	created_at: string
-}
-
-interface EnhancedProblemResponse {
-	problem_id: number
-	maker_id: string
-	title: string
-	description: string
-	difficulty: string
-	rating_mode: "Hard" | "Space" | "Regex" | "None"
-	tags: string[]
-	problem_condition: string[]
-	reference_codes: ReferenceCodeResponse[]
-	test_cases: TestCaseRequest[]
-	parent_problem_id: number | null
-	root_problem_id: number
-	make_at: string
-}
-
-interface RunCodeForProblemRequest {
-	code: string
-	language: string
-	test_cases: Array<{
-		input: string
-		expected_output: string
-	}>
-}
-
-interface RunCodeForProblemResponse {
-	success: boolean
-	results: Array<{
-		test_case_index: number
-		status: "success" | "error" | "timeout"
-		output: string
-		error: string
-		execution_time: number
-		memory_usage: number
-		passed: boolean
-	}>
-	overall_status: "all_passed" | "some_failed" | "all_failed"
-}
-
-// ====================== 확장된 run_code_api ===========================
-// export const enhanced_run_code_api = {
-// 	// 문제 출제자용 코드 실행 API
-// 	async run_code_for_problem(requestData: RunCodeForProblemRequest): Promise<RunCodeForProblemResponse> {
-// 		const res = await fetchWithAuth("/api/proxy/problems/run_code", {
-// 			method: "POST",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(requestData),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "문제 출제자용 코드 실행 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 기존 solve용 코드 실행 (기존과 동일)
-// 	async run_code(language: string, code: string, test_cases: { input: string; output?: string }[]) {
-// 		const fixedTestCases = test_cases.map((tc) => ({
-// 			input: tc.input,
-// 			expected: tc.output ?? "",
-// 		}))
-
-// 		const res = await fetchWithAuth("/api/proxy/solves/run_code", {
-// 			method: "POST",
-// 			credentials: "include",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify({ language, code, test_cases: fixedTestCases }),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "코드 실행 실패")
-// 		}
-// 		return res.json()
-// 	},
+// interface ReferenceCodeResponse {
+// 	id: number
+// 	language: string
+// 	code: string
+// 	is_main: boolean
+// 	created_at: string
 // }
 
-// ====================== 추천 시스템 API (미완성 기능) ===========================
-// export const recommendation_api = {
-// 	// 개인화된 문제 추천
-// 	async getProblemsRecommendation(limit: number = 10): Promise<RecommendationResponse> {
-// 		return auth_api.getRecommendations("problems", limit)
-// 	},
-
-// 	// 개인화된 코스 추천
-// 	async getCoursesRecommendation(limit: number = 5): Promise<RecommendationResponse> {
-// 		return auth_api.getRecommendations("courses", limit)
-// 	},
-
-// 	// 개인화된 학습 경로 추천
-// 	async getPathsRecommendation(limit: number = 3): Promise<RecommendationResponse> {
-// 		return auth_api.getRecommendations("paths", limit)
-// 	},
-
-// 	// 추천 새로고침
-// 	async refreshRecommendations(): Promise<{
-// 		success: boolean
-// 		message: string
-// 		recommendations_generated: number
-// 	}> {
-// 		return auth_api.refreshRecommendations()
-// 	},
-
-// 	// 특정 추천에 대한 피드백 제공 (미완성 기능)
-// 	async provideFeedback(
-// 		recommendationId: number,
-// 		feedback: {
-// 			useful: boolean
-// 			difficulty_accurate: boolean
-// 			reason_helpful: boolean
-// 			comments?: string
-// 		}
-// 	): Promise<{
-// 		success: boolean
-// 		message: string
-// 	}> {
-// 		const res = await fetchWithAuth(`/api/proxy/user/recommendations/${recommendationId}/feedback`, {
-// 			method: "POST",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(feedback),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "피드백 제출 실패")
-// 		}
-// 		return res.json()
-// 	},
+// interface EnhancedProblemResponse {
+// 	problem_id: number
+// 	maker_id: string
+// 	title: string
+// 	description: string
+// 	difficulty: string
+// 	rating_mode: "Hard" | "Space" | "Regex" | "None"
+// 	tags: string[]
+// 	problem_condition: string[]
+// 	reference_codes: ReferenceCodeResponse[]
+// 	test_cases: TestCaseRequest[]
+// 	parent_problem_id: number | null
+// 	root_problem_id: number
+// 	make_at: string
 // }
 
-// ====================== 프로필 분석 API (미완성 기능) ===========================
-// export const profile_api = {
-// 	// 프로필 완성도 체크
-// 	async getProfileCompletion(): Promise<{
-// 		percentage: number
-// 		missing_fields: string[]
-// 		suggestions: string[]
-// 	}> {
-// 		const res = await fetchWithAuth("/api/proxy/user/profile/completion", {
-// 			method: "GET",
-// 		})
+// interface RunCodeForProblemRequest {
+// 	code: string
+// 	language: string
+// 	test_cases: Array<{
+// 		input: string
+// 		expected_output: string
+// 	}>
+// }
 
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "프로필 완성도 조회 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 학습 분석 데이터 조회
-// 	async getLearningAnalytics(): Promise<{
-// 		problems_solved: number
-// 		total_submissions: number
-// 		success_rate: number
-// 		active_days: number
-// 		skill_level: "beginner" | "intermediate" | "advanced"
-// 		achievements: string[]
-// 		progress_trends: Array<{
-// 			date: string
-// 			problems_solved: number
-// 			accuracy: number
-// 		}>
-// 	}> {
-// 		const res = await fetchWithAuth("/api/proxy/user/analytics", {
-// 			method: "GET",
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "학습 분석 데이터 조회 실패")
-// 		}
-// 		return res.json()
-// 	},
-
-// 	// 개인화된 학습 경로 생성
-// 	async generateLearningPath(preferences: {
-// 		focus_areas: string[]
-// 		difficulty_preference: "easy" | "medium" | "hard" | "mixed"
-// 		time_commitment: "low" | "medium" | "high"
-// 		learning_style: "visual" | "practical" | "theoretical" | "mixed"
-// 	}): Promise<{
-// 		path_id: number
-// 		name: string
-// 		description: string
-// 		estimated_duration: string
-// 		milestones: Array<{
-// 			title: string
-// 			description: string
-// 			problems: number[]
-// 			estimated_time: string
-// 		}>
-// 	}> {
-// 		const res = await fetchWithAuth("/api/proxy/user/learning-path/generate", {
-// 			method: "POST",
-// 			headers: { "Content-Type": "application/json" },
-// 			body: JSON.stringify(preferences),
-// 		})
-
-// 		if (!res.ok) {
-// 			const errorData = await res.json().catch(() => ({}))
-// 			throw new Error(errorData.detail?.msg || errorData.message || "학습 경로 생성 실패")
-// 		}
-// 		return res.json()
-// 	},
+// interface RunCodeForProblemResponse {
+// 	success: boolean
+// 	results: Array<{
+// 		test_case_index: number
+// 		status: "success" | "error" | "timeout"
+// 		output: string
+// 		error: string
+// 		execution_time: number
+// 		memory_usage: number
+// 		passed: boolean
+// 	}>
+// 	overall_status: "all_passed" | "some_failed" | "all_failed"
 // }
