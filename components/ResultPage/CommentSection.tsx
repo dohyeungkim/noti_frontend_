@@ -19,7 +19,7 @@ interface SolveData {
 
 interface TestCase {
 	id: number
-	status: 'pass' | 'fail'
+	status: "pass" | "fail"
 	description: string
 }
 
@@ -28,8 +28,8 @@ interface Comment {
 	problem_id: number
 	solve_id: number
 	comment: string
-	is_anonymous: boolean
-	nickname: string
+	// is_anonymous: boolean
+	// nickname: string
 	is_problem_message: boolean
 	timestamp?: string
 }
@@ -51,15 +51,15 @@ export default function FeedbackWithSubmissionPageClient({
 	const [isAILoaded, setIsAILoaded] = useState(false)
 	const [solveData, setSolveData] = useState<SolveData | null>(null)
 	const [testCases, setTestCases] = useState<TestCase[]>([
-		{ id: 1, status: 'pass', description: '기본 입력 테스트' },
-		{ id: 2, status: 'fail', description: '경계값 테스트' },
-		{ id: 3, status: 'pass', description: '음수 입력 테스트' },
-		{ id: 4, status: 'pass', description: '큰 수 입력 테스트' },
+		{ id: 1, status: "pass", description: "기본 입력 테스트" },
+		{ id: 2, status: "fail", description: "경계값 테스트" },
+		{ id: 3, status: "pass", description: "음수 입력 테스트" },
+		{ id: 4, status: "pass", description: "큰 수 입력 테스트" },
 	])
 	const [comments, setComments] = useState<Comment[]>([])
 	const [newComment, setNewComment] = useState("")
 	const [isAnonymous, setIsAnonymous] = useState(false)
-	const [activeTab, setActiveTab] = useState<'problem' | 'submission'>('submission')
+	const [activeTab, setActiveTab] = useState<"problem" | "submission">("submission")
 	const [userId, setUserId] = useState<string>("")
 	const router = useRouter()
 
@@ -71,7 +71,6 @@ export default function FeedbackWithSubmissionPageClient({
 			code_length: 250,
 		})
 	}, [])
-
 
 	useEffect(() => {
 		const fetchAiFeedback = async () => {
@@ -122,12 +121,13 @@ export default function FeedbackWithSubmissionPageClient({
 	const fetchComments = useCallback(async () => {
 		try {
 			console.log(`댓글 조회 시작: ${activeTab}, problemId: ${params.problemId}, resultId: ${params.resultId}`)
-			
-			const data = activeTab === "problem"
-				? await comment_api.comments_get_by_problem_id(Number(params.problemId))
-				: await comment_api.comments_get_by_solve_id(Number(params.resultId))
 
-			console.log('댓글 조회 결과:', data)
+			const data =
+				activeTab === "problem"
+					? await comment_api.comments_get_by_problem_id(Number(params.problemId))
+					: await comment_api.comments_get_by_solve_id(Number(params.resultId))
+
+			console.log("댓글 조회 결과:", data)
 			setComments(data || [])
 		} catch (error) {
 			console.error(`코멘트 불러오기 오류:`, error)
@@ -138,9 +138,9 @@ export default function FeedbackWithSubmissionPageClient({
 	// ✅ 사용자 정보 가져오기 - 의존성 배열 단순화
 	const fetchUserId = useCallback(async () => {
 		try {
-			console.log('사용자 정보 조회 시작')
+			console.log("사용자 정보 조회 시작")
 			const user = await auth_api.getUser()
-			console.log('사용자 정보:', user)
+			console.log("사용자 정보:", user)
 			setUserId(user.user_id)
 		} catch (error) {
 			console.error("사용자 아이디 불러오기 실패:", error)
@@ -161,7 +161,7 @@ export default function FeedbackWithSubmissionPageClient({
 	// 사용자 정보 로드 후 댓글 가져오기
 	useEffect(() => {
 		if (userId) {
-			console.log('사용자 ID 확인됨, 댓글 조회:', userId)
+			console.log("사용자 ID 확인됨, 댓글 조회:", userId)
 			fetchComments()
 		}
 	}, [userId, fetchComments])
@@ -169,7 +169,7 @@ export default function FeedbackWithSubmissionPageClient({
 	// activeTab 변경시에만 댓글 새로고침
 	useEffect(() => {
 		if (userId) {
-			console.log('탭 변경됨, 댓글 새로고침:', activeTab)
+			console.log("탭 변경됨, 댓글 새로고침:", activeTab)
 			fetchComments()
 		}
 	}, [activeTab])
@@ -193,13 +193,13 @@ export default function FeedbackWithSubmissionPageClient({
 		}
 
 		try {
-			console.log('댓글 생성 시작:', {
+			console.log("댓글 생성 시작:", {
 				userId,
 				problemId: params.problemId,
 				resultId: params.resultId,
 				comment: newComment,
-				isAnonymous,
-				isProblemMessage: activeTab === "problem"
+				// isAnonymous,
+				isProblemMessage: activeTab === "problem",
 			})
 
 			await comment_api.comment_create(
@@ -207,12 +207,12 @@ export default function FeedbackWithSubmissionPageClient({
 				Number(params.problemId),
 				Number(params.resultId),
 				newComment,
-				isAnonymous,
-				"익명",
+				// isAnonymous,
+				// "익명",
 				activeTab === "problem"
 			)
 
-			console.log('댓글 생성 완료, 목록 새로고침')
+			console.log("댓글 생성 완료, 목록 새로고침")
 			// 댓글 목록 새로고침
 			await fetchComments()
 			setNewComment("")
@@ -223,7 +223,7 @@ export default function FeedbackWithSubmissionPageClient({
 	}
 
 	const handleKeyPress = (e: React.KeyboardEvent) => {
-		if (e.key === 'Enter' && !e.shiftKey) {
+		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault()
 			handleAddComment()
 		}
@@ -265,9 +265,7 @@ export default function FeedbackWithSubmissionPageClient({
 						<div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
 							<span className="text-white font-bold text-sm">📘</span>
 						</div>
-						<h1 className="text-xl font-bold text-gray-800">
-							문제 {problem?.problem_id || 'PY31-0001'} 문제의 피드백
-						</h1>
+						<h1 className="text-xl font-bold text-gray-800">문제 {problem?.problem_id || "PY31-0001"} 문제의 피드백</h1>
 					</div>
 					<div className="flex items-center gap-2">
 						<span className="text-sm text-gray-600">🔥 열심히다.</span>
@@ -303,19 +301,15 @@ export default function FeedbackWithSubmissionPageClient({
 									<div
 										key={testCase.id}
 										className={`flex items-center gap-3 p-3 rounded-lg ${
-											testCase.status === 'pass' 
-												? 'bg-green-50 border border-green-200' 
-												: 'bg-red-50 border border-red-200'
+											testCase.status === "pass"
+												? "bg-green-50 border border-green-200"
+												: "bg-red-50 border border-red-200"
 										}`}
 									>
-										<span className="font-medium text-gray-700">
-											{testCase.id}.
-										</span>
-										<span className="flex-1 text-sm text-gray-600">
-											{testCase.description}
-										</span>
+										<span className="font-medium text-gray-700">{testCase.id}.</span>
+										<span className="flex-1 text-sm text-gray-600">{testCase.description}</span>
 										<div className="flex items-center gap-1 text-sm">
-											{testCase.status === 'pass' ? (
+											{testCase.status === "pass" ? (
 												<span className="text-green-600">✓</span>
 											) : (
 												<span className="text-red-600">✗</span>
@@ -362,28 +356,28 @@ export default function FeedbackWithSubmissionPageClient({
 					{/* 탭 헤더 */}
 					<div className="border-b">
 						<div className="flex">
-							<button 
+							<button
 								className={`px-6 py-3 text-sm font-medium ${
-									activeTab === 'submission' 
-										? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-										: 'text-gray-500 hover:text-gray-700'
+									activeTab === "submission"
+										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
-									console.log('제출별 탭 클릭')
-									setActiveTab('submission')
+									console.log("제출별 탭 클릭")
+									setActiveTab("submission")
 								}}
 							>
 								제출별
 							</button>
-							<button 
+							<button
 								className={`px-6 py-3 text-sm font-medium ${
-									activeTab === 'problem' 
-										? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-										: 'text-gray-500 hover:text-gray-700'
+									activeTab === "problem"
+										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
-									console.log('문제별 탭 클릭')
-									setActiveTab('problem')
+									console.log("문제별 탭 클릭")
+									setActiveTab("problem")
 								}}
 							>
 								문제별
@@ -394,11 +388,9 @@ export default function FeedbackWithSubmissionPageClient({
 					{/* 코멘트 섹션 */}
 					<div className="p-6">
 						<h4 className="font-semibold text-gray-800 mb-4">
-							{activeTab === "problem"
-								? `📝 문제 ${params.problemId}번의 댓글`
-								: `💬 제출별 댓글`}
+							{activeTab === "problem" ? `📝 문제 ${params.problemId}번의 댓글` : `💬 제출별 댓글`}
 						</h4>
-						
+
 						{/* 기존 코멘트 목록 */}
 						<div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
 							{comments.length === 0 ? (
@@ -429,12 +421,10 @@ export default function FeedbackWithSubmissionPageClient({
 													{comment.is_anonymous ? comment.nickname : comment.user_id}
 												</strong>
 												{comment.is_anonymous && (
-													<span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">
-														익명
-													</span>
+													<span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">익명</span>
 												)}
 												<span className="text-xs text-gray-500">
-													{comment.timestamp ? formatTimestamp(comment.timestamp) : '방금 전'}
+													{comment.timestamp ? formatTimestamp(comment.timestamp) : "방금 전"}
 												</span>
 											</div>
 											<p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap break-words">
@@ -450,9 +440,7 @@ export default function FeedbackWithSubmissionPageClient({
 						<div className="border-t pt-6">
 							<div className="space-y-3">
 								<div className="flex items-center gap-4 mb-3">
-									<label className="block text-sm font-medium text-gray-700">
-										새 댓글 작성
-									</label>
+									<label className="block text-sm font-medium text-gray-700">새 댓글 작성</label>
 									{/* 🔸 익명 체크박스 */}
 									<label className="flex items-center space-x-2 cursor-pointer">
 										<input
@@ -464,7 +452,7 @@ export default function FeedbackWithSubmissionPageClient({
 										<span className="text-sm text-gray-700">익명으로 작성</span>
 									</label>
 								</div>
-								
+
 								<div className="flex items-end gap-3">
 									<textarea
 										value={newComment}

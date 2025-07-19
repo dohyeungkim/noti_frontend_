@@ -1,51 +1,50 @@
-import { motion } from "framer-motion";
-import { useState } from "react";
-import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal";
+import { motion } from "framer-motion"
+import { useState } from "react"
+import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 // import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 
 function ResultPageProblemDetail({ problem }: { problem: Problem | null }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+	const [isExpanded, setIsExpanded] = useState(false)
 
-  const toggleDescription = () => setIsExpanded(!isExpanded);
+	const toggleDescription = () => setIsExpanded(!isExpanded)
 
-  if (!problem) {
-    return null; // 또는 로딩 메시지: <div>문제 데이터를 불러오는 중...</div>
-  }
-  return (
-    <div>
-      <button
-        onClick={toggleDescription}
-        className="text-gray-700 hover:text-gray-900 font-medium  flex items-center justify-center gap-2">
-        {isExpanded ? (
-          <>
-            {/* <IoIosArrowUp size={20} /> */}
-            닫기
-          </>
-        ) : (
-          <>
-            {/* <IoIosArrowDown size={20} /> */}
-            문제 보기
-          </>
-        )}
-      </button>
+	if (!problem) {
+		return null // 또는 로딩 메시지: <div>문제 데이터를 불러오는 중...</div>
+	}
+	return (
+		<div>
+			<button
+				onClick={toggleDescription}
+				className="text-gray-700 hover:text-gray-900 font-medium  flex items-center justify-center gap-2"
+			>
+				{isExpanded ? (
+					<>
+						{/* <IoIosArrowUp size={20} /> */}
+						닫기
+					</>
+				) : (
+					<>
+						{/* <IoIosArrowDown size={20} /> */}
+						문제 보기
+					</>
+				)}
+			</button>
 
-      {isExpanded && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}>
-          <div className="sticky top-0 z-10 pb-4 pt-6">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">{problem.title}</h1>
-            <hr className="border-t-2 border-gray-400" />
-          </div>
-          <div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">
-            <div
-              className="editor-content"
-              dangerouslySetInnerHTML={{ __html: problem.description }}
-            />
-          </div>
+			{isExpanded && (
+				<motion.div
+					initial={{ opacity: 0, y: 10 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.4, ease: "easeOut" }}
+				>
+					<div className="sticky top-0 z-10 pb-4 pt-6">
+						<h1 className="text-4xl font-bold text-gray-800 mb-2">{problem.title}</h1>
+						<hr className="border-t-2 border-gray-400" />
+					</div>
+					<div className="overflow-y-auto max-h-[calc(100%-120px)] p-2 pr-2">
+						<div className="editor-content" dangerouslySetInnerHTML={{ __html: problem.description }} />
+					</div>
 
-          <style>{`
+					<style>{`
                            // 스타일 코드 생략
                       
       .editor-content h1 { font-size: 2rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }
@@ -118,10 +117,10 @@ border-bottom-right-radius: 12px !important;
 
     
     `}</style>
-        </motion.div>
-      )}
-    </div>
-  );
+				</motion.div>
+			)}
+		</div>
+	)
 }
 
-export default ResultPageProblemDetail;
+export default ResultPageProblemDetail

@@ -41,7 +41,7 @@ interface ProfileInfo {
 		| "other"
 	)[]
 	programming_experience_level: "beginner" | "intermediate" | "advanced"
-	preferred_programming_language: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
+	preferred_programming_languages: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
 }
 
 interface BasicUserInfo {
@@ -177,7 +177,7 @@ export default function AuthForm() {
 		learning_goals: [] as ProfileInfo["learning_goals"],
 		preferred_fields: [] as ProfileInfo["preferred_fields"],
 		programming_experience_level: "beginner" as ProfileInfo["programming_experience_level"],
-		preferred_programming_language: [] as ProfileInfo["preferred_programming_language"],
+		preferred_programming_languages: [] as ProfileInfo["preferred_programming_languages"],
 	})
 
 	const [confirmPassword, setConfirmPassword] = useState("")
@@ -350,7 +350,7 @@ export default function AuthForm() {
 			learning_goals: [],
 			preferred_fields: [],
 			programming_experience_level: "beginner",
-			preferred_programming_language: [],
+			preferred_programming_languages: [],
 		})
 		setConfirmPassword("")
 		setSuccess(false)
@@ -799,11 +799,11 @@ export default function AuthForm() {
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => toggleLearningArrayField("preferred_programming_language", option.value)}
+														onClick={() => toggleLearningArrayField("preferred_programming_languages", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.preferred_programming_language.includes(
-																option.value as ProfileInfo["preferred_programming_language"][number]
+															learningInfo.preferred_programming_languages.includes(
+																option.value as ProfileInfo["preferred_programming_languages"][number]
 															)
 																? "bg-mygreen text-white border-mygreen"
 																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"

@@ -1,5 +1,7 @@
 "use client"
 
+// 👻 익명 기능 제거하기 v0 - 홍
+
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay"
@@ -14,8 +16,10 @@ import { useExamMode } from "@/hooks/useExamMode"
 // 시험 모드 관련 임시 더미데이터 - 홍
 import { feedbackDummy } from "@/data/examModeFeedbackDummy"
 import ReactMarkdown from "react-markdown"
+import ProblemDetailRenderer from "@/components/ResultPage/ProblemDetailRenderer"
 
 interface SolveData {
+	problemType: string
 	solve_id: number
 	user_id: string
 	group_id: number
@@ -274,7 +278,7 @@ export default function FeedbackWithSubmissionPageClient({
 				problemId: params.problemId,
 				resultId: params.resultId,
 				comment: newComment,
-				isAnonymous,
+				// isAnonymous,
 				isProblemMessage: activeTab === "problem",
 			})
 
@@ -283,8 +287,8 @@ export default function FeedbackWithSubmissionPageClient({
 				Number(params.problemId),
 				Number(params.resultId),
 				newComment,
-				isAnonymous,
-				"익명",
+				// isAnonymous,
+				// "익명",
 				activeTab === "problem"
 			)
 
@@ -369,18 +373,26 @@ export default function FeedbackWithSubmissionPageClient({
 
 				{/* 레이아웃 그리드 */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					{/* 왼쪽: 코드 로그 - 높이 확장 */}
-					<motion.div
-						className="bg-white rounded-lg shadow-sm border p-4 h-[600px]"
-						initial={{ opacity: 0, x: -20 }}
-						animate={{ opacity: 1, x: 0 }}
-						transition={{ duration: 0.4, delay: 0.1 }}
-					>
-						<div className="h-full">
+					{/* 왼쪽: 코드 로그 - 높이 확장 */}+ {/* 왼쪽: 코드 로그 or 답안 렌더링 */}
+					{problem?.problemType === "코딩" || problem?.problemType === "디버깅" ? (
+						<motion.div
+							className="bg-white rounded-lg shadow-sm border p-4"
+							initial={{ opacity: 0, x: -20 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ duration: 0.4, delay: 0.1 }}
+						>
 							<CodeLogReplay codeLogs={codeLogs} idx={0} />
-						</div>
-					</motion.div>
-
+						</motion.div>
+					) : (
+						<motion.div
+							className="bg-white rounded-lg shadow-sm border p-4"
+							initial={{ opacity: 0, x: -20 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ duration: 0.4, delay: 0.1 }}
+						>
+							<AnswerRenderer problem={problem!} solveData={solveData!} />
+						</motion.div>
+					)}
 					{/* 오른쪽: 조건 및 AI 피드백 조건 뜨는 창*/}
 					<div className="space-y-6 h-[600px] flex flex-col">
 						{/* 조건 검사 결과 섹션 - 높이 확장 */}
@@ -738,6 +750,10 @@ export default function FeedbackWithSubmissionPageClient({
 						transition={{ duration: 0.4, delay: 0.6 }}
 					>
 						<ResultPageProblemDetail problem={problem} />
+						<div className="mt-6">
+							<h2 className="text-lg font-bold mb-2">문제 유형별 상세 정보</h2>
+							<ProblemDetailRenderer problem={problem} />
+						</div>
 					</motion.div>
 				)}
 			</div>

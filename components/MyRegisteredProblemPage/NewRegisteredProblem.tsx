@@ -18,6 +18,7 @@ import ReactMarkdown from "react-markdown"
 
 // 문제 유형
 type ProblemType = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
+
 const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
 	{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
 	{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
@@ -25,6 +26,71 @@ const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
 	{ value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
 	{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
 ]
+
+function MultipleChoiceEditor({
+	options,
+	setOptions,
+	answerIndexes,
+	setAnswerIndexes,
+}: {
+	options: string[]
+	setOptions: (opts: string[]) => void
+	answerIndexes: number[]
+	setAnswerIndexes: (indexes: number[]) => void
+}) {
+	const handleChange = (i: number, value: string) => {
+		const updated = [...options]
+		updated[i] = value
+		setOptions(updated)
+	}
+
+	const handleAdd = () => setOptions([...options, ""])
+
+	const handleRemove = (i: number) => {
+		const updatedOptions = options.filter((_, idx) => idx !== i)
+		setOptions(updatedOptions)
+
+		const updatedAnswers = answerIndexes.filter((idx) => idx !== i).map((idx) => (idx > i ? idx - 1 : idx))
+		setAnswerIndexes(updatedAnswers)
+	}
+
+	const toggleAnswer = (i: number) => {
+		if (answerIndexes.includes(i)) {
+			setAnswerIndexes(answerIndexes.filter((idx) => idx !== i))
+		} else {
+			setAnswerIndexes([...answerIndexes, i])
+		}
+	}
+
+	return (
+		<div className="flex flex-col gap-2 w-full">
+			<label className="text-sm font-semibold text-gray-700 mb-1">객관식 보기 및 정답 선택 (복수 선택 가능)</label>
+			{options.map((option, i) => (
+				<div key={i} className="flex items-center gap-2">
+					<input
+						type="checkbox"
+						checked={answerIndexes.includes(i)}
+						onChange={() => toggleAnswer(i)}
+						className="w-4 h-4"
+					/>
+					<input
+						type="text"
+						value={option}
+						onChange={(e) => handleChange(i, e.target.value)}
+						placeholder={`보기 ${i + 1}`}
+						className="flex-1 px-3 py-1.5 border rounded-md text-sm"
+					/>
+					<button onClick={() => handleRemove(i)} type="button" className="text-red-500 text-sm">
+						삭제
+					</button>
+				</div>
+			))}
+			<button onClick={handleAdd} type="button" className="text-blue-600 text-sm hover:underline mt-1 w-fit">
+				+ 항목 추가
+			</button>
+		</div>
+	)
+}
 
 export default function NewRegisteredProblem() {
 	const router = useRouter()
@@ -43,6 +109,15 @@ export default function NewRegisteredProblem() {
 	// 단답형, 주관식 정답과 채점 기준
 	const [answerTexts, setAnswerTexts] = useState<string[]>([])
 	const [gradingCriteria, setGradingCriteria] = useState<string[]>([])
+
+	//진형준 추가항목start
+	const [subjectiveRubrics, setSubjectiveRubrics] = useState<string[]>([""])
+
+	// const [options, setOptions] = useState<string[]>(["", ""]) // 객관식 보기 항목
+	const [shortAnswers, setShortAnswers] = useState<string[]>([""])
+	const [answerIndexes, setAnswerIndexes] = useState<number[]>([])
+
+	//진형준 추가항목end
 
 	const {
 		title,
@@ -423,41 +498,177 @@ export default function NewRegisteredProblem() {
 						/>
 					</div>
 				</div>
-
 				{/* 오른쪽: 참조 코드 에디터 */}
-				<ReferenceCodeEditor
-					referenceCodes={referenceCodes}
-					activeCodeTab={activeCodeTab}
-					setActiveCodeTab={setActiveCodeTab}
-					addReferenceCode={addReferenceCode}
-					removeReferenceCode={removeReferenceCode}
-					updateReferenceCodeLanguage={updateReferenceCodeLanguage}
-					updateReferenceCode={updateReferenceCode}
-					setMainReferenceCode={setMainReferenceCode}
-					problemType={problemType}
-					baseCode={baseCode}
-					onSetBaseCode={setBaseCode}
-				/>
+				{/* 오른쪽: 문제 유형에 따른 조건부 렌더링 */}
+				{problemType === "객관식" ? (
+					<div className="w-1/2">
+						<MultipleChoiceEditor
+							options={options}
+							setOptions={setOptions}
+							answerIndexes={answerIndexes}
+							setAnswerIndexes={setAnswerIndexes}
+						/>
+					</div>
+				) : problemType === "주관식" ? (
+					<div className="w-1/2 flex flex-col gap-6">
+						{/* 주관식 정답 입력 */}
+						<div>
+							<label className="text-sm font-semibold text-gray-700 mb-1 block">주관식 정답</label>
+							<textarea
+								value={description}
+								onChange={(e) => setDescription(e.target.value)}
+								placeholder="정답 예시 혹은 기준"
+								className="w-full h-24 px-3 py-2 border rounded-md text-sm"
+							/>
+						</div>
+
+						{/* AI 채점 기준 입력 */}
+						<div>
+							<label className="text-sm font-semibold text-gray-700 mb-1 block">AI채점기준</label>
+							{subjectiveRubrics.map((rubric, idx) => (
+								<div key={idx} className="flex items-center gap-2 mb-2">
+									<input
+										type="text"
+										value={rubric}
+										onChange={(e) => {
+											const updated = [...subjectiveRubrics]
+											updated[idx] = e.target.value
+											setSubjectiveRubrics(updated)
+										}}
+										placeholder={`기준 ${idx + 1}`}
+										className="flex-1 px-3 py-1.5 border rounded-md text-sm"
+									/>
+									<button
+										onClick={() => {
+											const updated = subjectiveRubrics.filter((_, i) => i !== idx)
+											setSubjectiveRubrics(updated)
+										}}
+										className="text-red-500 text-sm"
+									>
+										삭제
+									</button>
+								</div>
+							))}
+							<button
+								onClick={() => setSubjectiveRubrics([...subjectiveRubrics, ""])}
+								type="button"
+								className="text-blue-600 text-sm hover:underline w-fit"
+							>
+								+ 기준 추가
+							</button>
+						</div>
+					</div>
+				) : problemType === "단답형" ? (
+					<div className="w-1/2 flex flex-col gap-6">
+						{/* 단답형 정답 항목 리스트 */}
+						<div>
+							<label className="text-sm font-semibold text-gray-700 mb-1 block">단답형 정답</label>
+							{shortAnswers.map((answer, idx) => (
+								<div key={idx} className="flex items-center gap-2 mb-2">
+									<input
+										type="text"
+										value={answer}
+										onChange={(e) => {
+											const updated = [...shortAnswers]
+											updated[idx] = e.target.value
+											setShortAnswers(updated)
+										}}
+										placeholder={`정답 ${idx + 1}`}
+										className="flex-1 px-3 py-1.5 border rounded-md text-sm"
+									/>
+									<button
+										onClick={() => {
+											const updated = shortAnswers.filter((_, i) => i !== idx)
+											setShortAnswers(updated)
+										}}
+										className="text-red-500 text-sm"
+									>
+										삭제
+									</button>
+								</div>
+							))}
+							<button
+								onClick={() => setShortAnswers([...shortAnswers, ""])}
+								type="button"
+								className="text-blue-600 text-sm hover:underline w-fit"
+							>
+								+ 정답 추가
+							</button>
+						</div>
+
+						{/* AI 채점 기준 입력 */}
+						<div>
+							<label className="text-sm font-semibold text-gray-700 mb-1 block">AI채점기준</label>
+							{subjectiveRubrics.map((rubric, idx) => (
+								<div key={idx} className="flex items-center gap-2 mb-2">
+									<input
+										type="text"
+										value={rubric}
+										onChange={(e) => {
+											const updated = [...subjectiveRubrics]
+											updated[idx] = e.target.value
+											setSubjectiveRubrics(updated)
+										}}
+										placeholder={`기준 ${idx + 1}`}
+										className="flex-1 px-3 py-1.5 border rounded-md text-sm"
+									/>
+									<button
+										onClick={() => {
+											const updated = subjectiveRubrics.filter((_, i) => i !== idx)
+											setSubjectiveRubrics(updated)
+										}}
+										className="text-red-500 text-sm"
+									>
+										삭제
+									</button>
+								</div>
+							))}
+							<button
+								onClick={() => setSubjectiveRubrics([...subjectiveRubrics, ""])}
+								type="button"
+								className="text-blue-600 text-sm hover:underline w-fit"
+							>
+								+ 기준 추가
+							</button>
+						</div>
+					</div>
+				) : (
+					<ReferenceCodeEditor
+						referenceCodes={referenceCodes}
+						activeCodeTab={activeCodeTab}
+						setActiveCodeTab={setActiveCodeTab}
+						addReferenceCode={addReferenceCode}
+						removeReferenceCode={removeReferenceCode}
+						updateReferenceCodeLanguage={updateReferenceCodeLanguage}
+						updateReferenceCode={updateReferenceCode}
+						setMainReferenceCode={setMainReferenceCode}
+						problemType={problemType} // 추가
+						baseCode={baseCode} // 추가
+						onSetBaseCode={setBaseCode} // 추가
+					/>
+				)}
 			</div>
 
 			{/* 문제 조건 섹션 */}
-			<div className="mb-6 flex gap-4">
+			{problemType !== "객관식" && problemType !== "주관식" && problemType !== "단답형" && (
 				<ProblemConditions
 					conditions={conditions}
 					addCondition={addCondition}
 					removeCondition={removeCondition}
 					updateCondition={updateCondition}
 				/>
-			</div>
+			)}
 
 			{/* 테스트 케이스 섹션 */}
-			<TestCaseSection
-				testCases={testCases}
-				addTestCase={addTestCase}
-				removeTestCase={removeTestCase}
-				updateTestCase={updateTestCase}
-				testResults={testResults}
-			/>
+			{problemType !== "객관식" && problemType !== "주관식" && problemType !== "단답형" && (
+				<TestCaseSection
+					testCases={testCases}
+					addTestCase={addTestCase}
+					removeTestCase={removeTestCase}
+					updateTestCase={updateTestCase}
+					testResults={testResults}
+				/>
+			)}
 		</div>
 	)
 }

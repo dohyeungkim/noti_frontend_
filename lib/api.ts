@@ -28,7 +28,7 @@ interface ProfileInfo {
 		| "other"
 	)[]
 	programming_experience_level: "beginner" | "intermediate" | "advanced"
-	preferred_programming_language: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
+	preferred_programming_languages: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
 }
 
 interface ExtendedUserRegisterRequest {

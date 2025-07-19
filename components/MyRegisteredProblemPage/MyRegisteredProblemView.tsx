@@ -30,6 +30,7 @@ export default function ProblemView() {
 			try {
 				const data = await problem_api.problem_get_by_id(Number(id))
 				setProblem(data)
+				// 문제 객체(problem)로부터 "created_at" 또는 "make_at" 필드를 안전하게 꺼냅니다.
 			} catch (error) {
 				console.error("Failed to fetch problem:", error)
 			} finally {
@@ -41,7 +42,8 @@ export default function ProblemView() {
 
 	if (loading) return <p>Loading...</p>
 	if (!problem) return <p>문제 정보를 불러올 수 없습니다.</p>
-
+	const createdAtRaw = (problem as any).created_at ?? (problem as any).make_at
+	const createdAtDate = createdAtRaw ? createdAtRaw.split("T")[0] : "알 수 없음"
 	const { problemType, problem_id, title, description, difficulty, tags, rating_mode, created_at } = problem
 
 	const handleDelete = async () => {
@@ -122,8 +124,7 @@ export default function ProblemView() {
 						</div>
 					</div>
 					<div className="text-right text-sm text-gray-500">
-						<div>작성일: {created_at.split("T")[0]}</div>
-						<div>문제 ID: {problem_id}</div>
+						<div>작성일: {createdAtDate}</div> <div>문제 ID: {problem.problem_id}</div>{" "}
 					</div>
 				</div>
 
