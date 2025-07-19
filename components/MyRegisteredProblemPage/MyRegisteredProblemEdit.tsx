@@ -1,10 +1,12 @@
-"use client"; //클라이언트 사용
+"use client";
 
-import { useEffect, useState } from "react"; //훅,모듈 추가
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { EditorContent } from "@tiptap/react";
 import { motion } from "framer-motion";
 import { problem_api } from "@/lib/api";
-import { TestCase, useProblemForm } from "@/hooks/useProblemForm";
+import Toolbar from "../markdown/Toolbar";
+import { useProblemForm } from "@/hooks/useProblemForm";
 import { useProblemEditor } from "@/hooks/useProblemEditor";
 import ReferenceCodeEditor from "../ProblemForm/ReferenceCodeEditor";
 import ProblemConditions from "../ProblemForm/ProblemConditions";
@@ -13,14 +15,14 @@ import ReactMde from "react-mde";
 import "react-mde/lib/styles/css/react-mde-all.css";
 import ReactMarkdown from "react-markdown";
 
-export default function ProblemEdit() { //외부에서 접근가능하게
-	const router = useRouter();//페이지 이동용
-	const { id } = useParams();//id를 가져옴
-	const [description, setDescription] = useState("");//문제설명상태
+export default function ProblemEdit() {
+	const router = useRouter();
+	const { id } = useParams();
+	const [description, setDescription] = useState("");
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([]);
 
-	const { //각종 문제들을 가져옴
+	const {
 		title,
 		setTitle,
 		difficulty,
@@ -45,16 +47,13 @@ export default function ProblemEdit() { //외부에서 접근가능하게
 		addCondition,
 		removeCondition,
 		updateCondition,
+		updateTags,
 		removeTag,
 		setInitialData,
 	} = useProblemForm();
 
-	const { editor } = useProblemEditor(); //editor가져오기
-	interface SampleCode { //samplecode 타입선언
-		language: string, 
-		code: string, 
-		is_main: boolean
-	};
+	const { editor, addLocalImage } = useProblemEditor();
+
 	useEffect(() => {
 		const fetchProblem = async () => {
 			try {
@@ -67,32 +66,32 @@ export default function ProblemEdit() { //외부에서 접근가능하게
 					ratingMode: data.rating_mode || "Hard",
 					tags: data.tags || [],
 					conditions: data.problem_condition || [""],
-					referenceCodes: data.reference_codes?.length > 0 ? data.reference_codes.map((code: SampleCode, index: number) => ({
+					referenceCodes: data.reference_codes?.length > 0 ? data.reference_codes.map((code: any, index: number) => ({
 						language: code.language,
 						code: code.code,
 						is_main: index === 0
 					})) : [{ language: "python", code: "", is_main: true }],
-					testCases: data.test_cases?.length > 0 ? data.test_cases.map((tc: TestCase) => ({
+					testCases: data.test_cases?.length > 0 ? data.test_cases.map((tc: any) => ({
 						input: tc.input,
 						expected_output: tc.expected_output,
 						is_sample: tc.is_sample
 					})) : [{ input: "", expected_output: "", is_sample: true }]
 				});
 				
-				setDescription(data.description || ""); //상태 저장
-				//에디터 내용 삽입
+				setDescription(data.description || "");
+				
 				if (editor) {
 					editor.commands.setContent(data.description);
 				}
-			} catch (error) { //에러시
+			} catch (error) {
 				console.error("Failed to fetch problem:", error);
 			}
 		};
 
 		fetchProblem();
-	}, [id, editor, setInitialData]); //3가지가 갱신되는경우 실행
+	}, [id, editor, setInitialData]);
 
-	const handleTestRun = async () => {//비동기 함수 테스트실행
+	const handleTestRun = async () => {
 		setTestResults([]); // 테스트 실행 직전에 추가
 		if (referenceCodes.length === 0) {
 			alert("참조 코드가 없습니다.")
@@ -131,11 +130,7 @@ export default function ProblemEdit() { //외부에서 접근가능하게
 				return;
 			}
 
-			type ResultType = {
-				results: { passed: boolean }[];
-				};
-
-			const passedCount = (result as ResultType)?.results?.filter(r => r.passed).length ?? 0;
+			const passedCount = result.results.filter(r => r.passed).length;
 			const totalCount = result.results.length;
 
 			if (passedCount === totalCount) {
@@ -146,22 +141,20 @@ export default function ProblemEdit() { //외부에서 접근가능하게
 				alert(`❌ 일부 테스트케이스 실패\n성공: ${passedCount}/${totalCount}`);
 			}
 
-			
-
-			const typedResult = result as ResultType;
-			setTestResults(typedResult.results.map(r => r.passed));
+			setTestResults(result.results.map(r => r.passed));
 		} catch (error) {
 			console.error("테스트케이스 실행 실패:", error);
 			alert("테스트케이스 실행 중 오류가 발생했습니다.");
 		}
 	}
 
-	const handleSave = async () => { //문제저장 
+	const handleSave = async () => {
 		if (!editor) {
 			alert("Editor is not loaded yet.");
 			return;
 		}
 
+		const content = editor.getHTML();
 		const filteredConditions = conditions.filter((condition) => condition.trim() !== "");
 
 		try {
@@ -187,7 +180,7 @@ export default function ProblemEdit() { //외부에서 접근가능하게
 	// 로딩 상태 체크는 모든 훅 호출 이후에
 	if (!editor) return <p>Editor is loading...</p>;
 
-	return ( //사용자 UI
+	return (
 		<div>
 			<motion.div
 				className="flex items-center gap-2 justify-end mb-6"

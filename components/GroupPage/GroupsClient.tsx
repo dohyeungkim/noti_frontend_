@@ -1,16 +1,17 @@
-"use client" //클라이언트 컴포넌트 사용
+"use client"
 
-import { useEffect, useState } from "react" //필요한 훅, 모듈 추가
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import SearchBar from "@/components/ui/SearchBar"
 import SortButton from "@/components/ui/SortButton"
+import OpenModalButton from "@/components/ui/OpenModalButton"
 import GroupCreateModal from "@/components/GroupPage/GroupCreateModal"
 import ViewToggle from "@/components/ui/ViewToggle"
 import GroupList from "@/components/GroupPage/GroupGallery"
 import GroupTable from "@/components/GroupPage/GroupTable"
 import { group_api } from "@/lib/api"
 
-export default function GroupsClient() { //외부에서 import하여 사용가능하게함
+export default function GroupsClient() {
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [searchQuery, setSearchQuery] = useState("")
 	const [sortOrder, setSortOrder] = useState("제목순")
@@ -31,17 +32,17 @@ export default function GroupsClient() { //외부에서 import하여 사용가�
 		}[]
 	>([])
 
-	async function fetchMyGroups() {//비동기함수선언
+	async function fetchMyGroups() {
 		try {
-			const data = await group_api.group_get() 
+			const data = await group_api.group_get()
 			setMyGroups(Array.isArray(data) ? data : [])
 		} catch (error) {
 			console.error("내 그룹 정보 가져오기 실패:", error)
-			setMyGroups([]) //실패시 빈 배열 추가
+			setMyGroups([])
 		}
 	}
 
-	useEffect(() => { //refresh가 바뀔때 fetchmyfroups
+	useEffect(() => {
 		fetchMyGroups()
 	}, [refresh])
 
@@ -63,7 +64,7 @@ export default function GroupsClient() { //외부에서 import하여 사용가�
 		return 0
 	})
 
-	return ( //사용자UI
+	return (
 		<div className="space-y-3">
 			{/* 그룹 생성 버튼 */}
 			<motion.div

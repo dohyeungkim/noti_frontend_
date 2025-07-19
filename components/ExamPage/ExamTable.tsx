@@ -1,8 +1,8 @@
-"use client"; //클라이언트 컴포넌트 사용 
+"use client";
 
-import { formatTimestamp } from "../util/dageUtils";// 필요한 것 추가
+import { formatTimestamp } from "../util/dageUtils";
 
-interface ExamTableProps { // examtableprops props 정의
+interface ExamTableProps {
   workbooks: {
     workbook_id: number;
     group_id: number;
@@ -10,15 +10,15 @@ interface ExamTableProps { // examtableprops props 정의
     problem_cnt: number;
     description: string;
     creation_date: string;
-  }[]; //배열로
+  }[];
 
-  handleEnterExam: (examId: string) => void; 
+  handleEnterExam: (examId: string) => void;
 }
 
 
 
 export default function ExamTable({ workbooks, handleEnterExam }: ExamTableProps) {
-  return (//외부에서도 examtable을 사용할 수있도록 props 는 workbooks 와 handleEnterExam.
+  return (
     <div className="w-full overflow-x-auto">
       <table className="w-full border-collapse bg-white shadow-md rounded-2xl overflow-hidden">
         <thead className="bg-gray-200">

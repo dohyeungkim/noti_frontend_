@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback } from "react"
 
 export interface ReferenceCode {
 	language: "python" | "java" | "cpp" | "c" | "javascript"
@@ -29,54 +29,57 @@ export const languageDisplayNames = {
 }
 
 export function useProblemForm() {
-	const [title, setTitle] = useState("");
-	const [difficulty, setDifficulty] = useState("easy");
-	const [ratingMode, setRatingMode] = useState<"Hard" | "Space" | "Regex">("Hard");
-	const [tags, setTags] = useState<string[]>([]);
-	const [conditions, setConditions] = useState([""]);
+	const [title, setTitle] = useState("")
+	const [difficulty, setDifficulty] = useState("easy")
+	const [ratingMode, setRatingMode] = useState<"Hard" | "Space" | "Regex" | "None">("Hard")
+	const [tags, setTags] = useState<string[]>([])
+	const [conditions, setConditions] = useState([""])
 	const [referenceCodes, setReferenceCodes] = useState<ReferenceCode[]>([
 		{ language: "python", code: "", is_main: true },
-	]);
-	const [testCases, setTestCases] = useState<TestCase[]>([{ input: "", expected_output: "", is_sample: true }]);
-	const [activeCodeTab, setActiveCodeTab] = useState(0);
+	])
+	const [testCases, setTestCases] = useState<TestCase[]>([{ input: "", expected_output: "", is_sample: true }])
+	const [activeCodeTab, setActiveCodeTab] = useState(0)
 
 	// 초기 데이터 설정 함수
-	const setInitialData = useCallback((data: {
-		title?: string;
-		difficulty?: string;
-		ratingMode?: "Hard" | "Space" | "Regex";
-		tags?: string[];
-		conditions?: string[];
-		referenceCodes?: ReferenceCode[];
-		testCases?: TestCase[];
-	}) => {
-		if (data.title !== undefined) setTitle(data.title);
-		if (data.difficulty !== undefined) setDifficulty(data.difficulty);
-		if (data.ratingMode !== undefined) setRatingMode(data.ratingMode);
-		if (data.tags !== undefined) setTags(data.tags);
-		if (data.conditions !== undefined) setConditions(data.conditions);
-		if (data.referenceCodes !== undefined) setReferenceCodes(data.referenceCodes);
-		if (data.testCases !== undefined) setTestCases(data.testCases);
-	}, []);
+	const setInitialData = useCallback(
+		(data: {
+			title?: string
+			difficulty?: string
+			ratingMode?: "Hard" | "Space" | "Regex" | "None"
+			tags?: string[]
+			conditions?: string[]
+			referenceCodes?: ReferenceCode[]
+			testCases?: TestCase[]
+		}) => {
+			if (data.title !== undefined) setTitle(data.title)
+			if (data.difficulty !== undefined) setDifficulty(data.difficulty)
+			if (data.ratingMode !== undefined) setRatingMode(data.ratingMode)
+			if (data.tags !== undefined) setTags(data.tags)
+			if (data.conditions !== undefined) setConditions(data.conditions)
+			if (data.referenceCodes !== undefined) setReferenceCodes(data.referenceCodes)
+			if (data.testCases !== undefined) setTestCases(data.testCases)
+		},
+		[]
+	)
 
 	// 드래프트 로드 함수를 useCallback으로 메모이제이션
 	const loadDraft = useCallback(() => {
-		const draft = localStorage.getItem("problemDraft");
+		const draft = localStorage.getItem("problemDraft")
 		if (draft) {
 			try {
-				const data = JSON.parse(draft);
-				setTitle(data.title || "");
-				setDifficulty(data.difficulty || "easy");
-				setRatingMode(data.ratingMode || "Hard");
-				setTags(data.tags || []);
-				setConditions(data.conditions || [""]);
-				setReferenceCodes(data.referenceCodes || [{ language: "python", code: "", is_main: true }]);
-				setTestCases(data.testCases || [{ input: "", expected_output: "", is_sample: true }]);
+				const data = JSON.parse(draft)
+				setTitle(data.title || "")
+				setDifficulty(data.difficulty || "easy")
+				setRatingMode(data.ratingMode || "Hard")
+				setTags(data.tags || [])
+				setConditions(data.conditions || [""])
+				setReferenceCodes(data.referenceCodes || [{ language: "python", code: "", is_main: true }])
+				setTestCases(data.testCases || [{ input: "", expected_output: "", is_sample: true }])
 			} catch (error) {
-				console.error("드래프트 로드 실패:", error);
+				console.error("드래프트 로드 실패:", error)
 			}
 		}
-	}, []); // 의존성 배열이 비어있으므로 함수가 한 번만 생성됨
+	}, []) // 의존성 배열이 비어있으므로 함수가 한 번만 생성됨
 
 	// 드래프트 저장 함수를 useCallback으로 메모이제이션
 	const saveDraft = useCallback(() => {
@@ -88,9 +91,9 @@ export function useProblemForm() {
 			conditions,
 			referenceCodes,
 			testCases,
-		};
-		localStorage.setItem("problemDraft", JSON.stringify(draft));
-	}, [title, difficulty, ratingMode, tags, conditions, referenceCodes, testCases]);
+		}
+		localStorage.setItem("problemDraft", JSON.stringify(draft))
+	}, [title, difficulty, ratingMode, tags, conditions, referenceCodes, testCases])
 
 	// 참조 코드 관리
 	const addReferenceCode = () => {
@@ -179,10 +182,10 @@ export function useProblemForm() {
 		// 쉼표와 엔터로 구분하여 태그 추출
 		const newTags = tagString
 			.split(/[,,\n]/) // 쉼표 또는 엔터로 분할
-			.map(tag => tag.trim())
-			.filter(tag => tag.length > 0)
-			.filter((tag, index, arr) => arr.indexOf(tag) === index); // 중복 제거
-		setTags(newTags);
+			.map((tag) => tag.trim())
+			.filter((tag) => tag.length > 0)
+			.filter((tag, index, arr) => arr.indexOf(tag) === index) // 중복 제거
+		setTags(newTags)
 	}
 
 	const removeTag = (index: number) => {
@@ -233,4 +236,4 @@ export function useProblemForm() {
 		// 초기 데이터 설정
 		setInitialData,
 	}
-} 
+}

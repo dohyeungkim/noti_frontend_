@@ -1,7 +1,6 @@
-"use client" //클라이언트 컴포넌트
+"use client"
 
-
-import Link from "next/link" //필요한 모듈 훅 추가
+import Link from "next/link"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import {
 	faArrowLeft,
@@ -18,12 +17,12 @@ import { useAuth } from "@/stores/auth"
 import PasswordChange, { PasswordChangeHandles } from "../Auth/PasswordChange"
 import { group_api } from "@/lib/api"
 
-interface DrawerProps { //drawerprops의 props타입정의
+interface DrawerProps {
 	isOpen: boolean
 	setIsOpen: (open: boolean) => void
 }
 
-export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {//외부에서 사용가능하고 isopen과 setisopen을 props로 받음
+export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
 	const { userName, checkAuthStatus } = useAuth()
 	const [groups, setGroups] = useState<
 		{
@@ -40,30 +39,30 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {//외부에�
 	const passwordChangeRef = useRef<PasswordChangeHandles>(null)
 	const logoutRef = useRef<LogoutHandles>(null)
 
-	const fetchGroup = async () => { //비동기 함수 선언
+	const fetchGroup = async () => {
 		try {
-			const data = await group_api.my_group_get() //group 값가져오기
-			if (Array.isArray(data) && data.length > 0) { //뭔가 있으면 data저장
+			const data = await group_api.my_group_get()
+			if (Array.isArray(data) && data.length > 0) {
 				setGroups(data)
 			} else {
-				setGroups([]) //없으면 빈배열저장
+				setGroups([])
 			}
-		} catch (error) { //에러시
+		} catch (error) {
 			console.error("내 그룹 정보 가져오기 실패:", error)
-			setGroups([]) //빈배열저장
+			setGroups([])
 		}
 	}
 
-	useEffect(() => { //chekckauthsataus가 갱신될때마다 동장
+	useEffect(() => {
 		// 컴포넌트 마운트 시 인증 상태 확인
 		checkAuthStatus()
 		fetchGroup()
 	}, [checkAuthStatus])
 
-	const truncateText = (text: string, maxLength: number) => //일정 값을 초과하는 텍스트를 ...으로만듬
+	const truncateText = (text: string, maxLength: number) =>
 		text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
 
-	return ( //사용자 UI
+	return (
 		<>
 			{/* 사이드바 */}
 			<div

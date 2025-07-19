@@ -1,6 +1,7 @@
-"use client" //클라이언트 사용
+"use client"
+// 내가 등록한 문제들 조회하는 페이지
 
-import { useState, useEffect, useCallback } from "react" //모듈, 훅 추가
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faPlus } from "@fortawesome/free-solid-svg-icons"
@@ -23,10 +24,11 @@ interface Question {
 	description?: string
 }
 
-export default function MyRegisteredProblemView() {//외부에서 사용할 수 있게 
+export default function MyRegisteredProblemView() {
 	const router = useRouter()
 	const [search, setSearch] = useState("")
 	const [questions, setQuestions] = useState<Question[]>([])
+	const [filteredData, setFilteredData] = useState<Question[]>([])
 	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
 	const [sortOrder, setSortOrder] = useState("제목순") // ✅ 기본 정렬: 제목순
 	const [selectedProblem, setSelectedProblem] = useState<Question | null>(null)
@@ -46,6 +48,7 @@ export default function MyRegisteredProblemView() {//외부에서 사용할 수 
 		try {
 			const res = await problem_api.problem_get()
 			setQuestions(res)
+			setFilteredData(res)
 		} catch (error) {
 			console.error("내 문제 목록 불러오기 오류:", error)
 			alert("내 문제 목록을 불러오는 중 오류가 발생했습니다.")
@@ -74,7 +77,7 @@ export default function MyRegisteredProblemView() {//외부에서 사용할 수 
 		router.push("/registered-problems/create")
 	}
 
-	return ( //사용자 UI
+	return (
 		<div className="space-y-2">
 			{/* 🔹 문제 만들기 버튼 */}
 			<motion.div

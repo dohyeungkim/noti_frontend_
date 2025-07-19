@@ -1,6 +1,6 @@
-"use client"; //클라이언트 사용
+"use client";
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";//훅, 모듈 추가
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 
 interface OpenModalButtonProps {
@@ -13,7 +13,7 @@ export default function OpenModalButton({
   onClick,
   label,
 }: OpenModalButtonProps) {
-  return (//사용자UI
+  return (
     <button
       onClick={onClick}
       className="flex items-center bg-gray-800 text-white px-3 sm:px-4 py-2 rounded-xl m-2 text-sm sm:text-md cursor-pointer

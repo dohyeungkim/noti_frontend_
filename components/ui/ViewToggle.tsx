@@ -1,6 +1,6 @@
-"use client";//클라이언트 사용
+"use client";
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";//훅, 모듈 추가
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTableCells, faList } from "@fortawesome/free-solid-svg-icons";
 
 interface ViewToggleProps {
@@ -11,7 +11,7 @@ interface ViewToggleProps {
 }
 
 export default function ViewToggle({ viewMode, setViewMode }: ViewToggleProps) {
-  return (//사용자 UI
+  return (
     <div className="flex items-center gap-3 ml-16">
       {/* 갤러리 뷰 버튼 (아이콘만 표시) */}
       <button

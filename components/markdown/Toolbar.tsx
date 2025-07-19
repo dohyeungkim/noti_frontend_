@@ -1,4 +1,4 @@
-import { Editor } from "@tiptap/react";//모듈 훅 추가
+import { Editor } from "@tiptap/react";
 import {
   Bold,
   Italic,
@@ -17,13 +17,13 @@ import {
   Grid2x2Check,
 } from "lucide-react";
 
-interface ToolbarProps { //toolbarprops 타입 정의
-  editor: Editor | null; 
+interface ToolbarProps {
+  editor: Editor | null;
   addLocalImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export default function Toolbar({ editor, addLocalImage }: ToolbarProps) {//외부에서 사용가능하게 editor와addlovalimage를 toolbarprops에서
-  if (!editor) return null; 
+export default function Toolbar({ editor, addLocalImage }: ToolbarProps) {
+  if (!editor) return null;
 
   const toggleHeaderStyle = () => {
     if (!editor) return;
@@ -31,7 +31,7 @@ export default function Toolbar({ editor, addLocalImage }: ToolbarProps) {//외�
     editor.chain().focus().setCellAttribute("isHeader", !isHeader).run();
   };
 
-  return ( //사용자UI
+  return (
     <div className="toolbar-container">
       <style>
   {`

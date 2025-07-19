@@ -1,7 +1,7 @@
-"use client"; //클라이언트 컴포넌트 사용
+"use client";
 
-import { useRouter } from "next/navigation"; //모듈추가
-interface Group { //group의 타입 정의 
+import { useRouter } from "next/navigation";
+interface Group {
   group_id: number;
   group_name: string;
   group_owner: string;
@@ -11,15 +11,15 @@ interface Group { //group의 타입 정의
   is_member: boolean;
 }
 
-interface GroupListProps { //grouplisprops의 props 정의
+interface GroupListProps {
   groups: Group[];
 }
-export default function GroupList({ groups }: GroupListProps) { //외부에서 쓸 수 있게함 
+export default function GroupList({ groups }: GroupListProps) {
   const router = useRouter();
 
-  const filteredGroups = groups.filter((group) => group.is_member); //필터링된 정보만 추출
+  const filteredGroups = groups.filter((group) => group.is_member);
 
-  return (//사용자 UI
+  return (
     <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 m-2">
       {filteredGroups.map((group) => (
         <div

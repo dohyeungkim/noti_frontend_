@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";//훅, 모듈 추가
+import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 
 export interface CodeLog {
@@ -42,7 +42,7 @@ const CodeLogReplay = ({ codeLogs, language = "python" }: CodeLogReplayProps) =>
     setIsPlaying(!isPlaying);
   };
 
-  return (//사용자 UI
+  return (
     <div className="w-full h-[clamp(45vh, 55vh, 70vh)] p-4">
       <div className="p-4 shadow rounded-lg h-full">
         <div className="flex items-center gap-2 p-[clamp(4px, 1vw, 16px)] mb-4">

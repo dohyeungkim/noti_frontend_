@@ -1,9 +1,9 @@
-"use client"; //클라이언트 사용
+"use client";
 
-import { useRouter } from "next/navigation";//모듈 , 훅 추가
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
-interface Question {//question의 타입정의
+interface Question {
   problem_id: number;
   title: string;
   group: string;
@@ -12,7 +12,7 @@ interface Question {//question의 타입정의
   description?: string;
 }
 
-interface TableViewProps { //컴포넌트가 받아야하는 props 타입을 정의해줘
+interface TableViewProps {
   filteredData: Question[];
   handleDeleteButtonClick: (problem_id: number) => Promise<void>;
 }
@@ -20,7 +20,7 @@ interface TableViewProps { //컴포넌트가 받아야하는 props 타입을 정
 export default function TableView({ filteredData }: TableViewProps) {
   const router = useRouter();
 
-  return (//사용자UI
+  return (
     <motion.div className="w-full overflow-hidden shadow-md rounded-2xl">
       <table className="w-full border-collapse bg-white">
         <thead className="bg-gray-100">

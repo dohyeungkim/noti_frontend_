@@ -1,5 +1,5 @@
 // utils/dateUtils.ts
-import { format as tzFormat, toZonedTime } from 'date-fns-tz'; //모듈,훅 추가
+import { format as tzFormat, toZonedTime } from 'date-fns-tz';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 

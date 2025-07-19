@@ -1,10 +1,10 @@
-"use client"//클라이언트 컴포넌트
+"use client"
 
-import Link from "next/link" //필요한 훅, 모듈 추가 
+import Link from "next/link"
 import { BreadcrumbsProps } from "./types"
 
 // ✅ 문자열을 12자로 제한하는 함수 (75%로 축소)
-function truncateText(text?: string, maxLength = 12): string { //truncateText 긴 문자열을 자르고 뒤에 ...을 붙임
+function truncateText(text?: string, maxLength = 12): string {
 	if (!text) return ""
 	return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text
 }
@@ -15,7 +15,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
 
 	// `mygroups` 경로가 아닌 경우 Breadcrumb 표시 X
 	if (segments.includes("mygroups")) {
-		return ( //UI
+		return (
 			<nav className="text-gray-500 text-xs mb-1.5">
 				{/* 🔹 나의 그룹들 (홈) */}
 				<BreadcrumbLink href="/mygroups" label="🏡 나의 그룹들" />

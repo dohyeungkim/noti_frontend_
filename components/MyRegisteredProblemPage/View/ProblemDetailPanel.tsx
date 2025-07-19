@@ -1,9 +1,9 @@
-"use client"; //클라이언트 사용
+"use client";
 
-import { motion } from "framer-motion"; //사용할 훅 모듈 추가
+import { motion } from "framer-motion";
 // import { useParams } from "next/navigation";
 
-interface Problem { //problem 변수 타입선언
+interface Problem {
   problem_id: number;
   title: string;
   group: string;
@@ -12,8 +12,8 @@ interface Problem { //problem 변수 타입선언
 }
 
 interface ProblemDetailPanelProps {
-  problem: Problem | null; 
-  onClose: () => void; 
+  problem: Problem | null;
+  onClose: () => void;
 }
 
 export default function ProblemDetailPanel({
@@ -24,7 +24,7 @@ export default function ProblemDetailPanel({
 
   if (!problem) return null;
 
-  return (//사용자 UI
+  return (
     <motion.div
     initial={{ x: "100%" }}
     animate={{ x: 0 }}

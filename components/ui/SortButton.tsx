@@ -1,6 +1,6 @@
-"use client";//클라이언트 사용
+"use client";
 
-import { useState } from "react";//훅, 모듈 추가
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSort } from "@fortawesome/free-solid-svg-icons";
 
@@ -21,7 +21,7 @@ export default function SortButton({ sortOptions, onSortChange, className }: Sor
     onSortChange(sortOptions[newIndex]); // 부모 컴포넌트에 변경된 정렬 방식 전달
   };
 
-  return (//사용자 UI
+  return (
     <button
       className={`flex border border-gray-300 rounded-lg px-4 py-1.5 min-w-[120px] 
                  hover:bg-gray-100 active:scale-95 transition-all duration-500 ease-in-out

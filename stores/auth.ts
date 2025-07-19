@@ -28,7 +28,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
 					const res = await auth_api.getUser()
 					set({
 						isAuth: true,
-						userName: res.username || res.full_name || res.user_id,
+						userName: res.username || res.user_id,
 					})
 				} catch (userError) {
 					// 사용자 정보 가져오기 실패해도 인증은 성공한 것으로 처리

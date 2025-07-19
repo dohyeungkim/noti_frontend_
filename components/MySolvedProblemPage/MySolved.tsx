@@ -1,6 +1,6 @@
-"use client" //클라이언트 사용
+"use client"
 
-import SearchBar from "@/components/ui/SearchBar" //모듈,훅 추가
+import SearchBar from "@/components/ui/SearchBar"
 import SortButton from "@/components/ui/SortButton"
 import ViewToggle from "@/components/ui/ViewToggle"
 import Link from "next/link"
@@ -10,19 +10,35 @@ import { solve_api } from "@/lib/api"
 import { formatTimestamp } from "../util/dageUtils"
 
 // ✅ 문제 풀이 데이터 타입 정의
+// interface ProblemSolve {
+// 	group_id: number
+// 	problem_id: number
+// 	workbook_id: number
+// 	workbook_name: string
+// 	group_name: string
+// 	problem_name: string
+// 	passed: boolean
+// 	solve_id: number
+// 	timestamp?: string
+// }
+
 interface ProblemSolve {
-	group_id: number
-	problem_id: number
-	workbook_id: number
-	workbook_name: string
+	id: number // 고유 DB ID
+	solve_id: number // 제출 ID
+	problem_id: number // 문제 ID
+	problem_name: string // 문제 제목
+	user_id: string // 제출자 ID
+	passed: boolean // 통과 여부
+	code_language: string // 언어 (python, cpp, etc)
+	code_len: number // 코드 길이 (문자수)
+	timestamp: string // 제출 시간 (ISO8601)
+	group_id: number // 그룹 ID
 	group_name: string
-	problem_name: string
-	passed: boolean
-	solve_id: number
-	timestamp?: string
+	workbook_id: number // 문제집 ID
+	workbook_name: string
 }
 
-export default function MySolved() { //외부에서접근가능하게
+export default function MySolved() {
 	const [search, setSearch] = useState<string>("")
 	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
 	const [sortOrder, setSortOrder] = useState("제목순")
@@ -88,7 +104,7 @@ export default function MySolved() { //외부에서접근가능하게
 		return 0
 	})
 
-	return (//사용자UI
+	return (
 		<motion.div className="scale-90 origin-top-left w-[111%]">
 			{/* 🔍 검색, 보기 방식 변경, 정렬 버튼 */}
 			<motion.div

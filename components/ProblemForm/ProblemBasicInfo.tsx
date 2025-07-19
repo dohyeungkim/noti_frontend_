@@ -1,8 +1,12 @@
-import "react-mde/lib/styles/css/react-mde-all.css"; //훅, 모듈 추가
-// Add a module declaration for react-mde to handle missing types
-declare module "react-mde";//ts가 타입을 못찾는경우 
+import ReactMde from "react-mde";
+import "react-mde/lib/styles/css/react-mde-all.css";
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
-interface ProblemBasicInfoProps {//타입선언
+// Add a module declaration for react-mde to handle missing types
+declare module "react-mde";
+
+interface ProblemBasicInfoProps {
 	title: string
 	setTitle: (title: string) => void
 	difficulty: string
@@ -14,7 +18,7 @@ interface ProblemBasicInfoProps {//타입선언
 	removeTag: (index: number) => void
 }
 
-export default function ProblemBasicInfo({//외부에서 접근가능하게 
+export default function ProblemBasicInfo({
 	title,
 	setTitle,
 	difficulty,
@@ -25,7 +29,10 @@ export default function ProblemBasicInfo({//외부에서 접근가능하게
 	updateTags,
 	removeTag,
 }: ProblemBasicInfoProps) {
-	return (//사용자 UI
+	const [description, setDescription] = useState("");
+	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
+
+	return (
 		<div className="mb-6">
 			<h2 className="text-lg font-bold mb-2">문제 기본 정보</h2>
 			<div className="border-t border-gray-300 my-3"></div>

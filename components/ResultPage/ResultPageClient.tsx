@@ -1,6 +1,6 @@
-"use client"//클라이언트 사용
+"use client"
 
-import { useEffect, useState, useCallback } from "react"//훅, 모듈 추가
+import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay"
 import { code_log_api, problem_api, solve_api, ai_feedback_api, comment_api, auth_api } from "@/lib/api"
@@ -9,9 +9,13 @@ import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { useRouter } from "next/navigation"
 import { formatTimestamp } from "../util/dageUtils"
 import { UserIcon } from "lucide-react"
-import { TestCase } from "@/hooks/useProblemForm"
+// 시험 모드 isExamMode 로 시험모드 상태관리 가능 - 홍
+import { useExamMode } from "@/hooks/useExamMode"
+// 시험 모드 관련 임시 더미데이터 - 홍
+import { feedbackDummy } from "@/data/examModeFeedbackDummy"
+import ReactMarkdown from "react-markdown"
 
-interface SolveData {//타입선언
+interface SolveData {
 	solve_id: number
 	user_id: string
 	group_id: number
@@ -27,8 +31,8 @@ interface SolveData {//타입선언
 	passed: boolean
 	timestamp: string
 	rating_mode: string
-	test_cases: TestCase[]
-	test_results: []
+	test_cases: any[]
+	test_results: any[]
 	overall_status: string
 	execution_time: number
 	condition_check_results: {
@@ -55,8 +59,7 @@ interface ConditionResult {
 	description: string
 	passed: boolean
 	feedback: string
-	status: string
-	// status: "pass" | "fail"
+	status: "pass" | "fail"
 }
 
 interface Comment {
@@ -87,13 +90,20 @@ export default function FeedbackWithSubmissionPageClient({
 	const [isAILoaded, setIsAILoaded] = useState(false)
 	const [solveData, setSolveData] = useState<SolveData | null>(null)
 	const [conditionResults, setConditionResults] = useState<ConditionResult[]>([])
-	const [isConditionLoaded, setConditionLoaded] = useState(false)
+	const [isConditionLoaded, setIsConditionLoaded] = useState(false)
 	const [comments, setComments] = useState<Comment[]>([])
 	const [newComment, setNewComment] = useState("")
 	const [isAnonymous, setIsAnonymous] = useState(false)
 	const [activeTab, setActiveTab] = useState<"problem" | "submission">("submission")
 	const [userId, setUserId] = useState<string>("")
 	const router = useRouter()
+	const { isExamMode } = useExamMode()
+
+	// 시험모드 더미데이터 총점, 각 조건별 최대 배점과 획득 점수 정보 배열, Markdown 형식 교수 피드백 - 홍
+	const { totalScore, maxScore, professorFeedback: dummyProfessorFeedback } = feedbackDummy
+	// const { conditionScores } = feedbackDummy
+
+	const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
 
 	// AI 피드백 가져오기
 	useEffect(() => {
@@ -108,8 +118,9 @@ export default function FeedbackWithSubmissionPageClient({
 				setIsAILoaded(true)
 			}
 		}
+
 		fetchAiFeedback()
-	}, [params.resultId, aiFeedback, problem])
+	}, [params.resultId])
 
 	const fetchProblem = useCallback(async () => {
 		try {
@@ -129,29 +140,27 @@ export default function FeedbackWithSubmissionPageClient({
 			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
 			setSolveData(res)
 
-			console.log("여기용~~~~~~~~~~")
+			console.log("여기용")
 			console.log(res)
 			// AI 피드백이 solveData에 포함되어 있다면 사용
 			if (res.ai_feedback && !aiFeedback) {
 				setAiFeedback(res.ai_feedback)
-				// setIsAILoaded(true)
+				setIsAILoaded(true)
 			}
+
 			// 조건 검사 결과 처리
 			if (res.condition_check_results && res.condition_check_results.length > 0) {
 				// condition_check_results 상세 정보 활용
-				const conditionCheckResults = res.condition_check_results.map(
-					(conditionResult: ConditionResult, index: number) => ({
-						id: index + 1,
-						condition: conditionResult.condition || `조건 ${index + 1}`,
-						is_required: conditionResult.is_required || false,
-						check_type: conditionResult.check_type || "unknown",
-						description: conditionResult.description || "",
-						passed: conditionResult.passed || false,
-						feedback: conditionResult.feedback || "",
-						status: conditionResult.passed ? "pass" : "fail",
-					})
-				)
-				setConditionLoaded(true)
+				const conditionCheckResults = res.condition_check_results.map((conditionResult: any, index: number) => ({
+					id: index + 1,
+					condition: conditionResult.condition || `조건 ${index + 1}`,
+					is_required: conditionResult.is_required || false,
+					check_type: conditionResult.check_type || "unknown",
+					description: conditionResult.description || "",
+					passed: conditionResult.passed || false,
+					feedback: conditionResult.feedback || "",
+					status: conditionResult.passed ? "pass" : "fail",
+				}))
 				setConditionResults(conditionCheckResults)
 			} else if (problem && problem.problem_condition && problem.problem_condition.length > 0) {
 				// problem_condition을 기반으로 조건 결과 생성
@@ -173,7 +182,7 @@ export default function FeedbackWithSubmissionPageClient({
 		} catch (error) {
 			console.error("제출 기록 불러오기 중 오류 발생:", error)
 		}
-	}, [params.resultId, aiFeedback, problem]) // 홍
+	}, [params.resultId, aiFeedback])
 
 	const fetchCodeLogs = useCallback(async () => {
 		try {
@@ -239,7 +248,7 @@ export default function FeedbackWithSubmissionPageClient({
 			console.log("탭 변경됨, 댓글 새로고침:", activeTab)
 			fetchComments()
 		}
-	}, [activeTab, userId, fetchComments])
+	}, [activeTab])
 
 	useEffect(() => {
 		if (problem && solveData && codeLogs) {
@@ -316,10 +325,10 @@ export default function FeedbackWithSubmissionPageClient({
 		)
 	}
 
-	return (//사용자 UI
-		<div className="flex min-h-screen bg-gray-50">
+	return (
+		<div className="flex min-h-screen">
 			{/* 메인 컨텐츠 영역 */}
-			<div className="flex-1 max-w-7xl mx-auto p-6">
+			<div className="flex-1 max-w-7xl mx-auto">
 				{/* 헤더 */}
 				<motion.div
 					className="mb-6"
@@ -327,16 +336,21 @@ export default function FeedbackWithSubmissionPageClient({
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.4 }}
 				>
-					<div className="flex items-center gap-2 mb-2">
-						<div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
-							<span className="text-white font-bold text-sm">📘</span>
+					<div className="flex items-center gap-2 mb-2 mt-8">
+						<div className="w-8 h-8 rounded flex items-center justify-center">
+							<span className="text-xl">📓</span>
 						</div>
 						<h1 className="text-xl font-bold text-gray-800">
 							문제 {solveData?.problem_name || solveData?.problem_id || "PY31-0001"} 문제의 피드백
 						</h1>
 					</div>
-					<div className="flex items-center gap-4">
-						<span className="text-sm text-gray-600">🔥 열심히다.</span>
+					<div className="flex items-center gap-4 ml-2">
+						{/* <span className="text-sm text-gray-600">🔥 열심히다.</span> */}
+						{isExamMode && (
+							<span className="text-sm text-gray-600">
+								✔️ 점수: {totalScore}/{maxScore}점
+							</span>
+						)}
 						{solveData && (
 							<>
 								<span className={`text-sm font-bold ${solveData.passed ? "text-green-600" : "text-red-600"}`}>
@@ -367,26 +381,28 @@ export default function FeedbackWithSubmissionPageClient({
 						</div>
 					</motion.div>
 
-					{/* 오른쪽: 조건 및 AI 피드백 - 높이 맞춤 */}
+					{/* 오른쪽: 조건 및 AI 피드백 조건 뜨는 창*/}
 					<div className="space-y-6 h-[600px] flex flex-col">
-						{/* 조건 검사 결과 섹션 - 고정 높이로 변경 */}
+						{/* 조건 검사 결과 섹션 - 높이 확장 */}
 						<motion.div
-							className="bg-white rounded-lg shadow-sm border h-80 flex flex-col"
+							className="bg-white rounded-lg shadow-sm border flex-1"
 							initial={{ opacity: 0, x: 20 }}
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.4, delay: 0.2 }}
 						>
-							<div className="p-4 border-b flex-shrink-0">
+							<div className="p-4 border-b">
 								<h3 className="font-semibold text-gray-800">조건 검사 결과</h3>
 								{solveData && (
 									<div className="flex items-center gap-4 mt-2 flex-wrap">
 										{solveData.condition_success_rate !== undefined && (
 											<span className="text-sm text-gray-600">
-												조건 성공률: {Math.round(solveData.condition_success_rate)}%
+												조건 성공률: {Math.round(solveData.condition_success_rate * 100)}%
 											</span>
 										)}
 										{solveData.success_rate !== undefined && (
-											<span className="text-sm text-gray-600">전체 성공률: {Math.round(solveData.success_rate)}%</span>
+											<span className="text-sm text-gray-600">
+												전체 성공률: {Math.round(solveData.success_rate * 100)}%
+											</span>
 										)}
 										{solveData.passed_count !== undefined && solveData.total_count !== undefined && (
 											<span className="text-sm text-gray-600">
@@ -405,8 +421,9 @@ export default function FeedbackWithSubmissionPageClient({
 									</div>
 								)}
 							</div>
-							<div className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
+							<div className="p-4 space-y-4 h-full overflow-y-auto">
 								{!isConditionLoaded ? (
+									// 조건 로딩 중
 									<div className="flex items-center justify-center h-32">
 										<div className="flex items-center gap-3 text-gray-500">
 											<div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"></div>
@@ -417,6 +434,7 @@ export default function FeedbackWithSubmissionPageClient({
 										</div>
 									</div>
 								) : conditionResults.length === 0 ? (
+									// 조건이 없을 때
 									<div className="flex items-center justify-center h-32 text-gray-500">
 										<div className="text-center">
 											<p className="text-sm">조건 검사 결과가 없습니다.</p>
@@ -424,6 +442,7 @@ export default function FeedbackWithSubmissionPageClient({
 										</div>
 									</div>
 								) : (
+									// 조건 목록
 									conditionResults.map((condition) => (
 										<motion.div
 											key={condition.id}
@@ -437,42 +456,36 @@ export default function FeedbackWithSubmissionPageClient({
 											transition={{ duration: 0.3, delay: condition.id * 0.1 }}
 										>
 											{/* 조건 헤더 */}
-											<div className="mb-3">
-												{/* 상단: 조건 번호와 상태 아이콘 */}
-												<div className="flex items-start justify-between mb-2">
-													<h4 className="font-semibold text-gray-800 text-base">조건 {condition.id}</h4>
-													<div className="flex-shrink-0">
-														{condition.status === "pass" ? (
-															<div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-																<span className="text-white text-lg">✓</span>
-															</div>
-														) : (
-															<div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-																<span className="text-white text-lg">✗</span>
-															</div>
+											<div className="flex items-start justify-between mb-3">
+												<div className="flex-1">
+													<div className="flex items-center gap-2 mb-1">
+														<h4 className="font-semibold text-gray-800 text-base">조건 {condition.id}</h4>
+														{condition.is_required && (
+															<span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+																필수
+															</span>
 														)}
-													</div>
-												</div>
-
-												{/* 중단: 태그들 */}
-												<div className="flex flex-wrap items-center gap-2 mb-2">
-													{condition.is_required && (
-														<span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-															필수
+														<span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+															{condition.check_type}
 														</span>
-													)}
-													<span
-														className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs truncate max-w-[120px]"
-														title={condition.check_type}
-													>
-														{condition.check_type}
-													</span>
+													</div>
+													<p className="font-medium text-gray-700 text-sm">{condition.condition}</p>
 												</div>
-
-												{/* 하단: 조건 내용 */}
-												<p className="font-medium text-gray-700 text-sm break-words leading-relaxed">
-													{condition.condition}
-												</p>
+												{/* 오른쪽: 점수 / 아이콘 */}
+												<div className="ml-3 text-right">
+													{/* 이 3/5 부분은 시험모드일 때만 뜨도록 해야됨 - 홍 */}
+													{isExamMode && <div className="text-xs font-medium mb-1">3/5점</div>}
+													{/* pass/fail 아이콘 */}
+													{condition.status === "pass" ? (
+														<div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+															<span className="text-white text-lg">✓</span>
+														</div>
+													) : (
+														<div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+															<span className="text-white text-lg">✗</span>
+														</div>
+													)}
+												</div>
 											</div>
 
 											{/* 조건 설명 */}
@@ -503,26 +516,48 @@ export default function FeedbackWithSubmissionPageClient({
 							</div>
 						</motion.div>
 
-						{/* AI 피드백 섹션 - 나머지 공간 사용 */}
+						{/* AI 피드백 섹션 - 고정 높이 */}
 						<motion.div
-							className="bg-white rounded-lg shadow-sm border flex-1 flex flex-col"
+							className="bg-white rounded-lg shadow-sm border h-48"
 							initial={{ opacity: 0, x: 20 }}
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.4, delay: 0.3 }}
 						>
-							<div className="p-4 border-b flex-shrink-0">
-								<h3 className="font-semibold text-gray-800">AI 피드백</h3>
+							{/* 탭 헤더 */}
+							<div className="p-2 flex space-x-2 border-b">
+								<button
+									className={`px-4 py-1 text-sm font-medium ${
+										activeFeedbackTab === "ai" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600 "
+									}`}
+									onClick={() => setActiveFeedbackTab("ai")}
+								>
+									AI 피드백
+								</button>
+								<button
+									className={`px-4 py-1 text-sm font-medium ${
+										activeFeedbackTab === "professor" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600"
+									}`}
+									onClick={() => setActiveFeedbackTab("professor")}
+								>
+									교수 피드백
+								</button>
 							</div>
-							<div className="p-4 overflow-y-auto flex-1">
-								{!isAILoaded ? (
+
+							{/* 탭 내용 */}
+							<div className="p-4 h-32 overflow-y-auto">
+								{!isAILoaded && activeFeedbackTab === "ai" ? (
 									<div className="flex items-center gap-2 text-gray-500">
 										<div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
 										<span className="text-sm">AI 피드백을 불러오는 중...</span>
 									</div>
 								) : (
-									<p className="text-gray-700 text-sm leading-relaxed">
-										{aiFeedback || "❌ 조건문에서 edge case 처리를 추가하면 더 정확한 결과를 얻을 수 있습니다."}
-									</p>
+									<div className="prose prose-sm max-w-none text-gray-800">
+										<ReactMarkdown>
+											{activeFeedbackTab === "ai"
+												? aiFeedback || solveData?.ai_feedback || "AI 피드백이 없습니다."
+												: dummyProfessorFeedback}
+										</ReactMarkdown>
+									</div>
 								)}
 							</div>
 						</motion.div>
@@ -542,7 +577,7 @@ export default function FeedbackWithSubmissionPageClient({
 							<button
 								className={`px-6 py-3 text-sm font-medium ${
 									activeTab === "submission"
-										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										? "text-green-600 border-b-2 border-green-600 bg-green-50"
 										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
@@ -555,7 +590,7 @@ export default function FeedbackWithSubmissionPageClient({
 							<button
 								className={`px-6 py-3 text-sm font-medium ${
 									activeTab === "problem"
-										? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+										? "text-green-600 border-b-2 border-green-600 bg-green-50"
 										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => {
@@ -627,7 +662,7 @@ export default function FeedbackWithSubmissionPageClient({
 									<label className="flex items-center space-x-2 cursor-pointer">
 										<input
 											type="checkbox"
-											className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+											className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
 											checked={isAnonymous}
 											onChange={(e) => setIsAnonymous(e.target.checked)}
 										/>
@@ -648,7 +683,7 @@ export default function FeedbackWithSubmissionPageClient({
 										<button
 											onClick={handleAddComment}
 											disabled={!newComment.trim()}
-											className="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+											className="px-4 py-2 bg-mygreen text-white text-sm rounded-lg hover:bg-mydarkgreen disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
 										>
 											등록
 										</button>
@@ -673,7 +708,7 @@ export default function FeedbackWithSubmissionPageClient({
 					transition={{ duration: 0.4, delay: 0.5 }}
 				>
 					<button
-						className="px-6 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition-colors"
+						className="px-6 py-2 bg-mygreen text-white rounded-lg shadow hover:bg-mydarkgreen transition-colors"
 						onClick={() =>
 							router.push(`/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/result/`)
 						}

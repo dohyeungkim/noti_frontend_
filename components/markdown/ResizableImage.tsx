@@ -1,6 +1,6 @@
-"use client"; //훅과 브라우저기능을 사용할 것이기에 클라이언트에서 렌더링하도록 요청
+"use client";
 
-import { Node, mergeAttributes, ReactNodeViewRenderer } from "@tiptap/react"; //사용할 모듈 훅 추가
+import { Node, mergeAttributes, ReactNodeViewRenderer } from "@tiptap/react";
 import Image from "next/image";
 import { NodeViewWrapper, NodeViewProps } from "@tiptap/react";
 import React from "react";
@@ -29,7 +29,7 @@ const ResizableImageComponent: React.FC<NodeViewProps> = ({ node, updateAttribut
     document.addEventListener("mouseup", onMouseUp);
   };
 
-  return ( //사용자 UI
+  return (
     <NodeViewWrapper className="relative inline-block resizable-image-wrapper">
       {/* ✅ next/image 최적화 및 width, height 자동 조절 */}
       <div style={{ width: node.attrs.width, position: "relative" }}>

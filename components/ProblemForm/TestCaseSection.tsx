@@ -1,4 +1,4 @@
-import { TestCase } from "@/hooks/useProblemForm";//모듈 훅 추가
+import { TestCase } from "@/hooks/useProblemForm";
 
 interface TestCaseSectionProps {
 	testCases: TestCase[]
@@ -15,7 +15,7 @@ export default function TestCaseSection({
 	updateTestCase,
 	testResults = [],
 }: TestCaseSectionProps) {
-	return (//사용자 UI
+	return (
 		<div className="mb-6">
 			<h2 className="text-lg font-bold mb-2">테스트 케이스</h2>
 			<div className="border-t border-gray-300 my-3"></div>

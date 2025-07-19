@@ -1,42 +1,45 @@
-"use client"; //클라이언트 사용
+"use client"
 
-import { useEffect, useState } from "react"; //모듈, 훅 추가
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { useRouter, useParams } from "next/navigation";
-import { motion } from "framer-motion";
-import ProblemStatistics from "../ui/ProblemStatistics";
-import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal";
-import { problem_api } from "@/lib/api";
-import dynamic from "next/dynamic";
+import { useEffect, useState } from "react"
+import { FaChevronDown, FaChevronUp } from "react-icons/fa"
+import { useRouter, useParams } from "next/navigation"
+import { motion } from "framer-motion"
+import ProblemStatistics from "../ui/ProblemStatistics"
+import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal"
+import { problem_api } from "@/lib/api"
+import dynamic from "next/dynamic"
+import {dummyDebugProblem} from "../../data/JinProblemDummies"
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
-	ssr: false,//서버사이드?? 렌더링안하게끔
-});
+	ssr: false,
+})
+interface Problem {
+  problem_id: number
+  title: string
+  description: string
+  difficulty: string
+  rating_mode: "Hard" | "Space" | "Regex"
+  tags: string[]
+  problem_condition: string[]
+  reference_codes: Array<{
+    id: number
+    language: string
+    code: string
+    is_main: boolean
+    created_at: string
+  }>
+  test_cases: Array<{
+    input: string
+    expected_output: string
+    is_sample: boolean
+  }>
+  make_at: string
 
-interface Problem {//problem의 타입선언
-	problem_id: number
-	title: string
-	description: string
-	difficulty: string
-	rating_mode: "Hard" | "Space" | "Regex"
-	tags: string[]
-	problem_condition: string[]
-	reference_codes: Array<{
-		id: number
-		language: string
-		code: string
-		is_main: boolean
-		created_at: string
-	}>
-	test_cases: Array<{
-		input: string
-		expected_output: string
-		is_sample: boolean
-	}>
-	make_at: string
+  problem_type?: string 
 }
 
-const languageDisplayNames = { //보여질 언어 매핑
+
+const languageDisplayNames = {
 	python: "Python",
 	java: "Java",
 	cpp: "C++",
@@ -44,88 +47,134 @@ const languageDisplayNames = { //보여질 언어 매핑
 	javascript: "JavaScript",
 }
 
-export default function ProblemView() { //외부에서 사용가능한 문제 상세보기 컴포넌트
-	const router = useRouter();
-	const { id } = useParams<{ id: string }>();
-	const [problem, setProblem] = useState<Problem | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [isExpanded, setIsExpanded] = useState(true);
-	const [isExpandedstatis, setisExpandedstatis] = useState(true);
-	const [isConfirming, setIsConfirming] = useState(false);
-	const [targetProblemId, setTargetProblemId] = useState<number | null>(null);
-	const [activeCodeTab, setActiveCodeTab] = useState(0);
+export default function ProblemView() {
+	const router = useRouter()
+	const { id } = useParams<{ id: string }>()
+	const [problem, setProblem] = useState<Problem | null>(null)
+	const [loading, setLoading] = useState(true)
+	const [isExpanded, setIsExpanded] = useState(true)
+	const [isExpandedstatis, setisExpandedstatis] = useState(true)
+	const [isConfirming, setIsConfirming] = useState(false)
+	const [targetProblemId, setTargetProblemId] = useState<number | null>(null)
+	const [activeCodeTab, setActiveCodeTab] = useState(0)
 
 	useEffect(() => {
-		const fetchProblem = async () => {
-			setLoading(true);//로딩시작
-			try {
-				const data = await problem_api.problem_get_by_id(Number(id));
-				setProblem(data); //상태 저장
-			} catch (error) {
-				console.error("Failed to fetch problem:", error);
-			} finally {
-				setLoading(false);//로딩 종료
-			}
-		};
+  const fetchProblem = async () => {
+    setLoading(true)
+    try {
+      if (id === "dummy") {
+        setProblem({
+          problem_id: 999,
+          make_at: new Date().toISOString(),
+          title: dummyDebugProblem.title,
+          description: dummyDebugProblem.description,
+          difficulty: dummyDebugProblem.difficulty,
+          rating_mode: dummyDebugProblem.ratingMode,
+          tags: dummyDebugProblem.tags,
+          problem_type: dummyDebugProblem.problemType,
+          problem_condition: dummyDebugProblem.conditions,
+        //   reference_codes: dummyDebugProblem.referenceCodes.map((ref, i) => ({
+        //     id: i,
+        //     language: ref.language,
+        //     code: ref.code,
+        //     is_main: ref.is_main,
+        //     created_at: new Date().toISOString(),
+        //   })),
+          test_cases: dummyDebugProblem.testCases.map(tc => ({
+            input: tc.input,
+            expected_output: tc.expected_output,
+            is_sample: false,
+			base_code: "asdasd"
+          })),
+        })
+      } else {
+        const data = await problem_api.problem_get_by_id(Number(id))
+        setProblem(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch problem:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-		if (id) {
-			fetchProblem();
-		}
-	}, [id]);
+  if (id) {
+    fetchProblem()
+  }
+}, [id])
 
-	if (loading) return <p>Loading...</p>; //로딩중이면 
-	if (!problem) return <p>문제 정보를 불러올 수 없습니다.</p>;//문제가 없으면
+	
+
+
+	if (loading) return <p>Loading...</p>
+	if (!problem) return <p>문제 정보를 불러올 수 없습니다.</p>
 
 	const handleDeleteButtonClick = async (problem_id: number) => {
 		try {
-			await problem_api.problem_delete(problem_id); //problem_id호출
-			alert("문제가 삭제되었습니다.");
-			router.push("/registered-problems");
+			await problem_api.problem_delete(problem_id)
+			alert("문제가 삭제되었습니다.")
+			router.push("/registered-problems")
 		} catch (error) {
-			console.error("삭제 실패:", error);
-			alert(`⚠️ 이 문제를 참조하는 문제지가 있어 삭제가 불가합니다.`);
+			console.error("삭제 실패:", error)
+			alert(`⚠️ 이 문제를 참조하는 문제지가 있어 삭제가 불가합니다.`)
 		}
-	};
+	}
 
 	const openDeleteModal = (problem_id: number) => {
-		setTargetProblemId(problem_id);
-		setIsConfirming(true);
-	};
+		setTargetProblemId(problem_id)
+		setIsConfirming(true)
+	}
 
 	const handleDelete = async () => {
 		if (targetProblemId !== null) {
-			await handleDeleteButtonClick(targetProblemId);
+			await handleDeleteButtonClick(targetProblemId)
 		}
-		setIsConfirming(false);
-	};
+		setIsConfirming(false)
+	}
 
+	const getTypeStyle = (type: string) => {
+  switch (type) {
+    case "코딩":
+      return "bg-blue-100 text-blue-800"
+    case "디버깅":
+      return "bg-red-100 text-red-800"
+    case "객관식":
+      return "bg-green-100 text-green-800"
+    case "주관식":
+      return "bg-purple-100 text-purple-800"
+    case "단답형":
+      return "bg-yellow-100 text-yellow-800"
+    default:
+      return "bg-gray-100 text-gray-700"
+  }
+}
 	const getDifficultyColor = (difficulty: string) => {
 		switch (difficulty.toLowerCase()) {
 			case "easy":
-				return "bg-green-500";
+				return "bg-green-500"
 			case "medium":
-				return "bg-yellow-500";
+				return "bg-yellow-500"
 			case "hard":
-				return "bg-red-500";
+				return "bg-red-500"
 			default:
-				return "bg-gray-500";
+				return "bg-gray-500"
 		}
-	};
+	}
 
 	const getRatingModeColor = (mode: string) => {
 		switch (mode) {
 			case "Hard":
-				return "bg-red-500";
+				return "bg-red-500"
 			case "Space":
-				return "bg-blue-500";
+				return "bg-blue-500"
 			case "Regex":
-				return "bg-purple-500";
+				return "bg-purple-500"
 			default:
-				return "bg-gray-500";
+				return "bg-gray-500"
 		}
-	};
+	}
 
-	return (//사용자 UI
+	return (
 		<>
 			<div className="flex items-center gap-2 justify-end mb-6">
 				<motion.button
@@ -142,22 +191,34 @@ export default function ProblemView() { //외부에서 사용가능한 문제 �
 			<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 				<div className="flex justify-between items-start mb-4">
 					<div className="flex-1">
-						<h1 className="text-2xl font-bold text-gray-900 mb-2">
-							{problem.title}
-						</h1>
-						<div className="flex items-center gap-2 mb-2">
-							<span className={`text-white text-xs px-2 py-1 rounded ${getDifficultyColor(problem.difficulty)}`}>
-								{problem.difficulty.toUpperCase()}
-							</span>
-							<span className={`text-white text-xs px-2 py-1 rounded ${getRatingModeColor(problem.rating_mode)}`}>
-								{problem.rating_mode}
-							</span>
-							{problem.tags.map((tag, index) => (
-								<span key={index} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
-									{tag}
-								</span>
-							))}
-						</div>
+						<h1 className="text-2xl font-bold text-gray-900 mb-2">{problem.title}</h1>
+						{/* 문제 유형 뱃지 (단독 줄) */}
+<div className="mb-1">
+  <span className={`text-xs px-2 py-1 rounded font-medium ${getTypeStyle(problem.problem_type || "코딩")}`}>
+    문제 유형: {problem.problem_type || "코딩"}
+  </span>
+</div>
+
+{/* 난이도 + 채점모드 뱃지 (같은 줄) */}
+<div className="flex items-center gap-2 mb-1">
+  <span className={`text-white text-xs px-2 py-1 rounded ${getDifficultyColor(problem.difficulty)}`}>
+    난이도: {problem.difficulty.toUpperCase()}
+  </span>
+  <span className={`text-white text-xs px-2 py-1 rounded ${getRatingModeColor(problem.rating_mode)}`}>
+    채점모드: {problem.rating_mode}
+  </span>
+</div>
+
+{/* 태그 뱃지 (아래 한 줄에 분리) */}
+{problem.tags.length > 0 && (
+  <div className="flex flex-wrap gap-2 mt-1">
+    {problem.tags.map((tag, index) => (
+      <span key={index} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
+        #&nbsp;{tag}
+      </span>
+    ))}
+  </div>
+)}
 					</div>
 					<div className="text-right text-sm text-gray-500">
 						<div>작성일: {problem.make_at.split("T")[0]}</div>
@@ -206,9 +267,7 @@ export default function ProblemView() { //외부에서 사용가능한 문제 �
 					<div className="space-y-2">
 						{problem.problem_condition.map((condition, index) => (
 							<div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-								<span className="text-sm font-semibold text-gray-700 min-w-[20px] mt-0.5">
-									{index + 1}.
-								</span>
+								<span className="text-sm font-semibold text-gray-700 min-w-[20px] mt-0.5">{index + 1}.</span>
 								<span className="text-sm text-gray-700 flex-1">{condition}</span>
 							</div>
 						))}
@@ -220,7 +279,7 @@ export default function ProblemView() { //외부에서 사용가능한 문제 �
 			{problem.reference_codes && problem.reference_codes.length > 0 && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 					<h3 className="text-lg font-semibold mb-4">참조 코드</h3>
-					
+
 					{/* 코드 탭 */}
 					<div className="flex gap-1 mb-4 overflow-x-auto">
 						{problem.reference_codes.map((refCode, index) => (
@@ -232,9 +291,7 @@ export default function ProblemView() { //외부에서 사용가능한 문제 �
 									onClick={() => setActiveCodeTab(index)}
 								>
 									{languageDisplayNames[refCode.language as keyof typeof languageDisplayNames] || refCode.language}
-									{refCode.is_main && (
-										<span className="text-xs bg-yellow-500 text-white px-1 rounded">메인</span>
-									)}
+									{refCode.is_main && <span className="text-xs bg-yellow-500 text-white px-1 rounded">메인</span>}
 								</div>
 							</div>
 						))}
@@ -247,8 +304,8 @@ export default function ProblemView() { //외부에서 사용가능한 문제 �
 								height="400px"
 								width="100%"
 								language={
-									problem.reference_codes[activeCodeTab].language === "cpp" 
-										? "cpp" 
+									problem.reference_codes[activeCodeTab].language === "cpp"
+										? "cpp"
 										: problem.reference_codes[activeCodeTab].language
 								}
 								value={problem.reference_codes[activeCodeTab].code}
@@ -282,27 +339,19 @@ export default function ProblemView() { //외부에서 사용가능한 문제 �
 						{problem.test_cases.map((testCase, index) => (
 							<div key={index} className="border border-gray-200 rounded-lg p-4">
 								<div className="flex items-center justify-between mb-3">
-									<span className="text-sm font-semibold text-gray-700">
-										테스트 케이스 {index + 1}
-									</span>
+									<span className="text-sm font-semibold text-gray-700">테스트 케이스 {index + 1}</span>
 									{testCase.is_sample && (
-										<span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-											샘플
-										</span>
+										<span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">샘플</span>
 									)}
 								</div>
 								<div className="grid grid-cols-2 gap-4">
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">입력</label>
-										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-											{testCase.input}
-										</pre>
+										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">{testCase.input}</pre>
 									</div>
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">예상 출력</label>
-										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
-											{testCase.expected_output}
-										</pre>
+										<pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">{testCase.expected_output}</pre>
 									</div>
 								</div>
 							</div>
@@ -411,5 +460,5 @@ export default function ProblemView() { //외부에서 사용가능한 문제 �
 				}
 			`}</style>
 		</>
-	);
+	)
 }

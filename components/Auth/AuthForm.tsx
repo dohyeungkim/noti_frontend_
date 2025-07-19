@@ -1,11 +1,11 @@
-"use client"//브라우저 이벤트(useStarte)를 사용하기 위해 기본적으로 서버에서 실행되는 컴포넌트를 브라우저에서 실행함
+"use client"
 
-import { useState } from "react"//리액트 라이브러리에서 useState함수를 가져옴 - 입력값 변경에 반응하는 UI구성에 사용
-import { useRouter } from "next/navigation"//라우터의 push, back을 통해 페이지 이동을 할 수 있게 함
-import { auth_api } from "@/lib/api"//백엔드의 api 모듈 요청을 처리함 
-import { useAuth } from "@/stores/auth"//로그인 상태나 정보를 확인, 처리
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"//아이콘을 화면에 보여주기 위한 컴포넌트
-import {//각종 아이콘 을  추가 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { auth_api } from "@/lib/api"
+import { useAuth } from "@/stores/auth"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import {
 	faUser,
 	faLock,
 	faChevronLeft,
@@ -13,21 +13,13 @@ import {//각종 아이콘 을  추가
 	faCheck,
 	faStepForward,
 } from "@fortawesome/free-solid-svg-icons"
-import Image from "next/image"//next.js에서 제공하는 이미지 보여주는 모듈
+import Image from "next/image"
 
-interface ProfileInfo {	//회원가입 프로필 정의한 구조 인터페이스로 객체를 먼저 선언
-	age_range: "under_18" | "18_24" | "25_29" | "30_34" | "35_39" | "over_40" 
-	academic_year:	
-		| "high_school"
-		| "freshman"
-		| "sophomore"
-		| "junior"
-		| "senior"
-		| "graduate"
-		| "working_professional"
-		| "other"
-	major: string	
-	interests: ("web_development" | "mobile_app" | "data_science" | "ai_ml" | "game_development" | "embedded" | "other")[]//다중선택 가능
+interface ProfileInfo {
+	age: "under_18" | "18_24" | "25_29" | "30_34" | "35_39" | "over_40"
+	grade: "high_school" | "freshman" | "sophomore" | "junior" | "senior" | "graduate" | "working_professional" | "other"
+	major: string
+	interests: ("web_development" | "mobile_app" | "data_science" | "ai_ml" | "game_development" | "embedded" | "other")[]
 	learning_goals: (
 		| "career_preparation"
 		| "academic_improvement"
@@ -48,47 +40,45 @@ interface ProfileInfo {	//회원가입 프로필 정의한 구조 인터페이�
 		| "system_programming"
 		| "other"
 	)[]
-	programming_experience: "beginner" | "intermediate" | "advanced"
-	preferred_languages: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
+	programming_experience_level: "beginner" | "intermediate" | "advanced"
+	preferred_programming_language: ("python" | "java" | "cpp" | "javascript" | "c" | "other")[]
 }
 
-interface BasicUserInfo { //기본 사용자 정보
-	email: string
+interface BasicUserInfo {
 	password: string
 	user_id: string
 	username: string
-	full_name: string
+	gender: string
+	email: string
 }
 
-interface ExtendedUserRegisterRequest { //사용자회원가입요청을 서버로 보낼 때 사용하는 틀
-	email: string
-	password: string
+interface ExtendedUserRegisterRequest {
 	user_id: string
 	username: string
-	full_name: string
-	profile_info: ProfileInfo	//객체안에 또 다른 객체를 포함시킬 수 있음
+	email: string
+	password: string
+	gender: string
+	profile_info: ProfileInfo
 }
 
-interface CardProps {//Card 컴포넌트: 공통된 스타일이 적용된 박스를 만들어 그 안에 어떤 내용이든 넣을 수 있도록 함, 
-	children: React.ReactNode //card틀에 들어갈 내용 React.ReactNode로 대부분의 요소를 렌더링가능
-	className?: string // className : 스타일 지정 , ?: props를 반드시 전달하지 않아도됨 전달이 안될 시 기본값을 사용하게 됨, string: 문자열로 지정 
+interface CardProps {
+	children: React.ReactNode
+	className?: string
 }
 
-interface OptionType { //여러 컴포넌트에서 사용할 수 있는 선택옵션, value: 서버에 전송할 값, label 사용자에게 보여질 값
+interface OptionType {
 	value: string
 	label: string
 }
 
-const Card: React.FC<CardProps> = ({ children, className = "" }) => ( //card 구현 Card는 함수형컴포넌트 받는 <props>의 요소중 children, className을 추출 
-	<div
-		className={`max-w-2xl w-full text-center p-10 bg-white rounded-xl border border-gray-200 shadow-xl ${className}`}  //스타일 지정, className에 max-w....를 전달(문자열 포매팅)
-	>
-		{children} 
-	</div>//children 내용
+const Card: React.FC<CardProps> = ({ children, className = "" }) => (
+	<div className={`max-w-xl w-full text-center p-8 bg-white rounded-xl border border-gray-200 shadow-xl ${className}`}>
+		{children}
+	</div>
 )
 
 // 옵션 데이터
-const ageRangeOptions: OptionType[] = [ //배열로 담음 
+const ageRangeOptions: OptionType[] = [
 	{ value: "under_18", label: "18세 미만" },
 	{ value: "18_24", label: "18-24세" },
 	{ value: "25_29", label: "25-29세" },
@@ -154,34 +144,30 @@ const preferredLanguageOptions: OptionType[] = [
 	{ value: "c", label: "C" },
 	{ value: "other", label: "기타" },
 ]
-//------------------------여기까지 사용할 틀제작
 
-export default function AuthForm() { //외부?에서 이 컴포넌트를 사용할 수 있도록함 == public 같은거?
-	const router = useRouter() //페이지이동용 router가져오기
-	const { setIsAuth } = useAuth()//{}의 stisauth란 만약 useauth에 setisauth를 만족하는 키가있으면 그 키 를 꺼내어 변수로 사용함
-	const [loginData, setLoginData] = useState({ user_id: "", password: "" }) //로그인값 입력저장
-	const [error, setError] = useState<string | null>(null)//상환에 맞는에러메세지 표시
-	const [isRegistering, setIsRegistering] = useState(false)//로그인화면인지 회원가입 화면인지 구분
-	const [currentStep, setCurrentStep] = useState(1)//회원가입단계 확인
-	const [success, setSuccess] = useState(false)//회원가입 성공여부 확인
-	const [isLoading, setIsLoading] = useState(false)// 서버에 로그인 회원가입 요청중인지 여부 나타냄????
+export default function AuthForm() {
+	const router = useRouter()
+	const { setIsAuth } = useAuth()
+	const [loginData, setLoginData] = useState({ user_id: "", password: "" })
+	const [error, setError] = useState<string | null>(null)
+	const [isRegistering, setIsRegistering] = useState(false)
+	const [currentStep, setCurrentStep] = useState(1)
+	const [success, setSuccess] = useState(false)
+	const [isLoading, setIsLoading] = useState(false)
 
 	// 기본 회원가입 정보
-	//const [저장할 값 (변경할 값), set함수로 값 변경] = (구조에 맞는 틀에 저장) 아래와 같이  
-	//const [상태 값 ,상태 변경할 함수 ] = useState<인터페이스 초기값>
-	//사용자가 입력한 값을 set함수로 가져와 값을 저장,변경하겠다.
-	const [basicInfo, setBasicInfo] = useState<BasicUserInfo>({  
-		email: "",
+	const [basicInfo, setBasicInfo] = useState<BasicUserInfo>({
 		password: "",
 		user_id: "",
 		username: "",
-		full_name: "",
+		gender: "",
+		email: "",
 	})
 
 	// 개인 정보
 	const [personalInfo, setPersonalInfo] = useState({
-		age_range: "18_24" as ProfileInfo["age_range"],
-		academic_year: "freshman" as ProfileInfo["academic_year"],
+		age: "18_24" as ProfileInfo["age"],
+		grade: "freshman" as ProfileInfo["grade"],
 		major: "",
 	})
 
@@ -190,195 +176,195 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 		interests: [] as ProfileInfo["interests"],
 		learning_goals: [] as ProfileInfo["learning_goals"],
 		preferred_fields: [] as ProfileInfo["preferred_fields"],
-		programming_experience: "beginner" as ProfileInfo["programming_experience"],
-		preferred_languages: [] as ProfileInfo["preferred_languages"],
+		programming_experience_level: "beginner" as ProfileInfo["programming_experience_level"],
+		preferred_programming_language: [] as ProfileInfo["preferred_programming_language"],
 	})
 
 	const [confirmPassword, setConfirmPassword] = useState("")
 
-	// 진행률 계산(현재 회원가입 스텝을 통해 진행도 확인)
+	// 진행률 계산
 	const getProgress = () => {
 		return (currentStep / 4) * 100
 	}
 
-	// 기본 정보 입력 핸들러 회원가입
-	const handleBasicChange = (e: React.ChangeEvent<HTMLInputElement>) => { // e : 이벤트객체 input이 바뀔 때마다 발생함
-		const { name, value } = e.target // e.target은 이벤트가 발생한 요소를 가리킴 name은 input의 name속성값 value는 실제로 입력한 값
-		setBasicInfo((prev) => ({ ...prev, [name]: value })) //이전 값에서 name에 해당하는 값만 set하여 바꿈
+	// 기본 정보 입력 핸들러
+	const handleBasicChange = (e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }) => {
+		const { name, value } = "target" in e ? e.target : e
+		setBasicInfo((prev) => ({ ...prev, [name]: value }))
 
-		if (name === "password" && confirmPassword) { //만약 속성이 password인 경우에는 비밀번호 확인 값과 비교하여 일치하지않으면 
-			setError(value !== confirmPassword ? "비밀번호가 다릅니다." : null) //삼항 연산자를 통해 에러처리
+		if (name === "password" && confirmPassword) {
+			setError(value !== confirmPassword ? "비밀번호가 다릅니다." : null)
 		}
 	}
 
 	// 개인정보 입력 핸들러
-	const handlePersonalChange = (field: keyof typeof personalInfo, value: string) => { //객체의 속성 이름들만 받을 수 있도록 제한함
+	const handlePersonalChange = (field: keyof typeof personalInfo, value: string) => {
 		setPersonalInfo((prev) => ({ ...prev, [field]: value }))
 	}
 
 	// 학습정보 배열 토글 핸들러
 	const toggleLearningArrayField = (field: keyof typeof learningInfo, value: string) => {
-		if (field === "programming_experience") { //field 가 문자열 처리를해야하는 항목일 때 
-			setLearningInfo((prev) => ({ 
-				...prev, 
-				[field]: value as ProfileInfo["programming_experience"] //문자열로 삽입 
+		if (field === "programming_experience_level") {
+			setLearningInfo((prev) => ({
+				...prev,
+				[field]: value as ProfileInfo["programming_experience_level"],
 			}))
 		} else {
 			setLearningInfo((prev) => {
-				const currentArray = prev[field] as string[] //현재 필드에 값이 있는지
-				const newArray = currentArray.includes(value) // value가 배열안에 있느지 
-					? currentArray.filter((item) => item !== value) //있다면 제거
-					: [...currentArray, value] //없다면 추가
+				const currentArray = prev[field] as string[]
+				const newArray = currentArray.includes(value)
+					? currentArray.filter((item) => item !== value)
+					: [...currentArray, value]
 
-				return { ...prev, [field]: newArray }//새로만든 new array로 값을 업데이트
+				return { ...prev, [field]: newArray }
 			})
 		}
 	}
 
 	// 비밀번호 확인 핸들러
-	const handleConfirmPassword = (value: string) => { //문자열 값을 받고 
-		setConfirmPassword(value)	//비번을 저장
-		setError(value !== basicInfo.password ? "비밀번호가 다릅니다." : null) //확인 비밀번호와 사용자가 입력한 비밀번호 비교
+	const handleConfirmPassword = (value: string) => {
+		setConfirmPassword(value)
+		setError(value !== basicInfo.password ? "비밀번호가 다릅니다." : null)
 	}
 
 	// 다음 단계
 	const handleNextStep = () => {
-		setError(null)	//에러 메세지 초기화
+		setError(null)
 
-		if (currentStep === 1) { // 1단계인지 확인 if문을 이용하여 true가 아닌 값들이 있는경우에러 문구와함께 되돌아감
-			if (!basicInfo.user_id || !basicInfo.username || !basicInfo.full_name || !basicInfo.email || !basicInfo.password || !confirmPassword) {
+		if (currentStep === 1) {
+			if (!basicInfo.user_id || !basicInfo.username || !basicInfo.email || !basicInfo.password || !confirmPassword) {
 				setError("모든 필드를 입력해주세요.")
 				return
 			}
-			if (basicInfo.password !== confirmPassword) { //입력한 비밀번호와 이전에 입력한 확인용 비밀번호가 다른경우 에러문구와함께 되돌아감
+			if (basicInfo.password !== confirmPassword) {
 				setError("비밀번호가 일치하지 않습니다.")
 				return
 			}
 		}
 
-		setCurrentStep((prev) => prev + 1) //if문에 해당하지않고 진행된 경우 단계+1
+		setCurrentStep((prev) => prev + 1)
 	}
 
 	// 이전 단계
-	const handlePrevStep = () => { //현재단계 -1 (이전으로)
+	const handlePrevStep = () => {
 		setCurrentStep((prev) => prev - 1)
 	}
 
 	// 건너뛰기
-	const handleSkip = () => { //넘어가기
+	const handleSkip = () => {
 		setCurrentStep((prev) => prev + 1)
-		// console.log(currentStep)//디버깅용?
-		if (currentStep === 3) { //만약 현재 단계가 2->3단계인경우 넘어가기 눌렀을때가 2단계였던 경우 
-			handleRegister() //handleRegister함수 실행
+		// console.log(currentStep)
+		if (currentStep === 3) {
+			handleRegister()
 		}
 	}
 
 	// 회원가입 완료 - 새로운 확장된 API 사용
-	const handleRegister = async () => { //비동기함수선언 서버에 데이터를 보내고 응답을 기다리는 작업을 처리하기위한 함수=> 순서대로 코드를 진행하기 위해
-		setError(null)//에러문구 초기화
-		setIsLoading(true)//로딩중인 것을 ture
+	const handleRegister = async () => {
+		setError(null)
+		setIsLoading(true)
 
-		try { //try catch 구문 오류시 catch로
+		try {
 			// 전체 프로필 정보 구성
-			const completeProfileInfo: ProfileInfo = { // 한 명의 프로파일 즉 사용자가 입력한 개인정보, 공부정보를 합쳐서 정보를 만듬
-				...personalInfo, //개인정보
-				...learningInfo, //학습정보
+			const completeProfileInfo: ProfileInfo = {
+				...personalInfo,
+				...learningInfo,
 			}
 
 			// 확장된 회원가입 요청 데이터
-			const registerData: ExtendedUserRegisterRequest = { //아이디 비번 이름을 합쳐서 만듬
-				...basicInfo, //기본정보
+			const registerData: ExtendedUserRegisterRequest = {
+				...basicInfo,
 				profile_info: completeProfileInfo,
 			}
 
-			console.log("Complete registration data:", registerData) //디버깅
+			console.log("Complete registration data:", registerData)
 
 			// 새로운 확장된 회원가입 API 호출
-			const response = await auth_api.registerExtended(registerData)//서버응답을 기다림
+			const response = await auth_api.registerExtended(registerData)
 
 			console.log("Registration successful:", response)
 
 			setSuccess(true)
-			setCurrentStep(4)//단계 바꾸기
+			setCurrentStep(4)
 
 			// 회원가입 성공 후 자동으로 개인화 추천 생성
-			try {
-				await auth_api.refreshRecommendations() //추천하는 코드
-				console.log("Personalized recommendations generated successfully")
-			} catch (recommendationError) { 
-				console.warn("Failed to generate initial recommendations:", recommendationError)
-				// 추천 생성 실패는 회원가입 성공에 영향을 주지 않음
-			}
-		} catch (err: unknown) { //오류발견시 
+			// try {
+			// 	await auth_api.refreshRecommendations()
+			// 	console.log("Personalized recommendations generated successfully")
+			// } catch (recommendationError) {
+			// 	console.warn("Failed to generate initial recommendations:", recommendationError)
+			// 	// 추천 생성 실패는 회원가입 성공에 영향을 주지 않음
+			// }
+		} catch (err: unknown) {
 			console.error("회원가입 실패:", err)
 			const errorMessage = err instanceof Error ? err.message : "회원가입에 실패했습니다. 다시 시도해주세요."
-			setError(errorMessage) //에러메세지 초기화 후 표시
+			setError(errorMessage)
 		} finally {
-			setIsLoading(false) //로딩끝
+			setIsLoading(false)
 		}
 	}
 
 	// 로그인 관련 핸들러들
-	const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => { //입력 값에 따른 이벤트 갱신
-		setLoginData({ ...loginData, [e.target.name]: e.target.value }) //필드에 들어온 값을 바꿈
+	const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setLoginData({ ...loginData, [e.target.name]: e.target.value })
 	}
 
-	const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => { //입력 값에 따른 이벤트 갱신
+	const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
-		setError(null) //에러문자초기화
-		setIsLoading(true)//로딩시작
+		setError(null)
+		setIsLoading(true)
 
 		try {
-			const response = await auth_api.login(loginData.user_id, loginData.password)//아디 비번으로 로그인
+			const response = await auth_api.login(loginData.user_id, loginData.password)
 			console.log("Login successful:", response)
 
-			setIsAuth(true)//로그인 성공?
-			router.push("/")//라우터 이동
-		} catch (err: unknown) { //오류발생시
-			console.error("로그인 실패:", err) //콘솔 에러 표시
+			setIsAuth(true)
+			router.push("/")
+		} catch (err: unknown) {
+			console.error("로그인 실패:", err)
 			const errorMessage = err instanceof Error ? err.message : "아이디 또는 비밀번호를 확인해주세요."
-			setError(errorMessage) //에러문구 설정 및 출력
+			setError(errorMessage)
 		} finally {
-			setIsLoading(false) //로딩끝
+			setIsLoading(false)
 		}
 	}
 
 	// 회원가입 완료 후 로그인 페이지로
-	const handleCompleteRegistration = () => { //함수선언
-		setIsRegistering(false) //회원가입끝?
-		setCurrentStep(1)	//단계 1로
-		setBasicInfo({ //기본정보 초기화
+	const handleCompleteRegistration = () => {
+		setIsRegistering(false)
+		setCurrentStep(1)
+		setBasicInfo({
 			email: "",
 			password: "",
 			user_id: "",
 			username: "",
-			full_name: "",
+			gender: "",
 		})
-		setPersonalInfo({ //기본값 초기화
-			age_range: "18_24",
-			academic_year: "freshman",
+		setPersonalInfo({
+			age: "18_24",
+			grade: "freshman",
 			major: "",
 		})
-		setLearningInfo({ //기본값 초기화
+		setLearningInfo({
 			interests: [],
 			learning_goals: [],
 			preferred_fields: [],
-			programming_experience: "beginner",
-			preferred_languages: [],
+			programming_experience_level: "beginner",
+			preferred_programming_language: [],
 		})
 		setConfirmPassword("")
 		setSuccess(false)
 	}
 
-	return ( //로그인 회원가입 사용자에게ㅐ 보여질 UI
-		<div className="w-full min-h-screen flex flex-col items-center justify-center bg-cover bg-center bg-[url('/bg.jpg')]">
+	return (
+		<div className="w-full min-h-screen flex flex-col items-center justify-center bg-cover bg-center bg-mygreen">
 			{/* 헤더 */}
-			<header className="absolute top-0 left-0 p-4">
-				<Image src="/APROFI-logo.png" alt="APROFI Logo" width={160} height={40} priority />
+			<header className="text-white absolute top-0 left-0 p-4">
+				<Image src="/APROFI-logo.png" alt="APROFI Logo" width={120} height={30} priority />
 			</header>
 
 			{/* 본문 섹션 */}
-			<section className="flex items-center justify-center w-full px-6">
+			<section className="flex items-center justify-center w-full px-10 pt-10">
 				<Card>
 					{!isRegistering ? (
 						// 로그인 폼
@@ -386,7 +372,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 							<h2 className="text-3xl font-bold mb-8">LOGIN</h2>
 							<form onSubmit={handleLogin} className="flex flex-col">
 								<div>
-									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 										<input
 											className="w-full bg-transparent outline-none"
 											type="text"
@@ -399,7 +385,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 										/>
 										<FontAwesomeIcon icon={faUser} className="text-lg w-5 h-5" />
 									</div>
-									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+									<div className="flex items-center w-full p-4 mb-4 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 										<input
 											className="w-full bg-transparent outline-none"
 											type="password"
@@ -417,7 +403,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 								<button
 									type="submit"
 									disabled={isLoading}
-									className="w-full p-3 mb-4 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+									className="w-full p-3 mb-4 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
 								>
 									{isLoading ? "로그인 중..." : "로그인"}
 								</button>
@@ -425,7 +411,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 									type="button"
 									onClick={() => setIsRegistering(true)}
 									disabled={isLoading}
-									className="w-full p-3 text-emerald-600 font-semibold rounded-md border border-gray-300 hover:border-emerald-700 disabled:text-gray-400 disabled:border-gray-200 transition-colors"
+									className="w-full p-3 text-mygreen font-semibold rounded-md border border-gray-300 hover:border-mygreen disabled:text-gray-400 disabled:border-gray-200 transition-colors"
 								>
 									회원가입
 								</button>
@@ -436,7 +422,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 						<div className="text-center py-8">
 							<div className="mb-6">
 								<div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-									<FontAwesomeIcon icon={faCheck} className="w-10 h-10 text-emerald-600" />
+									<FontAwesomeIcon icon={faCheck} className="w-10 h-10 text-mygreen" />
 								</div>
 							</div>
 							<h3 className="text-2xl font-bold text-gray-900 mb-4">🎉 회원가입 완료!</h3>
@@ -445,7 +431,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 
 							<div className="bg-emerald-50 rounded-lg p-4 mb-6">
 								<h4 className="font-semibold text-emerald-800 mb-2">🚀 시작할 준비 완료</h4>
-								<ul className="text-sm text-emerald-700 text-left space-y-1">
+								<ul className="text-sm text-mygreen text-left space-y-1">
 									<li>• 맞춤형 문제 추천 시스템 활성화</li>
 									<li>• 개인화된 학습 경로 생성</li>
 									<li>• 실시간 학습 분석 및 피드백</li>
@@ -455,7 +441,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 
 							<button
 								onClick={handleCompleteRegistration}
-								className="w-full p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 transition-colors"
+								className="w-full p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen transition-colors"
 							>
 								로그인 하러 가기
 							</button>
@@ -471,7 +457,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 								</div>
 								<div className="w-full bg-gray-200 rounded-full h-2">
 									<div
-										className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
+										className="bg-gradient-to-r from-mygreen to-mygreen h-2 rounded-full transition-all duration-300"
 										style={{ width: `${getProgress()}%` }}
 									></div>
 								</div>
@@ -483,8 +469,9 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 									<h2 className="text-3xl font-bold mb-2">기본 정보</h2>
 									<p className="text-gray-600 mb-8">계정 생성을 위한 기본 정보를 입력해주세요</p>
 
+									{/* user_id */}
 									<div className="flex flex-col space-y-4">
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="text"
@@ -497,7 +484,8 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										{/* username */}
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="text"
@@ -510,20 +498,36 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
-											<input
-												className="w-full bg-transparent outline-none"
-												type="text"
-												name="full_name"
-												placeholder="실명 *"
-												value={basicInfo.full_name}
-												onChange={handleBasicChange}
+										{/* gender */}
+										<div className="flex items-center w-full gap-2 px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
+											<button
+												type="button"
+												onClick={() => handleBasicChange({ name: "gender", value: "male" })}
 												disabled={isLoading}
-												required
-											/>
+												className={`flex-1 px-4 py-1 rounded-full text-center transition-all ${
+													basicInfo.gender === "male"
+														? "bg-mygreen text-white font-semibold"
+														: "bg-white text-gray-600 hover:bg-gray-50"
+												}`}
+											>
+												남성
+											</button>
+											<button
+												type="button"
+												onClick={() => handleBasicChange({ name: "gender", value: "female" })}
+												disabled={isLoading}
+												className={`flex-1 px-4 py-2 rounded-full text-center transition-all ${
+													basicInfo.gender === "female"
+														? "bg-mygreen text-white font-semibold"
+														: "bg-white text-gray-600 hover:bg-gray-50"
+												}`}
+											>
+												여성
+											</button>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										{/* email */}
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="email"
@@ -536,7 +540,8 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										{/* password */}
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="password"
@@ -549,7 +554,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 											/>
 										</div>
 
-										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-emerald-600 hover:border-emerald-600 focus-within:bg-gray-50 hover:bg-gray-50">
+										<div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
 											<input
 												className="w-full bg-transparent outline-none"
 												type="password"
@@ -568,7 +573,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 												type="button"
 												onClick={() => setIsRegistering(false)}
 												disabled={isLoading}
-												className="flex-1 p-3 text-emerald-600 font-semibold rounded-md border border-gray-300 hover:border-emerald-600 disabled:text-gray-400 disabled:border-gray-200 transition-colors"
+												className="flex-1 p-3 text-mygreen font-semibold rounded-md border border-gray-300 hover:border-mygreen disabled:text-gray-400 disabled:border-gray-200 transition-colors"
 											>
 												로그인하기
 											</button>
@@ -576,7 +581,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 												type="button"
 												onClick={handleNextStep}
 												disabled={isLoading}
-												className="flex-1 p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 transition-colors flex items-center justify-center"
+												className="flex-1 p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 transition-colors flex items-center justify-center"
 											>
 												다음 <FontAwesomeIcon icon={faChevronRight} className="ml-2 w-4 h-4" />
 											</button>
@@ -602,12 +607,12 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => handlePersonalChange("age_range", option.value)}
+														onClick={() => handlePersonalChange("age", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															personalInfo.age_range === option.value
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															personalInfo.age === option.value
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -626,12 +631,12 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => handlePersonalChange("academic_year", option.value)}
+														onClick={() => handlePersonalChange("grade", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															personalInfo.academic_year === option.value
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															personalInfo.grade === option.value
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -649,7 +654,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 												onChange={(e) => handlePersonalChange("major", e.target.value)}
 												placeholder="예: 컴퓨터공학과"
 												disabled={isLoading}
-												className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:border-emerald-600 focus:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+												className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:border-mygreen focus:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 											/>
 										</div>
 
@@ -674,7 +679,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 												type="button"
 												onClick={handleNextStep}
 												disabled={isLoading}
-												className="flex-1 p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 transition-colors flex items-center justify-center"
+												className="flex-1 p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 transition-colors flex items-center justify-center"
 											>
 												다음 <FontAwesomeIcon icon={faChevronRight} className="ml-2 w-4 h-4" />
 											</button>
@@ -702,8 +707,8 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
 															learningInfo.interests.includes(option.value as ProfileInfo["interests"][number])
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -723,9 +728,11 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 														onClick={() => toggleLearningArrayField("learning_goals", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.learning_goals.includes(option.value as ProfileInfo["learning_goals"][number])
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															learningInfo.learning_goals.includes(
+																option.value as ProfileInfo["learning_goals"][number]
+															)
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -745,9 +752,11 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 														onClick={() => toggleLearningArrayField("preferred_fields", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.preferred_fields.includes(option.value as ProfileInfo["preferred_fields"][number])
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															learningInfo.preferred_fields.includes(
+																option.value as ProfileInfo["preferred_fields"][number]
+															)
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -766,12 +775,12 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => toggleLearningArrayField("programming_experience", option.value)}
+														onClick={() => toggleLearningArrayField("programming_experience_level", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-sm rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.programming_experience === option.value
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															learningInfo.programming_experience_level === option.value
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -790,12 +799,14 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 													<button
 														key={option.value}
 														type="button"
-														onClick={() => toggleLearningArrayField("preferred_languages", option.value)}
+														onClick={() => toggleLearningArrayField("preferred_programming_language", option.value)}
 														disabled={isLoading}
 														className={`p-2 text-xs rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-															learningInfo.preferred_languages.includes(option.value as ProfileInfo["preferred_languages"][number])
-																? "bg-emerald-600 text-white border-emerald-600"
-																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-600"
+															learningInfo.preferred_programming_language.includes(
+																option.value as ProfileInfo["preferred_programming_language"][number]
+															)
+																? "bg-mygreen text-white border-mygreen"
+																: "bg-gray-50 text-gray-700 border-gray-200 hover:border-mygreen"
 														}`}
 													>
 														{option.label}
@@ -828,7 +839,7 @@ export default function AuthForm() { //외부?에서 이 컴포넌트를 사용�
 											type="button"
 											onClick={handleRegister}
 											disabled={isLoading}
-											className="flex-1 p-3 text-white font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 transition-colors"
+											className="flex-1 p-3 text-white font-semibold rounded-md bg-mygreen hover:bg-mygreen disabled:bg-gray-400 transition-colors"
 										>
 											{isLoading ? "가입 중..." : "가입 완료"}
 										</button>
