@@ -1,9 +1,7 @@
-import { ReferenceCode, languageDisplayNames } from "@/hooks/useProblemForm";
-import dynamic from "next/dynamic";
+import { ReferenceCode, languageDisplayNames, ProblemType } from "@/hooks/useProblemForm"
+import dynamic from "next/dynamic"
 
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
-	ssr: false,
-});
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
 interface ReferenceCodeEditorProps {
 	referenceCodes: ReferenceCode[]
@@ -14,6 +12,10 @@ interface ReferenceCodeEditorProps {
 	updateReferenceCodeLanguage: (index: number, language: ReferenceCode["language"]) => void
 	updateReferenceCode: (index: number, code: string) => void
 	setMainReferenceCode: (index: number) => void
+	// 디버깅용 베이스 코드 기능
+	problemType: ProblemType
+	baseCode: string
+	onSetBaseCode: (code: string) => void
 }
 
 export default function ReferenceCodeEditor({
@@ -23,8 +25,11 @@ export default function ReferenceCodeEditor({
 	addReferenceCode,
 	removeReferenceCode,
 	updateReferenceCodeLanguage,
-	updateReferenceCode,	
+	updateReferenceCode,
 	setMainReferenceCode,
+	problemType,
+	baseCode,
+	onSetBaseCode,
 }: ReferenceCodeEditorProps) {
 	return (
 		<div className="w-1/2 flex flex-col">
@@ -37,43 +42,47 @@ export default function ReferenceCodeEditor({
 					+ 코드 추가
 				</button>
 			</div>
-			<div className="border-b-2 border-black my-2"></div>
+			<div className="border-b-2 border-black my-2" />
 
 			{/* 코드 탭 */}
 			<div className="flex gap-1 mb-2 overflow-x-auto">
-				{referenceCodes.map((refCode, index) => (
-					<div key={index} className="flex items-center shrink-0">
-						<div
-							className={`px-2 py-1 rounded-t-md text-xs flex items-center gap-2 ${
-								activeCodeTab === index ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
-							}`}
-						>
-							<button onClick={() => setActiveCodeTab(index)} className="flex items-center gap-2">
-								{languageDisplayNames[refCode.language]}
-							</button>
-							{referenceCodes.length > 1 && (
-								<button
-									onClick={() => removeReferenceCode(index)}
-									className={`text-xs hover:bg-opacity-20 hover:bg-white rounded px-1 ${
-										activeCodeTab === index ? "text-white" : "text-gray-600"
+				{referenceCodes.map((refCode, index) => {
+					const isBase = problemType === "디버깅" && refCode.code === baseCode
+					const isActive = activeCodeTab === index
+					return (
+						<div key={index} className="flex items-center shrink-0">
+							<div
+								className={`px-2 py-1 rounded-t-md text-xs flex items-center gap-2 cursor-pointer
+                  ${
+										isBase
+											? "bg-yellow-300 text-black"
+											: isActive
+											? "bg-blue-500 text-white"
+											: "bg-gray-200 hover:bg-gray-300"
 									}`}
-								>
-									×
-								</button>
-							)}
+								onClick={() => setActiveCodeTab(index)}
+							>
+								{languageDisplayNames[refCode.language]}
+								{referenceCodes.length > 1 && problemType !== "디버깅" && (
+									<button
+										onClick={() => removeReferenceCode(index)}
+										className={`ml-1 text-xs rounded px-1 ${isActive ? "text-white" : "text-gray-600"}`}
+									>
+										×
+									</button>
+								)}
+							</div>
 						</div>
-					</div>
-				))}
+					)
+				})}
 			</div>
 
-			{/* 현재 활성 코드의 설정 */}
+			{/* 코드 설정 영역 */}
 			{referenceCodes[activeCodeTab] && (
 				<div className="flex items-center gap-2 mb-2">
 					<select
 						value={referenceCodes[activeCodeTab].language}
-						onChange={(e) =>
-							updateReferenceCodeLanguage(activeCodeTab, e.target.value as ReferenceCode["language"])
-						}
+						onChange={(e) => updateReferenceCodeLanguage(activeCodeTab, e.target.value as ReferenceCode["language"])}
 						className="border rounded-md p-1 text-xs"
 					>
 						<option value="python">Python</option>
@@ -83,13 +92,22 @@ export default function ReferenceCodeEditor({
 						<option value="javascript">JavaScript</option>
 					</select>
 
-					{!referenceCodes[activeCodeTab].is_main && (
+					{problemType === "디버깅" ? (
 						<button
-							onClick={() => setMainReferenceCode(activeCodeTab)}
-							className="bg-yellow-500 text-white px-2 py-1 rounded-md text-xs hover:bg-yellow-600"
+							onClick={() => onSetBaseCode(referenceCodes[activeCodeTab].code)}
+							className="bg-yellow-500 text-white px-2 py-1 rounded-md hover:bg-yellow-600 text-xs"
 						>
-							메인으로 설정
+							베이스 코드로 지정
 						</button>
+					) : (
+						!referenceCodes[activeCodeTab].is_main && (
+							<button
+								onClick={() => setMainReferenceCode(activeCodeTab)}
+								className="bg-yellow-500 text-white px-2 py-1 rounded-md hover:bg-yellow-600 text-xs"
+							>
+								메인으로 설정
+							</button>
+						)
 					)}
 				</div>
 			)}
@@ -100,9 +118,7 @@ export default function ReferenceCodeEditor({
 					<MonacoEditor
 						height="100%"
 						width="100%"
-						language={
-							referenceCodes[activeCodeTab].language === "cpp" ? "cpp" : referenceCodes[activeCodeTab].language
-						}
+						language={referenceCodes[activeCodeTab].language === "cpp" ? "cpp" : referenceCodes[activeCodeTab].language}
 						value={referenceCodes[activeCodeTab].code}
 						onChange={(value) => updateReferenceCode(activeCodeTab, value ?? "")}
 						options={{
@@ -125,4 +141,4 @@ export default function ReferenceCodeEditor({
 			</div>
 		</div>
 	)
-} 
+}

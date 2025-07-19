@@ -300,7 +300,8 @@ export interface CodingProblem extends ProblemBase {
 // 객관식
 export interface MultipleChoiceProblem extends ProblemBase {
 	problemType: "객관식"
-	choices: string[]
+	options: string[]
+	rating_mode: "None"
 	correct_answers: number[]
 }
 
@@ -309,11 +310,14 @@ export interface ShortAnswerProblem extends ProblemBase {
 	problemType: "단답형"
 	rating_mode: RatingMode
 	answer_text: string[]
+	grading_criteria: string[]
 }
 
 // 주관식
 export interface SubjectiveProblem extends ProblemBase {
 	problemType: "주관식"
+	rating_mode: "active" | "deactive"
+	grading_criteria: string[]
 }
 
 // —————————————— Update Request 타입들 ——————————————
@@ -347,6 +351,7 @@ export type ShortAnswerProblemUpdateRequest = {
 	tags: string[]
 	answer_texts: string[]
 	problemType: "단답형"
+	grading_criteria: string[]
 }
 
 export type SubjectiveProblemUpdateRequest = {
@@ -356,6 +361,7 @@ export type SubjectiveProblemUpdateRequest = {
 	rating_mode: RatingMode // active|deactive
 	tags: string[]
 	problemType: "주관식"
+	grading_criteria: string[]
 }
 
 // 전체 리턴 타입 (discriminated union)
@@ -380,9 +386,10 @@ export const problem_api = {
 		problem_condition: string[],
 		reference_codes: ReferenceCodeRequest[],
 		test_cases: TestCaseRequest[],
-		problemType: "코딩" | "디버깅"
+		problemType: "코딩" | "디버깅",
+		base_code?: string // 디버깅 문제일 때만 제공
 	) {
-		const body = {
+		const body: any = {
 			title,
 			description,
 			difficulty,
@@ -393,6 +400,10 @@ export const problem_api = {
 			reference_codes,
 			test_cases,
 		}
+		if (problemType === "디버깅") {
+			body.base_code = base_code || ""
+		}
+
 		const res = await fetchWithAuth("/api/proxy/problems", {
 			method: "POST",
 			credentials: "include",
@@ -448,7 +459,8 @@ export const problem_api = {
 		difficulty: string,
 		rating_mode: "exact" | "partial" | "soft" | "none",
 		tags: string[],
-		answer_text: string[]
+		answer_text: string[],
+		grading_criteria: string[] // 👻 AI 채점 기준 텍스트 배열
 	) {
 		const body = {
 			title,
@@ -458,6 +470,7 @@ export const problem_api = {
 			tags,
 			problemType: "단답형",
 			answer_text,
+			grading_criteria,
 		}
 		const res = await fetchWithAuth("/api/proxy/problems", {
 			method: "POST",
@@ -480,7 +493,8 @@ export const problem_api = {
 		description: string,
 		difficulty: string,
 		rating_mode: "active" | "deactive",
-		tags: string[]
+		tags: string[],
+		grading_criteria: string[] // 👻 AI 채점 기준 텍스트 배열
 	) {
 		const body = {
 			title,
@@ -489,6 +503,7 @@ export const problem_api = {
 			rating_mode,
 			tags,
 			problemType: "주관식",
+			grading_criteria,
 		}
 		const res = await fetchWithAuth("/api/proxy/problems", {
 			method: "POST",

@@ -16,8 +16,9 @@ import ReactMde from "react-mde"
 import "react-mde/lib/styles/css/react-mde-all.css"
 import ReactMarkdown from "react-markdown"
 
-// 문제 유형 옵션
-const PROBLEM_TYPES = [
+// 문제 유형
+type ProblemType = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
+const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
 	{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
 	{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
 	{ value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
@@ -30,11 +31,18 @@ export default function NewRegisteredProblem() {
 	const [description, setDescription] = useState("")
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write")
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([])
+	const [baseCode, setBaseCode] = useState<string>("")
 
 	// 문제 유형 및 배점 추가
-	type ProblemType = "코딩" | "디버깅" | "객관식" | "주관식" | "단답형"
 	const [problemType, setProblemType] = useState<ProblemType>("코딩")
 	const [problemScore, setProblemScore] = useState<number>(10)
+	// 객관식 옵션과 정답 관리
+	const [options, setOptions] = useState<string[]>([])
+	const [correctAnswers, setCorrectAnswers] = useState<number[]>([])
+
+	// 단답형, 주관식 정답과 채점 기준
+	const [answerTexts, setAnswerTexts] = useState<string[]>([])
+	const [gradingCriteria, setGradingCriteria] = useState<string[]>([])
 
 	const {
 		title,
@@ -121,7 +129,7 @@ export default function NewRegisteredProblem() {
 				return
 			}
 
-			const passedCount = result.results.filter((r) => r.passed).length
+			const passedCount = result.results.filter((r: any) => r.passed).length
 			const totalCount = result.results.length
 
 			if (passedCount === totalCount) {
@@ -132,7 +140,7 @@ export default function NewRegisteredProblem() {
 				alert(`❌ 일부 테스트케이스 실패\n성공: ${passedCount}/${totalCount}`)
 			}
 
-			setTestResults(result.results.map((r) => r.passed))
+			setTestResults(result.results.map((r: any) => r.passed))
 		} catch (error) {
 			console.error("테스트케이스 실행 실패:", error)
 			alert("테스트케이스 실행 중 오류가 발생했습니다.")
@@ -148,26 +156,59 @@ export default function NewRegisteredProblem() {
 		const content = editor.getHTML()
 		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
 
+		// const filteredConditions = conditions.filter((c) => c.trim() !== "")
+
 		try {
-			// 문제 유형과 배점을 추가하여 API 호출
-			await problem_api.problem_create(
-				title,
-				description,
-				difficulty,
-				ratingMode,
-				tags,
-				filteredConditions,
-				referenceCodes,
-				testCases,
-				problemType, // 문제 유형 추가
-				problemScore // 배점 추가
-			)
+			if (problemType === "코딩" || problemType === "디버깅") {
+				// 기존과 동일, baseCode도 함께 전달
+				await problem_api.problem_create(
+					title,
+					description,
+					difficulty,
+					ratingMode,
+					tags,
+					filteredConditions,
+					referenceCodes,
+					testCases,
+					problemType,
+					baseCode // 디버깅일 땐 이 값이 body.base_code 로 들어갑니다
+				)
+			} else if (problemType === "객관식") {
+				// PROBLEM_TYPES 에서 options, correctAnswers 훑어 오실 거라 가정
+				await problem_api.problem_create_multiple_choice(
+					title,
+					description,
+					difficulty,
+					tags,
+					options, // 추가하신 옵션 리스트
+					correctAnswers // 정답 인덱스 배열
+				)
+			} else if (problemType === "단답형") {
+				await problem_api.problem_create_short_answer(
+					title,
+					description,
+					difficulty,
+					ratingMode as "exact" | "partial" | "soft" | "none",
+					tags,
+					answerTexts, // TEXT[] 형식의 정답들
+					gradingCriteria
+				)
+			} else if (problemType === "주관식") {
+				await problem_api.problem_create_subjective(
+					title,
+					description,
+					difficulty,
+					ratingMode as "active" | "deactive",
+					tags,
+					gradingCriteria
+				)
+			}
+
 			alert("문제가 성공적으로 등록되었습니다.")
-			// 성공 시 드래프트 삭제
 			localStorage.removeItem("problemDraft")
 			router.push("/registered-problems")
-		} catch (error) {
-			console.error("문제 등록 실패:", error)
+		} catch (err) {
+			console.error("문제 등록 실패:", err)
 			alert("문제 등록 중 오류가 발생했습니다.")
 		}
 	}
@@ -226,9 +267,9 @@ export default function NewRegisteredProblem() {
 								{PROBLEM_TYPES.map((type) => (
 									<button
 										key={type.value}
-										onClick={() => setProblemType(type.value)}
+										onClick={() => setProblemType(type.value as ProblemType)}
 										className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-											problemType === type.value
+											problemType === (type.value as ProblemType)
 												? `${type.color} font-medium`
 												: "bg-gray-100 text-gray-700 hover:bg-gray-200"
 										}`}
@@ -393,6 +434,9 @@ export default function NewRegisteredProblem() {
 					updateReferenceCodeLanguage={updateReferenceCodeLanguage}
 					updateReferenceCode={updateReferenceCode}
 					setMainReferenceCode={setMainReferenceCode}
+					problemType={problemType}
+					baseCode={baseCode}
+					onSetBaseCode={setBaseCode}
 				/>
 			</div>
 
