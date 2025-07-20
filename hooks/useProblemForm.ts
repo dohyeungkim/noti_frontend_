@@ -31,7 +31,9 @@ export const languageDisplayNames = {
 export function useProblemForm() {
 	const [title, setTitle] = useState("")
 	const [difficulty, setDifficulty] = useState("easy")
-	const [ratingMode, setRatingMode] = useState<"Hard" | "Space" | "Regex" | "None">("Hard")
+	const [ratingMode, setRatingMode] = useState<
+		"Hard" | "Space" | "Regex" | "None" | "exact" | "partial" | "soft" | "active" | "deactive"
+	>("Hard")
 	const [tags, setTags] = useState<string[]>([])
 	const [conditions, setConditions] = useState([""])
 	const [referenceCodes, setReferenceCodes] = useState<ReferenceCode[]>([
@@ -45,7 +47,7 @@ export function useProblemForm() {
 		(data: {
 			title?: string
 			difficulty?: string
-			ratingMode?: "Hard" | "Space" | "Regex" | "None"
+			ratingMode?: "Hard" | "Space" | "Regex" | "None" | "exact" | "partial" | "soft" | "active" | "deactive"
 			tags?: string[]
 			conditions?: string[]
 			referenceCodes?: ReferenceCode[]

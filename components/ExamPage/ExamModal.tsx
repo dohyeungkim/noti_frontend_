@@ -29,19 +29,24 @@ export default function WorkBookCreateModal({
 	setRefresh,
 	group_id,
 }: WorkBookCreateModalProps) {
+	const formatForDatetimeLocal = (d: Date) => {
+		// timezone offset(ms) 빼서 로컬 기준 ISO 문자열로 변환
+		const tzoffset = d.getTimezoneOffset() * 60000
+		return new Date(d.getTime() - tzoffset).toISOString().slice(0, 16)
+	}
 	const [isLoading, setIsLoading] = useState(false)
 	const [isConfirming, setIsConfirming] = useState(false)
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
 	// 시험모드 관련 상태 (UI 구현용)
 	const [isExamMode, setIsExamMode] = useState(false)
-	const [publication_start_time, setPublicationStartDate] = useState<string>(new Date().toISOString().slice(0, 16))
+	const [publication_start_time, setPublicationStartDate] = useState<string>(formatForDatetimeLocal(new Date()))
 	const [publication_end_time, setPublicationEndDate] = useState<string>(
-		new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16) // 7일 후
+		formatForDatetimeLocal(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
 	)
-	const [test_start_time, setSubmitStartDate] = useState<string>(new Date().toISOString().slice(0, 16))
+	const [test_start_time, setSubmitStartDate] = useState<string>(formatForDatetimeLocal(new Date()))
 	const [test_end_time, setSubmitEndDate] = useState<string>(
-		new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16) // 1일 후
+		formatForDatetimeLocal(new Date(Date.now() + 24 * 60 * 60 * 1000))
 	)
 
 	const handleCreateWorkbook = async () => {
@@ -105,7 +110,6 @@ export default function WorkBookCreateModal({
 				test_end_time,
 				publication_start_time,
 				publication_end_time
-				// workbook_total_points
 			)
 
 			// 시험모드 설정 정보 (백엔드 연동 없이 UI만 구현)

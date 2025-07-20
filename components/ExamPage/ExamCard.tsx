@@ -1,5 +1,7 @@
 "use client"
 
+import { useMemo } from "react"
+
 interface ExamCardProps {
 	workbook: {
 		workbook_id: number
@@ -8,25 +10,42 @@ interface ExamCardProps {
 		problem_cnt: number
 		description: string
 		creation_date: string
+		// 시험모드 관련
+		is_test_mode: boolean
+		test_start_time: string
+		test_end_time: string
+		publication_start_time: string
+		publication_end_time: string
 		workbook_total_points: number
 	}
-	exam?: {
-		examId: string
-		startTime: string
-		endTime: string
-	} | null
 	onClick: () => void
 	isGroupOwner: boolean
 }
 
 export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardProps) {
+	// 날짜 문자열을 Date 객체로 변환
+	const pubStart = useMemo(() => new Date(workbook.publication_start_time), [workbook.publication_start_time])
+	const pubEnd = useMemo(() => new Date(workbook.publication_end_time), [workbook.publication_end_time])
+	const testStart = useMemo(() => new Date(workbook.test_start_time), [workbook.test_start_time])
+	const testEnd = useMemo(() => new Date(workbook.test_end_time), [workbook.test_end_time])
+	const now = useMemo(() => new Date(), [])
+
+	// 조건 정의
+	const inPublication = now >= pubStart && now <= pubEnd // 현재 시간이 게시기간 내에 있는지
+	const inTestPeriod = now >= testStart && now <= testEnd // 현재 시간이 제출기간 내에 있는지
+	// 👻 백엔드 구현 완료 후 주석 풀고 아래 코드 사용하기 (지금은 시험모드 정보가 없어서 그룹장인지로만 확인) -> 시험모드이고 교수자일 때만 시험 관련 정보 랜더링
+	// const showTestBanner = workbook.is_test_mode && inPublication && isGroupOwner
+	const showTestBanner = isGroupOwner
+	const showScoreBanner = !isGroupOwner && inPublication && !inTestPeriod
+
+	// 👻 백엔드 구현 후 버튼 디자인 구상 ~
+	//   시험모드아님 => 문제풀기  *  시험모드+시험기간아님+게시기간+그룹장아님=> 결과 보러가기  *  시험모드+시험기간+그룹장아님=> 시험 보러가기
+	const isExamButton = !workbook.is_test_mode || inTestPeriod
+
 	return (
 		<div
 			onClick={onClick}
-			className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer 
-                shadow-md transition-all duration-300 ease-in-out 
-                hover:-translate-y-1 hover:shadow-xl transform-gpu 
-                flex flex-col justify-between h-full"
+			className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer shadow-md transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl transform-gpu flex flex-col justify-between h-full"
 		>
 			{/* 문제지 제목 */}
 			<div>
@@ -35,7 +54,7 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 				</h2>
 			</div>
 
-			{/* 문제지 정보 - 문제지 설명 + 문제 수 <- 일반학생만 보이게*/}
+			{/* 설명 + 문제 수 */}
 			<div>
 				<p
 					title={workbook.description}
@@ -43,41 +62,36 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 				>
 					{workbook.description}
 				</p>
-				<p className="mb-2  ">📌 문제 수: {workbook.problem_cnt}개</p>
+				<p className="mb-2">📌 문제 수: {workbook.problem_cnt}개</p>
 			</div>
 
-			{/* 👻 시험모드이고, 그룹장일 때는 이 영역이 랜더링 되도록 할 것 */}
-			{isGroupOwner && (
+			{/*  =========== 시험모드 배너 (교수) =========== */}
+			{showTestBanner && (
 				<div className="bg-red-50 rounded-lg p-4 mb-4 space-y-2">
-					{/* 시험 모드 배너 */}
-					<div className="flex items-center gap-2 text-100 mb-3">
+					<div className="flex items-center gap-2 mb-3">
 						<span className="font-medium text-red-800">🎯 시험 모드</span>
 					</div>
-
-					{/* 문제지 게시 일시 */}
 					<div className="text-xs text-gray-700">
-						<span className="font-medium">📅 게시 기간:</span>
+						📅 게시 기간: {workbook.publication_start_time} ~ {workbook.publication_end_time}
 					</div>
-
-					{/* 제출 가능 기간 */}
 					<div className="text-xs text-gray-700">
-						<span className="font-medium">📝 제출 기간:</span>
+						📝 제출 기간: {workbook.test_start_time} ~ {workbook.test_end_time}
 					</div>
-
-					{/* 문제 수 */}
-					<div className="text-xs text-gray-700">
-						<p className="font-medium">📌 문제 수: {workbook.problem_cnt}개</p>
-					</div>
-
-					{/* 문제 배점 - Problem쪽에 total_points DB 필드가 있음. 이 문제지의 총 배점 나타내는 */}
-					<div className="text-xs text-gray-700">
-						<span className="font-medium">✔️ 총 배점: {workbook.workbook_total_points}</span>
-					</div>
+					<div className="text-xs text-gray-700">✔️ 총 배점: {workbook.workbook_total_points}</div>
 				</div>
 			)}
 
-			{/* ✅ 버튼 - 항상 아래에 위치 */}
-			<button className="w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80">
+			{/*  =========== 시험모드 배너 (학생) =========== */}
+			{showScoreBanner && (
+				<div className="bg-red-50 rounded-lg p-4 mb-4 space-y-2">
+					{/* 여기에 학생 체점 결과 동그라미들 뜨게 하기 */}
+				</div>
+			)}
+
+			<button
+				// disabled={!isButtonEnabled}
+				className={`w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 ${"bg-mygreen text-white hover:bg-opacity-80"}`}
+			>
 				문제지 펼치기 →
 			</button>
 		</div>

@@ -14,6 +14,7 @@ import OpenModalButton from "../ui/OpenModalButton"
 import { useAuth } from "@/stores/auth"
 import { group_api, workbook_api } from "@/lib/api"
 
+// workbook_get으로 백엔드에서 응답받아오는 데이터들
 interface WorkbookType {
 	workbook_id: number
 	group_id: number
@@ -27,6 +28,7 @@ interface WorkbookType {
 	test_end_time: any
 	publication_start_time: any
 	publication_end_time: any
+	workbook_total_points: number
 }
 
 export default function ExamsClient() {
@@ -36,7 +38,10 @@ export default function ExamsClient() {
 		groupId: string
 	}
 
-	const [workbooks, setWorkbooks] = useState<WorkbookType[]>([])
+	const [workbooks, setWorkbooks] = useState<WorkbookType[]>([]) // workbook_get으로 받은 정보가 여기 workbook에 저장됨
+	const [groupOwner, setGroupOwner] = useState<string | null>(null) // 그룹장의 유저명 저장 (해당 그룹의 그룹장 ID를 저장)
+	const isGroupOwner = userName === groupOwner // 그룹장인지 확인하는 함수
+
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [workBookName, setWorkBookName] = useState("")
 	const [workBookDescription, setWorkBookDescription] = useState("")
@@ -45,19 +50,24 @@ export default function ExamsClient() {
 	const [filteredWorkbooks, setFilteredWorkbooks] = useState<WorkbookType[]>([])
 	const [refresh, setRefresh] = useState(false)
 
-	// 그룹장의 유저명 저장 (해당 그룹의 그룹장 ID를 저장)
-	const [groupOwner, setGroupOwner] = useState<string | null>(null)
-
-	// 그룹장인지 확인하는 함수
-	const isGroupOwner = userName === groupOwner
-
-	// 문제지에 대한 모든 정보 가져오기 -> 시험모드 정보들도 가져와야됨! 👻
+	// 문제지에 대한 모든 정보 가져와서 setWorkbooks로 workbooks에 저장
 	const fetchWorkbooks = useCallback(async () => {
 		try {
 			const data = await workbook_api.workbook_get(Number(groupId))
 			setWorkbooks(data)
 		} catch (error) {
 			console.error("문제지 데이터를 가져오는 데 실패했습니다:", error)
+		}
+	}, [groupId])
+
+	// 그룹장 정보 가져오기.
+	const fetchMyOwner = useCallback(async () => {
+		try {
+			const data = await group_api.my_group_get()
+			const currentGroup = data.find((group: { group_id: number }) => group.group_id === Number(groupId))
+			setGroupOwner(currentGroup?.group_owner || null)
+		} catch (error) {
+			console.error("그룹장 불러오기 중 오류:", error)
 		}
 	}, [groupId])
 
@@ -69,17 +79,7 @@ export default function ExamsClient() {
 		router.push(`/manage/${groupId}`)
 	}
 
-	// 그룹장 정보 가져오기 (useCallback 적용)
-	const fetchMyOwner = useCallback(async () => {
-		try {
-			const data = await group_api.my_group_get()
-			const currentGroup = data.find((group: { group_id: number }) => group.group_id === Number(groupId))
-			setGroupOwner(currentGroup?.group_owner || null)
-		} catch (error) {
-			console.error("그룹장 불러오기 중 오류:", error)
-		}
-	}, [groupId])
-
+	// 최종적으로 화면에 보여줄 문제지만 필터링
 	useEffect(() => {
 		const filteredWorkbooksdata = workbooks
 			.filter((wb) => wb.group_id === Number(groupId))

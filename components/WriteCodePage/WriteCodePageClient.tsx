@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { auth_api, problem_api, code_log_api, solve_api, ai_feedback_api, run_code_api } from "@/lib/api"
 import { editor } from "monaco-editor"
 // 🔥 CHANGE 1: 새로운 PresenceIndicator import 추가
-import { PresenceIndicator } from "./PresenceIndicator"
+// import { PresenceIndicator } from "./PresenceIndicator"
 
 // Problem 타입 정의 (확장)
 interface Problem {
@@ -48,16 +48,6 @@ interface WriteCodePageClientProps {
 		groupId: string
 	}
 }
-
-// 🔥 CHANGE 2: 기존 inline PresenceIndicator 컴포넌트 제거 (삭제됨)
-// export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({ pageId, user }) => {
-//   const participantsCount = usePresence(pageId, user)
-//   return (
-//     <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-md text-sm text-gray-700 border border-gray-300">
-//       현재 접속 인원: <span className="font-semibold">{participantsCount}</span>명
-//     </div>
-//   )
-// }
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 	ssr: false,
@@ -420,9 +410,11 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 				animate={{ opacity: 1, scale: 1 }}
 				transition={{ delay: 0.2 }}
 			>
-				{/* 🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용 */}
-				{userId && userNickname && <PresenceIndicator pageId={pageId} user={currentUser} />}
-
+				{/* 👻 redis는 일단 v0에서는 생략. 추후에 추가하기 */}
+				<div>
+					{/* 🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용 */}
+					{/* {userId && userNickname && <PresenceIndicator pageId={pageId} user={currentUser} />} */}
+				</div>
 				{/* 제출 버튼 (오른쪽) */}
 				<motion.button
 					onClick={handleSubmit}

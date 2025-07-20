@@ -10,7 +10,11 @@ interface ExamGalleryProps {
 		problem_cnt: number
 		description: string
 		creation_date: string
-		is_test_mode: number
+		is_test_mode: boolean
+		test_start_time: any
+		test_end_time: any
+		publication_start_time: any
+		publication_end_time: any
 		workbook_total_points: number
 	}[]
 	handleEnterExam: (examId: string) => void

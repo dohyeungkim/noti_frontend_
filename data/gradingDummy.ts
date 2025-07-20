@@ -8,16 +8,6 @@ export interface GradingStudent {
 	submittedAt: string // 제출 시간
 	totalScore?: number // 총점 (옵션)
 }
-
-export interface GradingData {
-	examId: string
-	workbookId: number
-	groupId: number
-	problemCount: number // 문제 수
-	maxScorePerProblem: number // 문제당 최대 점수
-	students: GradingStudent[]
-}
-
 // 채점 더미 데이터
 export const gradingDummy: GradingStudent[] = [
 	{
@@ -42,6 +32,14 @@ export const gradingDummy: GradingStudent[] = [
 		submittedAt: "2025-07-09T11:00:00+09:00",
 	},
 ]
+export interface GradingData {
+	examId: string
+	workbookId: number
+	groupId: number
+	problemCount: number // 문제 수
+	maxScorePerProblem: number // 문제당 최대 점수
+	students: GradingStudent[]
+}
 
 // 채점 상세 정보 더미 데이터 (문제별 상세 정보)
 export const gradingDetailDummy = {

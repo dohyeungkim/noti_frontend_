@@ -683,6 +683,20 @@ export const problem_ref_api = {
 		return res.json()
 	},
 
+	async problem_ref_edit_points(group_id: number, workbook_id: number, problem_id: number, points: number) {
+		const res = await fetchWithAuth(`/api/proxy/problems_ref/edit_points/${group_id}/${workbook_id}/${problem_id}`, {
+			method: "PATCH",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ points }),
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "배점 수정 실패")
+		}
+		return res.json()
+	},
+
 	// 문제 삭제
 	async problem_ref_delete(problem_id: number, group_id: number, workbook_id: number) {
 		const res = await fetch(`/api/proxy/problems_ref/${group_id}/${workbook_id}/${problem_id}`, {
@@ -927,7 +941,6 @@ export const workbook_api = {
 		test_end_time: any,
 		publication_start_time: any,
 		publication_end_time: any
-		// workbook_total_points: number
 	) {
 		const res = await fetchWithAuth("/api/proxy/workbook", {
 			method: "POST",
@@ -942,7 +955,6 @@ export const workbook_api = {
 				test_end_time,
 				publication_start_time,
 				publication_end_time,
-				// workbook_total_points,
 			}),
 		})
 
@@ -1236,7 +1248,7 @@ export interface ReferenceCodeRequest {
 interface TestCaseRequest {
 	input: string
 	expected_output: string
-	is_sample: boolean
+	// is_sample: boolean
 }
 
 export interface EnhancedProblemCreateRequest {

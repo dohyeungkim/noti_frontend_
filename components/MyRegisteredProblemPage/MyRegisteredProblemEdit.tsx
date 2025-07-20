@@ -1,26 +1,26 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { EditorContent } from "@tiptap/react";
-import { motion } from "framer-motion";
-import { problem_api } from "@/lib/api";
-import Toolbar from "../markdown/Toolbar";
-import { useProblemForm } from "@/hooks/useProblemForm";
-import { useProblemEditor } from "@/hooks/useProblemEditor";
-import ReferenceCodeEditor from "../ProblemForm/ReferenceCodeEditor";
-import ProblemConditions from "../ProblemForm/ProblemConditions";
-import TestCaseSection from "../ProblemForm/TestCaseSection";
-import ReactMde from "react-mde";
-import "react-mde/lib/styles/css/react-mde-all.css";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useState } from "react"
+import { useRouter, useParams } from "next/navigation"
+import { EditorContent } from "@tiptap/react"
+import { motion } from "framer-motion"
+import { problem_api } from "@/lib/api"
+import Toolbar from "../markdown/Toolbar"
+import { useProblemForm } from "@/hooks/useProblemForm"
+import { useProblemEditor } from "@/hooks/useProblemEditor"
+import ReferenceCodeEditor from "../ProblemForm/ReferenceCodeEditor"
+import ProblemConditions from "../ProblemForm/ProblemConditions"
+import TestCaseSection from "../ProblemForm/TestCaseSection"
+import ReactMde from "react-mde"
+import "react-mde/lib/styles/css/react-mde-all.css"
+import ReactMarkdown from "react-markdown"
 
 export default function ProblemEdit() {
-	const router = useRouter();
-	const { id } = useParams();
-	const [description, setDescription] = useState("");
-	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
-	const [testResults, setTestResults] = useState<(boolean | null)[]>([]);
+	const router = useRouter()
+	const { id } = useParams()
+	const [description, setDescription] = useState("")
+	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write")
+	const [testResults, setTestResults] = useState<(boolean | null)[]>([])
 
 	const {
 		title,
@@ -50,49 +50,68 @@ export default function ProblemEdit() {
 		updateTags,
 		removeTag,
 		setInitialData,
-	} = useProblemForm();
+	} = useProblemForm()
 
-	const { editor, addLocalImage } = useProblemEditor();
+	const { editor, addLocalImage } = useProblemEditor()
 
 	useEffect(() => {
 		const fetchProblem = async () => {
 			try {
-				const data = await problem_api.problem_get_by_id(Number(id));
-				
-				// 초기 데이터 설정
-				setInitialData({
-					title: data.title,
-					difficulty: data.difficulty || "easy",
-					ratingMode: data.rating_mode || "Hard",
-					tags: data.tags || [],
-					conditions: data.problem_condition || [""],
-					referenceCodes: data.reference_codes?.length > 0 ? data.reference_codes.map((code: any, index: number) => ({
-						language: code.language,
-						code: code.code,
-						is_main: index === 0
-					})) : [{ language: "python", code: "", is_main: true }],
-					testCases: data.test_cases?.length > 0 ? data.test_cases.map((tc: any) => ({
-						input: tc.input,
-						expected_output: tc.expected_output,
-						is_sample: tc.is_sample
-					})) : [{ input: "", expected_output: "", is_sample: true }]
-				});
-				
-				setDescription(data.description || "");
-				
+				const data = await problem_api.problem_get_by_id(Number(id))
+
+				if ("reference_codes" in data && "test_cases" in data) {
+					// 코딩 문제일 때
+					setInitialData({
+						title: data.title,
+						difficulty: data.difficulty || "easy",
+						ratingMode: data.rating_mode || "Hard",
+						tags: data.tags || [],
+						conditions: data.problem_condition || [""],
+						referenceCodes:
+							data.reference_codes.length > 0
+								? data.reference_codes.map((code: any, idx: number) => ({
+										language: code.language,
+										code: code.code,
+										is_main: idx === 0,
+								  }))
+								: [{ language: "python", code: "", is_main: true }],
+						testCases:
+							data.test_cases.length > 0
+								? data.test_cases.map((tc: any) => ({
+										input: tc.input,
+										expected_output: tc.expected_output,
+										is_sample: tc.is_sample,
+								  }))
+								: [{ input: "", expected_output: "", is_sample: true }],
+					})
+				} else {
+					// 객관식·단답형 등
+					setInitialData({
+						title: data.title,
+						difficulty: data.difficulty || "easy",
+						ratingMode: data.rating_mode || "Hard",
+						tags: data.tags || [],
+						conditions: data.problem_condition || [""],
+						referenceCodes: [{ language: "python", code: "", is_main: true }],
+						testCases: [{ input: "", expected_output: "", is_sample: true }],
+					})
+				}
+
+				// description 상태와 에디터 초기화는 공통
+				setDescription(data.description || "")
 				if (editor) {
-					editor.commands.setContent(data.description);
+					editor.commands.setContent(data.description || "")
 				}
 			} catch (error) {
-				console.error("Failed to fetch problem:", error);
+				console.error("Failed to fetch problem:", error)
 			}
-		};
+		}
 
-		fetchProblem();
-	}, [id, editor, setInitialData]);
+		fetchProblem()
+	}, [id, editor, setInitialData])
 
 	const handleTestRun = async () => {
-		setTestResults([]); // 테스트 실행 직전에 추가
+		setTestResults([]) // 테스트 실행 직전에 추가
 		if (referenceCodes.length === 0) {
 			alert("참조 코드가 없습니다.")
 			return
@@ -101,17 +120,17 @@ export default function ProblemEdit() {
 			alert("테스트케이스가 없습니다.")
 			return
 		}
-		const mainCode = referenceCodes.find(code => code.is_main) || referenceCodes[0]
+		const mainCode = referenceCodes.find((code) => code.is_main) || referenceCodes[0]
 
 		try {
 			const requestData = {
 				language: mainCode.language,
 				code: mainCode.code,
-				test_cases: testCases.map(tc => ({
+				test_cases: testCases.map((tc) => ({
 					input: tc.input,
-					expected_output: tc.expected_output
+					expected_output: tc.expected_output,
 				})),
-				rating_mode: ratingMode
+				rating_mode: ratingMode,
 			}
 
 			console.log("테스트 실행 요청:", JSON.stringify(requestData, null, 2))
@@ -119,66 +138,65 @@ export default function ProblemEdit() {
 			const response = await fetch("/api/proxy/solves/run_code", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(requestData)
-			});
+				body: JSON.stringify(requestData),
+			})
 
-			const result = await response.json();
+			const result = await response.json()
 
 			if (!result || !Array.isArray(result.results)) {
-				alert("API 응답이 올바르지 않습니다. (테스트케이스 실행 실패)");
-				console.error("API 응답:", result);
-				return;
+				alert("API 응답이 올바르지 않습니다. (테스트케이스 실행 실패)")
+				console.error("API 응답:", result)
+				return
 			}
 
-			const passedCount = result.results.filter(r => r.passed).length;
-			const totalCount = result.results.length;
+			const passedCount = result.results.filter((r: { passed: boolean }) => r.passed).length
+			const totalCount = result.results.length
 
 			if (passedCount === totalCount) {
-				alert(`✅ 모든 테스트케이스 통과!\n성공: ${passedCount}/${totalCount}`);
+				alert(`✅ 모든 테스트케이스 통과!\n성공: ${passedCount}/${totalCount}`)
 			} else if (passedCount === 0) {
-				alert(`❌ 모든 테스트케이스 실패\n성공: 0/${totalCount}`);
+				alert(`❌ 모든 테스트케이스 실패\n성공: 0/${totalCount}`)
 			} else {
-				alert(`❌ 일부 테스트케이스 실패\n성공: ${passedCount}/${totalCount}`);
+				alert(`❌ 일부 테스트케이스 실패\n성공: ${passedCount}/${totalCount}`)
 			}
 
-			setTestResults(result.results.map(r => r.passed));
+			setTestResults(result.results.map((r: { passed: boolean }) => r.passed))
 		} catch (error) {
-			console.error("테스트케이스 실행 실패:", error);
-			alert("테스트케이스 실행 중 오류가 발생했습니다.");
+			console.error("테스트케이스 실행 실패:", error)
+			alert("테스트케이스 실행 중 오류가 발생했습니다.")
 		}
 	}
 
 	const handleSave = async () => {
 		if (!editor) {
-			alert("Editor is not loaded yet.");
-			return;
+			alert("Editor is not loaded yet.")
+			return
 		}
 
-		const content = editor.getHTML();
-		const filteredConditions = conditions.filter((condition) => condition.trim() !== "");
+		const content = editor.getHTML()
+		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
 
 		try {
-			await problem_api.problem_update(
-				id as string,
+			await problem_api.problem_update(id as string, {
 				title,
 				description,
 				difficulty,
-				ratingMode,
+				rating_mode: ratingMode,
 				tags,
-				filteredConditions,
-				referenceCodes,
-				testCases
-			);
-			alert("문제가 성공적으로 업데이트되었습니다.");
-			router.push(`/registered-problems/view/${id}`);
+				problem_condition: filteredConditions,
+				reference_code: referenceCodes,
+				test_cases: testCases,
+			})
+			alert("문제가 성공적으로 업데이트되었습니다.")
+			router.push(`/registered-problems/view/${id}`)
 		} catch (error) {
-			console.error("문제 업데이트 실패:", error);
-			alert("문제 업데이트 중 오류가 발생했습니다.");
+			console.error("문제 업데이트 실패:", error)
+			alert("문제 업데이트 중 오류가 발생했습니다.")
 		}
-	};
+	}
 
 	// 로딩 상태 체크는 모든 훅 호출 이후에
-	if (!editor) return <p>Editor is loading...</p>;
+	if (!editor) return <p>Editor is loading...</p>
 
 	return (
 		<div>
@@ -233,32 +251,32 @@ export default function ProblemEdit() {
 									placeholder="태그 입력 후 Enter 또는 쉼표"
 									className="flex-1 px-3 py-1 border rounded-md text-sm"
 									onKeyPress={(e) => {
-										if (e.key === 'Enter' || e.key === ',') {
-											e.preventDefault();
-											const input = e.target as HTMLInputElement;
-											const newTag = input.value.trim();
+										if (e.key === "Enter" || e.key === ",") {
+											e.preventDefault()
+											const input = e.target as HTMLInputElement
+											const newTag = input.value.trim()
 											if (newTag && !tags.includes(newTag)) {
-												setTags([...tags, newTag]);
-												input.value = '';
+												setTags([...tags, newTag])
+												input.value = ""
 											}
 										}
 									}}
 									onBlur={(e) => {
-										const newTag = e.target.value.trim();
+										const newTag = e.target.value.trim()
 										if (newTag && !tags.includes(newTag)) {
-											setTags([...tags, newTag]);
-											e.target.value = '';
+											setTags([...tags, newTag])
+											e.target.value = ""
 										}
 									}}
 								/>
 								<button
 									type="button"
 									onClick={(e) => {
-										const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-										const newTag = input.value.trim();
+										const input = e.currentTarget.previousElementSibling as HTMLInputElement
+										const newTag = input.value.trim()
 										if (newTag && !tags.includes(newTag)) {
-											setTags([...tags, newTag]);
-											input.value = '';
+											setTags([...tags, newTag])
+											input.value = ""
 										}
 									}}
 									className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600"
@@ -268,13 +286,12 @@ export default function ProblemEdit() {
 							</div>
 							<div className="flex flex-wrap gap-2">
 								{tags.map((tag, idx) => (
-									<span key={idx} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded flex items-center gap-1">
+									<span
+										key={idx}
+										className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded flex items-center gap-1"
+									>
 										{tag}
-										<button
-											type="button"
-											className="text-red-500 hover:text-red-700"
-											onClick={() => removeTag(idx)}
-										>
+										<button type="button" className="text-red-500 hover:text-red-700" onClick={() => removeTag(idx)}>
 											×
 										</button>
 									</span>
@@ -320,9 +337,7 @@ export default function ProblemEdit() {
 							onChange={setDescription}
 							selectedTab={selectedTab}
 							onTabChange={setSelectedTab}
-							generateMarkdownPreview={(markdown: string) =>
-								Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>)
-							}
+							generateMarkdownPreview={(markdown: string) => Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>)}
 							childProps={{
 								writeButton: {
 									tabIndex: -1,
@@ -334,6 +349,12 @@ export default function ProblemEdit() {
 
 				{/* 오른쪽: 참조 코드 에디터 */}
 				<ReferenceCodeEditor
+					problemType={ratingMode} // 문제 유형 혹은 채점 모드
+					baseCode={referenceCodes.find((rc) => rc.is_main)?.code || ""} // 메인 코드 문자열
+					onSetBaseCode={(newCode: string) => {
+						const idx = referenceCodes.findIndex((rc) => rc.is_main)
+						if (idx >= 0) updateReferenceCode(idx, newCode)
+					}}
 					referenceCodes={referenceCodes}
 					activeCodeTab={activeCodeTab}
 					setActiveCodeTab={setActiveCodeTab}
@@ -364,5 +385,5 @@ export default function ProblemEdit() {
 				testResults={testResults}
 			/>
 		</div>
-	);
+	)
 }
