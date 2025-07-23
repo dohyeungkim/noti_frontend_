@@ -214,9 +214,10 @@ export default function ProblemView() {
 									<div key={idx} className="border rounded-lg p-4 bg-gray-50">
 										<div className="flex justify-between mb-2">
 											<span className="font-semibold">케이스 {idx + 1}</span>
+											{/* 없애기로 한 기능
 											{tc.is_sample && (
 												<span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">샘플</span>
-											)}
+											)} */}
 										</div>
 										<div className="grid grid-cols-2 gap-4">
 											<div>

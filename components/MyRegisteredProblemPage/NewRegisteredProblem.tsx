@@ -102,20 +102,25 @@ export default function NewRegisteredProblem() {
 	// 문제 유형 및 배점 추가
 	const [problemType, setProblemType] = useState<ProblemType>("코딩")
 	const [problemScore, setProblemScore] = useState<number>(10)
+
 	// 객관식 옵션과 정답 관리
 	const [options, setOptions] = useState<string[]>([])
-	const [correctAnswers, setCorrectAnswers] = useState<number[]>([])
+	// const [correctAnswers, setCorrectAnswers] = useState<number[]>([])
+	const [answerIndexes, setAnswerIndexes] = useState<number[]>([])
 
 	// 단답형, 주관식 정답과 채점 기준
 	const [answerTexts, setAnswerTexts] = useState<string[]>([])
 	const [gradingCriteria, setGradingCriteria] = useState<string[]>([])
 
+	// 주관식 정답 (채점기준은 위에꺼랑 ===)
+	const [subjectiveAnswer, setSubjectiveAnswer] = useState<string>("")
+	const [subjectiveCriteria, setSubjectiveCriteria] = useState<string[]>([""])
+
 	//진형준 추가항목start
-	const [subjectiveRubrics, setSubjectiveRubrics] = useState<string[]>([""])
+	// const [subjectiveRubrics, setSubjectiveRubrics] = useState<string[]>([""])
 
 	// const [options, setOptions] = useState<string[]>(["", ""]) // 객관식 보기 항목
-	const [shortAnswers, setShortAnswers] = useState<string[]>([""])
-	const [answerIndexes, setAnswerIndexes] = useState<number[]>([])
+	// const [shortAnswers, setAnswerTexts] = useState<string[]>([""])
 
 	//진형준 추가항목end
 
@@ -230,6 +235,7 @@ export default function NewRegisteredProblem() {
 
 		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
 
+		// 문제 생성 Api 호출
 		try {
 			if (problemType === "코딩" || problemType === "디버깅") {
 				const refCodes = problemType === "코딩" ? referenceCodes : []
@@ -255,7 +261,7 @@ export default function NewRegisteredProblem() {
 					difficulty,
 					tags,
 					options, // 추가하신 옵션 리스트
-					correctAnswers // 정답 인덱스 배열
+					answerIndexes // 정답 인덱스 배열
 				)
 			} else if (problemType === "단답형") {
 				await problem_api.problem_create_short_answer(
@@ -273,6 +279,7 @@ export default function NewRegisteredProblem() {
 					description,
 					difficulty,
 					ratingMode as "active" | "deactive",
+					subjectiveAnswer,
 					tags,
 					gradingCriteria // AI 채점 기준
 				)
@@ -497,8 +504,9 @@ export default function NewRegisteredProblem() {
 						/>
 					</div>
 				</div>
-				{/* 오른쪽 - 코딩/디버깅: 참조 코드 에디터 */}
-				{/* 오른쪽 - 객관, 단답, 주관: 문제 유형에 따른 조건부 렌더링 */}
+
+				{/* ✨ 오른쪽 - 코딩/디버깅: 참조 코드 에디터 */}
+				{/* ✨ 오른쪽 - 객관, 단답, 주관: 문제 유형에 따른 조건부 렌더링 */}
 				{problemType === "객관식" ? (
 					<div className="w-1/2">
 						<MultipleChoiceEditor
@@ -514,8 +522,8 @@ export default function NewRegisteredProblem() {
 						<div>
 							<label className="text-sm font-semibold text-gray-700 mb-1 block">주관식 정답</label>
 							<textarea
-								value={description}
-								onChange={(e) => setDescription(e.target.value)}
+								value={subjectiveAnswer}
+								onChange={(e) => setSubjectiveAnswer(e.target.value)}
 								placeholder="정답 예시 혹은 기준"
 								className="w-full h-24 px-3 py-2 border rounded-md text-sm"
 							/>
@@ -524,23 +532,23 @@ export default function NewRegisteredProblem() {
 						{/* AI 채점 기준 입력 */}
 						<div>
 							<label className="text-sm font-semibold text-gray-700 mb-1 block">AI채점기준</label>
-							{subjectiveRubrics.map((rubric, idx) => (
+							{subjectiveCriteria.map((rubric, idx) => (
 								<div key={idx} className="flex items-center gap-2 mb-2">
 									<input
 										type="text"
 										value={rubric}
 										onChange={(e) => {
-											const updated = [...subjectiveRubrics]
+											const updated = [...subjectiveCriteria]
 											updated[idx] = e.target.value
-											setSubjectiveRubrics(updated)
+											setSubjectiveCriteria(updated)
 										}}
 										placeholder={`기준 ${idx + 1}`}
 										className="flex-1 px-3 py-1.5 border rounded-md text-sm"
 									/>
 									<button
 										onClick={() => {
-											const updated = subjectiveRubrics.filter((_, i) => i !== idx)
-											setSubjectiveRubrics(updated)
+											const updated = subjectiveCriteria.filter((_, i) => i !== idx)
+											setSubjectiveCriteria(updated)
 										}}
 										className="text-red-500 text-sm"
 									>
@@ -549,7 +557,7 @@ export default function NewRegisteredProblem() {
 								</div>
 							))}
 							<button
-								onClick={() => setSubjectiveRubrics([...subjectiveRubrics, ""])}
+								onClick={() => setSubjectiveCriteria([...subjectiveCriteria, ""])}
 								type="button"
 								className="text-blue-600 text-sm hover:underline w-fit"
 							>
@@ -562,23 +570,23 @@ export default function NewRegisteredProblem() {
 						{/* 단답형 정답 항목 리스트 */}
 						<div>
 							<label className="text-sm font-semibold text-gray-700 mb-1 block">단답형 정답</label>
-							{shortAnswers.map((answer, idx) => (
+							{answerTexts.map((answer, idx) => (
 								<div key={idx} className="flex items-center gap-2 mb-2">
 									<input
 										type="text"
 										value={answer}
 										onChange={(e) => {
-											const updated = [...shortAnswers]
+											const updated = [...answerTexts]
 											updated[idx] = e.target.value
-											setShortAnswers(updated)
+											setAnswerTexts(updated)
 										}}
 										placeholder={`정답 ${idx + 1}`}
 										className="flex-1 px-3 py-1.5 border rounded-md text-sm"
 									/>
 									<button
 										onClick={() => {
-											const updated = shortAnswers.filter((_, i) => i !== idx)
-											setShortAnswers(updated)
+											const updated = answerTexts.filter((_, i) => i !== idx)
+											setAnswerTexts(updated)
 										}}
 										className="text-red-500 text-sm"
 									>
@@ -587,7 +595,7 @@ export default function NewRegisteredProblem() {
 								</div>
 							))}
 							<button
-								onClick={() => setShortAnswers([...shortAnswers, ""])}
+								onClick={() => setAnswerTexts([...answerTexts, ""])}
 								type="button"
 								className="text-blue-600 text-sm hover:underline w-fit"
 							>
@@ -598,23 +606,23 @@ export default function NewRegisteredProblem() {
 						{/* AI 채점 기준 입력 */}
 						<div>
 							<label className="text-sm font-semibold text-gray-700 mb-1 block">AI채점기준</label>
-							{subjectiveRubrics.map((rubric, idx) => (
+							{gradingCriteria.map((rubric, idx) => (
 								<div key={idx} className="flex items-center gap-2 mb-2">
 									<input
 										type="text"
 										value={rubric}
 										onChange={(e) => {
-											const updated = [...subjectiveRubrics]
+											const updated = [...gradingCriteria]
 											updated[idx] = e.target.value
-											setSubjectiveRubrics(updated)
+											setGradingCriteria(updated)
 										}}
 										placeholder={`기준 ${idx + 1}`}
 										className="flex-1 px-3 py-1.5 border rounded-md text-sm"
 									/>
 									<button
 										onClick={() => {
-											const updated = subjectiveRubrics.filter((_, i) => i !== idx)
-											setSubjectiveRubrics(updated)
+											const updated = gradingCriteria.filter((_, i) => i !== idx)
+											setGradingCriteria(updated)
 										}}
 										className="text-red-500 text-sm"
 									>
@@ -623,7 +631,7 @@ export default function NewRegisteredProblem() {
 								</div>
 							))}
 							<button
-								onClick={() => setSubjectiveRubrics([...subjectiveRubrics, ""])}
+								onClick={() => setGradingCriteria([...gradingCriteria, ""])}
 								type="button"
 								className="text-blue-600 text-sm hover:underline w-fit"
 							>
