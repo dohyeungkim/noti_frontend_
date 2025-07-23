@@ -8,8 +8,8 @@ import ProblemStatistics from "../ui/ProblemStatistics"
 import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal"
 import { problem_api } from "@/lib/api"
 import dynamic from "next/dynamic"
-import {dummyDebugProblem} from "../../data/JinProblemDummies"
-
+import {dummyDebugProblem, } from "../../data/JinProblemDummies"
+const [subjectiveAnswer, setSubjectiveAnswer] = useState<string>("") //정답란 추가 진형준 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 	ssr: false,
 })
@@ -60,7 +60,7 @@ export default function ProblemView() {
 
 	useEffect(() => {
   const fetchProblem = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       if (id === "dummy") {
         setProblem({
@@ -71,37 +71,39 @@ export default function ProblemView() {
           difficulty: dummyDebugProblem.difficulty,
           rating_mode: dummyDebugProblem.ratingMode,
           tags: dummyDebugProblem.tags,
-          problem_type: dummyDebugProblem.problemType,
+          problem_type: dummyDebugProblem.problem_type,
           problem_condition: dummyDebugProblem.conditions,
-        //   reference_codes: dummyDebugProblem.referenceCodes.map((ref, i) => ({
-        //     id: i,
-        //     language: ref.language,
-        //     code: ref.code,
-        //     is_main: ref.is_main,
-        //     created_at: new Date().toISOString(),
-        //   })),
+          reference_codes: dummyDebugProblem.referenceCodes.map((ref, i) => ({
+            id: i,
+            language: ref.language,
+            code: ref.code,
+            is_main: ref.is_main,
+            created_at: new Date().toISOString(),
+          })),
           test_cases: dummyDebugProblem.testCases.map(tc => ({
             input: tc.input,
             expected_output: tc.expected_output,
             is_sample: false,
-			base_code: "asdasd"
           })),
-        })
+          subjective_answer: dummyDebugProblem.subjective_answer || "", // ✅ 포함
+        });
+        setSubjectiveAnswer(dummyDebugProblem.subjective_answer || ""); // ✅ 상태에 저장
       } else {
-        const data = await problem_api.problem_get_by_id(Number(id))
-        setProblem(data)
+        const data = await problem_api.problem_get_by_id(Number(id));
+        setProblem(data);
+        setSubjectiveAnswer(data.subjective_answer || ""); // ✅ 백엔드 응답에도 적용
       }
     } catch (error) {
-      console.error("Failed to fetch problem:", error)
+      console.error("Failed to fetch problem:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (id) {
-    fetchProblem()
+    fetchProblem();
   }
-}, [id])
+}, [id]);
 
 	
 
@@ -259,7 +261,15 @@ export default function ProblemView() {
 					</div>
 				</div>
 			</div>
-
+						{/* 주관식/단답형 정답 보기 */}
+{(problem.problem_type === "주관식" || problem.problem_type === "단답형") && (
+  <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+    <h3 className="text-lg font-semibold mb-3">✏️ AI 채점 기준 (정답)</h3>
+    <div className="whitespace-pre-wrap bg-gray-100 p-4 rounded text-sm text-gray-800">
+      {subjectiveAnswer || "정답이 입력되지 않았습니다."}
+    </div>
+  </div>
+)}
 			{/* 문제 조건 */}
 			{problem.problem_condition && problem.problem_condition.length > 0 && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">

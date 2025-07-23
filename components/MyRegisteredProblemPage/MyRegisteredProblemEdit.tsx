@@ -14,6 +14,8 @@ import TestCaseSection from "../ProblemForm/TestCaseSection";
 import ReactMde from "react-mde";
 import "react-mde/lib/styles/css/react-mde-all.css";
 import ReactMarkdown from "react-markdown";
+import { dummyCodingProblem } from "../../data/dummyCodingProblem"//진형준 추가
+
 
 export default function ProblemEdit() {
 	const router = useRouter();
@@ -21,6 +23,8 @@ export default function ProblemEdit() {
 	const [description, setDescription] = useState("");
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([]);
+	const [problemType, setProblemType] = useState<"코딩" | "디버깅" | "객관식" | "주관식" | "단답형">("코딩"); //진형준 추가
+
 
 	const {
 		title,
@@ -55,41 +59,51 @@ export default function ProblemEdit() {
 	const { editor, addLocalImage } = useProblemEditor();
 
 	useEffect(() => {
-		const fetchProblem = async () => {
-			try {
-				const data = await problem_api.problem_get_by_id(Number(id));
-				
-				// 초기 데이터 설정
-				setInitialData({
-					title: data.title,
-					difficulty: data.difficulty || "easy",
-					ratingMode: data.rating_mode || "Hard",
-					tags: data.tags || [],
-					conditions: data.problem_condition || [""],
-					referenceCodes: data.reference_codes?.length > 0 ? data.reference_codes.map((code: any, index: number) => ({
-						language: code.language,
-						code: code.code,
-						is_main: index === 0
-					})) : [{ language: "python", code: "", is_main: true }],
-					testCases: data.test_cases?.length > 0 ? data.test_cases.map((tc: any) => ({
-						input: tc.input,
-						expected_output: tc.expected_output,
-						is_sample: tc.is_sample
-					})) : [{ input: "", expected_output: "", is_sample: true }]
-				});
-				
-				setDescription(data.description || "");
-				
-				if (editor) {
-					editor.commands.setContent(data.description);
-				}
-			} catch (error) {
-				console.error("Failed to fetch problem:", error);
-			}
-		};
+  const fetchProblem = async () => {
+    try {
+      let data;
 
-		fetchProblem();
-	}, [id, editor, setInitialData]);
+      if (id === "dummy") {
+        data = dummyCodingProblem;
+      } else {
+        data = await problem_api.problem_get_by_id(Number(id));
+      }
+
+      setInitialData({
+        title: data.title,
+        difficulty: data.difficulty || "easy",
+        ratingMode: data.rating_mode || "Hard",
+        tags: data.tags || [],
+        conditions: data.problem_condition || [""],
+        referenceCodes: data.reference_codes?.length > 0
+          ? data.reference_codes.map((code: any, index: number) => ({
+              language: code.language,
+              code: code.code,
+              is_main: index === 0,
+            }))
+          : [{ language: "python", code: "", is_main: true }],
+        testCases: data.test_cases?.length > 0
+          ? data.test_cases.map((tc: any) => ({
+              input: tc.input,
+              expected_output: tc.expected_output,
+              is_sample: tc.is_sample,
+            }))
+          : [{ input: "", expected_output: "", is_sample: true }],
+      });
+
+      setDescription(data.description || "");
+      setProblemType(data.problem_type || "코딩");
+
+      if (editor) {
+        editor.commands.setContent(data.description);
+      }
+    } catch (error) {
+      console.error("Failed to fetch problem:", error);
+    }
+  };
+
+  fetchProblem();
+}, [id, editor, setInitialData]);
 
 	const handleTestRun = async () => {
 		setTestResults([]); // 테스트 실행 직전에 추가
@@ -332,37 +346,73 @@ export default function ProblemEdit() {
 					</div>
 				</div>
 
-				{/* 오른쪽: 참조 코드 에디터 */}
-				<ReferenceCodeEditor
-					referenceCodes={referenceCodes}
-					activeCodeTab={activeCodeTab}
-					setActiveCodeTab={setActiveCodeTab}
-					addReferenceCode={addReferenceCode}
-					removeReferenceCode={removeReferenceCode}
-					updateReferenceCodeLanguage={updateReferenceCodeLanguage}
-					updateReferenceCode={updateReferenceCode}
-					setMainReferenceCode={setMainReferenceCode}
-				/>
+				{/* 오른쪽: 문제 유형에 따라 분기 렌더링 */}
+{problemType === "코딩" || problemType === "디버깅" ? (
+  // ✅ 참조 코드 에디터: 코딩/디버깅 유형일 때만 표시
+  <ReferenceCodeEditor
+    referenceCodes={referenceCodes}
+    activeCodeTab={activeCodeTab}
+    setActiveCodeTab={setActiveCodeTab}
+    addReferenceCode={addReferenceCode}
+    removeReferenceCode={removeReferenceCode}
+    updateReferenceCodeLanguage={updateReferenceCodeLanguage}
+    updateReferenceCode={updateReferenceCode}
+    setMainReferenceCode={setMainReferenceCode}
+  />
+) : problemType === "객관식" ? (
+  // ✅ 객관식 보기 및 정답 UI
+  <div className="w-1/2">
+    <h2 className="text-sm font-semibold mb-2">✅ 객관식 정답 및 항목</h2>
+    <p className="text-gray-500 text-xs mb-2">👉 여기에 객관식 항목 UI 들어갈 예정</p>
+    {/* TODO: 객관식 항목들 UI 구성 예정 */}
+  </div>
+) : problemType === "주관식" ? (
+  // ✅ 주관식 정답 입력 (AI 채점 기준)
+  <div className="w-1/2">
+    <h2 className="text-sm font-semibold mb-2">📝 주관식 정답 (AI 채점 기준)</h2>
+    <textarea
+      className="w-full h-40 text-sm border rounded p-2"
+      placeholder="AI 채점 기준 입력..."
+      value={description}
+      onChange={(e) => setDescription(e.target.value)}
+    />
+  </div>
+) : problemType === "단답형" ? (
+  // ✅ 단답형 정답 입력
+  <div className="w-1/2">
+    <h2 className="text-sm font-semibold mb-2">✏️ 단답형 정답</h2>
+    <textarea
+      className="w-full h-20 text-sm border rounded p-2"
+      placeholder="예상 정답을 입력하세요"
+      value={description}
+      onChange={(e) => setDescription(e.target.value)}
+    />
+  </div>
+) : null}
 			</div>
 
-			{/* 문제 조건 섹션 */}
-			<div className="mb-6 flex gap-4">
-				<ProblemConditions
-					conditions={conditions}
-					addCondition={addCondition}
-					removeCondition={removeCondition}
-					updateCondition={updateCondition}
-				/>
-			</div>
+			{(problemType === "코딩" || problemType === "디버깅") && (
+  <>
+    {/* 문제 조건 섹션 */} 
+    <div className="mb-6 flex gap-4">
+      <ProblemConditions
+        conditions={conditions}
+        addCondition={addCondition}
+        removeCondition={removeCondition}
+        updateCondition={updateCondition}
+      />
+    </div>
 
 			{/* 테스트 케이스 섹션 */}
-			<TestCaseSection
-				testCases={testCases}
-				addTestCase={addTestCase}
-				removeTestCase={removeTestCase}
-				updateTestCase={updateTestCase}
-				testResults={testResults}
-			/>
+    <TestCaseSection
+      testCases={testCases}
+      addTestCase={addTestCase}
+      removeTestCase={removeTestCase}
+      updateTestCase={updateTestCase}
+      testResults={testResults}
+    />
+  </>
+)}
 		</div>
 	);
 }

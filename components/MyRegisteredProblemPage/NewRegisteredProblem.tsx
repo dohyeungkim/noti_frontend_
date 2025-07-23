@@ -15,6 +15,8 @@ import TestCaseSection from "../ProblemForm/TestCaseSection"
 import ReactMde from "react-mde"
 import "react-mde/lib/styles/css/react-mde-all.css"
 import ReactMarkdown from "react-markdown"
+import { dummyCodingProblem } from "../../data/dummyCodingProblem"
+
 
 // 문제 유형 옵션
 const PROBLEM_TYPES = [
@@ -24,6 +26,7 @@ const PROBLEM_TYPES = [
 	{ value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
 	{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
 ]
+
 function MultipleChoiceEditor({
   options,
   setOptions,
@@ -106,7 +109,7 @@ export default function NewRegisteredProblem() {
 	const [description, setDescription] = useState("")
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write")
 	const [testResults, setTestResults] = useState<(boolean | null)[]>([])
-
+	const [subjectiveAnswer, setSubjectiveAnswer] = useState("") //진형준 주관식 기입용 분리
 	// 문제 유형 및 배점 추가
 	type ProblemType = "코딩" | "디버깅" | "객관식" | "주관식" | "단답형"
 	const [problemType, setProblemType] = useState<ProblemType>("코딩")
@@ -154,11 +157,30 @@ const [answerIndexes, setAnswerIndexes] = useState<number[]>([]);
 
 	const { editor, addLocalImage } = useProblemEditor()
 
+	
 	// 컴포넌트 마운트 시 드래프트 로드
 	useEffect(() => {
 		loadDraft()
 	}, [loadDraft])
 
+	useEffect(() => {
+  // 🧪 더미데이터 적용
+  setTitle(dummyCodingProblem.title)
+  setDescription(dummyCodingProblem.description)
+  setDifficulty(dummyCodingProblem.difficulty)
+  setRatingMode(dummyCodingProblem.rating_mode)
+  setTags(dummyCodingProblem.tags)
+  setProblemType(dummyCodingProblem.problem_type)
+  setProblemScore(dummyCodingProblem.problem_score)
+  dummyCodingProblem.conditions.forEach((c) => addCondition(c))
+  dummyCodingProblem.referenceCodes.forEach((ref) => addReferenceCode(ref))
+  dummyCodingProblem.testCases.forEach((tc) => addTestCase(tc))
+
+  // 🟣 주관식 정답 더미 반영
+  if (dummyCodingProblem.problem_type === "주관식") {
+    setSubjectiveAnswer("예시 정답입니다.") // 원하는 값으로 대체 가능
+  }
+}, [])
 	// 상태 변경 시 드래프트 저장
 	useEffect(() => {
 		saveDraft()
@@ -225,37 +247,41 @@ const [answerIndexes, setAnswerIndexes] = useState<number[]>([]);
 	}
 
 	const handleSave = async () => {
-		if (!editor) {
-			alert("Editor is not loaded yet.")
-			return
-		}
+  if (!editor) {
+    alert("Editor is not loaded yet.")
+    return
+  }
 
-		const content = editor.getHTML()
-		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
+  const content = editor.getHTML()
+  const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
 
-		try {
-			// 문제 유형과 배점을 추가하여 API 호출
-			await problem_api.problem_create(
-				title,
-				description,
-				difficulty,
-				ratingMode,
-				tags,
-				filteredConditions,
-				referenceCodes,
-				testCases,
-				problemType, // 문제 유형 추가
-				problemScore // 배점 추가
-			)
-			alert("문제가 성공적으로 등록되었습니다.")
-			// 성공 시 드래프트 삭제
-			localStorage.removeItem("problemDraft")
-			router.push("/registered-problems")
-		} catch (error) {
-			console.error("문제 등록 실패:", error)
-			alert("문제 등록 중 오류가 발생했습니다.")
-		}
-	}
+  try {
+    // ✅ 주관식일 경우 정답을 description에 대체 저장
+    const finalDescription = problemType === "주관식" ? subjectiveAnswer : description;
+
+    // 문제 유형과 배점을 추가하여 API 호출
+    await problem_api.problem_create(
+      title,
+      finalDescription, // ⬅️ 주관식일 경우 정답을 사용
+      difficulty,
+      ratingMode,
+      tags,
+      filteredConditions,
+      referenceCodes,
+      testCases,
+      problemType, // 문제 유형 추가
+      problemScore  // 배점 추가
+    )
+
+    alert("문제가 성공적으로 등록되었습니다.")
+    // 성공 시 드래프트 삭제
+    localStorage.removeItem("problemDraft")
+    router.push("/registered-problems")
+  } catch (error) {
+    console.error("문제 등록 실패:", error)
+    alert("문제 등록 중 오류가 발생했습니다.")
+  }
+}
 
 	return (
 		<div>
@@ -485,11 +511,11 @@ const [answerIndexes, setAnswerIndexes] = useState<number[]>([]);
     <div>
       <label className="text-sm font-semibold text-gray-700 mb-1 block">주관식 정답</label>
       <textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        value={subjectiveAnswer}
+        onChange={(e) => setSubjectiveAnswer(e.target.value)}
         placeholder="정답 예시 혹은 기준"
         className="w-full h-24 px-3 py-2 border rounded-md text-sm"
-      />
+      />	
     </div>
 
     {/* AI 채점 기준 입력 */}
