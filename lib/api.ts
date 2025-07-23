@@ -1082,8 +1082,14 @@ export type SolveRequest =
 	  }
 
 export const solve_api = {
-	/** 문제 유형 별 제출하는 api
-	 *
+	/**
+	 * 문제 제출 - 유형별로 다 다른 제출
+	 * @param group_id
+	 * @param workbook_id
+	 * @param problem_id
+	 * @param user_id
+	 * @param request
+	 * @returns
 	 */
 	async solve_create(
 		group_id: number,
@@ -1092,7 +1098,7 @@ export const solve_api = {
 		user_id: string,
 		request: SolveRequest
 	) {
-		// 공통값 + 문제 유형에 따른 분기
+		// 공통값들 + 문제 유형에 따른 분기
 		let body: any = { user_id, problemType: request.problemType }
 
 		switch (request.problemType) {
@@ -1166,6 +1172,11 @@ export const solve_api = {
 		return res.json()
 	},
 
+	/**
+	 * 내가 제출한 모든 기록 보기 (내가 제출한 문제 페이지 - 맞은 문제, 틀린문제 확인 페이지)
+	 * 나중에 문제 보기 페이지에서 문제 간단한 정보도 같이 띄우고 싶은데
+	 * @returns
+	 */
 	async solve_get_me() {
 		const res = await fetchWithAuth(`/api/proxy/solves/me`, {
 			method: "GET",
