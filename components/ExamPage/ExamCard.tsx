@@ -34,14 +34,17 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 	const inPublication = now >= pubStart && now <= pubEnd // 현재 시간이 게시기간 내에 있는지
 	const inTestPeriod = now >= testStart && now <= testEnd // 현재 시간이 제출기간 내에 있는지
 	// 👻 백엔드 구현 완료 후 주석 풀고 아래 코드 사용하기 (지금은 시험모드 정보가 없어서 그룹장인지로만 확인) -> 시험모드이고 교수자일 때만 시험 관련 정보 랜더링
-	// const showTestBanner = workbook.is_test_mode && inPublication && isGroupOwner
-	const showTestBanner = isGroupOwner
+	const showTestBanner = workbook.is_test_mode && inPublication && isGroupOwner
+	// const showTestBanner = isGroupOwner
 	const showScoreBanner = !isGroupOwner && inPublication && !inTestPeriod
 
 	// 👻 백엔드 구현 후 버튼 디자인 구상 ~
 	//   시험모드아님 => 문제풀기  *  시험모드+시험기간아님+게시기간+그룹장아님=> 결과 보러가기  *  시험모드+시험기간+그룹장아님=> 시험 보러가기
 	const isExamButton = !workbook.is_test_mode || inTestPeriod
 
+	// 📌 👻✨ - 7월 21일 회의에서 나온 내용
+	// 버튼 막기 = 제출 한번 하면 끝나게. 버튼 막기. 백엔드에서 제출 횟수 보내줄거임. 그게 한번이면 버튼 바꾸기.
+	// 게시기간+제출기간 수정할 수 있어야됨 => 게시기간
 	return (
 		<div
 			onClick={onClick}

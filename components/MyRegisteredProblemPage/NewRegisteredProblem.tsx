@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { EditorContent } from "@tiptap/react"
+// import { EditorContent } from "@tiptap/react"
 import { motion } from "framer-motion"
 import { problem_api } from "@/lib/api"
-import Toolbar from "../markdown/Toolbar"
+// import Toolbar from "../markdown/Toolbar"
 import { useProblemForm } from "@/hooks/useProblemForm"
 import { useProblemEditor } from "@/hooks/useProblemEditor"
-import ProblemBasicInfo from "../ProblemForm/ProblemBasicInfo"
+// import ProblemBasicInfo from "../ProblemForm/ProblemBasicInfo"
 import ReferenceCodeEditor from "../ProblemForm/ReferenceCodeEditor"
 import ProblemConditions from "../ProblemForm/ProblemConditions"
 import TestCaseSection from "../ProblemForm/TestCaseSection"
@@ -228,25 +228,24 @@ export default function NewRegisteredProblem() {
 			return
 		}
 
-		const content = editor.getHTML()
 		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
-
-		// const filteredConditions = conditions.filter((c) => c.trim() !== "")
 
 		try {
 			if (problemType === "코딩" || problemType === "디버깅") {
+				const refCodes = problemType === "코딩" ? referenceCodes : []
+				const payloadBase = problemType === "디버깅" ? baseCode : undefined
 				// 기존과 동일, baseCode도 함께 전달
 				await problem_api.problem_create(
 					title,
 					description,
 					difficulty,
-					ratingMode,
+					ratingMode as "Hard" | "Space" | "Regex" | "None",
 					tags,
 					filteredConditions,
-					referenceCodes,
+					refCodes,
 					testCases,
-					problemType,
-					baseCode // 디버깅일 땐 이 값이 body.base_code 로 들어갑니다
+					problemType as "코딩" | "디버깅",
+					payloadBase // 디버깅일 땐 이 값이 body.base_code 로 들어감
 				)
 			} else if (problemType === "객관식") {
 				// PROBLEM_TYPES 에서 options, correctAnswers 훑어 오실 거라 가정
@@ -263,10 +262,10 @@ export default function NewRegisteredProblem() {
 					title,
 					description,
 					difficulty,
-					ratingMode as "exact" | "partial" | "soft" | "none",
+					ratingMode as "exact" | "partial" | "soft" | "None",
 					tags,
 					answerTexts, // TEXT[] 형식의 정답들
-					gradingCriteria
+					gradingCriteria // AI 채점 기준
 				)
 			} else if (problemType === "주관식") {
 				await problem_api.problem_create_subjective(
@@ -275,7 +274,7 @@ export default function NewRegisteredProblem() {
 					difficulty,
 					ratingMode as "active" | "deactive",
 					tags,
-					gradingCriteria
+					gradingCriteria // AI 채점 기준
 				)
 			}
 
@@ -498,8 +497,8 @@ export default function NewRegisteredProblem() {
 						/>
 					</div>
 				</div>
-				{/* 오른쪽: 참조 코드 에디터 */}
-				{/* 오른쪽: 문제 유형에 따른 조건부 렌더링 */}
+				{/* 오른쪽 - 코딩/디버깅: 참조 코드 에디터 */}
+				{/* 오른쪽 - 객관, 단답, 주관: 문제 유형에 따른 조건부 렌더링 */}
 				{problemType === "객관식" ? (
 					<div className="w-1/2">
 						<MultipleChoiceEditor
@@ -633,6 +632,7 @@ export default function NewRegisteredProblem() {
 						</div>
 					</div>
 				) : (
+					// ------- 코딩, 디버깅 문제일 때 -------
 					<ReferenceCodeEditor
 						referenceCodes={referenceCodes}
 						activeCodeTab={activeCodeTab}
@@ -642,9 +642,9 @@ export default function NewRegisteredProblem() {
 						updateReferenceCodeLanguage={updateReferenceCodeLanguage}
 						updateReferenceCode={updateReferenceCode}
 						setMainReferenceCode={setMainReferenceCode}
-						problemType={problemType} // 추가
-						baseCode={baseCode} // 추가
-						onSetBaseCode={setBaseCode} // 추가
+						problemType={problemType} // 디버깅일 때 베이스 코드 버튼 렌더링
+						baseCode={baseCode} // 현재 선택된 베이스 코드 문자열
+						onSetBaseCode={setBaseCode} // “베이스 코드로 지정” 클릭 시 호출
 					/>
 				)}
 			</div>

@@ -273,8 +273,34 @@ export const auth_api = {
 // ====================== problem 관련 API ===========================
 
 export type ProblemType = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
-
 export type RatingMode = "Hard" | "Space" | "Regex" | "None" | "exact" | "partial" | "soft"
+export type SupportedLanguage = "python" | "javascript" | "c" | "cpp" | "java"
+// 필요하면 더 추가
+
+export interface ReferenceCodeRequest {
+	language: SupportedLanguage
+	code: string
+	is_main: boolean
+}
+
+interface TestCaseRequest {
+	input: string
+	expected_output: string
+	// is_sample: boolean
+}
+
+export interface EnhancedProblemCreateRequest {
+	title: string
+	description: string
+	difficulty: string
+	rating_mode: "Hard" | "Space" | "Regex" | "None"
+	tags: string[]
+	problem_condition: string[]
+	reference_codes: ReferenceCodeRequest[]
+	test_cases: TestCaseRequest[]
+	problemType: "코딩" | "객관식" | "주관식" | "단답형" | "디버깅"
+	// problemScore: number // 배점 추가
+}
 
 export interface ProblemBase {
 	problem_id: number
@@ -286,12 +312,13 @@ export interface ProblemBase {
 	problem_condition: string[]
 	created_at: string
 	deleted_at?: string | null
-	problemType: ProblemType
+	problemType: ProblemType // 매번 포함됨.
 }
 
 // 코딩/디버깅 공통
 export interface CodingProblem extends ProblemBase {
 	problemType: "코딩" | "디버깅"
+
 	rating_mode: RatingMode
 	reference_codes: ReferenceCodeRequest[]
 	test_cases: TestCaseRequest[]
@@ -300,6 +327,7 @@ export interface CodingProblem extends ProblemBase {
 // 객관식
 export interface MultipleChoiceProblem extends ProblemBase {
 	problemType: "객관식"
+
 	options: string[]
 	rating_mode: "None"
 	correct_answers: number[]
@@ -308,14 +336,16 @@ export interface MultipleChoiceProblem extends ProblemBase {
 // 단답형
 export interface ShortAnswerProblem extends ProblemBase {
 	problemType: "단답형"
+
 	rating_mode: RatingMode
 	answer_text: string[]
-	grading_criteria: string[]
+	grading_criteria: string[] // AI 채점 기준
 }
 
 // 주관식
 export interface SubjectiveProblem extends ProblemBase {
 	problemType: "주관식"
+
 	rating_mode: "active" | "deactive"
 	grading_criteria: string[]
 }
@@ -366,7 +396,8 @@ export type SubjectiveProblemUpdateRequest = {
 
 // 전체 리턴 타입 (discriminated union)
 export type ProblemDetail = CodingProblem | MultipleChoiceProblem | ShortAnswerProblem | SubjectiveProblem
-// 문제 업데이트 전체 리턴 타입
+
+// 문제 업데이트 전체 리턴 타입 -> Discriminated Union 구조
 export type ProblemUpdateRequest =
 	| CodingProblemUpdateRequest
 	| MultipleChoiceProblemUpdateRequest
@@ -399,6 +430,7 @@ export const problem_api = {
 			problemType,
 			reference_codes,
 			test_cases,
+			base_code,
 		}
 		if (problemType === "디버깅") {
 			body.base_code = base_code || ""
@@ -457,7 +489,7 @@ export const problem_api = {
 		title: string,
 		description: string,
 		difficulty: string,
-		rating_mode: "exact" | "partial" | "soft" | "none",
+		rating_mode: "exact" | "partial" | "soft" | "None",
 		tags: string[],
 		answer_text: string[],
 		grading_criteria: string[] // 👻 AI 채점 기준 텍스트 배열
@@ -493,6 +525,7 @@ export const problem_api = {
 		description: string,
 		difficulty: string,
 		rating_mode: "active" | "deactive",
+		answer_text: string,
 		tags: string[],
 		grading_criteria: string[] // 👻 AI 채점 기준 텍스트 배열
 	) {
@@ -501,6 +534,7 @@ export const problem_api = {
 			description,
 			difficulty,
 			rating_mode,
+			answer_text,
 			tags,
 			problemType: "주관식",
 			grading_criteria,
@@ -520,7 +554,9 @@ export const problem_api = {
 
 	// ---------------------- GET/DELETE ----------------------
 
-	/** 내가 등록한 모든 문제 조회 */
+	/** 내가 등록한 모든 문제 조회
+	 * Promise<ProblemDetail[]> 백엔드가 주는 값 보고 알아서 해당 문제 유형에 맞는 값들을 가져옴
+	 */
 	async problem_get(): Promise<ProblemDetail[]> {
 		const res = await fetchWithAuth("/api/proxy/problems/me", {
 			method: "GET",
@@ -611,7 +647,9 @@ export const problem_api = {
 	// 	return response.json()
 	// },
 
-	/** 문제 수정 */
+	/** 문제 수정
+	 * 문제 id만 백엔드에 넘겨주면 그 id의 ProblemType 보고 알아서 넘겨주면, 프론트가 해당 정보에 맞는 정보 걸러서 프론트에 넘겨준다
+	 */
 	async problem_update(id: string | string[], requestBody: ProblemUpdateRequest): Promise<ProblemDetail> {
 		const res = await fetchWithAuth(`/api/proxy/problems/${id}`, {
 			method: "PUT",
@@ -1023,26 +1061,64 @@ export const workbook_api = {
 }
 
 // ====================== solves 관련 API ===========================
+// 문제 풀이용 SolveRequest 타입 정의
+export type SolveRequest =
+	| {
+			problemType: "코딩" | "디버깅"
+			submitted_code: string
+			code_language: string
+	  }
+	| {
+			problemType: "객관식"
+			selected_options: number[]
+	  }
+	| {
+			problemType: "단답형"
+			answers: string[]
+	  }
+	| {
+			problemType: "주관식"
+			written_text: string
+	  }
+
 export const solve_api = {
+	/** 문제 유형 별 제출하는 api
+	 *
+	 */
 	async solve_create(
 		group_id: number,
 		workbook_id: number,
 		problem_id: number,
 		user_id: string,
-		submitted_code: string,
-		code_language: string
+		request: SolveRequest
 	) {
+		// 공통값 + 문제 유형에 따른 분기
+		let body: any = { user_id, problemType: request.problemType }
+
+		switch (request.problemType) {
+			case "코딩":
+			case "디버깅":
+				body.submitted_code = request.submitted_code
+				body.code_language = request.code_language
+				break
+			case "객관식":
+				body.selected_options = request.selected_options
+				break
+			case "단답형":
+				body.answers = request.answers
+				break
+			case "주관식":
+				body.written_text = request.written_text
+				break
+		}
+
 		const res = await fetchWithAuth(
 			`/api/proxy/solves?group_id=${group_id}&workbook_id=${workbook_id}&problem_id=${problem_id}`,
 			{
 				method: "POST",
 				credentials: "include",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					submitted_code: submitted_code,
-					user_id: user_id,
-					code_language: code_language,
-				}),
+				body: JSON.stringify(body),
 			}
 		)
 
@@ -1053,6 +1129,11 @@ export const solve_api = {
 		return res.json()
 	},
 
+	/**
+	 * 기존이랑 == BUT, 응답 받을 때 코딩||디버깅 유형 말고 다른 유형에서는 코드 길이랑 언어만 안 받게 수정함
+	 * @param problem_id
+	 * @returns
+	 */
 	async solve_get_by_problem_id(problem_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/solves/problem/${problem_id}`, {
 			method: "GET",
@@ -1066,6 +1147,11 @@ export const solve_api = {
 		return res.json()
 	},
 
+	/**
+	 * 특정 제출(solve_id)에 대한 상세 정보를 가져옴. 제출 결과 페이지에서 AI 피드백·코드 로그·테스트·조건 검사 결과 등을 렌더링할 떄 사용.
+	 * @param solve_id
+	 * @returns
+	 */
 	async solve_get_by_solve_id(solve_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}`, {
 			method: "GET",
@@ -1236,33 +1322,6 @@ export const run_code_api = {
 }
 
 // ====================== 새로운 타입 정의 ===========================
-export type SupportedLanguage = "python" | "javascript" | "c" | "cpp" | "java"
-// 필요하면 더 추가
-
-export interface ReferenceCodeRequest {
-	language: SupportedLanguage
-	code: string
-	is_main: boolean
-}
-
-interface TestCaseRequest {
-	input: string
-	expected_output: string
-	// is_sample: boolean
-}
-
-export interface EnhancedProblemCreateRequest {
-	title: string
-	description: string
-	difficulty: string
-	rating_mode: "Hard" | "Space" | "Regex" | "None"
-	tags: string[]
-	problem_condition: string[]
-	reference_codes: ReferenceCodeRequest[]
-	test_cases: TestCaseRequest[]
-	problemType: "코딩" | "객관식" | "주관식" | "단답형" | "디버깅"
-	// problemScore: number // 배점 추가
-}
 
 // interface ReferenceCodeResponse {
 // 	id: number
