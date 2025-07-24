@@ -186,11 +186,10 @@ export default function NewRegisteredProblem() {
 		}
 	}, [problemType])
 
-	// 로딩 상태 체크는 모든 훅 호출 이후에
 	if (!editor) return <p>Editor is loading...</p>
 
 	const handleTestRun = async () => {
-		setTestResults([]) // 테스트 실행 직전에 추가
+		setTestResults([])
 		if (referenceCodes.length === 0) {
 			alert("참조 코드가 없습니다.")
 			return
@@ -355,7 +354,7 @@ export default function NewRegisteredProblem() {
 					hover:bg-green-700 transition-all duration-200 ease-in-out
 					active:scale-95 shadow-md"
 				>
-					▶️ 테스트 실행
+					테스트 실행
 				</button>
 				<button
 					onClick={async () => {
@@ -366,7 +365,7 @@ export default function NewRegisteredProblem() {
 					hover:bg-blue-700 transition-all duration-200 ease-in-out
 					active:scale-95 shadow-md"
 				>
-					🚀 등록하기
+					등록하기
 				</button>
 			</motion.div>
 			{/* 전체 좌우 분할 레이아웃 */}
@@ -413,16 +412,16 @@ export default function NewRegisteredProblem() {
 							<div className="flex gap-2 mb-2">
 								<input
 									type="text"
-									placeholder="태그 입력 후 Enter 또는 쉼표"
+									placeholder="태그 입력 후 Enter"
 									className="flex-1 px-3 py-1 border rounded-md text-sm"
 									onKeyPress={(e) => {
-										if (e.key === "Enter" || e.key === ",") {
-											e.preventDefault()
+										if (e.key === "Enter") {
+											e.preventDefault() // Enter 키를 누를 때 기본 동작(폼 제출 등)을 막기
 											const input = e.target as HTMLInputElement
 											const newTag = input.value.trim()
 											if (newTag && !tags.includes(newTag)) {
 												setTags([...tags, newTag])
-												input.value = ""
+												input.value = "" // 태그 추가 후 입력창 비우기
 											}
 										}
 									}}
@@ -481,7 +480,6 @@ export default function NewRegisteredProblem() {
 							</div>
 
 							{/* 문제 채점 모드 */}
-							{/* 채점 모드 None 추가 - 👻 */}
 							<div className="flex-1">
 								<label className="block text-xs font-medium text-gray-700 mb-1">채점 모드</label>
 								<select

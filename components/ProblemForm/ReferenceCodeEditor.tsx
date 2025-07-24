@@ -40,22 +40,21 @@ export default function ReferenceCodeEditor({
 					<h3 className="text-lg font-semibold">베이스 코드</h3>
 				)}
 
-				<button
+				{/* <button
 					onClick={addReferenceCode}
-					className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 text-xs"
+					className="bg-mygreen text-white px-2 py-1 rounded-md hover:bg-green-600 text-xs"
 				>
 					+ 코드 추가
-				</button>
+				</button> */}
 			</div>
-			<div className="border-b-2 border-black my-2" />
-
+			<div className="border-t border-gray-300 my-1"></div>
 			{/* 코드 탭 */}
-			<div className="flex gap-1 mb-2 overflow-x-auto">
+			<div className="flex gap-1 overflow-x-auto">
 				{referenceCodes.map((refCode, index) => {
 					const isBase = problemType === "디버깅" && refCode.code === baseCode
 					const isActive = activeCodeTab === index
 					return (
-						<div key={index} className="flex items-center shrink-0">
+						<div key={index} className="flex items-center shrink-0 ">
 							<div
 								className={`px-2 py-1 rounded-t-md text-xs flex items-center gap-2 cursor-pointer
                   ${
@@ -68,7 +67,7 @@ export default function ReferenceCodeEditor({
 								onClick={() => setActiveCodeTab(index)}
 							>
 								{languageDisplayNames[refCode.language]}
-								{referenceCodes.length > 1 && problemType !== "디버깅" && (
+								{referenceCodes.length > 1 && problemType === "코딩" && (
 									<button
 										onClick={() => removeReferenceCode(index)}
 										className={`ml-1 text-xs rounded px-1 ${isActive ? "text-white" : "text-gray-600"}`}
@@ -80,44 +79,50 @@ export default function ReferenceCodeEditor({
 						</div>
 					)
 				})}
-			</div>
 
-			{/* 코드 설정 영역 */}
-
-			{referenceCodes[activeCodeTab] && (
-				<div className="flex items-center gap-2 mb-2">
-					<select
-						value={referenceCodes[activeCodeTab].language}
-						onChange={(e) => updateReferenceCodeLanguage(activeCodeTab, e.target.value as ReferenceCode["language"])}
-						className="border rounded-md p-1 text-xs"
-					>
-						<option value="python">Python</option>
-						<option value="java">Java</option>
-						<option value="cpp">C++</option>
-						<option value="c">C</option>
-						<option value="javascript">JavaScript</option>
-					</select>
-
-					{problemType === "디버깅" ? (
-						<button
-							onClick={() => onSetBaseCode(referenceCodes[activeCodeTab].code)}
-							className="bg-yellow-500 text-white px-2 py-1 rounded-md hover:bg-yellow-600 text-xs"
+				{/* 코드 설정 영역 */}
+				{referenceCodes[activeCodeTab] && (
+					<div className="flex items-center gap-2 my-2 ml-auto">
+						<select
+							value={referenceCodes[activeCodeTab].language}
+							onChange={(e) => updateReferenceCodeLanguage(activeCodeTab, e.target.value as ReferenceCode["language"])}
+							className="border rounded-md p-1 text-xs"
 						>
-							베이스 코드로 지정
-						</button>
-					) : (
-						!referenceCodes[activeCodeTab].is_main && (
+							<option value="python">Python</option>
+							<option value="java">Java</option>
+							<option value="cpp">C++</option>
+							<option value="c">C</option>
+							<option value="javascript">JavaScript</option>
+						</select>
+
+						{problemType === "디버깅" ? (
 							<button
-								onClick={() => setMainReferenceCode(activeCodeTab)}
+								onClick={() => onSetBaseCode(referenceCodes[activeCodeTab].code)}
 								className="bg-yellow-500 text-white px-2 py-1 rounded-md hover:bg-yellow-600 text-xs"
 							>
-								메인으로 설정
+								베이스 코드로 지정
 							</button>
-						)
-					)}
-				</div>
-			)}
-
+						) : (
+							!referenceCodes[activeCodeTab].is_main && (
+								<button
+									onClick={() => setMainReferenceCode(activeCodeTab)}
+									className="bg-yellow-500 text-white px-2 py-1 rounded-md hover:bg-yellow-600 text-xs"
+								>
+									메인으로 설정
+								</button>
+							)
+						)}
+						{problemType === "코딩" && (
+							<button
+								onClick={addReferenceCode}
+								className="bg-mygreen text-white px-2 py-1 rounded-md hover:bg-green-600 text-xs"
+							>
+								+ 코드 추가
+							</button>
+						)}
+					</div>
+				)}
+			</div>
 			{/* 코드 에디터 */}
 			<div className="bg-white p-0 rounded shadow flex-1">
 				{referenceCodes[activeCodeTab] && (
