@@ -163,7 +163,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 				}}
 			>
 				<SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-				<ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+				{/* <ViewToggle viewMode={viewMode} setViewMode={setViewMode} /> */}
 			</motion.div>
 
 			<h2 className="text-2xl font-bold mb-4 m-2 pt-2">나의 문제들</h2>
@@ -177,16 +177,16 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 				) : (
 					<p className="text-center text-gray-500 mt-10">📭 등록된 문제가 없습니다. 문제를 추가해보세요!</p>
 				)
-			) : viewMode === "gallery" ? (
-				<ProblemGallery
-					problems={filteredProblems}
-					groupId={numericGroupId}
-					workbookId={numericExamId}
-					isGroupOwner={isGroupOwner}
-					refresh={refresh}
-					setRefresh={setRefresh}
-				/>
 			) : (
+				// ) : viewMode === "gallery" ? (
+				// 	<ProblemGallery
+				// 		problems={filteredProblems}
+				// 		groupId={numericGroupId}
+				// 		workbookId={numericExamId}
+				// 		isGroupOwner={isGroupOwner}
+				// 		refresh={refresh}
+				// 		setRefresh={setRefresh}
+				// 	/>
 				<ProblemList
 					problems={filteredProblems}
 					groupId={numericGroupId}
