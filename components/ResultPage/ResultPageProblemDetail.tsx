@@ -45,6 +45,7 @@ function ResultPageProblemDetail({ problem }: { problem: Problem | null }) {
 					</div>
 
 					<style>{`
+
                            // 스타일 코드 생략
                       
       .editor-content h1 { font-size: 2rem !important; font-weight: bold; margin-top: 1rem; margin-bottom: 1rem; }

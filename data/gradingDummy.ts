@@ -9,6 +9,15 @@ export interface GradingStudent {
 	totalScore?: number // 총점 (옵션)
 }
 
+export interface GradingData {
+	examId: string
+	workbookId: number
+	groupId: number
+	problemCount: number // 문제 수
+	maxScorePerProblem: number // 문제당 최대 점수
+	students: GradingStudent[]
+}
+
 // 채점 더미 데이터
 export const gradingDummy: GradingStudent[] = [
 	{

@@ -34,7 +34,12 @@ export default function ReferenceCodeEditor({
 	return (
 		<div className="w-1/2 flex flex-col">
 			<div className="flex justify-between items-center mb-2">
-				<h3 className="text-lg font-semibold">참조 코드</h3>
+				{problemType === "코딩" ? (
+					<h3 className="text-lg font-semibold">참조 코드</h3>
+				) : (
+					<h3 className="text-lg font-semibold">베이스 코드</h3>
+				)}
+
 				<button
 					onClick={addReferenceCode}
 					className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 text-xs"
@@ -78,6 +83,7 @@ export default function ReferenceCodeEditor({
 			</div>
 
 			{/* 코드 설정 영역 */}
+
 			{referenceCodes[activeCodeTab] && (
 				<div className="flex items-center gap-2 mb-2">
 					<select

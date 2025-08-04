@@ -110,6 +110,7 @@ export default function WorkBookCreateModal({
 				test_end_time,
 				publication_start_time,
 				publication_end_time
+				// workbook_total_points
 			)
 
 			// 시험모드 설정 정보 (백엔드 연동 없이 UI만 구현)

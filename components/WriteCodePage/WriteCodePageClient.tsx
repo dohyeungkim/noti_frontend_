@@ -49,6 +49,16 @@ interface WriteCodePageClientProps {
 	}
 }
 
+// 🔥 CHANGE 2: 기존 inline PresenceIndicator 컴포넌트 제거 (삭제됨)
+// export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({ pageId, user }) => {
+//   const participantsCount = usePresence(pageId, user)
+//   return (
+//     <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-md text-sm text-gray-700 border border-gray-300">
+//       현재 접속 인원: <span className="font-semibold">{participantsCount}</span>명
+//     </div>
+//   )
+// }
+
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 	ssr: false,
 })

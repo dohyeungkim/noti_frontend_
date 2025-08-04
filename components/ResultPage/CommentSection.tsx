@@ -9,6 +9,7 @@ import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { useRouter } from "next/navigation"
 import { formatTimestamp } from "../util/dageUtils"
 import { UserIcon } from "lucide-react"
+import type { ProblemDetail } from "@/lib/api"
 
 interface SolveData {
 	passed: boolean
@@ -44,7 +45,7 @@ export default function FeedbackWithSubmissionPageClient({
 		resultId: string
 	}
 }) {
-	const [problem, setProblem] = useState<Problem | null>(null)
+	const [problem, setProblem] = useState<ProblemDetail | null>(null)
 	const [codeLogs, setCodeLogs] = useState<CodeLog[]>([])
 	const [aiFeedback, setAiFeedback] = useState<string>("")
 	const [isLoaded, setIsLoaded] = useState(false)
@@ -418,11 +419,12 @@ export default function FeedbackWithSubmissionPageClient({
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center space-x-2 mb-1">
 												<strong className="text-gray-900 text-sm">
-													{comment.is_anonymous ? comment.nickname : comment.user_id}
+													{comment.user_id}
+													{/* {comment.is_anonymous ? comment.nickname : comment.user_id} */}
 												</strong>
-												{comment.is_anonymous && (
+												{/* {comment.is_anonymous && (
 													<span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">익명</span>
-												)}
+												)} */}
 												<span className="text-xs text-gray-500">
 													{comment.timestamp ? formatTimestamp(comment.timestamp) : "방금 전"}
 												</span>
@@ -452,7 +454,6 @@ export default function FeedbackWithSubmissionPageClient({
 										<span className="text-sm text-gray-700">익명으로 작성</span>
 									</label>
 								</div>
-
 								<div className="flex items-end gap-3">
 									<textarea
 										value={newComment}

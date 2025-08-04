@@ -1,13 +1,13 @@
 "use client"
 
 // 👻 익명 기능 제거하기 v0 - 홍
-
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay"
 import { code_log_api, problem_api, solve_api, ai_feedback_api, comment_api, auth_api } from "@/lib/api"
+import type { ProblemDetail } from "@/lib/api"
 import ResultPageProblemDetail from "./ResultPageProblemDetail"
-import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
+// import { ProblemDetail } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { useRouter } from "next/navigation"
 import { formatTimestamp } from "../util/dageUtils"
 import { UserIcon } from "lucide-react"
@@ -17,6 +17,7 @@ import { useExamMode } from "@/hooks/useExamMode"
 import { feedbackDummy } from "@/data/examModeFeedbackDummy"
 import ReactMarkdown from "react-markdown"
 import ProblemDetailRenderer from "@/components/ResultPage/ProblemDetailRenderer"
+import AnswerRenderer from "@/components/ResultPage/AnswerRenderer"
 
 interface SolveData {
 	problemType: string
@@ -87,7 +88,8 @@ export default function FeedbackWithSubmissionPageClient({
 		resultId: string
 	}
 }) {
-	const [problem, setProblem] = useState<Problem | null>(null)
+	// const [problem, setProblem] = useState<Problem | null>(null)
+	const [problemDetail, setProblemDetail] = useState<ProblemDetail | null>(null)
 	const [codeLogs, setCodeLogs] = useState<CodeLog[]>([])
 	const [aiFeedback, setAiFeedback] = useState<string>("")
 	const [isLoaded, setIsLoaded] = useState(false)
@@ -128,12 +130,10 @@ export default function FeedbackWithSubmissionPageClient({
 
 	const fetchProblem = useCallback(async () => {
 		try {
-			const res = await problem_api.problem_get_by_id_group(
-				Number(params.groupId),
-				Number(params.examId),
-				Number(params.problemId)
-			)
-			setProblem(res)
+			const res = await problem_api
+				.problem_get_by_id_group(Number(params.groupId), Number(params.examId), Number(params.problemId))
+				.then(setProblemDetail)
+			// setProblem(res)
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
@@ -144,7 +144,6 @@ export default function FeedbackWithSubmissionPageClient({
 			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
 			setSolveData(res)
 
-			console.log("여기용")
 			console.log(res)
 			// AI 피드백이 solveData에 포함되어 있다면 사용
 			if (res.ai_feedback && !aiFeedback) {
@@ -163,20 +162,20 @@ export default function FeedbackWithSubmissionPageClient({
 					description: conditionResult.description || "",
 					passed: conditionResult.passed || false,
 					feedback: conditionResult.feedback || "",
-					status: conditionResult.passed ? "pass" : "fail",
+					status: conditionResult.passed ? ("pass" as const) : ("fail" as const),
 				}))
 				setConditionResults(conditionCheckResults)
-			} else if (problem && problem.problem_condition && problem.problem_condition.length > 0) {
+			} else if (problemDetail && problemDetail.problem_condition && problemDetail.problem_condition.length > 0) {
 				// problem_condition을 기반으로 조건 결과 생성
-				const problemConditionResults = problem.problem_condition.map((condition: string, index: number) => ({
+				const problemConditionResults = problemDetail.problem_condition.map((condition: string, index: number) => ({
 					id: index + 1,
-					condition: condition,
+					condition,
 					is_required: true,
 					check_type: "problem_requirement",
 					description: "문제에서 요구하는 조건입니다",
 					passed: res.passed || false, // 전체 통과 여부를 기반으로 설정
 					feedback: res.passed ? "조건을 만족했습니다." : "조건을 확인해주세요.",
-					status: res.passed ? "pass" : "fail",
+					status: res.passed ? ("pass" as const) : ("fail" as const),
 				}))
 				setConditionResults(problemConditionResults)
 			} else {
@@ -255,10 +254,10 @@ export default function FeedbackWithSubmissionPageClient({
 	}, [activeTab])
 
 	useEffect(() => {
-		if (problem && solveData && codeLogs) {
+		if (problemDetail && solveData && codeLogs) {
 			setIsLoaded(true)
 		}
-	}, [problem, solveData, codeLogs])
+	}, [problemDetail, solveData, codeLogs])
 
 	// 댓글 전송 핸들러
 	const handleAddComment = async () => {
@@ -279,6 +278,7 @@ export default function FeedbackWithSubmissionPageClient({
 				resultId: params.resultId,
 				comment: newComment,
 				// isAnonymous,
+
 				isProblemMessage: activeTab === "problem",
 			})
 
@@ -374,7 +374,7 @@ export default function FeedbackWithSubmissionPageClient({
 				{/* 레이아웃 그리드 */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{/* 왼쪽: 코드 로그 - 높이 확장 */}+ {/* 왼쪽: 코드 로그 or 답안 렌더링 */}
-					{problem?.problemType === "코딩" || problem?.problemType === "디버깅" ? (
+					{problemDetail?.problemType === "코딩" || problemDetail?.problemType === "디버깅" ? (
 						<motion.div
 							className="bg-white rounded-lg shadow-sm border p-4"
 							initial={{ opacity: 0, x: -20 }}
@@ -390,7 +390,7 @@ export default function FeedbackWithSubmissionPageClient({
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.4, delay: 0.1 }}
 						>
-							<AnswerRenderer problem={problem!} solveData={solveData!} />
+							<AnswerRenderer problem={problemDetail!} solveData={solveData!} />
 						</motion.div>
 					)}
 					{/* 오른쪽: 조건 및 AI 피드백 조건 뜨는 창*/}
@@ -742,17 +742,17 @@ export default function FeedbackWithSubmissionPageClient({
 				</motion.div>
 
 				{/* 문제 상세 정보 */}
-				{problem && (
+				{problemDetail && (
 					<motion.div
 						className="mt-6"
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.4, delay: 0.6 }}
 					>
-						<ResultPageProblemDetail problem={problem} />
+						<ResultPageProblemDetail problem={problemDetail} />
 						<div className="mt-6">
 							<h2 className="text-lg font-bold mb-2">문제 유형별 상세 정보</h2>
-							<ProblemDetailRenderer problem={problem} />
+							<ProblemDetailRenderer problem={problemDetail} />
 						</div>
 					</motion.div>
 				)}

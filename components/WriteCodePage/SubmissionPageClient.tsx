@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from "react"
 import { solve_api } from "@/lib/api"
 
 // ✅ 제출 데이터 타입 정의
-interface Submission {
+interface BaseSubmission {
 	problemType: "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
 	id: number
 	solve_id: number
@@ -20,6 +20,7 @@ interface Submission {
 	group_id: number
 	workbook_id: number
 }
+
 type CodingSubmission = BaseSubmission & {
 	problemType: "코딩" | "디버깅"
 	code_language: string
@@ -33,17 +34,17 @@ type NonCodeSubmission = BaseSubmission & {
 
 type Submission = CodingSubmission | NonCodeSubmission
 
-// // ✅ URL Params 타입 정의
-// interface SubmissionPageParams {
-// 	groupId: string
-// 	examId: string
-// 	problemId: string
-// }
+// ✅ URL Params 타입 정의
+interface SubmissionPageParams {
+	groupId: string
+	examId: string
+	problemId: string
+}
 
-// // ✅ Props 타입 정의
-// interface SubmissionPageClientProps {
-// 	params: SubmissionPageParams
-// }
+// ✅ Props 타입 정의
+interface SubmissionPageClientProps {
+	params: SubmissionPageParams
+}
 
 export default function SubmissionPageClient({ params }: SubmissionPageClientProps) {
 	const { problemId } = useParams()

@@ -58,6 +58,7 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 			</div>
 
 			{/* 설명 + 문제 수 */}
+			{/* 문제지 정보 - 문제지 설명 + 문제 수 <- 일반학생만 보이게*/}
 			<div>
 				<p
 					title={workbook.description}

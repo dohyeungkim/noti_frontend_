@@ -327,7 +327,6 @@ export interface CodingProblem extends ProblemBase {
 // 객관식
 export interface MultipleChoiceProblem extends ProblemBase {
 	problemType: "객관식"
-
 	options: string[]
 	rating_mode: "None"
 	correct_answers: number[]
@@ -336,7 +335,6 @@ export interface MultipleChoiceProblem extends ProblemBase {
 // 단답형
 export interface ShortAnswerProblem extends ProblemBase {
 	problemType: "단답형"
-
 	rating_mode: RatingMode
 	answer_text: string[]
 	grading_criteria: string[] // AI 채점 기준
@@ -345,7 +343,6 @@ export interface ShortAnswerProblem extends ProblemBase {
 // 주관식
 export interface SubjectiveProblem extends ProblemBase {
 	problemType: "주관식"
-
 	rating_mode: "active" | "deactive"
 	grading_criteria: string[]
 }
@@ -396,8 +393,8 @@ export type SubjectiveProblemUpdateRequest = {
 
 // 전체 리턴 타입 (discriminated union)
 export type ProblemDetail = CodingProblem | MultipleChoiceProblem | ShortAnswerProblem | SubjectiveProblem
-
 // 문제 업데이트 전체 리턴 타입 -> Discriminated Union 구조
+// 문제 업데이트 전체 리턴 타입
 export type ProblemUpdateRequest =
 	| CodingProblemUpdateRequest
 	| MultipleChoiceProblemUpdateRequest
@@ -607,45 +604,6 @@ export const problem_api = {
 		}
 		return res.json()
 	},
-
-	// async problem_update(
-	// 	id: string | string[],
-	// 	title: string,
-	// 	description: string,
-	// 	difficulty: string,
-	// 	rating_mode: "Hard" | "Space" | "Regex" | "None",
-	// 	tags: string[],
-	// 	problem_condition: string[],
-	// 	reference_codes: ReferenceCodeRequest[],
-	// 	test_cases: TestCaseRequest[],
-	// 	problemType: "코딩" | "객관식" | "주관식" | "단답형" | "디버깅" // 문제 유형 추가
-	// 	// problemScore: number // 배점 추가
-	// ) {
-	// 	const requestBody: EnhancedProblemCreateRequest = {
-	// 		title,
-	// 		description,
-	// 		difficulty,
-	// 		rating_mode,
-	// 		tags,
-	// 		problem_condition,
-	// 		reference_codes,
-	// 		test_cases,
-	// 		problemType, // 문제 유형 추가
-	// 	}
-
-	// 	const response = await fetchWithAuth(`/api/proxy/problems/${id}`, {
-	// 		method: "PUT",
-	// 		headers: { "Content-Type": "application/json" },
-	// 		body: JSON.stringify(requestBody),
-	// 	})
-
-	// 	if (!response.ok) {
-	// 		const errorText = await response.text()
-	// 		console.error("API 응답 에러:", errorText)
-	// 		throw new Error("문제 업데이트 실패")
-	// 	}
-	// 	return response.json()
-	// },
 
 	/** 문제 수정
 	 * 문제 id만 백엔드에 넘겨주면 그 id의 ProblemType 보고 알아서 넘겨주면, 프론트가 해당 정보에 맞는 정보 걸러서 프론트에 넘겨준다
@@ -1158,6 +1116,7 @@ export const solve_api = {
 	 * @param solve_id
 	 * @returns
 	 */
+
 	async solve_get_by_solve_id(solve_id: number) {
 		const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}`, {
 			method: "GET",
