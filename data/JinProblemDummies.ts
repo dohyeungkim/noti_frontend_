@@ -1,3 +1,5 @@
+import { languages } from "monaco-editor"
+
 // 문제 유형별 더미데이터
 export const dummyCodingProblem = {
 	title: "예제: 코딩 문제",
@@ -15,7 +17,7 @@ export const dummyCodingProblem = {
 		{ input: "Hello", expected_output: "Hello" },
 	],
 	conditions: ["표준 입력 사용"],
-	ratingMode: "Hard",
+	ratingMode: "hard",
 	difficulty: "easy",
 	problemType: "코딩",
 }
@@ -26,10 +28,10 @@ export const dummyDebugProblem = {
 	tags: ["디버깅"],
 	testCases: [{ input: "", expected_output: "Hello" }],
 	conditions: ["출력이 정확해야 함"],
-	ratingMode: "Hard",
+	ratingMode: "hard",
 	difficulty: "medium",
 	problemType: "디버깅",
-	base_code: "qweqweqweqwe",
+	base_code: { language: "python", code: "sdfsdfsd" },
 }
 
 export const dummyMultipleChoiceProblem = {
@@ -38,7 +40,7 @@ export const dummyMultipleChoiceProblem = {
 	tags: ["객관식", "개념"],
 	options: ["A. 틀림", "B. 틀림", "C. 정답", "D. 틀림"],
 	answerIndexes: [2],
-	ratingMode: "None",
+	ratingMode: "none",
 	difficulty: "easy",
 	problemType: "객관식",
 }

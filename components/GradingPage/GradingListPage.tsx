@@ -1,111 +1,138 @@
 "use client"
+/**
+ * 해당 그룹에 존재하는 학생들 리스트 랜더링
+ * -> 이름 (학번)  o x o x o  (2/5 검토)
+ *
+ * 해당 문제지의 모든 제출(problem_id, score, reviewed) 받아온 후 학생 별로 묶어서 각 행별로 랜더링
+ *
+ */
 
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/stores/auth"
-import { group_api } from "@/lib/api"
-import { ArrowLeft } from "lucide-react"
-import { gradingDummy, GradingStudent } from "@/data/gradingDummy"
+import { group_api, grading_api } from "@/lib/api"
+import type { SubmissionSummary } from "@/lib/api"
 
-interface GradingListPageProps {
-	groupId: string
-	examId: string
+interface GradingStudentSummary {
+	studentId: string
+	studentName: string
+	problemScores: (number | null)[]
+	problemStatus: boolean[]
 }
 
 export default function GradingListPage() {
 	const router = useRouter()
 	const { userName } = useAuth()
+	const { groupId, examId } = useParams<{ groupId: string; examId: string }>()
 
-	const { groupId, examId } = useParams() as {
-		groupId: string
-		examId: string
-		// studentId: string
-	}
-
-	// 그룹장 여부 판별
+	// 그룹장 여부
 	const [groupOwner, setGroupOwner] = useState<string | null>(null)
 	const isGroupOwner = userName === groupOwner
 
-	// 더미 채점 데이터
-	const [gradingData, setGradingData] = useState<GradingStudent[]>([])
+	// 학생별 요약 데이터
+	const [students, setStudents] = useState<GradingStudentSummary[]>([])
 
-	// 그룹장 정보 fetch
-	const fetchGroupOwner = useCallback(async () => {
+	// 1) 그룹장 정보 조회
+	const fetchOwner = useCallback(async () => {
 		try {
-			const data = await group_api.my_group_get()
-			const current = data.find((g: any) => g.group_id === Number(groupId))
-			setGroupOwner(current?.group_owner || null)
+			const groups: Array<{ group_id: number; group_owner: string }> = await group_api.my_group_get()
+			const group = groups.find((g) => g.group_id === Number(groupId))
+			setGroupOwner(group?.group_owner ?? null)
 		} catch (err) {
 			console.error("그룹장 정보 로드 실패", err)
 		}
 	}, [groupId])
 
-	useEffect(() => {
-		fetchGroupOwner()
-		// 더미 데이터 세팅
-		setGradingData(gradingDummy)
-	}, [fetchGroupOwner])
+	// 2) 전체 제출 조회 → 학생별 그룹핑
+	const fetchSubmissions = useCallback(async () => {
+		try {
+			const subs: SubmissionSummary[] = await grading_api.get_all_submissions(Number(groupId), Number(examId))
+			// 문제 개수 계산
+			const problemCount = subs.length > 0 ? Math.max(...subs.map((s) => s.problem_id)) + 1 : 0
 
-	// 학생 클릭 시 상세 페이지로 이동
-	const handleStudentSelect = (studentId: string) => {
-		router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`)
-	}
+			const map = new Map<string, GradingStudentSummary>()
+			subs.forEach((s) => {
+				const { user_id, user_name, problem_id, score, reviewed } = s
+				if (!map.has(user_id)) {
+					map.set(user_id, {
+						studentId: user_id,
+						studentName: user_name, // 필요 시 API로 이름 조회
+						problemScores: Array(problemCount).fill(null),
+						problemStatus: Array(problemCount).fill(false),
+					})
+				}
+				const entry = map.get(user_id)!
+				entry.problemScores[problem_id] = score
+				entry.problemStatus[problem_id] = reviewed
+			})
+			setStudents(Array.from(map.values()))
+		} catch (err) {
+			console.error("제출 목록 로드 실패", err)
+		}
+	}, [groupId, examId])
+
+	// 마운트 시 데이터 로드
+	useEffect(() => {
+		fetchOwner()
+		fetchSubmissions()
+	}, [fetchOwner, fetchSubmissions])
 
 	// 권한 체크
-	if (!isGroupOwner) {
-		return (
-			<div className="flex flex-col items-center justify-center min-h-[60vh]">
-				<h2 className="text-2xl font-bold text-gray-800 mb-4">접근 권한이 없습니다</h2>
-				<p className="text-gray-600 mb-6">이 페이지는 그룹장만 접근할 수 있습니다.</p>
-				<button onClick={() => router.back()} className="bg-blue-600 text-white px-4 py-2 rounded-lg">
-					이전으로
-				</button>
-			</div>
-		)
+	// if (!isGroupOwner) {
+	// 	return (
+	// 		<div className="flex flex-col items-center justify-center min-h-screen">
+	// 			<h2 className="text-2xl font-bold mb-4">접근 권한이 없습니다</h2>
+	// 			<button onClick={() => router.back()} className="px-4 py-2 bg-blue-600 text-white rounded">
+	// 				이전으로
+	// 			</button>
+	// 		</div>
+	// 	)
+	// }
+
+	// 학생 클릭 → 상세 페이지
+	const selectStudent = (studentId: string) => {
+		router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`)
 	}
 
 	return (
 		<div className="pb-10">
 			{/* 헤더 */}
 			<div className="flex items-center mb-6">
-				<button onClick={() => router.back()} className="mr-4 p-2 rounded-full hover:bg-gray-100 transition">
-					<ArrowLeft size={20} />
-				</button>
 				<h1 className="text-2xl font-bold">학생 제출물 채점</h1>
 			</div>
 
 			{/* 학생 리스트 */}
 			<div className="mb-8">
-				{gradingData.map((stu) => (
+				{students.map((stu) => (
 					<motion.div
 						key={stu.studentId}
-						className="flex items-center p-4 border-b cursor-pointer hover:bg-gray-50 transition"
-						onClick={() => handleStudentSelect(stu.studentId)}
+						onClick={(e) => {
+							e.stopPropagation()
+							selectStudent(stu.studentId)
+						}}
+						className="flex items-center p-4 border-b cursor-pointer hover:bg-gray-50"
 						initial={{ opacity: 0, y: 10 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.2 }}
 					>
-						{/* 이름 */}
-						<div className="w-1/4 font-medium text-lg">{stu.studentName}</div>
-
-						{/* 점수 */}
+						<div className="w-1/4 font-medium text-lg">
+							{stu.studentName} ( {stu.studentId} )
+						</div>
 						<div className="flex-grow flex items-center">
 							<div className="flex space-x-2 mr-6">
-								{stu.problemScores.map((score, i) => (
-									<div key={i} className="w-10 h-10 flex items-center justify-center">
-										<span className={`text-sm font-medium ${score === 0 ? "text-gray-400" : "text-blue-600"}`}>
-											{score}
+								{stu.problemScores.map((score, idx) => (
+									<div key={idx} className="w-10 h-10 flex items-center justify-center">
+										<span className={`text-sm font-medium ${score == null ? "text-gray-400" : "text-blue-600"}`}>
+											{score ?? "-"}
 										</span>
 									</div>
 								))}
 							</div>
-
-							{/* 상태 동그라미 */}
 							<div className="flex space-x-2">
-								{stu.problemStatus.map((ok, i) => (
+								{stu.problemStatus.map((ok, idx) => (
 									<div
-										key={i}
+										key={idx}
 										className={`w-8 h-8 rounded-full border-2 ${
 											ok ? "bg-green-500 border-green-600" : "bg-gray-200 border-gray-300"
 										} flex items-center justify-center`}
@@ -115,8 +142,6 @@ export default function GradingListPage() {
 								))}
 							</div>
 						</div>
-
-						{/* 완료 현황 */}
 						<div className="w-24 text-right">
 							{stu.problemStatus.every((s) => s) ? (
 								<span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">채점 완료</span>

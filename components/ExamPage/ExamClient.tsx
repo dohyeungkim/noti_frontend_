@@ -68,8 +68,8 @@ export default function ExamsClient() {
 		}
 	}, [groupId])
 
-	const handleEnterExam = (examId: string) => {
-		router.push(`/mygroups/${groupId}/exams/${examId}`)
+	const handleEnterExam = (workbookId: number) => {
+		router.push(`/mygroups/${groupId}/exams/${workbookId}`)
 	}
 
 	const handleClick = () => {
@@ -77,13 +77,27 @@ export default function ExamsClient() {
 	}
 
 	// 최종적으로 화면에 보여줄 문제지만 필터링
-
 	useEffect(() => {
 		const filteredWorkbooksdata = workbooks
+		const now = new Date()
+		const filtered = workbooks
+			// 1) 같은 그룹의 문제지만…
 			.filter((wb) => wb.group_id === Number(groupId))
+			// 2) 검색어 일치
 			.filter((wb) => wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase()))
-		setFilteredWorkbooks(filteredWorkbooksdata)
-	}, [searchQuery, workbooks, groupId])
+			// 3) 그룹장일 땐 모두, 아니면…
+			.filter((wb) => {
+				if (isGroupOwner) return true
+				// 시험 모드 꺼진 문제지는 항상
+				if (!wb.is_test_mode) return true
+				// 시험 모드 켜진 문제지는 게시 기간 내일 때만
+				const pubStart = new Date(wb.publication_start_time)
+				const pubEnd = new Date(wb.publication_end_time)
+				return now >= pubStart && now <= pubEnd
+			})
+		console.log("▶ raw workbooks:", workbooks)
+		setFilteredWorkbooks(filtered)
+	}, [searchQuery, workbooks, groupId /* + isGroupOwner 추가 */, isGroupOwner])
 
 	useEffect(() => {
 		if (!groupId) return
@@ -150,7 +164,8 @@ export default function ExamsClient() {
 					{viewMode === "gallery" ? (
 						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
 					) : (
-						<ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
+						// <ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
 					)}
 
 					{/* 더미데이터로 바꾸면서 이 코드로 수정했음 - 홍 */}

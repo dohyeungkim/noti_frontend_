@@ -1,48 +1,71 @@
+// components/GroupPage/GroupsClient.tsx
 "use client"
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import SearchBar from "@/components/ui/SearchBar"
 import SortButton from "@/components/ui/SortButton"
-import OpenModalButton from "@/components/ui/OpenModalButton"
-import GroupCreateModal from "@/components/GroupPage/GroupCreateModal"
 import ViewToggle from "@/components/ui/ViewToggle"
 import GroupList from "@/components/GroupPage/GroupGallery"
 import GroupTable from "@/components/GroupPage/GroupTable"
+import GroupCreateModal from "@/components/GroupPage/GroupCreateModal"
+import OpenModalButton from "@/components/ui/OpenModalButton"
 import { group_api } from "@/lib/api"
+// GroupGallery.tsx 에서 export 하고 있는 타입을 import
+// import type { Group } from "@/components/GroupPage/GroupGallery"
+
+export interface Group {
+	group_id: number
+	group_name: string
+	group_owner: string
+	group_private_state: boolean
+	member_count: number
+	is_member: boolean
+}
 
 export default function GroupsClient() {
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [searchQuery, setSearchQuery] = useState("")
-	const [sortOrder, setSortOrder] = useState("제목순")
+	// ★ 여기만 string 으로 바꿔줍니다
+	const [sortOrder, setSortOrder] = useState<string>("제목순")
 	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
 	const [refresh, setRefresh] = useState(false)
 
 	const [isPublic, setIsPublic] = useState(true)
 	const [groupName, setGroupName] = useState("")
-	const [myGroups, setMyGroups] = useState<
-		{
-			group_id: number
-			group_name: string
-			group_owner: string
-			group_private_state: boolean
-			member_count: number
-			createdAt?: string
-			is_member: boolean
-		}[]
-	>([])
-
-	async function fetchMyGroups() {
-		try {
-			const data = await group_api.group_get()
-			setMyGroups(Array.isArray(data) ? data : [])
-		} catch (error) {
-			console.error("내 그룹 정보 가져오기 실패:", error)
-			setMyGroups([])
-		}
-	}
+	// const [myGroups, setMyGroups] = useState<
+	// 	{
+	// 		group_id: number
+	// 		group_name: string
+	// 		group_owner: string
+	// 		group_private_state: boolean
+	// 		member_count: number
+	// 		createdAt?: string
+	// 		is_member: boolean
+	// 	}[]
+	// >([])
+	const [myGroups, setMyGroups] = useState<Group[]>([])
 
 	useEffect(() => {
+		async function fetchMyGroups() {
+			try {
+				const data = await group_api.my_group_get()
+				if (Array.isArray(data)) {
+					// 받아온 객체마다 is_member: true 를 붙여줍니다
+					const groups: Group[] = data.map((g: any) => ({
+						...g,
+						is_member: true,
+					}))
+					setMyGroups(groups)
+				} else {
+					setMyGroups([])
+				}
+			} catch (error) {
+				console.error("내 그룹 정보 가져오기 실패:", error)
+				setMyGroups([])
+			}
+		}
+
 		fetchMyGroups()
 	}, [refresh])
 
@@ -54,7 +77,7 @@ export default function GroupsClient() {
 		group.group_name.toLowerCase().includes(searchQuery.toLowerCase())
 	)
 
-	// ✅ 정렬
+	// 정렬
 	const sortedGroups = [...filteredGroups].sort((a, b) => {
 		if (sortOrder === "제목순") {
 			return a.group_name.localeCompare(b.group_name)
@@ -111,7 +134,6 @@ export default function GroupsClient() {
 			>
 				나의 그룹
 			</motion.h2>
-
 			<motion.hr
 				className="border-b-1 border-gray-300 my-3 m-1.5"
 				initial={{ opacity: 0, scaleX: 0 }}
@@ -119,13 +141,13 @@ export default function GroupsClient() {
 				transition={{ duration: 0.3, delay: 0.3 }}
 			/>
 
-			{/* 그룹 리스트 또는 테이블 뷰 */}
+			{/* 갤러리 / 테이블 뷰 */}
 			<motion.div
 				key={viewMode}
+				className="text-sm"
 				initial={{ opacity: 0, y: 8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.3, delay: 0.4 }}
-				className="text-sm"
 			>
 				{myJoinedGroups.length === 0 ? (
 					<p className="text-center text-gray-500 py-6 text-sm">내가 속한 그룹이 없습니다.</p>

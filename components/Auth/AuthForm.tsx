@@ -89,10 +89,10 @@ const ageRangeOptions: OptionType[] = [
 
 const academicYearOptions: OptionType[] = [
 	{ value: "high_school", label: "고등학생" },
-	{ value: "freshman", label: "대학교 1년" },
-	{ value: "sophomore", label: "대학교 2년" },
-	{ value: "junior", label: "대학교 3년" },
-	{ value: "senior", label: "대학교 4년" },
+	{ value: "freshman", label: "대학교 1학년" },
+	{ value: "sophomore", label: "대학교 2학년" },
+	{ value: "junior", label: "대학교 3학년" },
+	{ value: "senior", label: "대학교 4학년" },
 	{ value: "graduate", label: "대학원생" },
 	{ value: "working_professional", label: "직장인" },
 	{ value: "other", label: "기타" },
@@ -100,7 +100,7 @@ const academicYearOptions: OptionType[] = [
 
 const interestOptions: OptionType[] = [
 	{ value: "web_development", label: "웹 개발" },
-	{ value: "mobile_app", label: "모바일 앱" },
+	{ value: "mobile_app", label: "앱 개발" },
 	{ value: "data_science", label: "데이터 사이언스" },
 	{ value: "ai_ml", label: "AI/ML" },
 	{ value: "game_development", label: "게임 개발" },

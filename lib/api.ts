@@ -271,11 +271,9 @@ export const auth_api = {
 }
 
 // ====================== problem 관련 API ===========================
-
 export type ProblemType = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
-export type RatingMode = "Hard" | "Space" | "Regex" | "None" | "exact" | "partial" | "soft"
+export type RatingMode = "hard" | "space" | "regex" | "none" | "exact" | "partial" | "soft"
 export type SupportedLanguage = "python" | "javascript" | "c" | "cpp" | "java"
-// 필요하면 더 추가
 
 export interface ReferenceCodeRequest {
 	language: SupportedLanguage
@@ -283,7 +281,12 @@ export interface ReferenceCodeRequest {
 	is_main: boolean
 }
 
-interface TestCaseRequest {
+export interface BaseCodeRequest {
+	language: SupportedLanguage
+	code: string
+}
+
+export interface TestCaseRequest {
 	input: string
 	expected_output: string
 	// is_sample: boolean
@@ -293,7 +296,7 @@ export interface EnhancedProblemCreateRequest {
 	title: string
 	description: string
 	difficulty: string
-	rating_mode: "Hard" | "Space" | "Regex" | "None"
+	rating_mode: "hard" | "space" | "regex" | "none"
 	tags: string[]
 	problem_condition: string[]
 	reference_codes: ReferenceCodeRequest[]
@@ -318,9 +321,9 @@ export interface ProblemBase {
 // 코딩/디버깅 공통
 export interface CodingProblem extends ProblemBase {
 	problemType: "코딩" | "디버깅"
-
 	rating_mode: RatingMode
 	reference_codes: ReferenceCodeRequest[]
+	base_code: BaseCodeRequest[]
 	test_cases: TestCaseRequest[]
 }
 
@@ -328,7 +331,7 @@ export interface CodingProblem extends ProblemBase {
 export interface MultipleChoiceProblem extends ProblemBase {
 	problemType: "객관식"
 	options: string[]
-	rating_mode: "None"
+	rating_mode: "none"
 	correct_answers: number[]
 }
 
@@ -356,6 +359,7 @@ export type CodingProblemUpdateRequest = {
 	tags: string[]
 	problem_condition: string[]
 	reference_codes: ReferenceCodeRequest[]
+	base_code: BaseCodeRequest[]
 	test_cases: TestCaseRequest[]
 	problemType: "코딩" | "디버깅"
 }
@@ -374,7 +378,7 @@ export type ShortAnswerProblemUpdateRequest = {
 	title: string
 	description: string
 	difficulty: string
-	rating_mode: RatingMode // exact|partial|soft|None
+	rating_mode: RatingMode // exact|partial|soft|none
 	tags: string[]
 	answer_texts: string[]
 	problemType: "단답형"
@@ -385,7 +389,7 @@ export type SubjectiveProblemUpdateRequest = {
 	title: string
 	description: string
 	difficulty: string
-	rating_mode: RatingMode // active|deactive
+	rating_mode: "active" | "deactive" // active|deactive
 	tags: string[]
 	problemType: "주관식"
 	grading_criteria: string[]
@@ -409,13 +413,13 @@ export const problem_api = {
 		title: string,
 		description: string,
 		difficulty: string,
-		rating_mode: "Hard" | "Space" | "Regex" | "None",
+		rating_mode: "hard" | "space" | "regex" | "none",
 		tags: string[],
 		problem_condition: string[],
 		reference_codes: ReferenceCodeRequest[],
 		test_cases: TestCaseRequest[],
 		problemType: "코딩" | "디버깅",
-		base_code?: string // 디버깅 문제일 때만 제공
+		base_code?: BaseCodeRequest[] // 디버깅 문제일 때만 제공
 	) {
 		const body: any = {
 			title,
@@ -427,10 +431,10 @@ export const problem_api = {
 			problemType,
 			reference_codes,
 			test_cases,
-			base_code,
+			base_code: base_code ?? [],
 		}
-		if (problemType === "디버깅") {
-			body.base_code = base_code || ""
+		if (problemType === "디버깅" && base_code) {
+			body.base_codes = base_code || []
 		}
 
 		const res = await fetchWithAuth("/api/proxy/problems", {
@@ -441,7 +445,12 @@ export const problem_api = {
 		})
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}))
-			throw new Error(err.detail?.msg || err.message || "코딩·디버깅 문제 생성 실패")
+			console.error("🛑 problem_create error:", err)
+			const messages = Array.isArray(err.detail)
+				? err.detail.map((d: any) => `${d.loc.join(" → ")}: ${d.msg}`).join("\n")
+				: err.detail?.msg || err.message
+			throw new Error(messages || "코딩·디버깅 문제 생성 실패")
+			// throw new Error(err.detail?.msg || err.message || "코딩·디버깅 문제 생성 실패")
 		}
 		return res.json()
 	},
@@ -474,6 +483,7 @@ export const problem_api = {
 		})
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}))
+			console.error("MC creation error detail:", err)
 			throw new Error(err.detail?.msg || err.message || "객관식 문제 생성 실패")
 		}
 		return res.json()
@@ -486,7 +496,7 @@ export const problem_api = {
 		title: string,
 		description: string,
 		difficulty: string,
-		rating_mode: "exact" | "partial" | "soft" | "None",
+		rating_mode: "exact" | "partial" | "soft" | "none",
 		tags: string[],
 		answer_text: string[],
 		grading_criteria: string[] // 👻 AI 채점 기준 텍스트 배열
@@ -509,7 +519,12 @@ export const problem_api = {
 		})
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}))
-			throw new Error(err.detail?.msg || err.message || "단답형 문제 생성 실패")
+			// throw new Error(err.detail?.msg || err.message || "단답형 문제 생성 실패")
+			console.error("🛑 problem_create error:", err)
+			const messages = Array.isArray(err.detail)
+				? err.detail.map((d: any) => `${d.loc.join(" → ")}: ${d.msg}`).join("\n")
+				: err.detail?.msg || err.message
+			throw new Error(messages || "단답형 문제 생성 실패")
 		}
 		return res.json()
 	},
@@ -544,7 +559,12 @@ export const problem_api = {
 		})
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}))
-			throw new Error(err.detail?.msg || err.message || "주관식 문제 생성 실패")
+			// console.error("🛑 problem_create error:", err)
+			const messages = Array.isArray(err.detail)
+				? err.detail.map((d: any) => `${d.loc.join(" → ")}: ${d.msg}`).join("\n")
+				: err.detail?.msg || err.message
+			throw new Error(messages || "주관식 문제 생성 실패")
+			// throw new Error(err.detail?.msg || err.message || "주관식 문제 생성 실패")
 		}
 		return res.json()
 	},
@@ -637,48 +657,70 @@ export const problem_api = {
 }
 
 // ====================== problem_ref 관련 API ===========================
+// 문제 참조 항목 타입
+export interface ProblemRef {
+	problem_id: number
+	title: string
+	description: string
+	attempt_count: number
+	pass_count: number
+	points: number
+}
 
 export const problem_ref_api = {
-	async problem_ref_get(group_id: number, workbook_id: number) {
+	/**
+	 * 문제지에 연결된 문제 목록 조회
+	 * @param group_id  그룹 ID
+	 * @param workbook_id  문제지 ID
+	 * @returns Promise<ProblemRef[]>
+	 */
+	async problem_ref_get(group_id: number, workbook_id: number, points: number = 10): Promise<ProblemRef[]> {
 		const res = await fetchWithAuth("/api/proxy/problems_ref/get", {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				group_id,
-				workbook_id,
-			}),
+			body: JSON.stringify({ group_id, workbook_id, points }),
 		})
-
 		if (!res.ok) {
+			// 1) 실제 에러 페이로드를 받아와서
 			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 참조 가져오기 실패")
+			console.error("📌 problem_ref_get validation errors →", errorData)
+			// 2) 다시 던져서 화면에도 띄우기
+			throw new Error(
+				errorData.detail ? JSON.stringify(errorData.detail, null, 2) : errorData.message || "문제 참조 가져오기 실패"
+			)
 		}
 
 		return res.json()
 	},
 
-	// 문제지에 문제 추가할 때 선택된 문제들 바탕으로 레퍼런스 만들기
-	async problem_ref_create(group_id: number, workbook_id: number, problem_id: number[]) {
+	/**
+	 * 선택된 문제들을 문제지에 추가
+	 * @param group_id
+	 * @param workbook_id
+	 * @param problem_id
+	 * @param points
+	 */
+	async problem_ref_create(
+		group_id: number,
+		workbook_id: number,
+		problem_id: number[],
+		points: number = 10
+	): Promise<unknown> {
 		const res = await fetchWithAuth("/api/proxy/problems_ref", {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				group_id,
-				workbook_id,
-				problem_id,
-			}),
+			body: JSON.stringify({ group_id, workbook_id, problem_id, points }),
 		})
-
 		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 연결 실패")
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "문제 연결 실패")
 		}
-
 		return res.json()
 	},
 
+	// 해당 문제의 배점 수정 (특정 그룹 문제지에 속해있는 문제의 배점 수정)
 	async problem_ref_edit_points(group_id: number, workbook_id: number, problem_id: number, points: number) {
 		const res = await fetchWithAuth(`/api/proxy/problems_ref/edit_points/${group_id}/${workbook_id}/${problem_id}`, {
 			method: "PATCH",
@@ -1023,8 +1065,7 @@ export const workbook_api = {
 export type SolveRequest =
 	| {
 			problemType: "코딩" | "디버깅"
-			submitted_code: string
-			code_language: string
+			codes: { language: string; code: string }[] // 코드랑 언어 딕셔너리 배열로 받음
 	  }
 	| {
 			problemType: "객관식"
@@ -1062,8 +1103,7 @@ export const solve_api = {
 		switch (request.problemType) {
 			case "코딩":
 			case "디버깅":
-				body.submitted_code = request.submitted_code
-				body.code_language = request.code_language
+				body.codes = request.codes
 				break
 			case "객관식":
 				body.selected_options = request.selected_options
@@ -1149,6 +1189,142 @@ export const solve_api = {
 
 		return res.json()
 	},
+}
+
+// ✨====================== submission 시험모드 채점 관련 API ===========================
+/**
+ * 만약 그룹장이 한번 채점했던 문제여도 다시 수정하면 PATCH 안 쓰고 POST로 새로 채점할거야. 동일한 로직으로.
+ * 그리고 점수 채점할 때 채점완료 버튼 만들고, 채점완료 버튼누르면 점수 post 되면서 reviewed도 되게 할거야.
+ * 그리고 모든 문제에서 채점 완료 버튼 누르기 전까지는 검토 완료 버튼 막아놨다가 모든 문제 다 채점 완료 버튼이 눌리면
+ * 그때 검토 완료 버튼 풀리고 그냥 별 기능 없이 이전 학생 리스트 페이지로 넘어가게
+ */
+import { gradingDummy, GradingStudent } from "@/data/gradingDummy"
+
+export interface SubmissionSummary {
+	submission_id: number
+	user_id: string
+	user_name: string
+	problem_id: number
+	score: number | null // AI 또는 교수 최종 점수
+	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
+	created_at: string
+	updated_at: string
+}
+
+type SubmissionScore = {
+	submission_score_id: number // 점수 레코드 PK
+	submission_id: number
+	score: number
+	graded_by: string | null // null=AI, string=교수ID
+	created_at: string // 채점 시각
+}
+
+let mockSubmissionScores: SubmissionScore[] = []
+
+export const grading_api = {
+	/**
+	 * 한 그룹·시험(workbook)의 모든 제출 조회
+	 * - .env 파일에 MOCK 모드면 gradingDummy -> SubmissionSummary[] 로 변환
+	 * @param group_id
+	 * @param workbook_id
+	 * @param student_id
+	 * @returns
+	 */
+	async get_all_submissions(group_id: number, workbook_id: number, student_id?: string): Promise<SubmissionSummary[]> {
+		// MOCK 환경일 때: gradingDummy (GradingStudent[]) -> SubmissionSummary[]
+		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
+			const subs: SubmissionSummary[] = []
+			gradingDummy.forEach((stu, stuIdx) => {
+				// problemScores -> 문제 별 점수 배열 (UI로 치면 oxoox 형태)
+				stu.problemScores.forEach((score, problemId) => {
+					subs.push({
+						submission_id: stuIdx * 100 + problemId,
+						user_id: stu.studentId,
+						user_name: stu.studentName,
+						problem_id: problemId,
+						score: score,
+						reviewed: stu.problemStatus[problemId],
+						created_at: stu.submittedAt,
+						updated_at: stu.submittedAt,
+					})
+				})
+			})
+			return subs
+		}
+
+		// 실제 API 호출
+		const params = new URLSearchParams({
+			group_id: String(group_id),
+			workbook_id: String(workbook_id),
+		})
+		if (student_id) params.set("user_id", student_id)
+
+		// /api/proxy/submissions/${group_id}/${workbook_id}
+		const res = await fetchWithAuth(
+			`/api/proxy/groups/${group_id}/workbooks/${workbook_id}/submissions?${params.toString()}`
+		)
+		if (!res.ok) throw new Error("제출 목록 가져오기 실패")
+		return res.json()
+	},
+
+	async get_submission_scores(submission_id: number): Promise<SubmissionScore[]> {
+		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
+			return mockSubmissionScores.filter((s) => s.submission_id === submission_id)
+		}
+		const res = await fetchWithAuth(`/api/proxy/submissions/${submission_id}/scores`)
+		if (!res.ok) throw new Error("채점 기록 조회 실패")
+		return res.json()
+	},
+
+	async post_submission_score(submission_id: number, score: number): Promise<SubmissionScore> {
+		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
+			const newScore: SubmissionScore = {
+				submission_score_id: mockSubmissionScores.length + 1,
+				submission_id,
+				score,
+				graded_by: "교수A",
+				created_at: new Date().toISOString(),
+			}
+			mockSubmissionScores.push(newScore)
+			return newScore
+		}
+		const res = await fetchWithAuth(`/api/proxy/grading/${submission_id}/score`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ score }),
+		})
+		if (!res.ok) throw new Error("채점 저장 실패")
+		return res.json()
+	},
+
+	/**
+	 * 특정 제출(submission_id)에 대한 모든 채점 기록 조회 -> 채점점수 + 검토 완료 여부
+	 * @param submission_id
+	 * @returns
+	 */
+	// async get_submission_scores(submission_id: number) {
+	// 	const res = await fetchWithAuth(`/api/proxy/submissions/${submission_id}/scores`)
+	// 	if (!res.ok) throw new Error("채점 기록 조회 실패")
+	// 	return res.json()
+	// },
+
+	/**
+	 * 개별 문제에 대해 교수(그룹장) 채점 추가
+	 * @param submission_id
+	 * @param score
+	 * @returns
+	 */
+	// async post_submission_score(submission_id: number, score: number) {
+	// 	const res = await fetchWithAuth(`/api/proxy/grading/${submission_id}/score`, {
+	// 		method: "POST",
+	// 		credentials: "include",
+	// 		headers: { "Content-Type": "application/json" },
+	// 		body: JSON.stringify({ score }),
+	// 	})
+	// 	if (!res.ok) throw new Error("채점 저장 실패")
+	// 	return res.json()
+	// },
 }
 
 // ====================== code_logs 관련 API ===========================
@@ -1307,7 +1483,7 @@ export const run_code_api = {
 // 	title: string
 // 	description: string
 // 	difficulty: string
-// 	rating_mode: "Hard" | "Space" | "Regex" | "None"
+// 	rating_mode: "hard" | "space" | "regex" | "none"
 // 	tags: string[]
 // 	problem_condition: string[]
 // 	reference_codes: ReferenceCodeResponse[]

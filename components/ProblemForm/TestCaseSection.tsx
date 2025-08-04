@@ -1,4 +1,4 @@
-import { TestCase } from "@/hooks/useProblemForm";
+import { TestCase } from "@/hooks/useProblemForm"
 
 interface TestCaseSectionProps {
 	testCases: TestCase[]
@@ -19,9 +19,8 @@ export default function TestCaseSection({
 		<div className="mb-6">
 			<h2 className="text-lg font-bold mb-2">테스트 케이스</h2>
 			<div className="border-t border-gray-300 my-3"></div>
-			
+
 			<div className="bg-white shadow-md rounded-xl p-3">
-				
 				<div className="space-y-3">
 					{testCases.map((testCase, index) => (
 						<div key={index} className="border border-gray-200 rounded-lg p-3">
@@ -86,4 +85,4 @@ export default function TestCaseSection({
 			</div>
 		</div>
 	)
-} 
+}

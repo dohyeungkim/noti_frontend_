@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation"
 // import { EditorContent } from "@tiptap/react"
 import { motion } from "framer-motion"
 import { problem_api } from "@/lib/api"
+import type { ReferenceCodeRequest, BaseCodeRequest } from "@/lib/api"
+
 // import Toolbar from "../markdown/Toolbar"
-import { useProblemForm } from "@/hooks/useProblemForm"
+import { useProblemForm, type ProblemType } from "@/hooks/useProblemForm"
 import { useProblemEditor } from "@/hooks/useProblemEditor"
 // import ProblemBasicInfo from "../ProblemForm/ProblemBasicInfo"
 import ReferenceCodeEditor from "../ProblemForm/ReferenceCodeEditor"
@@ -17,7 +19,6 @@ import "react-mde/lib/styles/css/react-mde-all.css"
 import ReactMarkdown from "react-markdown"
 
 // 문제 유형
-type ProblemType = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
 
 const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
 	{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
@@ -167,6 +168,23 @@ export default function NewRegisteredProblem() {
 		saveDraft()
 	}, [saveDraft])
 
+	useEffect(() => {
+		switch (problemType) {
+			case "코딩":
+			case "디버깅":
+				setRatingMode("hard")
+				break
+			case "단답형":
+				setRatingMode("exact")
+				break
+			case "주관식":
+				setRatingMode("active")
+				break
+			default:
+				setRatingMode("none")
+		}
+	}, [problemType])
+
 	// 로딩 상태 체크는 모든 훅 호출 이후에
 	if (!editor) return <p>Editor is loading...</p>
 
@@ -234,24 +252,39 @@ export default function NewRegisteredProblem() {
 		}
 
 		const filteredConditions = conditions.filter((condition) => condition.trim() !== "")
-
+		const refCodes = referenceCodes.length > 0 ? referenceCodes : []
+		const testCasesPayload = testCases.length > 0 ? testCases : []
 		// 문제 생성 Api 호출
 		try {
-			if (problemType === "코딩" || problemType === "디버깅") {
-				const refCodes = problemType === "코딩" ? referenceCodes : []
-				const payloadBase = problemType === "디버깅" ? baseCode : undefined
-				// 기존과 동일, baseCode도 함께 전달
+			if (problemType === "코딩") {
+				// base_code 파라미터 없이 호출
 				await problem_api.problem_create(
 					title,
 					description,
 					difficulty,
-					ratingMode as "Hard" | "Space" | "Regex" | "None",
+					ratingMode as "hard" | "space" | "regex" | "none",
 					tags,
 					filteredConditions,
 					refCodes,
-					testCases,
-					problemType as "코딩" | "디버깅",
-					payloadBase // 디버깅일 땐 이 값이 body.base_code 로 들어감
+					testCasesPayload,
+					"코딩" // problemType 여기는 무조건 "코딩"
+				)
+			} else if (problemType === "디버깅") {
+				// 디버깅 전용 base_code payload
+				const basePayload =
+					problemType === "디버깅" ? [{ language: referenceCodes[0].language, code: baseCode }] : undefined
+
+				await problem_api.problem_create(
+					title,
+					description,
+					difficulty,
+					ratingMode as "hard" | "space" | "regex" | "none",
+					tags,
+					filteredConditions,
+					refCodes,
+					testCasesPayload,
+					"디버깅", // problemType 여기는 무조건 "디버깅"
+					basePayload
 				)
 			} else if (problemType === "객관식") {
 				// PROBLEM_TYPES 에서 options, correctAnswers 훑어 오실 거라 가정
@@ -268,7 +301,7 @@ export default function NewRegisteredProblem() {
 					title,
 					description,
 					difficulty,
-					ratingMode as "exact" | "partial" | "soft" | "None",
+					ratingMode as "exact" | "partial" | "soft" | "none",
 					tags,
 					answerTexts, // TEXT[] 형식의 정답들
 					gradingCriteria // AI 채점 기준
@@ -440,7 +473,7 @@ export default function NewRegisteredProblem() {
 								<label className="block text-xs font-medium text-gray-700 mb-1">채점 모드</label>
 								<select
 									value={ratingMode}
-									onChange={(e) => setRatingMode(e.target.value as "Hard" | "Space" | "Regex" | "None")}
+									onChange={(e) => setRatingMode(e.target.value as "hard" | "space" | "regex" | "none")}
 									className="w-full px-3 py-1.5 border rounded-md text-sm"
 								>
 									{problemType === "객관식" ? (
@@ -454,15 +487,15 @@ export default function NewRegisteredProblem() {
 										</>
 									) : problemType === "주관식" ? (
 										<>
-											<option value="active">active</option>
-											<option value="deactive">deactive</option>
+											<option value="active">Active</option>
+											<option value="deactive">Deactive</option>
 										</>
 									) : (
 										<>
-											<option value="Hard">Hard</option>
-											<option value="Space">Space</option>
-											<option value="Regex">Regex</option>
-											<option value="None">None</option>
+											<option value="hard">Hard</option>
+											<option value="space">Space</option>
+											<option value="regex">Regex</option>
+											<option value="none">None</option>
 										</>
 									)}
 								</select>

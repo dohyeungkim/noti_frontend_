@@ -11,7 +11,7 @@ interface Problem {
 	description: string
 	attempt_count: number
 	pass_count: number
-	is_like: boolean
+	// is_like: boolean
 	problem_type?: string // 문제 유형 (옵션) 새로 추가하는 내용. 일단 지금은 코딩- 홍
 	problem_score?: number // 배점 (옵션) 새로 추가하는 내용. 일단 지금은 10점으로 써놈- 홍
 }
@@ -34,7 +34,7 @@ export default function ProblemGallery({
 	setRefresh,
 }: ProblemGalleryProps) {
 	const router = useRouter()
-	const [likedProblems, setLikedProblems] = useState<Record<number, boolean>>({})
+	// const [likedProblems, setLikedProblems] = useState<Record<number, boolean>>({})
 	const [currentProblems, setCurrentProblems] = useState<Problem[]>(problems)
 
 	// 시험 모드는 아직 미완성이지만 UI는 보이도록 함 (개발용)
@@ -42,19 +42,19 @@ export default function ProblemGallery({
 	// 더미데이터ㅓ 한 학생 제출 데이터, 문제별 점수 가젿오기
 	const mySubmissions = studentSubmission.submissions
 
-	const toggleLike = async (problemId: number) => {
-		try {
-			const response = await problem_like_api.problem_like(problemId, groupId, workbookId)
-			const isLiked = response.liked
-			setLikedProblems((prev) => ({
-				...prev,
-				[problemId]: isLiked,
-			}))
-		} catch (error) {
-			console.error("좋아요 토글 실패:", error)
-			alert("좋아요 처리 중 오류가 발생했습니다.")
-		}
-	}
+	// const toggleLike = async (problemId: number) => {
+	// 	try {
+	// 		const response = await problem_like_api.problem_like(problemId, groupId, workbookId)
+	// 		const isLiked = response.liked
+	// 		setLikedProblems((prev) => ({
+	// 			...prev,
+	// 			[problemId]: isLiked,
+	// 		}))
+	// 	} catch (error) {
+	// 		console.error("좋아요 토글 실패:", error)
+	// 		alert("좋아요 처리 중 오류가 발생했습니다.")
+	// 	}
+	// }
 
 	const deleteProblem = async (problemId: number) => {
 		if (!confirm("정말 삭제하시겠습니까?")) return
@@ -86,7 +86,7 @@ export default function ProblemGallery({
 							: "bg-yellow-50"
 						: "bg-white"
 
-				const isLiked = likedProblems[p.problem_id] ?? p.is_like
+				// const isLiked = likedProblems[p.problem_id] ?? p.is_like
 
 				// 버튼 텍스트: 시험모드에서 그룹장일 경우 "문제 보기", 그 외에는 "도전하기"
 				const buttonText = isExamMode && isGroupOwner ? "문제 보기" : "도전하기"

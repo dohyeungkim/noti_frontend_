@@ -1,18 +1,18 @@
-import ReactMde from "react-mde";
-import "react-mde/lib/styles/css/react-mde-all.css";
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMde from "react-mde"
+import "react-mde/lib/styles/css/react-mde-all.css"
+import { useState } from "react"
+import ReactMarkdown from "react-markdown"
 
 // Add a module declaration for react-mde to handle missing types
-declare module "react-mde";
+declare module "react-mde"
 
 interface ProblemBasicInfoProps {
 	title: string
 	setTitle: (title: string) => void
 	difficulty: string
 	setDifficulty: (difficulty: string) => void
-	ratingMode: "Hard" | "Space" | "Regex"
-	setRatingMode: (mode: "Hard" | "Space" | "Regex") => void
+	ratingMode: "hard" | "space" | "regex"
+	setRatingMode: (mode: "hard" | "space" | "regex") => void
 	tags: string[]
 	updateTags: (tagString: string) => void
 	removeTag: (index: number) => void
@@ -29,8 +29,8 @@ export default function ProblemBasicInfo({
 	updateTags,
 	removeTag,
 }: ProblemBasicInfoProps) {
-	const [description, setDescription] = useState("");
-	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
+	const [description, setDescription] = useState("")
+	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write")
 
 	return (
 		<div className="mb-6">
@@ -60,11 +60,7 @@ export default function ProblemBasicInfo({
 					{tags.map((tag, idx) => (
 						<span key={idx} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded">
 							{tag}
-							<button
-								type="button"
-								className="ml-1 text-red-500 hover:text-red-700"
-								onClick={() => removeTag(idx)}
-							>
+							<button type="button" className="ml-1 text-red-500 hover:text-red-700" onClick={() => removeTag(idx)}>
 								×
 							</button>
 						</span>
@@ -83,7 +79,7 @@ export default function ProblemBasicInfo({
 					>
 						<option value="easy">Easy</option>
 						<option value="medium">Medium</option>
-						<option value="hard">Hard</option>
+						<option value="hard">hard</option>
 					</select>
 				</div>
 
@@ -91,15 +87,15 @@ export default function ProblemBasicInfo({
 					<label className="block text-xs font-medium text-gray-700 mb-1">채점 모드</label>
 					<select
 						value={ratingMode}
-						onChange={(e) => setRatingMode(e.target.value as "Hard" | "Space" | "Regex")}
+						onChange={(e) => setRatingMode(e.target.value as "hard" | "space" | "regex")}
 						className="w-full px-3 py-1.5 border rounded-md text-sm"
 					>
-						<option value="Hard">Hard</option>
-						<option value="Space">Space</option>
-						<option value="Regex">Regex</option>
+						<option value="hard">hard</option>
+						<option value="space">Space</option>
+						<option value="regex">regex</option>
 					</select>
 				</div>
 			</div>
 		</div>
 	)
-} 
+}

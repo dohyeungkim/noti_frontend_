@@ -2,6 +2,8 @@ import { create } from "zustand"
 import { auth_api } from "@/lib/api"
 
 interface AuthState {
+	userId: string | null
+	setUserId: (value: string) => void
 	userName: string | null
 	setUserName: (value: string) => void
 	isAuth: boolean | null
@@ -11,6 +13,8 @@ interface AuthState {
 }
 
 export const useAuth = create<AuthState>()((set, get) => ({
+	userId: null,
+	setUserId: (value) => set({ userId: value }),
 	userName: null,
 	setUserName: (value) => set({ userName: value }),
 	isAuth: null,
@@ -28,6 +32,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
 					const res = await auth_api.getUser()
 					set({
 						isAuth: true,
+						userId: res.user_id,
 						userName: res.username || res.user_id,
 					})
 				} catch (userError) {

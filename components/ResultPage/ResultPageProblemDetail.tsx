@@ -1,9 +1,10 @@
 import { motion } from "framer-motion"
 import { useState } from "react"
-import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
+// import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
+import type { ProblemDetail } from "@/lib/api"
 // import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 
-function ResultPageProblemDetail({ problem }: { problem: Problem | null }) {
+function ResultPageProblemDetail({ problem }: { problem: ProblemDetail | null }) {
 	const [isExpanded, setIsExpanded] = useState(false)
 
 	const toggleDescription = () => setIsExpanded(!isExpanded)

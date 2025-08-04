@@ -2,25 +2,32 @@
 
 import { useRouter } from "next/navigation"
 import { problem_api, problem_ref_api } from "@/lib/api"
+import type { ProblemDetail, ProblemRef } from "@/lib/api"
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react"
-import { X } from "lucide-react"
+import { PoundSterling, X } from "lucide-react"
 
-export interface Problem {
-	problem_id: number
-	title: string
-	description: string
-	attempt_count: number
-	pass_count: number
-	is_like: boolean
-}
+// export interface Problem {
+// 	problem_id: number
+// 	title: string
+// 	description: string
+// 	points: number
+// 	// attempt_count: number
+// 	// pass_count: number
+// 	// is_like: boolean
+// }
+
+export type Problem = ProblemRef
 
 interface ProblemSelectorProps {
 	groupId: number
 	workbookId: number
 	isModalOpen: boolean
 	setIsModalOpen: (open: boolean) => void
-	selectedProblems: Problem[]
-	setSelectedProblems: Dispatch<SetStateAction<Problem[]>>
+
+	// ProblemStructure 에서 받는 문제 참조 리스트
+	selectedProblems: ProblemRef[]
+	setSelectedProblems: Dispatch<SetStateAction<ProblemRef[]>>
+
 	refresh: boolean
 	setRefresh: React.Dispatch<React.SetStateAction<boolean>>
 }
@@ -30,58 +37,45 @@ export default function ProblemSelector({
 	workbookId,
 	isModalOpen,
 	setIsModalOpen,
+
 	selectedProblems,
 	setSelectedProblems,
+
 	refresh,
 	setRefresh,
 }: ProblemSelectorProps) {
-	const [problems, setProblems] = useState<Problem[]>([])
+	const [problems, setProblems] = useState<ProblemDetail[]>([])
 	const [isSubmitting, setIsSubmitting] = useState(false)
-	const [isAlreadySelected, setIsAlreadySelected] = useState<Problem[]>([])
+	const [isAlreadySelected, setIsAlreadySelected] = useState<ProblemDetail[]>([])
 	const [newlyAddedProblemIds, setNewlyAddedProblemIds] = useState<Set<number>>(new Set()) // Track newly added problems by ID
+	const [tempSelectedIds, setTempSelectedIds] = useState<Set<number>>(new Set())
 	const isFetched = useRef(false)
+	const [points, setPoints] = useState<number>(10)
 
-	const handleSelect = (problem: Problem) => {
-		setSelectedProblems((prevSelected) => {
-			const isSelected = prevSelected.some((p) => p.problem_id === problem.problem_id)
-			const isAlreadySelectedProblem = isAlreadySelected.some((p) => p.problem_id === problem.problem_id)
+	// tempSelectedIds 는 '모달이 열려있는 동안'만 쓸 로컬셋
 
-			if (isAlreadySelectedProblem) {
-				console.log("🚫 이미 선택된 문제는 해제할 수 없습니다:", problem.title)
-				return prevSelected
-			}
+	const handleSelect = (problem: ProblemDetail) => {
+		if (isAlreadySelected.some((p) => p.problem_id === problem.problem_id)) return // 이미 부모에 등록된 건 토글 금지
 
-			if (isSelected) {
-				// Allow removing only newly added problems
-				if (newlyAddedProblemIds.has(problem.problem_id)) {
-					setNewlyAddedProblemIds((prev) => {
-						const updatedSet = new Set(prev)
-						updatedSet.delete(problem.problem_id) // Remove from the set
-						return updatedSet
-					})
-					return prevSelected.filter((p) => p.problem_id !== problem.problem_id)
-				}
-				return prevSelected
-			} else {
-				setNewlyAddedProblemIds((prev) => new Set(prev).add(problem.problem_id))
-				return [...prevSelected, problem]
-			}
+		setTempSelectedIds((prev) => {
+			const next = new Set(prev)
+			if (next.has(problem.problem_id)) next.delete(problem.problem_id)
+			else next.add(problem.problem_id)
+			return next
 		})
 	}
 
 	// 문제 가져오기 함수 (useCallback 적용)
+	// 문제 리스트만 가져오는 함수
 	const fetchProblem = useCallback(async () => {
 		try {
 			console.log("📢 문제 가져오기 요청 시작!")
 			const res = await problem_api.problem_get()
 			if (Array.isArray(res)) {
 				setProblems(res)
-				const alreadySelected = res.filter((problem) =>
-					selectedProblems.some((p) => p.problem_id === problem.problem_id)
-				)
-				setIsAlreadySelected(alreadySelected)
-			} else {
-				console.error("응답 데이터 형식이 예상과 다릅니다:", res)
+				// 이미 부모(문제지)에 붙어있는 것들만 골라두기
+				const already = res.filter((p) => selectedProblems.some((sp) => sp.problem_id === p.problem_id))
+				setIsAlreadySelected(already)
 			}
 		} catch (error) {
 			console.error("❌ 문제를 가져오는 데 실패했습니다.", error)
@@ -89,28 +83,64 @@ export default function ProblemSelector({
 		}
 	}, [selectedProblems])
 
-	// 모달이 열릴 때 fetchProblem 실행
+	// 모달이 열릴 때 한 번만 fetchProblem 실행
 	useEffect(() => {
-		fetchProblem()
 		if (isModalOpen && !isFetched.current) {
+			fetchProblem()
 			isFetched.current = true
 		}
 	}, [isModalOpen, fetchProblem])
 
+	useEffect(() => {
+		if (isModalOpen) {
+			// 부모에서 이미 선택된 문제 ID 들을 tempSelectedIds 에 초기화
+			setTempSelectedIds(new Set(selectedProblems.map((p) => p.problem_id)))
+			// 클릭 금지 처리할 목록도 동기화
+			setIsAlreadySelected(problems.filter((p) => selectedProblems.some((sp) => sp.problem_id === p.problem_id)))
+			// 문제 목록은 한 번만 가져오기 위해 플래그 초기화
+			isFetched.current = false
+		}
+	}, [isModalOpen, selectedProblems])
+
+	// 문제 추가하기 버튼
 	const handleAddProblemButton = async () => {
-		console.log("handleAddProblemButton 호출됨", new Date().toISOString())
+		// console.log("handleAddProblemButton 호출됨", new Date().toISOString())
 		if (isSubmitting) return
 		setIsSubmitting(true)
-		try {
-			const uniqueProblemIds = Array.from(new Set(selectedProblems.map((p) => p.problem_id)))
-			await problem_ref_api.problem_ref_create(Number(groupId), Number(workbookId), uniqueProblemIds)
 
-			const newlyAdded = problems.filter((p) => uniqueProblemIds.includes(p.problem_id))
+		try {
+			// 모달에서 새로 선택된 ID 중, 이미 추가된 건 제외
+			// const uniqueProblemIds = Array.from(new Set(selectedProblems.map((p) => p.problem_id)))
+			const idsToAdd = Array.from(tempSelectedIds).filter((id) => !isAlreadySelected.some((p) => p.problem_id === id))
+
+			await problem_ref_api.problem_ref_create(groupId, workbookId, idsToAdd, 10)
+
+			const newlyAdded = problems.filter((p) => idsToAdd.includes(p.problem_id))
+
+			// 2) ProblemDetail → ProblemRef 로 매핑
+			const newRefs: ProblemRef[] = newlyAdded.map((p) => ({
+				problem_id: p.problem_id,
+				title: p.title,
+				description: p.description,
+				// 여기서 횟수는 필요 없음, 그래서 일단 걍 0으로 전달.
+				attempt_count: 0,
+				pass_count: 0,
+				points, // 모달의 points 상태
+			}))
+
+			// 3) 중복 없이 부모 상태에 붙여 주기
 			setSelectedProblems((prev) => {
-				const existingIds = new Set(prev.map((p) => p.problem_id))
-				const filteredNew = newlyAdded.filter((p) => !existingIds.has(p.problem_id))
-				return [...prev, ...filteredNew]
+				const existing = new Set(prev.map((x) => x.problem_id))
+				// const filtered = newRefs.filter((r) => !existing.has(r.problem_id))
+				const toAdd = newRefs.filter((r) => !existing.has(r.problem_id))
+				return [...prev, ...toAdd]
 			})
+
+			// setSelectedProblems((prev) => {
+			// 	const existingIds = new Set(prev.map((p) => p.problem_id))
+			// 	const filteredNew = newlyAdded.filter((p) => !existingIds.has(p.problem_id))
+			// 	return [...prev, ...filteredNew]
+			// })
 
 			setRefresh((prev) => !prev)
 			refresh = refresh
@@ -122,10 +152,12 @@ export default function ProblemSelector({
 		}
 	}
 
-	const router = useRouter()
-	const MakeProblemClick = () => {
-		router.push("/registered-problems/create")
-	}
+	const modalSelected = problems.filter((p) => tempSelectedIds.has(p.problem_id))
+
+	// const router = useRouter()
+	// const MakeProblemClick = () => {
+	// 	router.push("/registered-problems/create")
+	// }
 
 	return (
 		isModalOpen && (
@@ -153,7 +185,7 @@ export default function ProblemSelector({
 												className={`cursor-pointer rounded-md p-2 border-b transition ${
 													isDisabled
 														? "bg-gray-300 text-gray-500 cursor-not-allowed"
-														: selectedProblems.some((p) => p.problem_id === problem.problem_id)
+														: tempSelectedIds.has(problem.problem_id)
 														? "bg-mygreen text-white"
 														: "bg-gray-100 hover:bg-gray-200"
 												}`}
@@ -169,21 +201,21 @@ export default function ProblemSelector({
 							<div className="flex-1">
 								<h2 className="text-xl font-bold mb-2">선택한 문제</h2>
 								<ul className="border p-4 rounded-md shadow-md bg-white h-64 overflow-y-auto">
-									{selectedProblems.length > 0 ? (
-										selectedProblems.map((selected) => {
-											const newProblem = problems.find((p) => p.problem_id === selected.problem_id)
+									{modalSelected.length > 0 ? (
+										modalSelected.map((p) => {
+											// const newProblem = problems.find((p) => p.problem_id === selected.problem_id)
 											return (
 												<li
-													key={`selected-${selected.problem_id}`}
-													onClick={() => handleSelect(selected)}
+													key={`selected-${p.problem_id}`}
+													onClick={() => handleSelect(p)}
 													className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200"
 												>
-													📌{" "}
-													{newProblem
+													📌{p.title.length > 18 ? `${p.title.slice(0, 18)}...` : p.title}
+													{/* {newProblem
 														? newProblem.title.length > 18
 															? `${newProblem.title.slice(0, 18)}...`
 															: newProblem.title
-														: "알 수 없는 문제"}
+														: "알 수 없는 문제"} */}
 												</li>
 											)
 										})
@@ -193,14 +225,15 @@ export default function ProblemSelector({
 								</ul>
 							</div>
 						</div>
+
 						{/* 🔹 Submit 버튼 */}
 						<div className="mt-4 flex justify-end">
-							<button
+							{/* <button
 								onClick={MakeProblemClick}
 								className="bg-mydarkgreen text-white px-4 py-2 mr-2 rounded hover:bg-opacity-80 transition"
 							>
 								문제 만들기
-							</button>
+							</button> */}
 							<button
 								onClick={handleAddProblemButton}
 								disabled={isSubmitting}

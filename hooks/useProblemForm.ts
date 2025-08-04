@@ -1,5 +1,13 @@
 import { useState, useCallback } from "react"
 
+export type ProblemType = "코딩" | "디버깅" | "객관식" | "주관식" | "단답형"
+
+export type CodingRatingMode = "hard" | "space" | "regex" | "none"
+export type ShortAnswerRatingMode = "exact" | "partial" | "soft"
+export type SubjectiveRatingMode = "active" | "deactive"
+
+export type RatingMode = CodingRatingMode | ShortAnswerRatingMode | SubjectiveRatingMode
+
 export interface ReferenceCode {
 	language: "python" | "java" | "cpp" | "c" | "javascript"
 	code: string
@@ -30,10 +38,12 @@ export const languageDisplayNames = {
 
 export function useProblemForm() {
 	const [title, setTitle] = useState("")
+	const [description, setDescription] = useState<string>("")
 	const [difficulty, setDifficulty] = useState("easy")
+	const [problemType, setProblemType] = useState<ProblemType>("코딩")
 	const [ratingMode, setRatingMode] = useState<
-		"Hard" | "Space" | "Regex" | "None" | "exact" | "partial" | "soft" | "active" | "deactive"
-	>("Hard")
+		"hard" | "space" | "regex" | "none" | "exact" | "partial" | "soft" | "active" | "deactive"
+	>("hard")
 	const [tags, setTags] = useState<string[]>([])
 	const [conditions, setConditions] = useState([""])
 	const [referenceCodes, setReferenceCodes] = useState<ReferenceCode[]>([
@@ -42,19 +52,37 @@ export function useProblemForm() {
 	const [testCases, setTestCases] = useState<TestCase[]>([{ input: "", expected_output: "", is_sample: true }])
 	const [activeCodeTab, setActiveCodeTab] = useState(0)
 
+	const getValidRatingModes = useCallback((): RatingMode[] => {
+		switch (problemType) {
+			case "코딩":
+			case "디버깅":
+				return ["hard", "space", "regex", "none"]
+			case "단답형":
+				return ["exact", "partial", "soft"]
+			case "주관식":
+				return ["active", "deactive"]
+			default:
+				return []
+		}
+	}, [problemType])
+
 	// 초기 데이터 설정 함수
 	const setInitialData = useCallback(
 		(data: {
 			title?: string
+			description: string
 			difficulty?: string
-			ratingMode?: "Hard" | "Space" | "Regex" | "None" | "exact" | "partial" | "soft" | "active" | "deactive"
+			problemType?: ProblemType
+			ratingMode?: RatingMode
 			tags?: string[]
 			conditions?: string[]
 			referenceCodes?: ReferenceCode[]
 			testCases?: TestCase[]
 		}) => {
 			if (data.title !== undefined) setTitle(data.title)
+			if (data.description !== undefined) setDescription(data.description) // ← 추가
 			if (data.difficulty !== undefined) setDifficulty(data.difficulty)
+			if (data.problemType !== undefined) setProblemType(data.problemType)
 			if (data.ratingMode !== undefined) setRatingMode(data.ratingMode)
 			if (data.tags !== undefined) setTags(data.tags)
 			if (data.conditions !== undefined) setConditions(data.conditions)
@@ -72,7 +100,8 @@ export function useProblemForm() {
 				const data = JSON.parse(draft)
 				setTitle(data.title || "")
 				setDifficulty(data.difficulty || "easy")
-				setRatingMode(data.ratingMode || "Hard")
+				setProblemType(data.problemType || "코딩")
+				setRatingMode(data.ratingMode || "hard")
 				setTags(data.tags || [])
 				setConditions(data.conditions || [""])
 				setReferenceCodes(data.referenceCodes || [{ language: "python", code: "", is_main: true }])
@@ -88,6 +117,7 @@ export function useProblemForm() {
 		const draft = {
 			title,
 			difficulty,
+			problemType,
 			ratingMode,
 			tags,
 			conditions,
@@ -95,7 +125,7 @@ export function useProblemForm() {
 			testCases,
 		}
 		localStorage.setItem("problemDraft", JSON.stringify(draft))
-	}, [title, difficulty, ratingMode, tags, conditions, referenceCodes, testCases])
+	}, [title, difficulty, problemType, ratingMode, tags, conditions, referenceCodes, testCases])
 
 	// 참조 코드 관리
 	const addReferenceCode = () => {
@@ -198,6 +228,9 @@ export function useProblemForm() {
 		// 상태
 		title,
 		setTitle,
+		description,
+		setDescription,
+
 		difficulty,
 		setDifficulty,
 		ratingMode,

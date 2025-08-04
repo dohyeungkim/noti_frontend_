@@ -23,28 +23,38 @@ interface ExamCardProps {
 }
 
 export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardProps) {
-	// 날짜 문자열을 Date 객체로 변환
 	const pubStart = useMemo(() => new Date(workbook.publication_start_time), [workbook.publication_start_time])
 	const pubEnd = useMemo(() => new Date(workbook.publication_end_time), [workbook.publication_end_time])
 	const testStart = useMemo(() => new Date(workbook.test_start_time), [workbook.test_start_time])
 	const testEnd = useMemo(() => new Date(workbook.test_end_time), [workbook.test_end_time])
 	const now = useMemo(() => new Date(), [])
 
-	// 조건 정의
-	const inPublication = now >= pubStart && now <= pubEnd // 현재 시간이 게시기간 내에 있는지
-	const inTestPeriod = now >= testStart && now <= testEnd // 현재 시간이 제출기간 내에 있는지
-	// 👻 백엔드 구현 완료 후 주석 풀고 아래 코드 사용하기 (지금은 시험모드 정보가 없어서 그룹장인지로만 확인) -> 시험모드이고 교수자일 때만 시험 관련 정보 랜더링
-	const showTestBanner = workbook.is_test_mode && inPublication && isGroupOwner
-	// const showTestBanner = isGroupOwner
-	const showScoreBanner = !isGroupOwner && inPublication && !inTestPeriod
+	// 시험모드인 경우에만 기간 체크
+	const inPublication = workbook.is_test_mode ? now >= pubStart && now <= pubEnd : true
+	const inTestPeriod = workbook.is_test_mode ? now >= testStart && now <= testEnd : true
 
-	// 👻 백엔드 구현 후 버튼 디자인 구상 ~
-	//   시험모드아님 => 문제풀기  *  시험모드+시험기간아님+게시기간+그룹장아님=> 결과 보러가기  *  시험모드+시험기간+그룹장아님=> 시험 보러가기
-	const isExamButton = !workbook.is_test_mode || inTestPeriod
+	// 그룹장: 게시기간 상관없이, 학생: 게시기간 내에만 배너 표시
+	const showTestBanner = workbook.is_test_mode && (isGroupOwner || inPublication)
+	// // 날짜 문자열을 Date 객체로 변환
+	// const pubStart = useMemo(() => new Date(workbook.publication_start_time), [workbook.publication_start_time])
+	// const pubEnd = useMemo(() => new Date(workbook.publication_end_time), [workbook.publication_end_time])
+	// const testStart = useMemo(() => new Date(workbook.test_start_time), [workbook.test_start_time])
+	// const testEnd = useMemo(() => new Date(workbook.test_end_time), [workbook.test_end_time])
+	// const now = useMemo(() => new Date(), [])
 
-	// 📌 👻✨ - 7월 21일 회의에서 나온 내용
-	// 버튼 막기 = 제출 한번 하면 끝나게. 버튼 막기. 백엔드에서 제출 횟수 보내줄거임. 그게 한번이면 버튼 바꾸기.
-	// 게시기간+제출기간 수정할 수 있어야됨 => 게시기간
+	// // 조건 정의
+	// const inPublication = now >= pubStart && now <= pubEnd // 현재 시간이 게시기간 내에 있는지
+	// const inTestPeriod = now >= testStart && now <= testEnd // 현재 시간이 제출기간 내에 있는지
+	// // 👻 백엔드 구현 완료 후 주석 풀고 아래 코드 사용하기 (지금은 시험모드 정보가 없어서 그룹장인지로만 확인) -> 시험모드이고 교수자일 때만 시험 관련 정보 랜더링
+	// const showTestBanner = inPublication && isGroupOwner // workbook.is_test_mode &&
+
+	// // 👻 백엔드 구현 후 버튼 디자인 구상 ~
+	// //   시험모드아님 => 문제풀기  *  시험모드+시험기간아님+게시기간+그룹장아님=> 결과 보러가기  *  시험모드+시험기간+그룹장아님=> 시험 보러가기
+	// const isExamButton = !workbook.is_test_mode || inTestPeriod
+
+	// // 📌 👻✨ - 7월 21일 회의에서 나온 내용
+	// // 버튼 막기 = 제출 한번 하면 끝나게. 버튼 막기. 백엔드에서 제출 횟수 보내줄거임. 그게 한번이면 버튼 바꾸기.
+	// // 게시기간+제출기간 수정할 수 있어야됨 => 게시기간
 	return (
 		<div
 			onClick={onClick}
@@ -86,17 +96,21 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 			)}
 
 			{/*  =========== 시험모드 배너 (학생) =========== */}
-			{showScoreBanner && (
-				<div className="bg-red-50 rounded-lg p-4 mb-4 space-y-2">
-					{/* 여기에 학생 체점 결과 동그라미들 뜨게 하기 */}
-				</div>
-			)}
 
 			<button
-				// disabled={!isButtonEnabled}
-				className={`w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 ${"bg-mygreen text-white hover:bg-opacity-80"}`}
+				onClick={(e) => {
+					e.stopPropagation()
+					onClick()
+				}}
+				className="w-full py-2 rounded-xl text-lg font-semibold transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80"
 			>
-				문제지 펼치기 →
+				{workbook.is_test_mode
+					? isGroupOwner
+						? "시험 관리 →"
+						: inTestPeriod
+						? "시험 보러가기 →"
+						: "결과 보러가기 →"
+					: "문제지 펼치기 →"}
 			</button>
 		</div>
 	)

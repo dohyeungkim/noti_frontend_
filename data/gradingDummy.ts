@@ -21,21 +21,21 @@ export interface GradingData {
 // 채점 더미 데이터
 export const gradingDummy: GradingStudent[] = [
 	{
-		studentId: "student-001",
+		studentId: "20240398",
 		studentName: "이승현",
 		problemScores: [5, 5, 5, 5, 5], // 5개 문제, 각 5점
 		problemStatus: [true, false, false, false, false], // 첫 번째 문제만 검토 완료
 		submittedAt: "2025-07-09T10:30:00+09:00",
 	},
 	{
-		studentId: "student-002",
+		studentId: "20245281",
 		studentName: "홍서연",
 		problemScores: [4, 3, 5, 2, 5],
 		problemStatus: [true, true, false, false, false],
 		submittedAt: "2025-07-09T10:45:00+09:00",
 	},
 	{
-		studentId: "student-003",
+		studentId: "20252092",
 		studentName: "조완익",
 		problemScores: [5, 4, 5, 5, 4],
 		problemStatus: [true, true, true, false, false],

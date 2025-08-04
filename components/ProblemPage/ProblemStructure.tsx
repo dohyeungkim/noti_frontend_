@@ -13,22 +13,23 @@ import { group_api, problem_ref_api } from "@/lib/api"
 import { Calendar, FileCheck } from "lucide-react" // Lucide 아이콘 추가
 import { useRouter } from "next/navigation" // useRouter 추가
 
-interface Problem {
+interface ProblemRef {
 	problem_id: number
 	title: string
 	description: string
 	attempt_count: number // 리스트뷰에만 UI상으로 존재 👻
 	pass_count: number // 리스트뷰에만 UI상으로 존재 👻
-	is_like: boolean
+	points: number
+	// is_like: boolean
 }
 
 export default function ProblemStructure({ params }: { params: { groupId: string; examId: string } }) {
 	const router = useRouter() // useRouter 훅 사용
 	const [isModalOpen, setIsModalOpen] = useState(false)
-	const [selectedProblems, setSelectedProblems] = useState<Problem[]>([])
-	const [filteredProblems, setFilteredProblems] = useState<Problem[]>([])
+	const [selectedProblems, setSelectedProblems] = useState<ProblemRef[]>([])
+	const [filteredProblems, setFilteredProblems] = useState<ProblemRef[]>([])
 	const [searchQuery, setSearchQuery] = useState("")
-	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
+	const [viewMode, setViewMode] = useState<"gallery" | "table">("table")
 	const { groupId, examId } = params
 	const { userName } = useAuth()
 
@@ -72,10 +73,10 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 		}
 	}, [groupId])
 
-	// 문제 가져오기 함수
+	// 현재 그룹의 문제지에 등록된 문제 가져오기 함수
 	const fetchProblems = useCallback(async () => {
 		try {
-			const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId)
+			const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId, 10)
 			setSelectedProblems(data)
 			setFilteredProblems(data)
 		} catch (error) {
@@ -151,7 +152,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 				</div>
 			</motion.div>
 
-			{/* 검색바 & 보기 방식 토글 */}
+			{/* 문제지 검색바 & 보기 방식 토글 */}
 			<motion.div
 				className="flex items-center gap-4 mb-4 w-full"
 				initial="hidden"

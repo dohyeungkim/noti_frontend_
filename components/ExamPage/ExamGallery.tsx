@@ -17,7 +17,7 @@ interface ExamGalleryProps {
 		publication_end_time: any
 		workbook_total_points: number
 	}[]
-	handleEnterExam: (examId: string) => void
+	handleEnterExam: (examId: number) => void
 	isGroupOwner: boolean
 }
 
@@ -33,7 +33,7 @@ export default function ExamGallery({ workbooks, handleEnterExam, isGroupOwner }
 					key={workbook.workbook_id}
 					workbook={workbook}
 					isGroupOwner={isGroupOwner}
-					onClick={() => handleEnterExam(String(workbook.workbook_id))}
+					onClick={() => handleEnterExam(workbook.workbook_id)}
 				/>
 			))}
 		</section>

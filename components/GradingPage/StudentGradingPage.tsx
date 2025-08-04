@@ -4,23 +4,18 @@ import { useEffect, useState, useMemo, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/stores/auth"
-import { group_api } from "@/lib/api"
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, MessageSquare } from "lucide-react"
+import { group_api, grading_api } from "@/lib/api"
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import ReactMarkdown from "react-markdown"
-
-import {
-	studentSubmission,
-	studentSubmissionsCollection,
-	gradingDummy,
-	GradingStudent,
-	gradingDetailDummy,
-} from "@/data/gradingDummy"
 import { feedbackDummy } from "@/data/examModeFeedbackDummy"
 import { motion } from "framer-motion"
+import { SubmissionSummary } from "@/lib/api"
+import { gradingDetailDummy } from "@/data/gradingDummy"
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
 interface Submission {
+	submissionId: number
 	problemId: number
 	answerType: string
 	answer: string
@@ -36,8 +31,35 @@ export default function StudentGradingPage() {
 	const router = useRouter()
 	const { userName } = useAuth()
 
-	// 1️⃣ 그룹장 여부
 	const [groupOwner, setGroupOwner] = useState<string | null>(null)
+	const [submissions, setSubmissions] = useState<Submission[]>([])
+	const [studentName, setStudentName] = useState<string>("")
+	const [currentIdx, setCurrentIdx] = useState(0)
+
+	const fetchSubmissions = useCallback(async () => {
+		try {
+			const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
+				Number(groupId),
+				Number(examId),
+				studentId
+			)
+			const grouped = allSubs.reduce((acc: Submission[], s) => {
+				acc.push({
+					submissionId: s.submission_id,
+					problemId: s.problem_id,
+					answerType: gradingDetailDummy.problems.find((p) => p.problemId === s.problem_id)?.type || "text",
+					answer: gradingDetailDummy.problems.find((p) => p.problemId === s.problem_id)?.answer || "",
+					score: s.score ?? 0,
+				})
+				return acc
+			}, [])
+			setSubmissions(grouped)
+			setStudentName(allSubs[0]?.user_name || "")
+		} catch (err) {
+			console.error("학생 제출물 불러오기 실패", err)
+		}
+	}, [groupId, examId, studentId])
+
 	useEffect(() => {
 		group_api
 			.my_group_get()
@@ -46,27 +68,13 @@ export default function StudentGradingPage() {
 				setGroupOwner(grp?.group_owner ?? null)
 			})
 			.catch(console.error)
-	}, [groupId])
-	const isGroupOwner = userName === groupOwner
+		fetchSubmissions()
+	}, [groupId, fetchSubmissions])
 
-	// 2️⃣ 제출 데이터 & 페이징
-	const [submissions, setSubmissions] = useState<Submission[]>([])
-	const [studentName, setStudentName] = useState("")
-	const [currentIdx, setCurrentIdx] = useState(0)
-	useEffect(() => {
-		const data =
-			studentId === studentSubmission.studentId ? studentSubmission : (studentSubmissionsCollection as any)[studentId]
-		if (!data) {
-			router.back()
-			return
-		}
-		setStudentName(data.studentName)
-		setSubmissions(data.submissions)
-	}, [studentId, router])
+	const isGroupOwner = userName === groupOwner
 	const lastIdx = submissions.length - 1
 	const current = submissions[currentIdx]
 
-	// 3️⃣ 네비게이션 핸들러
 	const goPrev = useCallback(() => {
 		if (currentIdx > 0) setCurrentIdx((i) => i - 1)
 		else router.back()
@@ -75,38 +83,35 @@ export default function StudentGradingPage() {
 		if (currentIdx < lastIdx) setCurrentIdx((i) => i + 1)
 	}, [currentIdx, lastIdx])
 
-	// 4️⃣ 점수 수정
 	const problemMeta = gradingDetailDummy.problems.find((p) => p.problemId === current?.problemId)
 	const maxScore = problemMeta?.score ?? 0
 	const [isEditingScore, setIsEditingScore] = useState(false)
 	const [editedScore, setEditedScore] = useState(current?.score ?? 0)
+
 	useEffect(() => {
 		if (current) setEditedScore(current.score)
 	}, [current])
-	const saveEditedScore = useCallback(() => {
-		const updated = [...submissions]
-		updated[currentIdx].score = editedScore
-		setSubmissions(updated)
-		const stu = gradingDummy.find((s: GradingStudent) => s.studentId === studentId)
-		if (stu) stu.problemScores[currentIdx] = editedScore
-		setIsEditingScore(false)
-	}, [currentIdx, editedScore, submissions, studentId])
 
-	// 5️⃣ 검토 완료
+	const saveEditedScore = useCallback(async () => {
+		try {
+			await grading_api.post_submission_score(current.submissionId, editedScore)
+			const updated = [...submissions]
+			updated[currentIdx].score = editedScore
+			setSubmissions(updated)
+			setIsEditingScore(false)
+		} catch (e) {
+			alert("점수 저장 실패")
+		}
+	}, [currentIdx, current, editedScore, submissions])
+
 	const handleCompleteReview = useCallback(() => {
 		if (!isGroupOwner) {
 			alert("접근 권한이 없습니다")
 			return
 		}
-		const stu = gradingDummy.find((s: GradingStudent) => s.studentId === studentId)
-		if (stu) {
-			// 전부 true 로
-			stu.problemStatus = stu.problemStatus.map(() => true)
-		}
 		router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
-	}, [groupId, examId, isGroupOwner, studentId, router])
+	}, [groupId, examId, isGroupOwner, router])
 
-	// 6️⃣ AI/교수 피드백 탭
 	const { professorFeedback: dummyProfessorFeedback } = feedbackDummy
 	const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
 	const [isEditingProfessor, setIsEditingProfessor] = useState(false)
@@ -114,11 +119,8 @@ export default function StudentGradingPage() {
 	const [aiFeedback] = useState("(더미 AI 피드백)")
 	const [isAILoaded] = useState(true)
 
-	// 7️⃣ 조건 검사 결과
 	const passedCondition = current?.score! >= maxScore
 	const conditionFeedback = passedCondition ? "조건을 충족했습니다." : "다시 확인해주세요."
-
-	// ———— 렌더링 ————
 
 	return submissions.length === 0 ? (
 		<motion.div
@@ -131,7 +133,6 @@ export default function StudentGradingPage() {
 	) : (
 		<div className="flex min-h-screen bg-gray-50">
 			<div className="flex-1 max-w-7xl mx-auto p-6 space-y-6">
-				{/* 헤더 */}
 				<div className="flex items-center justify-between">
 					<button onClick={goPrev} className="flex items-center gap-1 text-gray-600 hover:text-gray-800">
 						{currentIdx > 0 ? <ChevronLeft /> : <ArrowLeft />} {currentIdx > 0 ? "이전 문제" : "목록으로"}
@@ -148,7 +149,6 @@ export default function StudentGradingPage() {
 					</button>
 				</div>
 
-				{/* 코드 & 피드백 */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					<motion.div
 						className="bg-white rounded-lg shadow border p-4 h-[600px]"
@@ -159,12 +159,7 @@ export default function StudentGradingPage() {
 							height="100%"
 							defaultLanguage={current.answerType === "code" ? "javascript" : "plaintext"}
 							value={current.answer}
-							options={{
-								readOnly: true,
-								minimap: { enabled: false },
-								wordWrap: "on",
-								fontSize: 14,
-							}}
+							options={{ readOnly: true, minimap: { enabled: false }, wordWrap: "on", fontSize: 14 }}
 						/>
 					</motion.div>
 					<motion.div
@@ -172,7 +167,6 @@ export default function StudentGradingPage() {
 						initial={{ opacity: 0, x: 20 }}
 						animate={{ opacity: 1, x: 0 }}
 					>
-						{/* 탭 헤더 */}
 						<div className="flex border-b items-center">
 							<button
 								className={`flex-1 py-2 text-center ${
@@ -190,17 +184,7 @@ export default function StudentGradingPage() {
 							>
 								교수 피드백
 							</button>
-							{activeFeedbackTab === "professor" && (
-								<button
-									onClick={() => setIsEditingProfessor(true)}
-									className="p-2 text-green-600 hover:text-green-800"
-									title="교수 피드백 작성"
-								>
-									＋
-								</button>
-							)}
 						</div>
-						{/* 탭 콘텐츠 */}
 						<div className="p-4 flex-1 overflow-y-auto">
 							{activeFeedbackTab === "ai" ? (
 								isAILoaded ? (
@@ -210,31 +194,6 @@ export default function StudentGradingPage() {
 								) : (
 									<p className="text-sm text-gray-500">AI 피드백 로딩 중...</p>
 								)
-							) : isEditingProfessor ? (
-								<div className="flex flex-col space-y-2">
-									<textarea
-										className="w-full h-24 p-2 border rounded-lg focus:ring-2 focus:ring-green-500 resize-none"
-										value={newProfessorFeedback}
-										onChange={(e) => setNewProfessorFeedback(e.target.value)}
-									/>
-									<div className="flex justify-end gap-2">
-										<button
-											onClick={() => setIsEditingProfessor(false)}
-											className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-										>
-											저장
-										</button>
-										<button
-											onClick={() => {
-												setNewProfessorFeedback(dummyProfessorFeedback)
-												setIsEditingProfessor(false)
-											}}
-											className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-										>
-											취소
-										</button>
-									</div>
-								</div>
 							) : (
 								<div className="prose prose-sm">
 									<ReactMarkdown>{newProfessorFeedback}</ReactMarkdown>
@@ -244,7 +203,6 @@ export default function StudentGradingPage() {
 					</motion.div>
 				</div>
 
-				{/* 조건 검사 */}
 				<div className="bg-white rounded-lg border shadow-sm p-4">
 					<h3 className="font-semibold text-gray-800 mb-2">조건 검사 결과</h3>
 					<div
@@ -253,14 +211,13 @@ export default function StudentGradingPage() {
 						}`}
 					>
 						<div className="flex justify-between mb-1">
-							<span className="font-medium">{problemMeta.title} 요구사항</span>
+							<span className="font-medium">{problemMeta?.title ?? "문제 제목"} 요구사항</span>
 							<span className="text-sm font-medium">{passedCondition ? "✔️ 통과" : "❌ 미통과"}</span>
 						</div>
 						<p className="text-sm text-gray-600">{conditionFeedback}</p>
 					</div>
 				</div>
 
-				{/* 점수 수정 & 검토 완료 */}
 				<div className="mt-4 flex items-center justify-end space-x-4">
 					{!isEditingScore ? (
 						<div className="flex items-baseline space-x-2">

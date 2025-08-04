@@ -100,33 +100,28 @@ export default function WorkBookCreateModal({
 		setErrorMessage(null)
 
 		try {
-			// 기본 문제지 생성 API 호출 (백엔드 연동은 나중에 구현) - is_exam_mode, test_start_time, test_end_time
-			await workbook_api.workbook_create(
+			const payload = {
 				group_id,
-				WorkBookName.trim(),
-				WorkBookDescription.trim(),
-				isExamMode,
-				test_start_time,
-				test_end_time,
-				publication_start_time,
-				publication_end_time
-				// workbook_total_points
-			)
-
-			// 시험모드 설정 정보 (백엔드 연동 없이 UI만 구현)
-			if (isExamMode) {
-				console.log("시험 모드 정보 (아직 백엔드 연동 안됨):", {
-					test_start_time,
-					test_end_time,
-					publication_start_time,
-					publication_end_time,
-					// publicationStartDate,
-					// publicationEndDate,
-					// submitStartDate,
-					// submitEndDate,
-				})
+				workbook_name: WorkBookName.trim(),
+				description: WorkBookDescription.trim(),
+				is_test_mode: isExamMode,
+				test_start_time: isExamMode ? test_start_time : null,
+				test_end_time: isExamMode ? test_end_time : null,
+				publication_start_time: isExamMode ? publication_start_time : null,
+				publication_end_time: isExamMode ? publication_end_time : null,
 			}
-
+			// 문제지 생성 API 호출
+			await workbook_api.workbook_create(
+				payload.group_id,
+				payload.workbook_name,
+				payload.description,
+				payload.is_test_mode,
+				payload.test_start_time,
+				payload.test_end_time,
+				payload.publication_start_time,
+				payload.publication_end_time
+			)
+			// 성공 처리
 			setWorkBookName("")
 			setWorkBookDescription("")
 			setIsExamMode(false)
@@ -134,6 +129,7 @@ export default function WorkBookCreateModal({
 			setRefresh(!refresh)
 		} catch (error) {
 			console.error("문제지 생성 실패:", error)
+			setErrorMessage("문제지 생성 중 오류가 발생했습니다.")
 		} finally {
 			setIsLoading(false)
 		}
@@ -188,7 +184,7 @@ export default function WorkBookCreateModal({
 							} focus:ring-2 focus:ring-gray-500 focus:outline-none`}
 						/>
 
-						{/* 시험모드 설정 */}
+						{/* ----- 시험모드 설정 ----- */}
 						<div className="flex justify-between items-center border border-gray-300 p-3 rounded-lg">
 							<span className="text-sm text-gray-600">시험 모드 (UI 미리보기)</span>
 							<button
