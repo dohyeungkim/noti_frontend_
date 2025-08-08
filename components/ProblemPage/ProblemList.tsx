@@ -4,7 +4,7 @@
 // 페이지 작아지면 채점하기랑 문제 추가하기 버튼 로고만 보이게 (글씨 안 보이게)
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { problem_api, problem_ref_api } from "@/lib/api"
 
 interface Problem {
@@ -13,11 +13,22 @@ interface Problem {
 	description: string
 	attempt_count: number
 	pass_count: number
-	points: number
+
+	problem_type?: string // 문제 유형 (옵션) 새로 추가하는 내용. 일단 지금은 코딩- 홍
+	problem_score?: number // 배점 (옵션) 새로 추가하는 내용. 일단 지금은 10점으로 써놈- 홍
+}
+
+interface ProblemRef {
+	problem_id: number
+	title: string
+	description: string
+	attempt_count: number
+	pass_count: number
+	points?: number
 }
 
 interface ProblemListProps {
-	problems: Problem[]
+	problems: ProblemRef[]
 	groupId: number
 	workbookId: number
 	isGroupOwner: boolean
@@ -27,10 +38,17 @@ interface ProblemListProps {
 
 const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, setRefresh }: ProblemListProps) => {
 	const router = useRouter()
-	const [currentProblems, setCurrentProblems] = useState<Problem[]>(problems)
 
-	// 문제 배점 수정 모달창 관련 필드
-	const [editingProblem, setEditingProblem] = useState<Problem | null>(null)
+	const [currentProblems, setCurrentProblems] = useState<ProblemRef[]>(problems)
+	// 부모가 새 리스트를 내려줄 때 로컬 상태도 갱신
+	useEffect(() => {
+		setCurrentProblems(problems)
+		console.log("🔎 problems rows:", problems)
+	}, [problems])
+
+	// 문제 배점 수정 모달창 관련 필드 ??????????????????
+	// const [points, setPoints] = useState<ProblemRef>(points) // 문제 배점
+	const [editingProblem, setEditingProblem] = useState<ProblemRef | null>(null)
 	const [editScore, setEditScore] = useState<number>(0)
 
 	const deleteProblem = async (problemId: number) => {
@@ -38,7 +56,7 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 		try {
 			await problem_ref_api.problem_ref_delete(groupId, workbookId, problemId)
 			setCurrentProblems((prev) => prev.filter((p) => p.problem_id !== problemId))
-			setRefresh(!refresh) // Trigger refresh by toggling the state
+			setRefresh(!refresh)
 		} catch (error) {
 			console.error("문제 삭제 실패:", error)
 			alert("문제 삭제 중 오류가 발생했습니다.")
@@ -56,7 +74,7 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 							<th className="px-5 py-4 text-center text-lg font-semibold">문제 제목</th>
 							<th className="px-5 py-4 text-center text-lg font-semibold">시도한 횟수</th>
 							<th className="px-5 py-4 text-center text-lg font-semibold">맞은 횟수</th>
-							{isGroupOwner && <th className="px-5 py-4 text-center text-lg font-semibold">베점</th>}
+							<th className="px-5 py-4 text-center text-lg font-semibold">배점</th>
 							{/* <th className="px-5 py-4 text-center text-lg font-semibold"></th> */}
 							{isGroupOwner && <th className="px-5 py-4 text-center text-lg font-semibold"></th>}
 							{isGroupOwner && <th className="px-5 py-4 text-center text-lg font-semibold"></th>}
@@ -66,8 +84,8 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 						{currentProblems.length > 0 ? (
 							currentProblems.map((p, index) => {
 								const PROBLEM_TYPES = [
-									{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
-									{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
+									{ value: "coding", label: "코딩", color: "bg-blue-100 text-blue-800" },
+									{ value: "debugging", label: "디버깅", color: "bg-red-100 text-red-800" },
 									{ value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
 									{ value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
 									{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
@@ -81,6 +99,7 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 								return (
 									<tr
 										key={p.problem_id}
+										onClick={() => router.push(`/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`)}
 										className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
 									>
 										<td className="px-5 py-4 text-center">{index + 1}</td>
@@ -100,7 +119,8 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 										</td>
 										<td className="px-5 py-4 text-center">{p.attempt_count}</td>
 										<td className="px-5 py-4 text-center">{p.pass_count}</td>
-										{isGroupOwner && <td>{p.points}</td>}
+										{/* 👻❌ - 백엔드 수정해야됨 ~ 포인트 값 하나 내려줘야됨! */}
+										<td className="px-5 py-4 text-center">{p.points ?? "-"}</td>
 										{/* <td className="px-5 py-4 text-center">
 											<button
 												onClick={() => router.push(`/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`)}
@@ -113,9 +133,10 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 										{isGroupOwner && (
 											<td className="px-5 py-4 text-center">
 												<button
-													onClick={() => {
+													onClick={(e) => {
 														setEditingProblem(p)
 														setEditScore(p.points) //문제의 점수를 연동해야함
+														e.stopPropagation()
 													}}
 													className="text-blue-600 hover:text-red-700 text-sm font-semibold"
 												>
@@ -127,7 +148,10 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 										{isGroupOwner && (
 											<td className="px-5 py-4 text-center">
 												<button
-													onClick={() => deleteProblem(p.problem_id)}
+													onClick={(e) => {
+														deleteProblem(p.problem_id)
+														e.stopPropagation()
+													}}
 													className="text-red-500 hover:text-red-700 text-sm font-semibold"
 												>
 													삭제

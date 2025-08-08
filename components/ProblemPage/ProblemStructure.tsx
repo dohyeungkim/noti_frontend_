@@ -9,7 +9,7 @@ import ProblemGallery from "@/components/ProblemPage/ProblemGallery"
 import { motion } from "framer-motion"
 import ProblemList from "./ProblemList"
 import { useAuth } from "@/stores/auth"
-import { group_api, problem_ref_api } from "@/lib/api"
+import { group_api, problem_ref_api, workbook_api } from "@/lib/api"
 import { Calendar, FileCheck } from "lucide-react" // Lucide 아이콘 추가
 import { useRouter } from "next/navigation" // useRouter 추가
 
@@ -19,29 +19,50 @@ interface ProblemRef {
 	description: string
 	attempt_count: number // 리스트뷰에만 UI상으로 존재 👻
 	pass_count: number // 리스트뷰에만 UI상으로 존재 👻
+
 	points: number
 	// is_like: boolean
 }
 
+// 게시기간 띄워야됨
+type Workbook = {
+	workbook_id: number
+	group_id: number
+	workbook_name: string
+	problem_cnt: number
+	description: string
+	creation_date: string
+	// 시험모드 관련 필드 추가
+	is_test_mode: boolean
+	test_start_time: any
+	test_end_time: any
+	publication_start_time: any
+	publication_end_time: any
+	workbook_total_points: number
+}
+
 export default function ProblemStructure({ params }: { params: { groupId: string; examId: string } }) {
 	const router = useRouter() // useRouter 훅 사용
+	// 게시기간 띄워야됨.
+	const [workbook, setWorkbook] = useState<Workbook | null>(null) // workbook_get으로 받은 정보가 여기 workbook에 저장됨
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [selectedProblems, setSelectedProblems] = useState<ProblemRef[]>([])
 	const [filteredProblems, setFilteredProblems] = useState<ProblemRef[]>([])
 	const [searchQuery, setSearchQuery] = useState("")
-	const [viewMode, setViewMode] = useState<"gallery" | "table">("table")
-	const { groupId, examId } = params
+	// const [viewMode, setViewMode] = useState<"gallery" | "table">("table")
+	const { groupId, examId } = params // 현재 문제지
 	const { userName } = useAuth()
 
-	// 시험 정보 (개발용 임시 데이터)
-	const [examInfo, setExamInfo] = useState({
-		publicationStartDate: "2025-07-09",
-		publicationEndDate: "2025-07-10",
-		submitStartDate: "2025-07-09",
-		submitEndDate: "2025-07-10",
-	})
+	// 시험 기간 정보 - 실제 Api 연결해서 랜더링
+	// const [examInfo, setExamInfo] = useState({
+	// 	publicationStartDate: "2025-07-09",
+	// 	publicationEndDate: "2025-07-10",
+	// 	submitStartDate: "2025-07-09",
+	// 	submitEndDate: "2025-07-10",
+	// })
 
 	const numericGroupId = useMemo(() => Number(groupId), [groupId])
+	// const numericWorkbookId = useMemo(() => Number(groupId), [groupId])
 	const numericExamId = useMemo(() => Number(examId), [examId])
 
 	const [refresh, setRefresh] = useState(false)
@@ -73,12 +94,36 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 		}
 	}, [groupId])
 
+	// 문제지 - 기간 관련 정보 받아와야됨.
+	const fetchWorkbook = useCallback(async () => {
+		try {
+			// 예시) 그룹의 문제지 목록 가져오기
+			const wb = await workbook_api.workbook_get_by_id(numericExamId) // <- 실제 함수명에 맞춰 수정
+			setWorkbook(wb)
+			// console.debug("🔎 workbook:", wb) // DEBUG
+		} catch (e) {
+			console.error("문제지 정보 불러오기 실패:", e)
+			setWorkbook(null)
+		}
+	}, [numericExamId])
+
+	useEffect(() => {
+		fetchWorkbook()
+	}, [fetchWorkbook])
+
 	// 현재 그룹의 문제지에 등록된 문제 가져오기 함수
 	const fetchProblems = useCallback(async () => {
 		try {
 			const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId)
+			// const normalized = data.map((p: any) => ({
+			// 	...p,
+			// 	points: p.points ?? p.problem_score ?? p.point ?? undefined,
+			// }))
+			// setSelectedProblems(normalized)
+			// setFilteredProblems(normalized)
 			setSelectedProblems(data)
 			setFilteredProblems(data)
+			// console.debug("🔎 problems:", data) // DEBUG
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
@@ -112,29 +157,35 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 		<>
 			{/* 상단 영역: 게시 기간 표시 및 버튼들 */}
 			<motion.div
-				className="flex items-center justify-between mb-4"
+				className="flex items-center mb-4"
 				initial={{ opacity: 0, scale: 0.9 }}
 				animate={{ opacity: 1, scale: 1 }}
 				transition={{ delay: 0.2 }}
 			>
 				{/* 왼쪽: 게시 기간 정보 (그룹장일 때만 표시) */}
-				{isGroupOwner && (
+				{workbook?.is_test_mode && (
 					<div className="flex items-center text-sm text-gray-600">
 						<Calendar size={16} className="mr-1" />
 						<span className="font-medium">게시 기간:</span>
 						<span className="ml-2">
-							{formatDate(examInfo.publicationStartDate)} ~ {formatDate(examInfo.publicationEndDate)}
+							{/* CHANGE: workbook이 null일 수 있으므로 안전하게 표시 */}
+							{workbook?.publication_start_time ? formatDate(workbook.publication_start_time) : "-"} ~{" "}
+							{workbook?.publication_end_time ? formatDate(workbook.publication_end_time) : "-"}
+							{/* {formatDate(examInfo.publicationStartDate)} ~ {formatDate(examInfo.publicationEndDate)} */}
 						</span>
 						<span className="mx-3">|</span>
 						<span className="font-medium">제출 기간:</span>
 						<span className="ml-2">
-							{formatDate(examInfo.submitStartDate)} ~ {formatDate(examInfo.submitEndDate)}
+							{workbook?.test_start_time ? formatDate(workbook.test_start_time) : "-"} ~{" "}
+							{workbook?.test_end_time ? formatDate(workbook.test_end_time) : "-"}
+							{/* {formatDate(examInfo.submitStartDate)} ~ {formatDate(examInfo.submitEndDate)} */}
 						</span>
 					</div>
 				)}
 
 				{/* 오른쪽: 버튼 영역 */}
-				<div className="flex items-center gap-2">
+				{/* 오 ml-auto 하면 자동으로 오른쪽으로 딱붙음 개신기 */}
+				<div className="flex items-center gap-2 ml-auto">
 					{/* 채점하기 버튼: 그룹장일 때만 표시 */}
 					{isGroupOwner && (
 						<button
@@ -187,6 +238,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 				// 		refresh={refresh}
 				// 		setRefresh={setRefresh}
 				// 	/>
+
 				<ProblemList
 					problems={filteredProblems}
 					groupId={numericGroupId}
@@ -207,6 +259,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 				refresh={refresh}
 				setRefresh={setRefresh}
 			/>
+			<div className="mb-10"></div>
 		</>
 	)
 }

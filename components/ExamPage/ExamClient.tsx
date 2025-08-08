@@ -176,9 +176,11 @@ export default function ExamsClient() {
 							<ExamGallery workbooks={normalList} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
 						</section>
 					)}
-					<hr className="border-b-1 border-gray-300 my-4 m-2 mt-10" />
+
+					{/* <hr className="border-b-1 border-gray-200 my-4 m-2 mt-10" /> */}
+
 					{/* 시험모드 문제지 */}
-					<h3 className="text-xl font-bold pt-3 pl-4 text-red-800">시험 모드 문제지</h3>
+					<h3 className="text-xl font-bold pt-3 pl-4 text-red-800 mt-10">시험 모드 문제지</h3>
 					{viewMode === "gallery" && testList.length > 0 ? (
 						<section>
 							<ExamGallery workbooks={testList} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
