@@ -186,7 +186,7 @@ export default function WorkBookCreateModal({
 
 						{/* ----- 시험모드 설정 ----- */}
 						<div className="flex justify-between items-center border border-gray-300 p-3 rounded-lg">
-							<span className="text-sm text-gray-600">시험 모드 (UI 미리보기)</span>
+							<span className="text-sm text-gray-600">시험 모드</span>
 							<button
 								onClick={() => setIsExamMode(!isExamMode)}
 								className={`px-4 py-1 rounded-lg text-sm transition ${
@@ -200,7 +200,7 @@ export default function WorkBookCreateModal({
 						{/* 시험모드가 활성화된 경우 추가 설정 표시 */}
 						{isExamMode && (
 							<div className="bg-blue-50 rounded-lg p-4 space-y-3 my-4">
-								<h3 className="font-medium text-blue-800 mb-2">🎯 시험 모드 설정 (UI 미리보기)</h3>
+								<h3 className="font-medium text-blue-800 mb-2">🎯 시험 모드 설정</h3>
 
 								{/* 설명 텍스트 */}
 								<div className="bg-white p-3 rounded-md text-xs text-gray-600 mb-2">
@@ -265,9 +265,7 @@ export default function WorkBookCreateModal({
 					// 문제지 생성 확인 단계
 					<div className="text-center my-4">
 						<h3 className="text-lg font-semibold mb-4">&quot;{WorkBookName}&quot; 문제지를 생성하시겠습니까?</h3>
-						{isExamMode && (
-							<p className="text-sm text-blue-600 mb-4">🎯 시험 모드가 활성화됩니다 (UI 미리보기 - 백엔드 미구현)</p>
-						)}
+						{isExamMode && <p className="text-sm text-blue-600 mb-4">🎯 시험 모드가 활성화됩니다</p>}
 						<div className="flex justify-center gap-4">
 							<button
 								onClick={handleCreateWorkbook}

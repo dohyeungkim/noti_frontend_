@@ -64,7 +64,7 @@ function getTitle(
 		return "🔥 도전하기"
 	}
 
-	console.log("Debug:", { pathname, userName, problem, exam, group })
+	// console.log("Debug:", { pathname, userName, problem, exam, group })
 	const segments = pathname.split("/").filter(Boolean)
 
 	// 각 세그먼트를 기반으로 적절한 제목 결정

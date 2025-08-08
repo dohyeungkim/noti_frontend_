@@ -30,7 +30,7 @@ export default function MyRegisteredProblemView() {
 	const [questions, setQuestions] = useState<Question[]>([])
 	const [filteredData, setFilteredData] = useState<Question[]>([])
 	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
-	const [sortOrder, setSortOrder] = useState("제목순") // ✅ 기본 정렬: 제목순
+	const [sortOrder, setSortOrder] = useState("등록일순")
 	const [selectedProblem, setSelectedProblem] = useState<Question | null>(null)
 
 	// ✅ 문제 삭제 함수
@@ -113,7 +113,7 @@ export default function MyRegisteredProblemView() {
 				</div>
 				<ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in scale-75 h-6" />
 				<SortButton
-					sortOptions={["제목순", "등록일순"]}
+					sortOptions={["등록일순", "제목순"]}
 					onSortChange={(selectedSort) => setSortOrder(selectedSort)}
 					className="text-xs px-3 py-2 h-7"
 				/>

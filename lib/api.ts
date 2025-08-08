@@ -347,6 +347,7 @@ export interface ShortAnswerProblem extends ProblemBase {
 export interface SubjectiveProblem extends ProblemBase {
 	problemType: "주관식"
 	rating_mode: "active" | "deactive"
+	answer_text: string
 	grading_criteria: string[]
 }
 
@@ -620,7 +621,8 @@ export const problem_api = {
 		})
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}))
-			throw new Error(err.detail?.msg || err.message || "문제 삭제 실패")
+			throw err
+			// throw new Error(err.detail?.msg || err.message || "문제 삭제 실패")
 		}
 		return res.json()
 	},
@@ -674,12 +676,12 @@ export const problem_ref_api = {
 	 * @param workbook_id  문제지 ID
 	 * @returns Promise<ProblemRef[]>
 	 */
-	async problem_ref_get(group_id: number, workbook_id: number, points: number = 10): Promise<ProblemRef[]> {
+	async problem_ref_get(group_id: number, workbook_id: number): Promise<ProblemRef[]> {
 		const res = await fetchWithAuth("/api/proxy/problems_ref/get", {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ group_id, workbook_id, points }),
+			body: JSON.stringify({ group_id, workbook_id }),
 		})
 		if (!res.ok) {
 			// 1) 실제 에러 페이로드를 받아와서

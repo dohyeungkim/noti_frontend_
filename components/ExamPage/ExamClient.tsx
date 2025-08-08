@@ -48,6 +48,10 @@ export default function ExamsClient() {
 	const [filteredWorkbooks, setFilteredWorkbooks] = useState<WorkbookType[]>([])
 	const [refresh, setRefresh] = useState(false)
 
+	// 시험 모드 아닌 것과 시험 모드인 것 분리 - 위아래 다르게 랜더링
+	const normalList = filteredWorkbooks.filter((wb) => !wb.is_test_mode)
+	const testList = filteredWorkbooks.filter((wb) => wb.is_test_mode)
+
 	const fetchWorkbooks = useCallback(async () => {
 		try {
 			const data = await workbook_api.workbook_get(Number(groupId))
@@ -76,6 +80,11 @@ export default function ExamsClient() {
 		router.push(`/manage/${groupId}`)
 	}
 
+	useEffect(() => {
+		fetchWorkbooks() // 혹은 fetchProblemRefs()
+		fetchMyOwner()
+	}, [groupId, isGroupOwner, refresh])
+
 	// 최종적으로 화면에 보여줄 문제지만 필터링
 	useEffect(() => {
 		const filteredWorkbooksdata = workbooks
@@ -97,7 +106,7 @@ export default function ExamsClient() {
 			})
 		console.log("▶ raw workbooks:", workbooks)
 		setFilteredWorkbooks(filtered)
-	}, [searchQuery, workbooks, groupId /* + isGroupOwner 추가 */, isGroupOwner])
+	}, [searchQuery, workbooks, groupId, isGroupOwner])
 
 	useEffect(() => {
 		if (!groupId) return
@@ -160,26 +169,23 @@ export default function ExamsClient() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.3, delay: 0.3 }}
 				>
-					{/* 밑에가 기존 코드입니다ㅏ */}
-					{viewMode === "gallery" ? (
-						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
-					) : (
-						<ExamGallery workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
-						// <ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
+					{/* 일반 문제지 */}
+					{viewMode === "gallery" && normalList.length > 0 && (
+						<section>
+							<h3 className="text-xl font-bold pt-3 pl-4 text-green-800">일반 문제지</h3>
+							<ExamGallery workbooks={normalList} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
+						</section>
 					)}
-
-					{/* 더미데이터로 바꾸면서 이 코드로 수정했음 - 홍 */}
-					{/* {viewMode === "gallery" ? (
-						<ExamGallery
-							examData={workbooks.map((workbook) => ({
-								workbook,
-								exam: null, // 또는 실제 exam 데이터가 있는 경우 해당 데이터 연결
-							}))}
-							handleEnterExam={handleEnterExam}
-						/>
+					<hr className="border-b-1 border-gray-300 my-4 m-2 mt-10" />
+					{/* 시험모드 문제지 */}
+					<h3 className="text-xl font-bold pt-3 pl-4 text-red-800">시험 모드 문제지</h3>
+					{viewMode === "gallery" && testList.length > 0 ? (
+						<section>
+							<ExamGallery workbooks={testList} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
+						</section>
 					) : (
-						<ExamTable workbooks={filteredWorkbooks} handleEnterExam={handleEnterExam} />
-					)} */}
+						<p className="text-center text-gray-500 text-lg mt-10">현재 시험모드인 문제지가 없습니다.</p>
+					)}
 				</motion.div>
 
 				{/* 모달 */}

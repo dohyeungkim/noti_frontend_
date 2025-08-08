@@ -76,7 +76,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 	// 현재 그룹의 문제지에 등록된 문제 가져오기 함수
 	const fetchProblems = useCallback(async () => {
 		try {
-			const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId, 10)
+			const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId)
 			setSelectedProblems(data)
 			setFilteredProblems(data)
 		} catch (error) {

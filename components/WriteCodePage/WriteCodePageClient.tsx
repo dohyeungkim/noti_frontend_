@@ -1,4 +1,5 @@
 "use client"
+// 495번 줄. 해당 영역에 problemType 별로 다른 정답란 UI 띠우기.
 
 import { useRouter, useSearchParams } from "next/navigation"
 import { useRef } from "react"
@@ -491,7 +492,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 					className="w-2 cursor-col-resize bg-gray-300 hover:bg-gray-400 transition-colors flex-shrink-0 border-l border-r border-gray-200"
 				/>
 
-				{/* 코드 에디터 영역 (오른쪽) */}
+				{/* 코드 에디터 영역 (오른쪽) - 👻 이제 이 코드에디터 영역에 다른 문제 유형들 답안 적는 란 만들면 됨!! */}
 				<div
 					className="flex flex-col overflow-hidden"
 					style={{

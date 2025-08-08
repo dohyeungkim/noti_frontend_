@@ -1,4 +1,5 @@
-// components/WriteCodePage/PresenceIndicator.tsx
+// Reids 실시간 관련 코드 - v0에서는 미완성 기능
+
 import React, { useState } from "react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faUserCircle, faChevronDown } from "@fortawesome/free-solid-svg-icons"

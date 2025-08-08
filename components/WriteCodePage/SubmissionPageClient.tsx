@@ -1,4 +1,5 @@
 "use client"
+// 해당 문제의 사용자들 문제 제출 기록 보는 페이지
 
 import { useParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"

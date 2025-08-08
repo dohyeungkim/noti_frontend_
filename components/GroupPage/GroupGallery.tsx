@@ -42,7 +42,7 @@ export default function GroupList({ groups }: GroupListProps) {
 					{/* ✅ 그룹 정보 */}
 					<div className="flex-grow">
 						<h2 className="text-xl font-semibold mb-2">
-							{group.group_name.length > 8 ? `${group.group_name.slice(0, 8)}...` : group.group_name}
+							{group.group_name.length > 8 ? `${group.group_name.slice(0, 10)}...` : group.group_name}
 						</h2>
 						<div className="flex flex-col">
 							<div className="flex justify-between">

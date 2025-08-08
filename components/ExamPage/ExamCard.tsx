@@ -23,15 +23,35 @@ interface ExamCardProps {
 }
 
 export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardProps) {
-	const pubStart = useMemo(() => new Date(workbook.publication_start_time), [workbook.publication_start_time])
-	const pubEnd = useMemo(() => new Date(workbook.publication_end_time), [workbook.publication_end_time])
-	const testStart = useMemo(() => new Date(workbook.test_start_time), [workbook.test_start_time])
-	const testEnd = useMemo(() => new Date(workbook.test_end_time), [workbook.test_end_time])
+	// 시간 포맷 함수
+	const dateTimeFormatter = useMemo(
+		() =>
+			new Intl.DateTimeFormat("ko-KR", {
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			}),
+		[]
+	)
+	// 2) 비교용 Date 객체
+	const pubStartDate = useMemo(() => new Date(workbook.publication_start_time), [workbook.publication_start_time])
+	const pubEndDate = useMemo(() => new Date(workbook.publication_end_time), [workbook.publication_end_time])
+	const testStartDate = useMemo(() => new Date(workbook.test_start_time), [workbook.test_start_time])
+	const testEndDate = useMemo(() => new Date(workbook.test_end_time), [workbook.test_end_time])
 	const now = useMemo(() => new Date(), [])
 
-	// 시험모드인 경우에만 기간 체크
-	const inPublication = workbook.is_test_mode ? now >= pubStart && now <= pubEnd : true
-	const inTestPeriod = workbook.is_test_mode ? now >= testStart && now <= testEnd : true
+	// 3) 표시용 문자열
+	const pubStartStr = dateTimeFormatter.format(pubStartDate) // "2025.08.04. 19:00" 같은
+	const pubEndStr = dateTimeFormatter.format(pubEndDate)
+	const testStartStr = dateTimeFormatter.format(testStartDate)
+	const testEndStr = dateTimeFormatter.format(testEndDate)
+
+	// 4) Date끼리 비교
+	const inPublication = workbook.is_test_mode ? now >= pubStartDate && now <= pubEndDate : true
+	const inTestPeriod = workbook.is_test_mode ? now >= testStartDate && now <= testEndDate : true
 
 	// 그룹장: 게시기간 상관없이, 학생: 게시기간 내에만 배너 표시
 	const showTestBanner = workbook.is_test_mode && (isGroupOwner || inPublication)
@@ -55,10 +75,11 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 	// // 📌 👻✨ - 7월 21일 회의에서 나온 내용
 	// // 버튼 막기 = 제출 한번 하면 끝나게. 버튼 막기. 백엔드에서 제출 횟수 보내줄거임. 그게 한번이면 버튼 바꾸기.
 	// // 게시기간+제출기간 수정할 수 있어야됨 => 게시기간
+
 	return (
 		<div
 			onClick={onClick}
-			className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer shadow-md transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl transform-gpu flex flex-col justify-between h-full"
+			className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer shadow-md transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl transform-gpu flex flex-col justify-between w-full"
 		>
 			{/* 문제지 제목 */}
 			<div>
@@ -86,10 +107,10 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 						<span className="font-medium text-red-800">🎯 시험 모드</span>
 					</div>
 					<div className="text-xs text-gray-700">
-						📅 게시 기간: {workbook.publication_start_time} ~ {workbook.publication_end_time}
+						📅 게시 기간: {pubStartStr} ~ {pubEndStr}
 					</div>
 					<div className="text-xs text-gray-700">
-						📝 제출 기간: {workbook.test_start_time} ~ {workbook.test_end_time}
+						📝 제출 기간: {testStartStr} ~ {testEndStr}
 					</div>
 					<div className="text-xs text-gray-700">✔️ 총 배점: {workbook.workbook_total_points}</div>
 				</div>

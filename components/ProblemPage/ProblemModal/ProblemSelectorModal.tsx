@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation"
 import { problem_api, problem_ref_api } from "@/lib/api"
 import type { ProblemDetail, ProblemRef } from "@/lib/api"
-import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef } from "react"
+import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { PoundSterling, X } from "lucide-react"
+import SearchBar from "components/ui/SearchBar"
 
 // export interface Problem {
 // 	problem_id: number
@@ -35,12 +36,12 @@ interface ProblemSelectorProps {
 export default function ProblemSelector({
 	groupId,
 	workbookId,
+
 	isModalOpen,
 	setIsModalOpen,
 
 	selectedProblems,
 	setSelectedProblems,
-
 	refresh,
 	setRefresh,
 }: ProblemSelectorProps) {
@@ -133,17 +134,10 @@ export default function ProblemSelector({
 				const existing = new Set(prev.map((x) => x.problem_id))
 				// const filtered = newRefs.filter((r) => !existing.has(r.problem_id))
 				const toAdd = newRefs.filter((r) => !existing.has(r.problem_id))
-				return [...prev, ...toAdd]
+				return [...prev, ...newRefs.filter((r) => !existing.has(r.problem_id))]
 			})
 
-			// setSelectedProblems((prev) => {
-			// 	const existingIds = new Set(prev.map((p) => p.problem_id))
-			// 	const filteredNew = newlyAdded.filter((p) => !existingIds.has(p.problem_id))
-			// 	return [...prev, ...filteredNew]
-			// })
-
 			setRefresh((prev) => !prev)
-			refresh = refresh
 			setIsModalOpen(false)
 		} catch (error) {
 			console.error("문제지 - 문제 링크에 실패했습니다.", error)
@@ -154,10 +148,29 @@ export default function ProblemSelector({
 
 	const modalSelected = problems.filter((p) => tempSelectedIds.has(p.problem_id))
 
-	// const router = useRouter()
-	// const MakeProblemClick = () => {
-	// 	router.push("/registered-problems/create")
-	// }
+	// 👻 v0 - 문제 이름 검색 기능
+	const [searchQuery, setSearchQuery] = useState("")
+	const [filteredProblems, setFilteredProblems] = useState<ProblemDetail[]>([])
+
+	// 1) problems 가 바뀔 때마다, filteredProblems 를 초기화
+	useEffect(() => {
+		setFilteredProblems(problems)
+	}, [problems])
+
+	// 2) searchQuery 나 problems 가 바뀔 때마다 필터링
+	useEffect(() => {
+		const q = searchQuery.trim().toLowerCase()
+		if (q === "") {
+			setFilteredProblems(problems)
+		} else {
+			setFilteredProblems(problems.filter((p) => p.title.toLowerCase().includes(q)))
+		}
+	}, [searchQuery, problems])
+
+	// useEffect(() => {
+	// 	const filtered = problems.filter((problem) => problem.title.toLowerCase().includes(searchQuery.toLowerCase()))
+	// 	setFilteredProblems(filtered)
+	// }, [searchQuery, problems, refresh])
 
 	return (
 		isModalOpen && (
@@ -171,12 +184,15 @@ export default function ProblemSelector({
 					</button>
 
 					<div className="p-6">
+						<div className="mb-6">
+							<SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+						</div>
 						<div className="flex gap-x-6">
 							{/* 🔹 문제 리스트 */}
-							<div className="flex-1">
+							<div className="flex-1 flex flex-col">
 								<h2 className="text-xl font-bold mb-2">문제 목록</h2>
 								<ul className="border p-4 rounded-md shadow-md bg-white h-64 overflow-y-auto">
-									{problems.map((problem) => {
+									{filteredProblems.map((problem) => {
 										const isDisabled = isAlreadySelected.some((p) => p.problem_id === problem.problem_id)
 										return (
 											<li

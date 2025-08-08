@@ -2,12 +2,12 @@
 // 현재 페이지 정보(현재 어디 그룹이나 어디 문제지 페이지에 머물고 있는지)가 바뀌면 api 호출해서
 
 import { useState, useEffect } from "react"
-import { group_api, problem_api, workbook_api } from "@/lib/api"
+import { group_api, problem_api, ProblemDetail, workbook_api } from "@/lib/api"
 
 export function useDataFetch(groupId: unknown, examId: unknown, problemId: unknown) {
 	const [group, setGroup] = useState(null)
 	const [exam, setExam] = useState(null) // 문제지
-	const [problem, setProblem] = useState(null)
+	const [problem, setProblem] = useState<ProblemDetail | null>(null)
 	const [loading, setLoading] = useState({
 		group: false,
 		exam: false,
@@ -60,6 +60,6 @@ export function useDataFetch(groupId: unknown, examId: unknown, problemId: unkno
 		fetchProblem()
 	}, [problemId])
 
-	console.log("!!!!!!!!!", group, exam, problem)
+	// console.log("!!!!!!!!!", group, exam, problem)
 	return { group, exam, problem, loading, error }
 }

@@ -25,9 +25,8 @@ export default function ExamGallery({ workbooks, handleEnterExam, isGroupOwner }
 	if (!workbooks || workbooks.length === 0) {
 		return <p className="text-center text-gray-500 text-lg">등록된 문제지가 없습니다.</p>
 	}
-
 	return (
-		<section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 m-2 minW">
+		<section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 m-2">
 			{workbooks.map((workbook) => (
 				<ExamCard
 					key={workbook.workbook_id}

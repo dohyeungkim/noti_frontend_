@@ -28,6 +28,7 @@ const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
 	{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
 ]
 
+// 객관식 문제 생성 관련 컴포넌트
 function MultipleChoiceEditor({
 	options,
 	setOptions,
@@ -109,13 +110,13 @@ export default function NewRegisteredProblem() {
 	// const [correctAnswers, setCorrectAnswers] = useState<number[]>([])
 	const [answerIndexes, setAnswerIndexes] = useState<number[]>([])
 
-	// 단답형, 주관식 정답과 채점 기준
+	// 단답형 정답과 채점 기준
 	const [answerTexts, setAnswerTexts] = useState<string[]>([])
 	const [gradingCriteria, setGradingCriteria] = useState<string[]>([])
 
-	// 주관식 정답 (채점기준은 위에꺼랑 ===)
+	// 주관식 정답과 채점 기준 (채점기준은 위에꺼랑 ===)
 	const [subjectiveAnswer, setSubjectiveAnswer] = useState<string>("")
-	const [subjectiveCriteria, setSubjectiveCriteria] = useState<string[]>([""])
+	const [subjectiveCriteria, setSubjectiveCriteria] = useState<string[]>([])
 
 	//진형준 추가항목start
 	// const [subjectiveRubrics, setSubjectiveRubrics] = useState<string[]>([""])
@@ -314,10 +315,23 @@ export default function NewRegisteredProblem() {
 					ratingMode as "active" | "deactive",
 					subjectiveAnswer,
 					tags,
-					gradingCriteria // AI 채점 기준
+					subjectiveCriteria // AI 채점 기준
 				)
-			}
 
+				// 1) API 로 보낼 payload 조립
+				const payload = {
+					problemType: "subjective",
+					title,
+					description,
+					difficulty,
+					ratingMode,
+					subjectiveAnswer,
+					tags,
+					gradingCriteria, // ❌ 이게 시발 안 보내짐 백엔드로... 장난하나
+				}
+
+				console.log("▶▶▶ 백엔드로 보내는 payload:", JSON.stringify(payload, null, 2))
+			}
 			alert("문제가 성공적으로 등록되었습니다.")
 			localStorage.removeItem("problemDraft")
 			router.push("/registered-problems")
@@ -355,7 +369,6 @@ export default function NewRegisteredProblem() {
 					🚀 등록하기
 				</button>
 			</motion.div>
-
 			{/* 전체 좌우 분할 레이아웃 */}
 			<div className="flex gap-4 w-full mb-6">
 				{/* 왼쪽: 문제 정보 및 설명 */}
@@ -689,7 +702,6 @@ export default function NewRegisteredProblem() {
 					/>
 				)}
 			</div>
-
 			{/* 문제 조건 섹션 */}
 			{problemType !== "객관식" && problemType !== "주관식" && problemType !== "단답형" && (
 				<ProblemConditions
@@ -699,7 +711,7 @@ export default function NewRegisteredProblem() {
 					updateCondition={updateCondition}
 				/>
 			)}
-
+			<div className="mb-10"></div>
 			{/* 테스트 케이스 섹션 */}
 			{problemType !== "객관식" && problemType !== "주관식" && problemType !== "단답형" && (
 				<TestCaseSection

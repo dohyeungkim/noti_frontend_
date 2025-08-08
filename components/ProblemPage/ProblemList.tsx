@@ -26,7 +26,7 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 	const deleteProblem = async (problemId: number) => {
 		if (!confirm("정말 삭제하시겠습니까?")) return
 		try {
-			await problem_ref_api.problem_ref_delete(problemId, groupId, workbookId)
+			await problem_ref_api.problem_ref_delete(groupId, workbookId, problemId)
 			setCurrentProblems((prev) => prev.filter((p) => p.problem_id !== problemId))
 			setRefresh(!refresh) // Trigger refresh by toggling the state
 		} catch (error) {

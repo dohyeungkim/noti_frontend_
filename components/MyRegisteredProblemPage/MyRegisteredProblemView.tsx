@@ -35,11 +35,13 @@ export default function ProblemView() {
 	const [targetProblemId, setTargetProblemId] = useState<number | null>(null)
 	const [activeCodeTab, setActiveCodeTab] = useState(0)
 
+	// 볼 문제 GET 해서 setData
 	useEffect(() => {
 		const fetchProblem = async () => {
 			setLoading(true)
 			try {
 				const data = await problem_api.problem_get_by_id(Number(id))
+				console.log("====== GET 할 문제 데이터 ======", data)
 				setProblem(data)
 			} catch (error) {
 				console.error("Failed to fetch problem:", error)
@@ -75,6 +77,17 @@ export default function ProblemView() {
 		}
 		setIsConfirming(false)
 	}
+
+	// 백엔드는 값을 한글로 줌. 프론트는 한글로 받음. 매핑 시켜줘야됨
+	const rawToDisplay: Record<string, string> = {
+		multiple_choice: "객관식",
+		short_answer: "단답형",
+		subjective: "주관식",
+		coding: "코딩",
+		debugging: "디버깅",
+	}
+
+	const displayType = rawToDisplay[problem.problemType] ?? problem.problemType
 
 	const getTypeStyle = (type: string) => {
 		switch (type) {
@@ -142,15 +155,14 @@ export default function ProblemView() {
 					✏️ 문제 수정하기
 				</motion.button>
 			</div>
-
 			{/* 기본 정보 */}
 			<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 				<div className="flex justify-between items-start mb-4">
 					<div className="flex-1">
 						<h1 className="text-2xl font-bold mb-2">{problem.title}</h1>
 						<div className="mb-1">
-							<span className={`text-xs px-2 py-1 rounded font-medium ${getTypeStyle(problem.problemType)}`}>
-								문제 유형: {problem.problemType}
+							<span className={`text-xs px-2 py-1 rounded font-medium ${getTypeStyle(displayType)}`}>
+								문제 유형: {displayType}
 							</span>
 						</div>
 						<div className="flex items-center gap-2 mb-1">
@@ -206,27 +218,8 @@ export default function ProblemView() {
 				</div>
 			</div>
 
-			{/* 단답형/주관식 AI 채점 기준 및 정답 */}
-			{problem.problemType === "단답형" && (
-				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
-					<h3 className="text-lg font-semibold mb-3">✏️ 정답 및 AI 채점 기준</h3>
-					<div className="mb-2">
-						<strong>정답:</strong> {(problem as ShortAnswerProblem).answer_text.join(", ")}
-					</div>
-					<div>
-						<strong>AI 채점 기준:</strong> {(problem as ShortAnswerProblem).grading_criteria.join(", ")}
-					</div>
-				</div>
-			)}
-			{problem.problemType === "주관식" && (
-				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
-					<h3 className="text-lg font-semibold mb-3">✏️ AI 채점 기준</h3>
-					<div>{(problem as SubjectiveProblem).grading_criteria.join(", ")}</div>
-				</div>
-			)}
-
 			{/* 문제 조건 */}
-			{problem.problem_condition.length > 0 && (
+			{problem.problem_condition?.length > 0 && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 					<h3 className="text-lg font-semibold mb-4">문제 조건</h3>
 					<div className="space-y-2">
@@ -240,84 +233,43 @@ export default function ProblemView() {
 				</div>
 			)}
 
-			{/* 참조 코드 / 베이스 코드 */}
-			{(problem.problemType === "코딩" || problem.problemType === "디버깅") && (
+			{/* 문제 유형별로 다른 속성값들 랜더링 👻 */}
+			{/* 단답형/주관식 AI 채점 기준 및 정답 */}
+			{displayType === "단답형" && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
-					<h3 className="text-lg font-semibold mb-4">
-						{problem.problemType === "디버깅" ? "베이스 코드" : "참조 코드"}
-					</h3>
-					<div className="flex gap-1 mb-4 overflow-x-auto">
-						{(problem.problemType === "디버깅"
-							? (problem as CodingProblem).base_code
-							: (problem as CodingProblem).reference_codes
-						).map((ref, idx) => (
-							<div key={idx} className="shrink-0">
-								<button
-									className={`px-3 py-2 rounded-t-md text-sm ${
-										activeCodeTab === idx ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
-									}`}
-									onClick={() => setActiveCodeTab(idx)}
-								>
-									{languageDisplayNames[ref.language]}
-									{problem.problemType != "디버깅" && (ref as any).is_main && (
-										<span className="ml-1 text-xs bg-yellow-400 text-black px-1 rounded">메인</span>
-									)}
-								</button>
-							</div>
-						))}
+					<h3 className="text-lg font-semibold mb-3">✏️ 정답 및 AI 채점 기준</h3>
+					<div className="mb-2">
+						<strong>정답:</strong> {(problem as ShortAnswerProblem).answer_text.join(", ")}
 					</div>
-					<div className="bg-gray-900 rounded-lg overflow-hidden">
-						{(problem.problemType === "디버깅"
-							? (problem as CodingProblem).base_code
-							: (problem as CodingProblem).reference_codes)[activeCodeTab] && (
-							<MonacoEditor
-								height="400px"
-								language={
-									(problem.problemType === "디버깅"
-										? (problem as CodingProblem).base_code
-										: (problem as CodingProblem).reference_codes)[activeCodeTab].language
-								}
-								value={
-									(problem.problemType === "디버깅"
-										? (problem as CodingProblem).base_code
-										: (problem as CodingProblem).reference_codes)[activeCodeTab].code
-								}
-								options={{ readOnly: true, minimap: { enabled: false }, fontSize: 14, automaticLayout: true }}
-							/>
-						)}
+					<div>
+						<strong>AI 채점 기준:</strong> {(problem as ShortAnswerProblem).grading_criteria.join(", ")}
 					</div>
 				</div>
 			)}
 
-			{/* 테스트 케이스 */}
-			{(problem.problemType === "코딩" || problem.problemType === "디버깅") &&
-				(problem as CodingProblem).test_cases.length > 0 && (
-					<div className="bg-white shadow-md rounded-lg p-6 mb-6">
-						<h3 className="text-lg font-semibold mb-4">테스트 케이스</h3>
-						<div className="space-y-4">
-							{(problem as CodingProblem).test_cases.map((tc, idx) => (
-								<div key={idx} className="border p-4 rounded-lg">
-									<div className="flex justify-between mb-3">
-										<span className="font-semibold">테스트 케이스 {idx + 1}</span>
-									</div>
-									<div className="grid grid-cols-2 gap-4">
-										<div>
-											<label className="block text-sm font-medium mb-1">입력</label>
-											<pre className="bg-gray-100 p-3 rounded text-sm">{tc.input}</pre>
-										</div>
-										<div>
-											<label className="block text-sm font-medium mb-1">예상 출력</label>
-											<pre className="bg-gray-100 p-3 rounded text-sm">{tc.expected_output}</pre>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
+			{/* ❌ 왜 안 됨 ㅠㅠㅠㅠ */}
+			{displayType === "주관식" && (
+				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
+					<h3 className="text-lg font-semibold mb-3">✏️ 정답 및 AI 채점 기준</h3>
+					<div className="mb-2">
+						<strong>정답:</strong> {(problem as SubjectiveProblem).answer_text}
 					</div>
-				)}
+
+					{(problem as SubjectiveProblem).grading_criteria.length > 0 ? (
+						<div>
+							<strong>AI 채점 기준:</strong> {(problem as SubjectiveProblem).grading_criteria.join(", ")}
+						</div>
+					) : (
+						<div>
+							<strong>AI 채점 기준: </strong>
+							<span className="text-gray-500"> AI 채점 기준이 설정되지 않았습니다.</span>
+						</div>
+					)}
+				</div>
+			)}
 
 			{/* 객관식 */}
-			{problem.problemType === "객관식" && (
+			{displayType === "객관식" && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 					<h3 className="text-lg font-semibold mb-4">객관식 보기 및 정답</h3>
 					<div className="space-y-2">
@@ -335,8 +287,81 @@ export default function ProblemView() {
 				</div>
 			)}
 
-			{/* 문제 통계 */}
-			<div className="bg-white shadow-md rounded-lg p-6 mb-6">
+			{/* 참조 코드 / 베이스 코드 */}
+			{(displayType === "코딩" || displayType === "디버깅") && (
+				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
+					<h3 className="text-lg font-semibold mb-4">{displayType === "디버깅" ? "베이스 코드" : "참조 코드"}</h3>
+					<div className="flex gap-1 mb-4 overflow-x-auto">
+						{(displayType === "디버깅"
+							? (problem as CodingProblem).base_code
+							: (problem as CodingProblem).reference_codes
+						).map((ref, idx) => (
+							<div key={idx} className="shrink-0">
+								<button
+									className={`px-3 py-2 rounded-t-md text-sm ${
+										activeCodeTab === idx ? "bg-blue-500 text-white" : "bg-gray-200 hover:bg-gray-300"
+									}`}
+									onClick={() => setActiveCodeTab(idx)}
+								>
+									{languageDisplayNames[ref.language]}
+									{displayType != "디버깅" && (ref as any).is_main && (
+										<span className="ml-1 text-xs bg-yellow-400 text-black px-1 rounded">메인</span>
+									)}
+								</button>
+							</div>
+						))}
+					</div>
+					<div className="bg-gray-900 rounded-lg overflow-hidden">
+						{(displayType === "디버깅"
+							? (problem as CodingProblem).base_code
+							: (problem as CodingProblem).reference_codes)[activeCodeTab] && (
+							<MonacoEditor
+								height="400px"
+								language={
+									(displayType === "디버깅"
+										? (problem as CodingProblem).base_code
+										: (problem as CodingProblem).reference_codes)[activeCodeTab].language
+								}
+								value={
+									(displayType === "디버깅"
+										? (problem as CodingProblem).base_code
+										: (problem as CodingProblem).reference_codes)[activeCodeTab].code
+								}
+								options={{ readOnly: true, minimap: { enabled: false }, fontSize: 14, automaticLayout: true }}
+							/>
+						)}
+					</div>
+				</div>
+			)}
+
+			{/* 테스트 케이스 */}
+			{(displayType === "코딩" || displayType === "디버깅") && (problem as CodingProblem).test_cases.length > 0 && (
+				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
+					<h3 className="text-lg font-semibold mb-4">테스트 케이스</h3>
+					<div className="space-y-4">
+						{(problem as CodingProblem).test_cases.map((tc, idx) => (
+							<div key={idx} className="border p-4 rounded-lg">
+								<div className="flex justify-between mb-3">
+									<span className="font-semibold">테스트 케이스 {idx + 1}</span>
+								</div>
+								<div className="grid grid-cols-2 gap-4">
+									<div>
+										<label className="block text-sm font-medium mb-1">입력</label>
+										<pre className="bg-gray-100 p-3 rounded text-sm">{tc.input}</pre>
+									</div>
+									<div>
+										<label className="block text-sm font-medium mb-1">예상 출력</label>
+										<pre className="bg-gray-100 p-3 rounded text-sm">{tc.expected_output}</pre>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+
+			{/* 문제 통계 - v0 에서는 미완성 기능 👻 */}
+			{/* <div className="bg-white shadow-md rounded-lg p-6 mb-6">
 				<div className="flex justify-between items-center mb-4">
 					<h3 className="text-lg font-semibold">📊 이 문제의 통계</h3>
 					<button
@@ -355,10 +380,10 @@ export default function ProblemView() {
 					</button>
 				</div>
 				{isExpandedStats && <ProblemStatistics problem_id={problem.problem_id} />}
-			</div>
+			</div> */}
 
 			{/* 삭제 */}
-			<div className="flex justify-end">
+			<div className="flex justify-end mb-10">
 				<motion.button
 					onClick={() => openDeleteModal(problem.problem_id)}
 					whileHover={{ scale: 1.05 }}
@@ -368,7 +393,6 @@ export default function ProblemView() {
 					🗑️ 문제 삭제
 				</motion.button>
 			</div>
-
 			{isConfirming && (
 				<ConfirmationModal
 					message="정말 이 문제를 삭제하시겠습니까?"
