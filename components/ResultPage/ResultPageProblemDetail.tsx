@@ -1,8 +1,10 @@
+// 내가 푼 문제 결과, 피드백 페이지에서 문제 보는 화면 코드
+
 import { motion } from "framer-motion"
 import { useState } from "react"
 // import { Problem } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import type { ProblemDetail } from "@/lib/api"
-// import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
+import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io"
 
 function ResultPageProblemDetail({ problem }: { problem: ProblemDetail | null }) {
 	const [isExpanded, setIsExpanded] = useState(false)
@@ -20,13 +22,13 @@ function ResultPageProblemDetail({ problem }: { problem: ProblemDetail | null })
 			>
 				{isExpanded ? (
 					<>
-						{/* <IoIosArrowUp size={20} /> */}
-						닫기
+						<IoIosArrowUp size={20} />
+						{/* 닫기 */}
 					</>
 				) : (
 					<>
-						{/* <IoIosArrowDown size={20} /> */}
-						문제 보기
+						<IoIosArrowDown size={20} />
+						{/* 문제 보기 */}
 					</>
 				)}
 			</button>

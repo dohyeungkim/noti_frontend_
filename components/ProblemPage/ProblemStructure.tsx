@@ -19,7 +19,6 @@ interface ProblemRef {
 	description: string
 	attempt_count: number // 리스트뷰에만 UI상으로 존재 👻
 	pass_count: number // 리스트뷰에만 UI상으로 존재 👻
-
 	points: number
 	// is_like: boolean
 }
@@ -53,16 +52,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 	const { groupId, examId } = params // 현재 문제지
 	const { userName } = useAuth()
 
-	// 시험 기간 정보 - 실제 Api 연결해서 랜더링
-	// const [examInfo, setExamInfo] = useState({
-	// 	publicationStartDate: "2025-07-09",
-	// 	publicationEndDate: "2025-07-10",
-	// 	submitStartDate: "2025-07-09",
-	// 	submitEndDate: "2025-07-10",
-	// })
-
 	const numericGroupId = useMemo(() => Number(groupId), [groupId])
-	// const numericWorkbookId = useMemo(() => Number(groupId), [groupId])
 	const numericExamId = useMemo(() => Number(examId), [examId])
 
 	const [refresh, setRefresh] = useState(false)
@@ -97,10 +87,8 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 	// 문제지 - 기간 관련 정보 받아와야됨.
 	const fetchWorkbook = useCallback(async () => {
 		try {
-			// 예시) 그룹의 문제지 목록 가져오기
 			const wb = await workbook_api.workbook_get_by_id(numericExamId) // <- 실제 함수명에 맞춰 수정
 			setWorkbook(wb)
-			// console.debug("🔎 workbook:", wb) // DEBUG
 		} catch (e) {
 			console.error("문제지 정보 불러오기 실패:", e)
 			setWorkbook(null)
@@ -115,15 +103,8 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 	const fetchProblems = useCallback(async () => {
 		try {
 			const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId)
-			// const normalized = data.map((p: any) => ({
-			// 	...p,
-			// 	points: p.points ?? p.problem_score ?? p.point ?? undefined,
-			// }))
-			// setSelectedProblems(normalized)
-			// setFilteredProblems(normalized)
 			setSelectedProblems(data)
 			setFilteredProblems(data)
-			// console.debug("🔎 problems:", data) // DEBUG
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
@@ -133,7 +114,6 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 		fetchProblems()
 	}, [fetchProblems, refresh])
 
-	// 그룹 오너 정보도 가져오기 (그룹 ID가 변경되거나 컴포넌트 마운트 시)
 	useEffect(() => {
 		if (groupId) {
 			fetchMyOwner()
@@ -149,7 +129,6 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 
 	// 채점하기 버튼 클릭 핸들러
 	const handleGrading = () => {
-		// Next.js의 router.push로 채점 페이지로 이동
 		router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
 	}
 
@@ -168,7 +147,6 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 						<Calendar size={16} className="mr-1" />
 						<span className="font-medium">게시 기간:</span>
 						<span className="ml-2">
-							{/* CHANGE: workbook이 null일 수 있으므로 안전하게 표시 */}
 							{workbook?.publication_start_time ? formatDate(workbook.publication_start_time) : "-"} ~{" "}
 							{workbook?.publication_end_time ? formatDate(workbook.publication_end_time) : "-"}
 							{/* {formatDate(examInfo.publicationStartDate)} ~ {formatDate(examInfo.publicationEndDate)} */}
@@ -178,13 +156,11 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 						<span className="ml-2">
 							{workbook?.test_start_time ? formatDate(workbook.test_start_time) : "-"} ~{" "}
 							{workbook?.test_end_time ? formatDate(workbook.test_end_time) : "-"}
-							{/* {formatDate(examInfo.submitStartDate)} ~ {formatDate(examInfo.submitEndDate)} */}
 						</span>
 					</div>
 				)}
 
 				{/* 오른쪽: 버튼 영역 */}
-				{/* 오 ml-auto 하면 자동으로 오른쪽으로 딱붙음 개신기 */}
 				<div className="flex items-center gap-2 ml-auto">
 					{/* 채점하기 버튼: 그룹장일 때만 표시 */}
 					{isGroupOwner && (
@@ -238,7 +214,6 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 				// 		refresh={refresh}
 				// 		setRefresh={setRefresh}
 				// 	/>
-
 				<ProblemList
 					problems={filteredProblems}
 					groupId={numericGroupId}
@@ -248,7 +223,6 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 					setRefresh={setRefresh}
 				/>
 			)}
-
 			<ProblemSelector
 				groupId={numericGroupId}
 				workbookId={numericExamId}

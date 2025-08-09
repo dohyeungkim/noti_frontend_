@@ -1,6 +1,6 @@
 "use client"
+// 채점 기능 관련, 현재 목데이터로 진행중.
 
-// 👻 익명 기능 제거하기 v0 - 홍
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay"
