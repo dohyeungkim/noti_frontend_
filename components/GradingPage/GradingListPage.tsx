@@ -6,7 +6,6 @@
  * 해당 문제지의 모든 제출(problem_id, score, reviewed) 받아온 후 학생 별로 묶어서 각 행별로 랜더링
  *
  */
-
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { useParams, useRouter } from "next/navigation"
@@ -50,8 +49,8 @@ export default function GradingListPage() {
 			const subs: SubmissionSummary[] = await grading_api.get_all_submissions(Number(groupId), Number(examId))
 			// 문제 개수 계산
 			const problemCount = subs.length > 0 ? Math.max(...subs.map((s) => s.problem_id)) + 1 : 0
-
 			const map = new Map<string, GradingStudentSummary>()
+
 			subs.forEach((s) => {
 				const { user_id, user_name, problem_id, score, reviewed } = s
 				if (!map.has(user_id)) {

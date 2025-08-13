@@ -253,7 +253,6 @@ export default function AuthForm() {
 	// 건너뛰기
 	const handleSkip = () => {
 		setCurrentStep((prev) => prev + 1)
-		// console.log(currentStep)
 		if (currentStep === 3) {
 			handleRegister()
 		}
@@ -277,24 +276,11 @@ export default function AuthForm() {
 				profile_info: completeProfileInfo,
 			}
 
-			console.log("Complete registration data:", registerData)
-
 			// 새로운 확장된 회원가입 API 호출
 			const response = await auth_api.registerExtended(registerData)
 
-			console.log("Registration successful:", response)
-
 			setSuccess(true)
 			setCurrentStep(4)
-
-			// 회원가입 성공 후 자동으로 개인화 추천 생성
-			// try {
-			// 	await auth_api.refreshRecommendations()
-			// 	console.log("Personalized recommendations generated successfully")
-			// } catch (recommendationError) {
-			// 	console.warn("Failed to generate initial recommendations:", recommendationError)
-			// 	// 추천 생성 실패는 회원가입 성공에 영향을 주지 않음
-			// }
 		} catch (err: unknown) {
 			console.error("회원가입 실패:", err)
 			const errorMessage = err instanceof Error ? err.message : "회원가입에 실패했습니다. 다시 시도해주세요."
@@ -316,12 +302,9 @@ export default function AuthForm() {
 
 		try {
 			const response = await auth_api.login(loginData.user_id, loginData.password)
-			console.log("Login successful:", response)
-
 			setIsAuth(true)
 			router.push("/")
 		} catch (err: unknown) {
-			console.error("로그인 실패:", err)
 			const errorMessage = err instanceof Error ? err.message : "아이디 또는 비밀번호를 확인해주세요."
 			setError(errorMessage)
 		} finally {

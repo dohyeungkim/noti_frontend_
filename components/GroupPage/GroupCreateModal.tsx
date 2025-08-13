@@ -27,21 +27,14 @@ export default function GroupCreateModal({
 }: GroupCreateModalProps) {
 	const [isConfirming, setIsConfirming] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
-	// const [showPastGroups, setShowPastGroups] = useState(false);
-	// const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null) // ✅ 에러 메시지 상태 추가
-
-	// 예제: 과거 그룹 리스트
-	// const pastGroups = ["컴퓨터 구조", "알고리즘", "인공지능 기초"];
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
 	const resetState = useCallback(() => {
 		setGroupName("")
 		setIsPublic(true)
 		setIsConfirming(false)
 		setIsLoading(false)
-		// setSelectedGroup(null);
-		// setShowPastGroups(false);
-		setErrorMessage(null) // ✅ 에러 메시지도 초기화
+		setErrorMessage(null)
 	}, [setGroupName, setIsPublic])
 
 	useEffect(() => {
@@ -54,15 +47,12 @@ export default function GroupCreateModal({
 
 	const handleCreate = async () => {
 		if (!groupName.trim()) {
-			// ✅ 공백 확인 (trim()으로 공백만 입력된 경우 방지)
 			setErrorMessage("그룹 이름을 입력하세요!")
 			return
 		}
 
-		console.log("그룹 이름:", groupName)
-		console.log("공개 여부:", isPublic ? "공개" : "비공개")
 		setIsLoading(true)
-		setErrorMessage(null) // ✅ 에러 메시지 초기화
+		setErrorMessage(null)
 
 		try {
 			await group_api.group_create(groupName.trim(), !isPublic)
@@ -71,7 +61,6 @@ export default function GroupCreateModal({
 			resetState()
 			onClose()
 		} catch (error) {
-			console.error("그룹 생성 중 오류:", error)
 		} finally {
 			setIsLoading(false)
 		}

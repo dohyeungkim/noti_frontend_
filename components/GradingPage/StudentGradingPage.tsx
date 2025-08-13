@@ -1,4 +1,5 @@
 "use client"
+// 교수자가 피드백 쓸 수 있어야됨!!
 
 import { useEffect, useState, useMemo, useCallback } from "react"
 import dynamic from "next/dynamic"

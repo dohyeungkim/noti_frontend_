@@ -1,4 +1,5 @@
 "use client"
+// 시험모드일 때 라우터 - 제출 1회로 제한 + 제출 한번 하면 바로 결과 보기 페이지로 이동시키기
 
 import ExamCard from "@/components/ExamPage/ExamCard"
 
@@ -25,6 +26,7 @@ export default function ExamGallery({ workbooks, handleEnterExam, isGroupOwner }
 	if (!workbooks || workbooks.length === 0) {
 		return <p className="text-center text-gray-500 text-lg">등록된 문제지가 없습니다.</p>
 	}
+
 	return (
 		<section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 m-2">
 			{workbooks.map((workbook) => (

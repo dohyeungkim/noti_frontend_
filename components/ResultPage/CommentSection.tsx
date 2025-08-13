@@ -102,7 +102,7 @@ export default function FeedbackWithSubmissionPageClient({
 
 	const fetchSolve = useCallback(async () => {
 		try {
-			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
+			const res = await solve_api.solve_get_by_problem_ref_id(Number(params.resultId))
 			setSolveData(res)
 		} catch (error) {
 			console.error("제출 기록 불러오기 중 오류 발생:", error)

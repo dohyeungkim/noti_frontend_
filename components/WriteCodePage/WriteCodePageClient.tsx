@@ -93,7 +93,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 	// const EN_TO_KO: Record<BackendProblemType, ProblemType> = {
 	// 	coding: "코딩",
 	// 	debugging: "디버깅",
-	// 	multiple_choice: "객관식",
+	// 	multiple_choice: "객관식",ㅗ무ㅜ
 	// 	short_answer: "단답형",
 	// 	subjective: "주관식",
 	// }
@@ -275,13 +275,13 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 		if (solveId) {
 			console.log("solveId로 코드 불러오기 시도:", solveId)
 			solve_api
-				.solve_get_by_solve_id(Number(solveId))
+				.solve_get_by_problem_ref_id(Number(params.groupId), Number(params.examId), Number(params.problemId))
 				.then((res) => {
-					console.log("solve_get_by_solve_id 응답:", res)
+					console.log("solve_get_by_problem_ref_id 응답:", res)
 					setCode(res.submitted_code ?? "")
 				})
 				.catch((err) => {
-					console.error("solve_get_by_solve_id 에러:", err)
+					console.error("solve_get_by_problem_ref_id 에러:", err)
 				})
 		}
 	}, [solveId])
@@ -378,6 +378,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 				request
 			)
 			await code_log_api.code_log_create(Number(data.solve_id), userId, newCodeLogs, newTimeStamps)
+			// 🫧 피드백 관련 Ai 호출 - 문제 조건 넘겨주고, 배점, 조건 별 평가,
 			ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch(() => {})
 
 			router.push(`/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`)
@@ -446,13 +447,14 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 	const handleTestCaseChange = (idx: number, field: "input" | "output", value: string) => {
 		setTestCases((prev) => prev.map((tc, i) => (i === idx ? { ...tc, [field]: value } : tc)))
 	}
+
 	const addTestCase = () => {
 		setTestCases((prev) => {
 			const next = [...prev, { input: "", output: "" }]
-			console.log("테스트케이스 추가됨", next)
 			return next
 		})
 	}
+
 	const removeTestCase = (idx: number) => setTestCases((prev) => prev.filter((_, i) => i !== idx))
 
 	const handleTestRun = async () => {
@@ -483,7 +485,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 				})),
 			})
 
-			console.log("run_code_api 반환값:", data)
+			// console.log("run_code_api 반환값:", data)
 
 			const results =
 				data.results?.map((result: any, index: number) => ({
@@ -530,7 +532,6 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 	const onMouseDown = (e: React.MouseEvent) => {
 		e.preventDefault()
 		isResizing.current = true
-		console.log("드래그 시작")
 	}
 
 	const onMouseMove = useCallback((e: MouseEvent) => {
@@ -554,19 +555,15 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 		if (editorRef.current) {
 			editorRef.current.layout()
 		}
-
-		console.log("드래그 중 - 새 너비:", newWidth, "오른쪽 너비:", containerWidth - newWidth)
 	}, [])
 
 	const onMouseUp = useCallback(() => {
 		isResizing.current = false
-		// 드래그 완료 후 Monaco Editor 리사이즈
 		if (editorRef.current) {
 			setTimeout(() => {
 				editorRef.current?.layout()
 			}, 100)
 		}
-		console.log("드래그 종료")
 	}, [])
 
 	useEffect(() => {
@@ -605,6 +602,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 					{/* 🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용 */}
 					{/* {userId && userNickname && <PresenceIndicator pageId={pageId} user={currentUser} />} */}
 				</div>
+
 				{/* 제출 버튼 (오른쪽) */}
 				<motion.button
 					onClick={handleSubmit}

@@ -141,7 +141,11 @@ export default function FeedbackWithSubmissionPageClient({
 
 	const fetchSolve = useCallback(async () => {
 		try {
-			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
+			const res = await solve_api.solve_get_by_problem_ref_id(
+				Number(params.groupId),
+				Number(params.examId),
+				Number(params.problemId)
+			)
 			setSolveData(res)
 
 			console.log(res)
@@ -373,7 +377,8 @@ export default function FeedbackWithSubmissionPageClient({
 
 				{/* 레이아웃 그리드 */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					{/* 왼쪽: 코드 로그 - 높이 확장 */}+ {/* 왼쪽: 코드 로그 or 답안 렌더링 */}
+					{/* 왼쪽: 사용자가 작성한 답안 */}
+					{/* 코딩, 디버깅 문제일 때 코드 랜더링 */}
 					{problemDetail?.problemType === "코딩" || problemDetail?.problemType === "디버깅" ? (
 						<motion.div
 							className="bg-white rounded-lg shadow-sm border p-4"
@@ -384,6 +389,7 @@ export default function FeedbackWithSubmissionPageClient({
 							<CodeLogReplay codeLogs={codeLogs} idx={0} />
 						</motion.div>
 					) : (
+						// 객관식, 주관식, 단답형 문제일 때
 						<motion.div
 							className="bg-white rounded-lg shadow-sm border p-4"
 							initial={{ opacity: 0, x: -20 }}

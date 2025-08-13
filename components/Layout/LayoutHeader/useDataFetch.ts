@@ -60,6 +60,5 @@ export function useDataFetch(groupId: unknown, examId: unknown, problemId: unkno
 		fetchProblem()
 	}, [problemId])
 
-	// console.log("!!!!!!!!!", group, exam, problem)
 	return { group, exam, problem, loading, error }
 }

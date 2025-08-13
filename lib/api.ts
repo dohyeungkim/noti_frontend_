@@ -1153,17 +1153,21 @@ export const solve_api = {
 		return res.json()
 	},
 
-	/**
+	/** 👻❌ -  원래 해당 문제 전체에 대한 기록 다 불러옴 -> 레퍼런스 문제에 대한 기록만 주는걸로 변경
 	 * 특정 제출(solve_id)에 대한 상세 정보를 가져옴. 제출 결과 페이지에서 AI 피드백·코드 로그·테스트·조건 검사 결과 등을 렌더링할 떄 사용.
-	 * @param solve_id
+	 * @param group_id
+	 * @param workbook_id
+	 * @param problem_id
 	 * @returns
 	 */
-
-	async solve_get_by_solve_id(solve_id: number) {
-		const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}`, {
-			method: "GET",
-			credentials: "include",
-		})
+	async solve_get_by_problem_ref_id(group_id: number, workbook_id: number, problem_id: number) {
+		const res = await fetchWithAuth(
+			`/api/proxy/solves/group_id/${group_id}/workbook_id/${workbook_id}/problem_id/${problem_id}`,
+			{
+				method: "GET",
+				credentials: "include",
+			}
+		)
 
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))
@@ -1215,7 +1219,7 @@ export interface SubmissionSummary {
 
 type SubmissionScore = {
 	submission_score_id: number // 점수 레코드 PK
-	submission_id: number
+	solve_id: number
 	score: number
 	graded_by: string | null // null=AI, string=교수ID
 	created_at: string // 채점 시각
@@ -1225,6 +1229,7 @@ let mockSubmissionScores: SubmissionScore[] = []
 
 export const grading_api = {
 	/**
+	 * 목데이터임 지금...!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 	 * 한 그룹·시험(workbook)의 모든 제출 조회
 	 * - .env 파일에 MOCK 모드면 gradingDummy -> SubmissionSummary[] 로 변환
 	 * @param group_id
@@ -1263,26 +1268,26 @@ export const grading_api = {
 
 		// /api/proxy/submissions/${group_id}/${workbook_id}
 		const res = await fetchWithAuth(
-			`/api/proxy/groups/${group_id}/workbooks/${workbook_id}/submissions?${params.toString()}`
+			`/api/proxy/solves/groups/{group_id}/workbooks/{workbook_id}/submissions?${params.toString()}`
 		)
 		if (!res.ok) throw new Error("제출 목록 가져오기 실패")
 		return res.json()
 	},
 
-	async get_submission_scores(submission_id: number): Promise<SubmissionScore[]> {
+	async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
 		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
-			return mockSubmissionScores.filter((s) => s.submission_id === submission_id)
+			return mockSubmissionScores.filter((s) => s.solve_id === solve_id)
 		}
-		const res = await fetchWithAuth(`/api/proxy/submissions/${submission_id}/scores`)
+		const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}/scores`)
 		if (!res.ok) throw new Error("채점 기록 조회 실패")
 		return res.json()
 	},
 
-	async post_submission_score(submission_id: number, score: number): Promise<SubmissionScore> {
+	async post_submission_score(solve_id: number, score: number): Promise<SubmissionScore> {
 		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
 			const newScore: SubmissionScore = {
 				submission_score_id: mockSubmissionScores.length + 1,
-				submission_id,
+				solve_id,
 				score,
 				graded_by: "교수A",
 				created_at: new Date().toISOString(),
@@ -1290,7 +1295,7 @@ export const grading_api = {
 			mockSubmissionScores.push(newScore)
 			return newScore
 		}
-		const res = await fetchWithAuth(`/api/proxy/grading/${submission_id}/score`, {
+		const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
@@ -1299,34 +1304,6 @@ export const grading_api = {
 		if (!res.ok) throw new Error("채점 저장 실패")
 		return res.json()
 	},
-
-	/**
-	 * 특정 제출(submission_id)에 대한 모든 채점 기록 조회 -> 채점점수 + 검토 완료 여부
-	 * @param submission_id
-	 * @returns
-	 */
-	// async get_submission_scores(submission_id: number) {
-	// 	const res = await fetchWithAuth(`/api/proxy/submissions/${submission_id}/scores`)
-	// 	if (!res.ok) throw new Error("채점 기록 조회 실패")
-	// 	return res.json()
-	// },
-
-	/**
-	 * 개별 문제에 대해 교수(그룹장) 채점 추가
-	 * @param submission_id
-	 * @param score
-	 * @returns
-	 */
-	// async post_submission_score(submission_id: number, score: number) {
-	// 	const res = await fetchWithAuth(`/api/proxy/grading/${submission_id}/score`, {
-	// 		method: "POST",
-	// 		credentials: "include",
-	// 		headers: { "Content-Type": "application/json" },
-	// 		body: JSON.stringify({ score }),
-	// 	})
-	// 	if (!res.ok) throw new Error("채점 저장 실패")
-	// 	return res.json()
-	// },
 }
 
 // ====================== code_logs 관련 API ===========================
@@ -1432,7 +1409,7 @@ export const comment_api = {
 // ====================== AI 피드백 관련 API ===========================
 export const ai_feedback_api = {
 	async get_ai_feedback(solve_id: number) {
-		const res = await fetch(`/api/proxy/feedback/${solve_id}`, {
+		const res = await fetch(`/api/proxy/comments/ai_feedback/${solve_id}`, {
 			method: "GET",
 			credentials: "include",
 		})

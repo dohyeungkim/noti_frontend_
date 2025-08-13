@@ -7,24 +7,25 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { problem_api, problem_ref_api } from "@/lib/api"
 
-interface Problem {
-	problem_id: number
-	title: string
-	description: string
-	attempt_count: number
-	pass_count: number
+// interface Problem {
+// 	problem_id: number
+// 	title: string
+// 	description: string
+// 	attempt_count: number
+// 	pass_count: number
 
-	problem_type?: string // 문제 유형 (옵션) 새로 추가하는 내용. 일단 지금은 코딩- 홍
-	problem_score?: number // 배점 (옵션) 새로 추가하는 내용. 일단 지금은 10점으로 써놈- 홍
-}
+// 	problem_type?: string // 문제 유형 (옵션) 새로 추가하는 내용. 일단 지금은 코딩- 홍
+// 	problem_score?: number // 배점 (옵션) 새로 추가하는 내용. 일단 지금은 10점으로 써놈- 홍
+// }
 
 interface ProblemRef {
 	problem_id: number
 	title: string
 	description: string
+	problemType: string
 	attempt_count: number
 	pass_count: number
-	points?: number
+	points: number
 }
 
 interface ProblemListProps {
@@ -43,7 +44,6 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 	// 부모가 새 리스트를 내려줄 때 로컬 상태도 갱신
 	useEffect(() => {
 		setCurrentProblems(problems)
-		console.log("🔎 problems rows:", problems)
 	}, [problems])
 
 	// 문제 배점 수정 모달창 관련 필드 ??????????????????
@@ -75,7 +75,6 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 							<th className="px-5 py-4 text-center text-lg font-semibold">시도한 횟수</th>
 							<th className="px-5 py-4 text-center text-lg font-semibold">맞은 횟수</th>
 							<th className="px-5 py-4 text-center text-lg font-semibold">배점</th>
-							{/* <th className="px-5 py-4 text-center text-lg font-semibold"></th> */}
 							{isGroupOwner && <th className="px-5 py-4 text-center text-lg font-semibold"></th>}
 							{isGroupOwner && <th className="px-5 py-4 text-center text-lg font-semibold"></th>}
 						</tr>
@@ -84,14 +83,14 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 						{currentProblems.length > 0 ? (
 							currentProblems.map((p, index) => {
 								const PROBLEM_TYPES = [
-									{ value: "coding", label: "코딩", color: "bg-blue-100 text-blue-800" },
-									{ value: "debugging", label: "디버깅", color: "bg-red-100 text-red-800" },
+									{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
+									{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
 									{ value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
 									{ value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
 									{ value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
 								] as const
 
-								const typeInfo = PROBLEM_TYPES.find((t) => t.value === (p as any).problem_type) ?? {
+								const typeInfo = PROBLEM_TYPES.find((t) => t.value === (p as any).problemType) ?? {
 									label: "코딩",
 									color: "bg-blue-100 text-blue-800",
 								}

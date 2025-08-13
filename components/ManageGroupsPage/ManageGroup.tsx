@@ -96,8 +96,6 @@ export default function ManageGroup() {
 
 			try {
 				const response = await group_member_api.group_member_kickoff(Number(groupId), userId)
-				console.log("API 응답:", response)
-
 				const message = response?.message || `${userId}님이 성공적으로 추방되었습니다.`
 				alert(message)
 
