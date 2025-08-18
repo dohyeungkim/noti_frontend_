@@ -99,10 +99,10 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 	// }
 
 	// 👻❌ solve 쪽은 문제 유형 영어로. 프론트는 한글로
-	const isCodingOrDebugging = problem?.problemType === "coding" || problem?.problemType === "debugging"
-	const isMultiple = problem?.problemType === "multiple_choice"
-	const isShort = problem?.problemType === "short_answer"
-	const isSubjective = problem?.problemType === "subjective"
+	const isCodingOrDebugging = problem?.problemType === "코딩" || problem?.problemType === "디버깅"
+	const isMultiple = problem?.problemType === "객관식"
+	const isShort = problem?.problemType === "단답형"
+	const isSubjective = problem?.problemType === "주관식"
 
 	const [problemConditions, setProblemConditions] = useState<string[]>([]) // 빈 배열로 초기화
 
@@ -214,12 +214,18 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 			// ========== 디버깅 문제 ==========
 			// 디버깅 문제 베이스(현재 백엔드는 reference_codes로 넘겨주고 있어서 일단은 이렇게 함) 코드 랜더링 -  에디터에 띄워야됨
 			// if ("base_codes" in res && Array.isArray((res as any).base_codes) && (res as any).base_codes.length > 0) {
-			if (
-				"reference_codes" in res &&
-				Array.isArray((res as any).reference_codes) &&
-				(res as any).reference_codes.length > 0
-			) {
-				setCode((res as any).reference_codes[0].code)
+			// if (
+			// 	"reference_codes" in res &&
+			// 	Array.isArray((res as any).reference_codes) &&
+			// 	(res as any).reference_codes.length > 0
+			// ) {
+			// 	setCode((res as any).reference_codes[0].code)
+			// } else {
+			// 	setCode("")
+			// }
+
+			if ("base_code" in res && Array.isArray((res as any).base_code) && (res as any).base_code.length > 0) {
+				setCode((res as any).base_code[0].code)
 			} else {
 				setCode("")
 			}
@@ -309,8 +315,8 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 		let request: SolveRequest
 
 		switch (pType) {
-			case "coding":
-			case "debugging": {
+			case "코딩":
+			case "디버깅": {
 				if (!code.trim()) {
 					alert("코드를 입력해주세요.")
 					return
@@ -323,7 +329,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 			}
 
 			// 👻❌
-			case "multiple_choice": {
+			case "객관식": {
 				const selections = allowMultiple ? selectedMultiple : selectedSingle !== null ? [selectedSingle] : []
 
 				if (!selections.length) {
@@ -339,7 +345,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 				break
 			}
 
-			case "short_answer": {
+			case "단답형": {
 				if (!shortAnswer.trim()) {
 					alert("단답형 답안을 입력해주세요.")
 					return
@@ -351,7 +357,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 				break
 			}
 
-			case "subjective": {
+			case "주관식": {
 				if (!subjectiveAnswer.trim()) {
 					alert("주관식 답안을 입력해주세요.")
 					return
