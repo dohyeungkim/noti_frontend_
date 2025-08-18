@@ -93,7 +93,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 	// const EN_TO_KO: Record<BackendProblemType, ProblemType> = {
 	// 	coding: "코딩",
 	// 	debugging: "디버깅",
-	// 	multiple_choice: "객관식",ㅗ무ㅜ
+	// 	multiple_choice: "객관식",
 	// 	short_answer: "단답형",
 	// 	subjective: "주관식",
 	// }

@@ -88,7 +88,6 @@ export default function FeedbackWithSubmissionPageClient({
 		resultId: string
 	}
 }) {
-	// const [problem, setProblem] = useState<Problem | null>(null)
 	const [problemDetail, setProblemDetail] = useState<ProblemDetail | null>(null)
 	const [codeLogs, setCodeLogs] = useState<CodeLog[]>([])
 	const [aiFeedback, setAiFeedback] = useState<string>("")

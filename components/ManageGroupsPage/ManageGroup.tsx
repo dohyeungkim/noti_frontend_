@@ -169,7 +169,7 @@ export default function ManageGroup() {
 	//   }
 	// };
 
-	// ✅ 그룹 삭제
+	// 그룹 삭제
 	const deleteGroup = async () => {
 		if (!window.confirm("정말로 이 그룹을 삭제하시겠습니까?")) return
 
@@ -206,21 +206,7 @@ export default function ManageGroup() {
 		}
 	}
 
-	// // 📌 문제지 삭제 함수
-	// // (백엔드 엔드포인트: DELETE /api/proxy/workbook/{group_id}/{workbook_id})
-	// const deleteWorkbook = async (workbookId: number) => {
-	//   try {
-	//     await workbook_api.workbook_delete(Number(groupId), workbookId);
-	//     alert("문제지가 삭제되었습니다.");
-	//     // 삭제 후 최신 문제지 목록을 갱신하여 삭제된 문제지가 보이지 않도록 함
-	//     fetchWorkbooks();
-	//   } catch (error) {
-	//     console.error("문제지 삭제 에러", error);
-	//     alert("문제지 삭제 중 오류 발생");
-	//   }
-	// };
-
-	// ✅ 문제지 삭제
+	// 문제지 삭제
 	const deleteWorkbook = async (workbookId: number) => {
 		try {
 			console.log(`✅ 문제지 삭제 API 호출 시작: workbookId=${workbookId}`)
@@ -228,7 +214,7 @@ export default function ManageGroup() {
 			console.log("✅ 문제지 삭제 API 응답:", res)
 			alert("문제지가 삭제되었습니다.")
 			fetchWorkbooks()
-		} catch (error) {
+		} catch (error) {\
 			const err = error as Error
 			console.error("❌ 문제지 삭제 중 에러:", err)
 			alert("문제지 삭제 중 오류 발생: " + (err?.message || "알 수 없는 오류"))

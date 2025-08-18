@@ -1,6 +1,10 @@
 "use client"
 // 내가 등록한 문제들 조회하는 페이지
-
+/**
+ * 파일 탐색기 기능
+ * 
+ * 
+ */
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
@@ -13,14 +17,13 @@ import { problem_api } from "@/lib/api"
 import GalleryView from "./MyRefisteredProblemGallary"
 import TableView from "./MyRefisteredProblemTable"
 
-// ✅ Question 인터페이스 정의
 interface Question {
 	problem_id: number
 	title: string
 	group: string
 	paper: string
 	solvedCount: number
-	createdAt?: string // ✅ 등록일 추가
+	createdAt?: string
 	description?: string
 }
 
@@ -33,7 +36,6 @@ export default function MyRegisteredProblemView() {
 	const [sortOrder, setSortOrder] = useState("등록일순")
 	const [selectedProblem, setSelectedProblem] = useState<Question | null>(null)
 
-	// ✅ 문제 삭제 함수
 	const handleDeleteButtonClick = async (problem_id: number) => {
 		try {
 			await problem_api.problem_delete(problem_id)
@@ -43,7 +45,7 @@ export default function MyRegisteredProblemView() {
 		}
 	}
 
-	// ✅ 문제 목록 가져오기
+	// 문제 목록 가져오기
 	const fetchProblems = useCallback(async () => {
 		try {
 			const res = await problem_api.problem_get()
@@ -59,10 +61,10 @@ export default function MyRegisteredProblemView() {
 		fetchProblems()
 	}, [fetchProblems])
 
-	// ✅ 검색 필터
+	// 검색 필터
 	const filteredQuestions = questions.filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
 
-	// ✅ 정렬
+	// 정렬
 	const sortedData = [...filteredQuestions].sort((a, b) => {
 		if (sortOrder === "제목순") {
 			return a.title.localeCompare(b.title)
@@ -72,7 +74,6 @@ export default function MyRegisteredProblemView() {
 		return 0
 	})
 
-	// ✅ 페이지 이동
 	const handleNavigate = () => {
 		router.push("/registered-problems/create")
 	}
@@ -164,7 +165,7 @@ export default function MyRegisteredProblemView() {
 						/>
 					</div>
 				) : (
-					<div className="scale-75 origin-top-left">
+					<div className="">
 						<TableView filteredData={sortedData} handleDeleteButtonClick={handleDeleteButtonClick} />
 					</div>
 				)}
