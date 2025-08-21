@@ -154,6 +154,9 @@ export default function AuthForm() {
 	const [currentStep, setCurrentStep] = useState(1)
 	const [success, setSuccess] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
+	const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/ // 이메일 입력 처리 정규식
+
+	const [emailError, setEmailError] = useState<string | null>(null) // 이메일 입력 에러
 
 	// 기본 회원가입 정보
 	const [basicInfo, setBasicInfo] = useState<BasicUserInfo>({
@@ -191,6 +194,17 @@ export default function AuthForm() {
 	const handleBasicChange = (e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }) => {
 		const { name, value } = "target" in e ? e.target : e
 		setBasicInfo((prev) => ({ ...prev, [name]: value }))
+
+		// 이메일 검증
+		if (name === "email") {
+			if (!value) {
+				setEmailError("이메일을 입력해 주세요.")
+			} else if (!EMAIL_RE.test(value)) {
+				setEmailError("이메일 형식이 올바르지 않습니다.")
+			} else {
+				setEmailError(null)
+			}
+		}
 
 		if (name === "password" && confirmPassword) {
 			setError(value !== confirmPassword ? "비밀번호가 다릅니다." : null)
@@ -550,6 +564,8 @@ export default function AuthForm() {
 										</div>
 
 										{error && <p className="text-red-500 text-sm">{error}</p>}
+										{/* 이메일 형식 안 맞을 때 경고 메시지 */}
+										{emailError && <p className="mt-1 text-sm text-red-500">{emailError}</p>}
 
 										<div className="flex space-x-3 pt-4">
 											<button
