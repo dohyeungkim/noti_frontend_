@@ -1,4 +1,5 @@
 "use client"
+// 내가 등록한 문제들 페이지의 문제 테이블뷰 컴포넌트
 
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -34,7 +35,6 @@ export default function TableView({ filteredData }: TableViewProps) {
 						filteredData.map((item) => (
 							<tr key={item.problem_id} className="border-t transition-all duration-200 hover:bg-gray-50">
 								<td className="p-4">{item.title.length > 20 ? `${item.title.slice(0, 20)}...` : item.title}</td>
-
 								<td className="p-4 flex justify-center gap-3">
 									{/* 문제 보기 버튼 */}
 									<button

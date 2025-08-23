@@ -10,6 +10,7 @@ import {
 	faPen,
 	faUserCircle,
 	faArrowRight,
+	faFolderOpen,
 } from "@fortawesome/free-solid-svg-icons"
 import Logout, { LogoutHandles } from "../Auth/Logout"
 import { useEffect, useState, useRef } from "react"
@@ -101,6 +102,11 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
 								href: "/registered-problems",
 								icon: faPen,
 								text: "내가 등록한 문제들",
+							},
+							{
+								href: "/finder",
+								icon: faFolderOpen,
+								text: "내가 등록한 문제 테이블",
 							},
 						].map(({ href, icon, text }) => (
 							<li key={href} className="my-3 flex items-center gap-1.5">

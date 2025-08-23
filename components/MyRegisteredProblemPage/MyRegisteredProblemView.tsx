@@ -241,6 +241,8 @@ export default function ProblemView() {
 					<div className="mb-2">
 						<strong>정답:</strong> {(problem as ShortAnswerProblem).answer_text.join(", ")}
 					</div>
+
+					{/* 여기서도 타입 에러 남 1 */}
 					<div>
 						<strong>AI 채점 기준:</strong> {(problem as ShortAnswerProblem).grading_criteria.join(", ")}
 					</div>
@@ -255,6 +257,7 @@ export default function ProblemView() {
 						<strong>정답:</strong> {(problem as SubjectiveProblem).answer_text}
 					</div>
 
+					{/* 여기서도 타입 에러 남 2 */}
 					{(problem as SubjectiveProblem).grading_criteria.length > 0 ? (
 						<div>
 							<strong>AI 채점 기준:</strong> {(problem as SubjectiveProblem).grading_criteria.join(", ")}

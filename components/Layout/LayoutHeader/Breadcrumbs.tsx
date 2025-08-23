@@ -103,7 +103,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
 				{/* 📌 내가 등록한 문제들 */}
 				<BreadcrumbLink href="/registered-problems" label="📌 내가 등록한 문제들" />
 
-				{/* 📝 문제 등록하기 (/registered-problems/create) */}
+				{/* 📝 문제 보기 (/registered-problems/create) */}
 				{segments.length >= 2 && segments[1] === "view" && (
 					<>
 						<BreadcrumbSeparator />
@@ -129,9 +129,17 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
 			</nav>
 		)
 	}
+
+	if (segments.includes("finder")) {
+		return (
+			<nav>
+				<BreadcrumbLink href={"/finder"} label="📂 Problem Finder" />
+			</nav>
+		)
+	}
 }
 
-/* 🔹 Breadcrumb 링크 컴포넌트 */
+/* Breadcrumb 링크 컴포넌트 */
 function BreadcrumbLink({ href, label }: { href: string; label: string }) {
 	return (
 		<Link href={href} className="hover:underline text-xs">
@@ -140,7 +148,7 @@ function BreadcrumbLink({ href, label }: { href: string; label: string }) {
 	)
 }
 
-/* 🔹 Breadcrumb 구분자 ( > ) */
+/* Breadcrumb 구분자 ( > ) */
 function BreadcrumbSeparator() {
 	return <span className="text-xs"> {" > "} </span>
 }

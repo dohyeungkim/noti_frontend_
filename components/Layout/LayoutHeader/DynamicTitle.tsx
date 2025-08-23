@@ -30,6 +30,11 @@ function getTitle(
 		return "🔥 내가 푼 문제 모음"
 	}
 
+	// 문제 파일탐색기
+	if (pathname.endsWith("finder")) {
+		return "📂 Problem Finder"
+	}
+
 	//내가 등록한 문제들
 	if (pathname.startsWith("/registered-problems")) {
 		switch (true) {
