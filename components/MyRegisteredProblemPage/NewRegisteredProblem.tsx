@@ -19,7 +19,6 @@ import "react-mde/lib/styles/css/react-mde-all.css"
 import ReactMarkdown from "react-markdown"
 
 // 문제 유형
-
 const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
 	{ value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
 	{ value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },

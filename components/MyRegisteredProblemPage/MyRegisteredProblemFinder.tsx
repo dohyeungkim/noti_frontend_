@@ -1,18 +1,24 @@
 "use client"
 /**
- * ===== 해야될 것들 =====
- * 코딩/디버깅: 코드, 테스트 케이스 수정
+ * ===== 추가할 기능 =====
+ * >> 코딩/디버깅: 코드, 테스트 케이스 수정
  * 객관식: 선지 및 정답 인덱스 수정
- * 주관식: 정답 수정
- * 단답형: 정답 수정
+ * 주관식: 정답 수정 (배열)
+ * 단답형: 정답 수정 (배열)
+ * 공통: AI 채점 기준 표시(배열) + 수정
  *
- * 공통: AI 채점 기준 수정
+ * >> 문제지 추가 모달창 제작
+ *
+ * ===== 추가할 API =====
+ * 1. 문제 id가 주어졌을 때 그룹, 문제지 정보(name) GET
+ * 2. 문제 일부 정보 수정 API 추가 PATCH
+ * 3. 내가 그룹장인 그룹과 그안에 존재하는 문제지 리스트 조회 GET (기존 문제지에 문제 추가) -> 문재 추가는 그대로
+ * 4.
  */
 
 import React, { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { dummyProblems, type ProblemDetail } from "@/data/finderProblems"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faSearch } from "@fortawesome/free-solid-svg-icons"
 
 const DIFFICULTY_OPTIONS = [
 	{ label: "easy", value: "easy" },
@@ -58,7 +64,7 @@ function formatDate(iso: string) {
 	}
 }
 
-// 텍스트 에디터 (제몫, 설명)
+// 텍스트 에디터 (title, description)
 function EditableText({
 	value,
 	onCommit,
@@ -115,6 +121,248 @@ function EditableTags({
 		if (JSON.stringify(next) !== JSON.stringify(value)) onCommit(next)
 		else onCancel()
 	}
+
+	/** 공용: 더블클릭 → textarea, blur/Enter 커밋, Esc 취소 (모노스페이스) */
+	function InlineCode({
+		value,
+		onCommit,
+		className = "",
+		minRows = 6,
+	}: {
+		value: string
+		onCommit: (next: string) => void
+		className?: string
+		minRows?: number
+	}) {
+		const [editing, setEditing] = useState(false)
+		const [v, setV] = useState(value)
+		useEffect(() => setV(value), [value])
+
+		if (!editing) {
+			return (
+				<pre
+					onDoubleClick={() => setEditing(true)}
+					className={`bg-mybluegray p-2 rounded text-xs overflow-auto font-mono whitespace-pre-wrap break-words cursor-text ${className}`}
+				>
+					{value}
+				</pre>
+			)
+		}
+
+		return (
+			<textarea
+				autoFocus
+				rows={minRows}
+				className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-xs font-mono"
+				value={v}
+				onChange={(e) => setV(e.target.value)}
+				onBlur={() => {
+					if (v !== value) onCommit(v)
+					setEditing(false)
+				}}
+				onKeyDown={(e) => {
+					if (e.key === "Escape") {
+						setV(value)
+						setEditing(false)
+					}
+					if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+						if (v !== value) onCommit(v)
+						setEditing(false)
+					}
+				}}
+			/>
+		)
+	}
+
+	/** 공용: 더블클릭 → input/textarea */
+	function InlineText({
+		value,
+		onCommit,
+		multiline = false,
+		className = "",
+	}: {
+		value: string
+		onCommit: (next: string) => void
+		multiline?: boolean
+		className?: string
+	}) {
+		const [editing, setEditing] = useState(false)
+		const [v, setV] = useState(value)
+		useEffect(() => setV(value), [value])
+
+		if (!editing) {
+			return (
+				<div className={`cursor-text ${className}`} onDoubleClick={() => setEditing(true)}>
+					{value}
+				</div>
+			)
+		}
+		const common = {
+			autoFocus: true,
+			className: "w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm",
+			onBlur: () => {
+				if (v !== value) onCommit(v)
+				setEditing(false)
+			},
+			onKeyDown: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+				if (e.key === "Escape") {
+					setV(value)
+					setEditing(false)
+				}
+				if (!multiline && e.key === "Enter") {
+					if (v !== value) onCommit(v)
+					setEditing(false)
+				}
+			},
+		}
+		return multiline ? (
+			<textarea {...common} rows={4} value={v} onChange={(e) => setV(e.target.value)} />
+		) : (
+			<input {...common} value={v} onChange={(e) => setV(e.target.value)} />
+		)
+	}
+
+	/** 코딩/디버깅: 테스트케이스 표 (셀 더블클릭 편집, 행 추가/삭제) */
+	function TestCasesEditor({
+		cases,
+		onChange,
+	}: {
+		cases: { input: string; expected_output: string }[]
+		onChange: (next: { input: string; expected_output: string }[]) => void
+	}) {
+		const updateCell = (idx: number, key: "input" | "expected_output", val: string) => {
+			const next = cases.map((c, i) => (i === idx ? { ...c, [key]: val } : c))
+			onChange(next)
+		}
+		const addRow = () => onChange([...cases, { input: "", expected_output: "" }])
+		const removeRow = (idx: number) => onChange(cases.filter((_, i) => i !== idx))
+
+		return (
+			<div className="overflow-auto rounded border border-gray-200">
+				<table className="min-w-full text-xs">
+					<thead className="bg-gray-50">
+						<tr>
+							<th className="px-2 py-1 text-left w-1/2">입력</th>
+							<th className="px-2 py-1 text-left w-1/2">기대 출력</th>
+							<th className="px-2 py-1 text-right w-16">행</th>
+						</tr>
+					</thead>
+					<tbody>
+						{cases.map((tc, i) => (
+							<tr key={i} className="border-t align-top">
+								<td className="px-2 py-1">
+									<InlineCode value={tc.input} onCommit={(v) => updateCell(i, "input", v)} minRows={3} />
+								</td>
+								<td className="px-2 py-1">
+									<InlineCode
+										value={tc.expected_output}
+										onCommit={(v) => updateCell(i, "expected_output", v)}
+										minRows={3}
+									/>
+								</td>
+								<td className="px-2 py-1 text-right">
+									<button className="text-xs px-2 py-1 rounded border hover:bg-gray-50" onClick={() => removeRow(i)}>
+										삭제
+									</button>
+								</td>
+							</tr>
+						))}
+						<tr>
+							<td colSpan={3} className="px-2 py-2">
+								<button className="text-xs px-2 py-1 rounded border hover:bg-gray-50" onClick={addRow}>
+									+ 테스트케이스 추가
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		)
+	}
+
+	/** 단답형: 정답 배열 편집 (아이템 더블클릭, 추가/삭제) */
+	function ShortAnswersEditor({ answers, onChange }: { answers: string[]; onChange: (next: string[]) => void }) {
+		const update = (i: number, val: string) => onChange(answers.map((a, idx) => (idx === i ? val : a)))
+		const add = () => onChange([...answers, ""])
+		const remove = (i: number) => onChange(answers.filter((_, idx) => idx !== i))
+		return (
+			<div className="space-y-1">
+				{answers.map((a, i) => (
+					<div key={i} className="flex items-start gap-2">
+						<div className="flex-1">
+							<InlineText value={a} onCommit={(v) => update(i, v)} />
+						</div>
+						<button className="text-xs px-2 py-1 rounded border hover:bg-gray-50" onClick={() => remove(i)}>
+							삭제
+						</button>
+					</div>
+				))}
+				<button className="text-xs px-2 py-1 rounded border hover:bg-gray-50" onClick={add}>
+					+ 정답 추가
+				</button>
+			</div>
+		)
+	}
+
+	/** 주관식: 정답 문자열 더블클릭 편집 */
+	function SubjectiveEditor({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+		return <InlineText value={value} onCommit={onChange} multiline className="bg-gray-100 p-2 rounded text-sm" />
+	}
+
+	/** 객관식: 선지 + 정답 인덱스(멀티 가능) 편집 */
+	function MultipleChoiceEditor({
+		options,
+		correctIndexes,
+		onChange,
+	}: {
+		options: string[]
+		correctIndexes: number[]
+		onChange: (next: { options: string[]; correct_indexes: number[] }) => void
+	}) {
+		const setOption = (idx: number, val: string) => {
+			const nextOpts = options.map((o, i) => (i === idx ? val : o))
+			onChange({ options: nextOpts, correct_indexes: correctIndexes })
+		}
+		const toggleCorrect = (idx: number) => {
+			const set = new Set(correctIndexes)
+			set.has(idx) ? set.delete(idx) : set.add(idx)
+			onChange({ options, correct_indexes: Array.from(set).sort((a, b) => a - b) })
+		}
+		const addOption = () => onChange({ options: [...options, ""], correct_indexes: correctIndexes })
+		const removeOption = (idx: number) => {
+			const nextOpts = options.filter((_, i) => i !== idx)
+			const nextCorrect = correctIndexes.filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i))
+			onChange({ options: nextOpts, correct_indexes: nextCorrect })
+		}
+		return (
+			<div className="space-y-2">
+				{options.map((opt, i) => {
+					const checked = correctIndexes.includes(i)
+					return (
+						<div key={i} className="flex items-start gap-2">
+							<input
+								type="checkbox"
+								className="mt-1 accent-black"
+								checked={checked}
+								onChange={() => toggleCorrect(i)}
+								title="정답 토글"
+							/>
+							<div className="flex-1">
+								<InlineText value={opt} onCommit={(v) => setOption(i, v)} />
+							</div>
+							<button className="text-xs px-2 py-1 rounded border hover:bg-gray-50" onClick={() => removeOption(i)}>
+								삭제
+							</button>
+						</div>
+					)
+				})}
+				<button className="text-xs px-2 py-1 rounded border hover:bg-gray-50" onClick={addOption}>
+					+ 보기 추가
+				</button>
+			</div>
+		)
+	}
+
 	return (
 		<input
 			className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm"
@@ -202,6 +450,12 @@ export default function ProblemFinder() {
 		else setSelectedIds(dummyProblems.map((p) => p.problem_id))
 	}
 
+	// 문제 만들기 버튼 관련
+	const router = useRouter()
+	const handleNavigate = () => {
+		router.push("/registered-problems/create")
+	}
+
 	// 검색 기능
 	const [titleQuery, setTitleQuery] = useState("")
 	const [tagQuery, setTagQuery] = useState("") // 콤마/스페이스로 여러 태그 입력
@@ -231,8 +485,12 @@ export default function ProblemFinder() {
 
 	return (
 		<div className="min-h-screen mb-10">
+			{/* 결과 개수 표시 */}
+			<div className="flex text-xs text-gray-500 justify-end">
+				총 {rows.length}개 중 {filteredRows.length}개 표시
+			</div>
 			{/* 검색 바 */}
-			<div className="max-w-[50vh] mb-3 flex flex-col gap-2 ml-auto md:flex-row md:items-center justify-center">
+			<div className="max-w-[50vh] mt-2 flex flex-col gap-2 ml-auto md:flex-row md:items-center justify-center">
 				<div className="flex-1">
 					<input
 						value={titleQuery}
@@ -252,16 +510,24 @@ export default function ProblemFinder() {
 				</div>
 			</div>
 
-			{/* 결과 개수 표시 */}
-			<div className="flex text-xs text-gray-500 justify-end">
-				총 {rows.length}개 중 {filteredRows.length}개 표시
-			</div>
-
-			<div className="flex text-sm text-gray-400 ml-2">
-				*왼쪽: 제목, 설명, 태그, 난이도, 채점모드 더블클릭 후 수정 가능
-			</div>
-			<div className="flex text-sm text-gray-400 mb-2 ml-2">
-				*오른쪽: 문제 세부 속성들(정답, 테스트 케이스...) 더블클릭 후 수정 가능
+			<div className="flex flex-col-2 mt-3">
+				<div>
+					<div className="flex text-sm text-gray-400 ml-2">
+						*왼쪽: 제목, 설명, 태그, 난이도, 채점모드 더블클릭 후 수정 가능
+					</div>
+					<div className="flex text-sm text-gray-400 ml-2">
+						*오른쪽: 문제 세부 속성들(정답, 테스트 케이스...) 더블클릭 후 수정 가능
+					</div>
+				</div>
+				<div className="flex justify-end ml-auto mr-1 mb-2">
+					<button
+						onClick={handleNavigate}
+						className="flex items-center bg-mycheck text-white px-3 py-2 mt-3 rounded-lg text-xs cursor-pointer
+          hover:opacity-80"
+					>
+						+ 문제 만들기
+					</button>
+				</div>
 			</div>
 
 			<div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -469,7 +735,6 @@ export default function ProblemFinder() {
 								>
 									새 문제지 만들기
 								</button>
-
 								<span className="ml-2 text-xs text-gray-500">
 									{selectedIds.length > 0 ? `총 ${selectedIds.length} 문제 ` : ""}
 								</span>
@@ -486,7 +751,7 @@ export default function ProblemFinder() {
 					</div>
 
 					<div className="max-h-[80vh] overflow-y-auto rounded-lg border border-gray-200">
-						<table className="min-w-full text-sm">
+						<table className="min-w-full text-sm h-100%">
 							<thead className="bg-gray-50 sticky top-0 z-10">
 								<tr className="text-left text-gray-600 border-b">
 									<th className="w-10 py-2 px-2">
