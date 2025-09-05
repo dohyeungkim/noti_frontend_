@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+
 interface Group {
 	group_id: number
 	group_name: string

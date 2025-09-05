@@ -376,6 +376,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 		}
 
 		try {
+			// ========== 422 ==========
 			const data = await solve_api.solve_create(
 				Number(params.groupId),
 				Number(params.examId),
@@ -505,6 +506,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 		} catch (err) {
 			console.error("run_code_api 에러:", err)
 			setRunResults([])
+			// ========== 422 ==========
 			alert(`테스트 실행 중 오류가 발생했습니다: ${err instanceof Error ? err.message : String(err)}`)
 		} finally {
 			setIsTestRunning(false)

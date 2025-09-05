@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import DrawerWrapper from "@/components/Layout/DrawerWrapper"
 import PageHeaderWrapper from "@/components/Layout/PageHeaderWrapper"
+
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
 	const { isAuth } = useAuth()
 	const pathname = usePathname()

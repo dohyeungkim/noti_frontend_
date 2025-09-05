@@ -16,7 +16,7 @@
  * 4.
  */
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { dummyProblems, type ProblemDetail } from "@/data/finderProblems"
 

@@ -100,16 +100,46 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 		fetchWorkbook()
 	}, [fetchWorkbook])
 
-	// 현재 그룹의 문제지에 등록된 문제 가져오기 함수
 	const fetchProblems = useCallback(async () => {
 		try {
 			const data = await problem_ref_api.problem_ref_get(numericGroupId, numericExamId)
-			setSelectedProblems(data)
-			setFilteredProblems(data)
+			const adapted: ProblemRef[] = (Array.isArray(data) ? data : []).map(adaptProblemRef)
+			setSelectedProblems(adapted)
+			setFilteredProblems(adapted)
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
 	}, [numericGroupId, numericExamId])
+
+	const normalizeProblemType = (v?: string) => {
+		const s = (v ?? "").toLowerCase().trim()
+		switch (s) {
+			case "코딩":
+			case "디버깅":
+			case "객관식":
+			case "단답형":
+			case "주관식":
+				return v!
+			default:
+				return "-" // 미확인 값
+		}
+	}
+
+	// 응답이 어떤 키로 오든 안전하게 매핑
+	type RawProblemRef = any // 실제 타입 있다면 여기에 맞춰 선언
+
+	const adaptProblemRef = (dto: RawProblemRef): ProblemRef => {
+		const rawType = dto.problemType ?? dto.problem_type ?? dto.type
+		return {
+			problem_id: dto.problem_id ?? dto.id,
+			title: dto.title ?? "",
+			description: dto.description ?? "",
+			problemType: normalizeProblemType(rawType), // ✅ 한글 라벨 보장
+			attempt_count: dto.attempt_count ?? dto.attempts ?? 0,
+			pass_count: dto.pass_count ?? dto.passes ?? 0,
+			points: dto.points ?? dto.score ?? 0, // ✅ 배점 없으면 0 기본
+		}
+	}
 
 	useEffect(() => {
 		fetchProblems()
@@ -164,6 +194,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 				{/* 오른쪽: 버튼 영역 */}
 				<div className="flex items-center gap-2 ml-auto">
 					{/* 채점하기 버튼: 그룹장일 때만 표시 */}
+					{/* 자 도형님과 형준님께 알립니다. 이거 바로 아래에 있는 주석이 그냥 테스트용이고, 실제에선 두번째꺼 씁니다. */}
 					{isGroupOwner && (
 						<button
 							onClick={handleGrading}
@@ -174,6 +205,17 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 							채점하기
 						</button>
 					)}
+
+					{/* {isGroupOwner && workbook?.is_test_mode && (
+						<button
+							onClick={handleGrading}
+							className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-1.5 rounded-xl text-md cursor-pointer
+								transition-all duration-200 ease-in-out active:scale-95 flex items-center"
+						>
+							<FileCheck size={18} className="mr-1" />
+							채점하기
+						</button>
+					)} */}
 
 					{/* 문제 추가 버튼: 그룹장일 때만 표시 */}
 					{isGroupOwner && <OpenModalButton onClick={() => setIsModalOpen(true)} label="문제 추가하기" />}

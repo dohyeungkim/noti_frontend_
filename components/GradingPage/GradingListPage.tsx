@@ -4,8 +4,8 @@
  * -> 이름 (학번)  o x o x o  (2/5 검토)
  *
  * 해당 문제지의 모든 제출(problem_id, score, reviewed) 받아온 후 학생 별로 묶어서 각 행별로 랜더링
- *
  */
+
 import { useEffect, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { useParams, useRouter } from "next/navigation"
@@ -76,18 +76,6 @@ export default function GradingListPage() {
 		fetchOwner()
 		fetchSubmissions()
 	}, [fetchOwner, fetchSubmissions])
-
-	// 권한 체크
-	// if (!isGroupOwner) {
-	// 	return (
-	// 		<div className="flex flex-col items-center justify-center min-h-screen">
-	// 			<h2 className="text-2xl font-bold mb-4">접근 권한이 없습니다</h2>
-	// 			<button onClick={() => router.back()} className="px-4 py-2 bg-blue-600 text-white rounded">
-	// 				이전으로
-	// 			</button>
-	// 		</div>
-	// 	)
-	// }
 
 	// 학생 클릭 → 상세 페이지
 	const selectStudent = (studentId: string) => {

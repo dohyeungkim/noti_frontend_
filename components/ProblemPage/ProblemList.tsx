@@ -91,7 +91,7 @@ const ProblemList = ({ problems, groupId, workbookId, isGroupOwner, refresh, set
 								] as const
 
 								const typeInfo = PROBLEM_TYPES.find((t) => t.value === (p as any).problemType) ?? {
-									label: "코딩",
+									label: "-",
 									color: "bg-blue-100 text-blue-800",
 								}
 

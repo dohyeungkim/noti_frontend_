@@ -3,7 +3,6 @@ import { fetchWithAuth } from "./fetchWithAuth"
 // ====================== 타입 정의 ===========================
 interface ProfileInfo {
 	age: "under_18" | "18_24" | "25_29" | "30_34" | "35_39" | "over_40"
-	// academic_year
 	grade: "high_school" | "freshman" | "sophomore" | "junior" | "senior" | "graduate" | "working_professional" | "other"
 	major: string
 	interests: ("web_development" | "mobile_app" | "data_science" | "ai_ml" | "game_development" | "embedded" | "other")[]
@@ -40,78 +39,6 @@ interface ExtendedUserRegisterRequest {
 	profile_info: ProfileInfo
 }
 
-// interface UserProfileResponse {
-// 	user_id: number
-// 	basic_info: {
-// 		email: string
-// 		username: string
-// 		full_name: string
-// 		created_at: string
-// 		last_login: string
-// 	}
-// 	profile_info: ProfileInfo & {
-// 		profile_completion: {
-// 			percentage: number
-// 			missing_fields: string[]
-// 		}
-// 	}
-// 	learning_analytics: {
-// 		problems_solved: number
-// 		total_submissions: number
-// 		success_rate: number
-// 		active_days: number
-// 		skill_level: "beginner" | "intermediate" | "advanced"
-// 		achievements: string[]
-// 	}
-// 	personalized_recommendations: {
-// 		next_problems: Array<{
-// 			problem_id: number
-// 			title: string
-// 			difficulty: string
-// 			reason: string
-// 		}>
-// 		learning_paths: Array<{
-// 			path_id: number
-// 			name: string
-// 			description: string
-// 			compatibility_score: number
-// 		}>
-// 	}
-// }
-
-// interface RecommendationResponse {
-// 	user_id: number
-// 	recommendation_type: string
-// 	generated_at: string
-// 	recommendations: Array<{
-// 		id: number
-// 		type: "problem" | "course" | "path"
-// 		title: string
-// 		description: string
-// 		difficulty: string
-// 		estimated_time: string
-// 		compatibility_score: number
-// 		reason: string
-// 		tags: string[]
-// 	}>
-// 	recommendation_basis: {
-// 		profile_factors: string[]
-// 		learning_history: string
-// 		performance_analysis: string
-// 	}
-// }
-
-// interface ProfileUpdateRequest {
-// 	profile_info: ProfileInfo
-// }
-
-// interface ProfileUpdateResponse {
-// 	success: boolean
-// 	message: string
-// 	updated_fields: string[]
-// 	recommendations_updated: boolean
-// }
-
 // ====================== Auth 관련 API ===========================
 export const auth_api = {
 	// 새로운 확장된 register 함수
@@ -141,8 +68,7 @@ export const auth_api = {
 						errorData: errorData,
 						detail: errorData.detail,
 					},
-					null,
-					2
+					null
 				)
 			)
 
@@ -243,7 +169,7 @@ export const auth_api = {
 		return res.json()
 	},
 
-	// // 인증 상태 확인 (안전한 버전)
+	// auth.ts 파일에서 사용되는 함수 -> 사용자 인증상태 확인
 	async checkAuthStatus(): Promise<boolean> {
 		try {
 			const res = await fetch("/api/proxy/user/me", {
@@ -622,7 +548,7 @@ export const problem_api = {
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}))
 			throw err
-			// throw new Error(err.detail?.msg || err.message || "문제 삭제 실패")
+			throw new Error(err.detail?.msg || err.message || "문제 삭제 실패")
 		}
 		return res.json()
 	},
@@ -823,6 +749,7 @@ export const group_api = {
 		return res.json()
 	},
 
+	// 📂 기존 문제지에 추가할 때 이 함수 쓸듯 ?
 	async my_group_get() {
 		const res = await fetchWithAuth("/api/proxy/groups/my", {
 			method: "GET",
@@ -1325,6 +1252,7 @@ export const code_log_api = {
 			const errorData = await res.json().catch(() => ({}))
 			throw new Error(errorData.detail?.msg || errorData.message || "코드 로깅 실패")
 		}
+
 		return res.json()
 	},
 
@@ -1445,52 +1373,3 @@ export const run_code_api = {
 		return res.json()
 	},
 }
-
-// ====================== 새로운 타입 정의 ===========================
-
-// interface ReferenceCodeResponse {
-// 	id: number
-// 	language: string
-// 	code: string
-// 	is_main: boolean
-// 	created_at: string
-// }
-
-// interface EnhancedProblemResponse {
-// 	problem_id: number
-// 	maker_id: string
-// 	title: string
-// 	description: string
-// 	difficulty: string
-// 	rating_mode: "hard" | "space" | "regex" | "none"
-// 	tags: string[]
-// 	problem_condition: string[]
-// 	reference_codes: ReferenceCodeResponse[]
-// 	test_cases: TestCaseRequest[]
-// 	parent_problem_id: number | null
-// 	root_problem_id: number
-// 	make_at: string
-// }
-
-// interface RunCodeForProblemRequest {
-// 	code: string
-// 	language: string
-// 	test_cases: Array<{
-// 		input: string
-// 		expected_output: string
-// 	}>
-// }
-
-// interface RunCodeForProblemResponse {
-// 	success: boolean
-// 	results: Array<{
-// 		test_case_index: number
-// 		status: "success" | "error" | "timeout"
-// 		output: string
-// 		error: string
-// 		execution_time: number
-// 		memory_usage: number
-// 		passed: boolean
-// 	}>
-// 	overall_status: "all_passed" | "some_failed" | "all_failed"
-// }

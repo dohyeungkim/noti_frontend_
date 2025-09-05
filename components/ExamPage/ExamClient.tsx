@@ -40,7 +40,9 @@ export default function ExamsClient() {
 	const [workbooks, setWorkbooks] = useState<WorkbookType[]>([]) // workbook_get으로 받은 정보가 여기 workbook에 저장됨
 	const [groupOwner, setGroupOwner] = useState<string | null>(null) // 그룹장의 유저명 저장 (해당 그룹의 그룹장 ID를 저장)
 	const isGroupOwner = userName === groupOwner // 그룹장인지 확인하는 함수
+
 	const [isModalOpen, setIsModalOpen] = useState(false)
+
 	const [workBookName, setWorkBookName] = useState("")
 	const [workBookDescription, setWorkBookDescription] = useState("")
 	const [searchQuery, setSearchQuery] = useState("")
@@ -176,8 +178,6 @@ export default function ExamsClient() {
 							<ExamGallery workbooks={normalList} handleEnterExam={handleEnterExam} isGroupOwner={isGroupOwner} />
 						</section>
 					)}
-
-					{/* <hr className="border-b-1 border-gray-200 my-4 m-2 mt-10" /> */}
 
 					{/* 시험모드 문제지 */}
 					<h3 className="text-xl font-bold pt-3 pl-4 text-red-800 mt-10">시험 모드 문제지</h3>
