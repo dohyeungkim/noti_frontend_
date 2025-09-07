@@ -1123,18 +1123,45 @@ export const solve_api = {
 	// },
 
 	// 피드백 페이지에서 호출되는 Api
+	/**
+	 *
+	 * @param solve_id
+	 * @returns
+	 */
+	// lib/api.ts (또는 solve_api가 선언된 곳)
 	async solve_get_by_solve_id(solve_id: number) {
-		const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}`, {
-			method: "GET",
-			credentials: "include",
-		})
+		const url = `/api/proxy/solves/${encodeURIComponent(String(solve_id))}`
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "제출 내용 가져오기 실패")
+		console.groupCollapsed(`🔎 [solve_get_by_solve_id] ${url}`)
+		try {
+			const res = await fetchWithAuth(url, {
+				method: "GET",
+				credentials: "include",
+			})
+			const text = await res.text()
+			let body: any = text
+			try {
+				body = JSON.parse(text)
+			} catch {
+				/* text 그대로 둠 */
+			}
+
+			console.log("status:", res.status, res.statusText)
+			console.log("response:", body)
+			console.groupEnd()
+
+			if (!res.ok) {
+				// 백엔드가 detail을 주면 보기 좋게
+				const msg =
+					(body && (body.detail?.msg || body.message || body.detail)) || `GET ${url} failed with ${res.status}`
+				throw new Error(msg)
+			}
+			return body
+		} catch (err) {
+			console.log("⚠️ fetch error:", err)
+			console.groupEnd()
+			throw err
 		}
-
-		return res.json()
 	},
 
 	/**

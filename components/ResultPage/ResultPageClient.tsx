@@ -1,7 +1,7 @@
 "use client"
 // 채점 기능 관련, 현재 목데이터로 진행중.
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { motion } from "framer-motion"
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay"
 import { code_log_api, problem_api, solve_api, ai_feedback_api, comment_api, auth_api } from "@/lib/api"
@@ -11,10 +11,11 @@ import ResultPageProblemDetail from "./ResultPageProblemDetail"
 import { useRouter } from "next/navigation"
 import { formatTimestamp } from "../util/dageUtils"
 import { UserIcon } from "lucide-react"
-// 시험 모드 isExamMode 로 시험모드 상태관리 가능 - 홍
-import { useExamMode } from "@/hooks/useExamMode"
-// 시험 모드 관련 임시 더미데이터 - 홍
-import { feedbackDummy } from "@/data/examModeFeedbackDummy"
+// 시험 모드 isExamMode 로 시험모드 상태관리 가능
+// import { useExamMode } from "@/hooks/useExamMode"
+
+// ❌시험 모드 관련 임시 더미데이터 -> 총점, 조건 별 점수, 교수 피드백
+// import { feedbackDummy } from "@/data/examModeFeedbackDummy"
 import ReactMarkdown from "react-markdown"
 import ProblemDetailRenderer from "@/components/ResultPage/ProblemDetailRenderer"
 import AnswerRenderer from "@/components/ResultPage/AnswerRenderer"
@@ -102,13 +103,13 @@ export default function FeedbackWithSubmissionPageClient({
 	const [activeTab, setActiveTab] = useState<"problem" | "submission">("submission")
 	const [userId, setUserId] = useState<string>("")
 	const router = useRouter()
-	const { isExamMode } = useExamMode()
+	// const { isExamMode } = useExamMode()
 
-	// 시험모드 더미데이터 총점, 각 조건별 최대 배점과 획득 점수 정보 배열, Markdown 형식 교수 피드백 - 홍
-	const { totalScore, maxScore, professorFeedback: dummyProfessorFeedback } = feedbackDummy
+	// ❌ 시험모드 더미데이터 총점, 각 조건별 최대 배점과 획득 점수 정보 배열, Markdown 형식 교수 피드백 - 홍
+	// const { totalScore, maxScore, professorFeedback: dummyProfessorFeedback } = feedbackDummy
 	// const { conditionScores } = feedbackDummy
 
-	const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
+	const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai">("ai")
 
 	// AI 피드백 가져오기
 	useEffect(() => {
@@ -132,10 +133,17 @@ export default function FeedbackWithSubmissionPageClient({
 			const res = await problem_api
 				.problem_get_by_id_group(Number(params.groupId), Number(params.examId), Number(params.problemId))
 				.then(setProblemDetail)
+			logGet("problem_get_by_id_group", res)
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
 	}, [params.groupId, params.examId, params.problemId])
+
+	const logGet = (label: string, data: unknown) => {
+		console.groupCollapsed(`📥 GET ${label}`)
+		console.log("payload:", data)
+		console.groupEnd()
+	}
 
 	// 현재 에러
 	// 코딩, 디버깅, 객관, => 404
@@ -143,9 +151,9 @@ export default function FeedbackWithSubmissionPageClient({
 	const fetchSolve = useCallback(async () => {
 		try {
 			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
-
 			setSolveData(res)
 			console.log(res)
+			logGet(`solve_get_by_solve_id(${params.resultId})`, res)
 			// AI 피드백이 solveData에 포함되어 있다면 사용
 			if (res.ai_feedback && !aiFeedback) {
 				setAiFeedback(res.ai_feedback)
@@ -196,6 +204,7 @@ export default function FeedbackWithSubmissionPageClient({
 		try {
 			const res = await code_log_api.code_logs_get_by_solve_id(Number(params.resultId))
 			setCodeLogs(res)
+			logGet(`code_logs_get_by_solve_id(${params.resultId})`, res)
 		} catch (error) {
 			console.error("코드 로그 불러오기 중 오류 발생:", error)
 		}
@@ -218,6 +227,16 @@ export default function FeedbackWithSubmissionPageClient({
 			setComments([])
 		}
 	}, [activeTab, params.problemId, params.resultId])
+
+	const visibleComments = useMemo(() => {
+		const list = comments ?? []
+		return list.filter(
+			(c) =>
+				activeTab === "problem"
+					? c.is_problem_message === true // 문제별 탭: 문제용 코멘트만
+					: c.is_problem_message !== true // 제출별 탭: 문제용이 아닌 코멘트만
+		)
+	}, [comments, activeTab])
 
 	// 사용자 정보 가져오기
 	const fetchUserId = useCallback(async () => {
@@ -261,7 +280,11 @@ export default function FeedbackWithSubmissionPageClient({
 	}, [activeTab])
 
 	useEffect(() => {
-		if (problemDetail && solveData && codeLogs) {
+		if (!solveData || !codeLogs) return
+		const t = solveData.problemType
+		if (t === "코딩" || t === "디버깅") {
+			setIsLoaded(true)
+		} else if (problemDetail) {
 			setIsLoaded(true)
 		}
 	}, [problemDetail, solveData, codeLogs])
@@ -336,6 +359,64 @@ export default function FeedbackWithSubmissionPageClient({
 		)
 	}
 
+	function renderCodeOrText(value: any) {
+		if (value == null) return null
+
+		// 문자열이면 그대로
+		if (typeof value === "string")
+			return (
+				<pre>
+					<code>{value}</code>
+				</pre>
+			)
+
+		// 배열이면 각 항목 처리
+		if (Array.isArray(value)) {
+			return value.map((v, i) => (
+				<pre key={i}>
+					<code>{typeof v === "string" ? v : v?.code ?? JSON.stringify(v)}</code>
+				</pre>
+			))
+		}
+
+		// 객체에 code 필드가 있으면 그걸 사용
+		if (typeof value === "object" && "code" in value) {
+			return (
+				<pre>
+					<code>{value.code}</code>
+				</pre>
+			)
+		}
+
+		// 최후의 안전장치
+		return <span>{String(value)}</span>
+	}
+	// 컴포넌트 안에 헬퍼 추가
+	function toMarkdownText(val: any): string {
+		if (val == null) return "AI 피드백이 없습니다."
+		if (typeof val === "string") return val
+
+		// { language, code } 형태 처리
+		if (typeof val === "object") {
+			const lang = val.language || val.lang || ""
+			const code = val.code || val.text || ""
+			if (code) {
+				// 코드펜스로 감싸서 Markdown으로 렌더
+				return `\`\`\`${lang}\n${code}\n\`\`\``
+			}
+			return JSON.stringify(val) // 최후의 안전장치
+		}
+
+		return String(val)
+	}
+
+	const aiMd = toMarkdownText(activeFeedbackTab === "ai" ? aiFeedback ?? solveData?.ai_feedback : null)
+	console.log(
+		"aiFeedback typeof/value",
+		typeof (aiFeedback ?? solveData?.ai_feedback),
+		aiFeedback ?? solveData?.ai_feedback
+	)
+
 	return (
 		<div className="flex min-h-screen">
 			{/* 메인 컨텐츠 영역 */}
@@ -357,22 +438,22 @@ export default function FeedbackWithSubmissionPageClient({
 					</div>
 					<div className="flex items-center gap-4 ml-2">
 						{/* <span className="text-sm text-gray-600">🔥 열심히다.</span> */}
-						{isExamMode && (
+						{/* {isExamMode && (
 							<span className="text-sm text-gray-600">
 								✔️ 점수: {totalScore}/{maxScore}점
 							</span>
-						)}
+						)} */}
 						{solveData && (
 							<>
 								<span className={`text-sm font-bold ${solveData.passed ? "text-green-600" : "text-red-600"}`}>
 									{solveData.passed ? "🟢 맞았습니다" : "🔴 틀렸습니다"}
 								</span>
-								<span className="text-sm text-gray-500">
+								{/* <span className="text-sm text-gray-500">
 									언어: {solveData.code_language} | 길이: {solveData.code_len}자
 								</span>
 								{solveData.execution_time && (
 									<span className="text-sm text-gray-500">실행시간: {solveData.execution_time}ms</span>
-								)}
+								)} */}
 							</>
 						)}
 					</div>
@@ -495,7 +576,7 @@ export default function FeedbackWithSubmissionPageClient({
 												{/* 오른쪽: 점수 / 아이콘 */}
 												<div className="ml-3 text-right">
 													{/* 이 3/5 부분은 시험모드일 때만 뜨도록 해야됨 - 홍 */}
-													{isExamMode && <div className="text-xs font-medium mb-1">3/5점</div>}
+													{/* {isExamMode && <div className="text-xs font-medium mb-1">3/5점</div>} */}
 													{/* pass/fail 아이콘 */}
 													{condition.status === "pass" ? (
 														<div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
@@ -554,14 +635,14 @@ export default function FeedbackWithSubmissionPageClient({
 								>
 									AI 피드백
 								</button>
-								<button
+								{/* <button
 									className={`px-4 py-1 text-sm font-medium ${
 										activeFeedbackTab === "professor" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600"
 									}`}
 									onClick={() => setActiveFeedbackTab("professor")}
 								>
 									교수 피드백
-								</button>
+								</button> */}
 							</div>
 
 							{/* 탭 내용 */}
@@ -574,9 +655,10 @@ export default function FeedbackWithSubmissionPageClient({
 								) : (
 									<div className="prose prose-sm max-w-none text-gray-800">
 										<ReactMarkdown>
-											{activeFeedbackTab === "ai"
+											{/* {activeFeedbackTab === "ai"
 												? aiFeedback || solveData?.ai_feedback || "AI 피드백이 없습니다."
-												: dummyProfessorFeedback}
+												: "AI 피드백이 없습니다."} */}
+											{aiMd}
 										</ReactMarkdown>
 									</div>
 								)}
@@ -632,14 +714,14 @@ export default function FeedbackWithSubmissionPageClient({
 
 						{/* 기존 코멘트 목록 */}
 						<div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-							{comments.length === 0 ? (
+							{visibleComments.length === 0 ? (
 								<div className="bg-gray-50 rounded-lg p-6 text-center">
 									<div className="flex items-center justify-center gap-2 text-gray-500">
 										<p className="text-sm">댓글이 없습니다.</p>
 									</div>
 								</div>
 							) : (
-								comments.map((comment, index) => (
+								visibleComments.map((comment, index) => (
 									<motion.div
 										key={`${comment.user_id}-${comment.timestamp}-${index}`}
 										className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg"
@@ -761,7 +843,7 @@ export default function FeedbackWithSubmissionPageClient({
 						<ResultPageProblemDetail problem={problemDetail} />
 						<div className="mt-6">
 							<h2 className="text-lg font-bold mb-2">문제 유형별 상세 정보</h2>
-							<ProblemDetailRenderer problem={problemDetail} />
+							{/* <ProblemDetailRenderer problem={problemDetail} /> */}
 						</div>
 					</motion.div>
 				)}
