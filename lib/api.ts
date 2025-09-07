@@ -994,7 +994,8 @@ export const workbook_api = {
 export type SolveRequest =
 	| {
 			problemType: "코딩" | "디버깅"
-			codes: { language: string; code: string }[] // 코드랑 언어 딕셔너리 배열로 받음
+			codes: string // 코드랑 언어 딕셔너리 배열로 받음
+			code_language: string
 	  }
 	| {
 			problemType: "객관식"
@@ -1002,7 +1003,7 @@ export type SolveRequest =
 	  }
 	| {
 			problemType: "단답형"
-			answers: string[]
+			answer_text: string[]
 	  }
 	| {
 			problemType: "주관식"
@@ -1033,12 +1034,13 @@ export const solve_api = {
 			case "코딩":
 			case "디버깅":
 				body.codes = request.codes
+				body.code_language = request.code_language
 				break
 			case "객관식":
 				body.selected_options = request.selected_options
 				break
 			case "단답형":
-				body.answers = request.answers
+				body.answer_text = request.answer_text
 				break
 			case "주관식":
 				body.written_text = request.written_text
@@ -1054,11 +1056,28 @@ export const solve_api = {
 				body: JSON.stringify(body),
 			}
 		)
-
+		// api.ts (solve_create 부분의 에러 처리 개선)
 		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "제출 생성 실패")
+			let errText = "제출 생성 실패"
+			try {
+				const data = await res.json()
+				console.error("solve_create error payload:", data)
+				if (Array.isArray(data.detail)) {
+					errText = data.detail
+						.map((d: any) => {
+							const loc = Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc
+							return `${loc}: ${d.msg}`
+						})
+						.join("\n")
+				} else if (data.detail) {
+					errText = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)
+				} else if (data.message) {
+					errText = data.message
+				}
+			} catch {}
+			throw new Error(errText)
 		}
+
 		return res.json()
 	},
 
@@ -1080,21 +1099,35 @@ export const solve_api = {
 		return res.json()
 	},
 
-	/** 👻❌ -  원래 해당 문제 전체에 대한 기록 다 불러옴 -> 레퍼런스 문제에 대한 기록만 주는걸로 변경
-	 * 특정 제출(solve_id)에 대한 상세 정보를 가져옴. 제출 결과 페이지에서 AI 피드백·코드 로그·테스트·조건 검사 결과 등을 렌더링할 떄 사용.
+	/**
 	 * @param group_id
 	 * @param workbook_id
 	 * @param problem_id
 	 * @returns
 	 */
-	async solve_get_by_problem_ref_id(group_id: number, workbook_id: number, problem_id: number) {
-		const res = await fetchWithAuth(
-			`/api/proxy/solves/group_id/${group_id}/workbook_id/${workbook_id}/problem_id/${problem_id}`,
-			{
-				method: "GET",
-				credentials: "include",
-			}
-		)
+	// async solve_get_by_problem_ref_id(group_id: number, workbook_id: number, problem_id: number) {
+	// 	const res = await fetchWithAuth(
+	// 		`/api/proxy/solves/group_id/${group_id}/workbook_id/${workbook_id}/problem_id/${problem_id}`,
+	// 		{
+	// 			method: "GET",
+	// 			credentials: "include",
+	// 		}
+	// 	)
+
+	// 	if (!res.ok) {
+	// 		const errorData = await res.json().catch(() => ({}))
+	// 		throw new Error(errorData.detail?.msg || errorData.message || "제출 내용 가져오기 실패")
+	// 	}
+
+	// 	return res.json()
+	// },
+
+	// 피드백 페이지에서 호출되는 Api
+	async solve_get_by_solve_id(solve_id: number) {
+		const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}`, {
+			method: "GET",
+			credentials: "include",
+		})
 
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({}))

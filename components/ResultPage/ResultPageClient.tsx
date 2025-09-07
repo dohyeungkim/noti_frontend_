@@ -132,21 +132,19 @@ export default function FeedbackWithSubmissionPageClient({
 			const res = await problem_api
 				.problem_get_by_id_group(Number(params.groupId), Number(params.examId), Number(params.problemId))
 				.then(setProblemDetail)
-			// setProblem(res)
 		} catch (error) {
 			console.error("문제 불러오기 중 오류 발생:", error)
 		}
 	}, [params.groupId, params.examId, params.problemId])
 
+	// 현재 에러
+	// 코딩, 디버깅, 객관, => 404
+	// 단답, 주관 => 500
 	const fetchSolve = useCallback(async () => {
 		try {
-			const res = await solve_api.solve_get_by_problem_ref_id(
-				Number(params.groupId),
-				Number(params.examId),
-				Number(params.problemId)
-			)
-			setSolveData(res)
+			const res = await solve_api.solve_get_by_solve_id(Number(params.resultId))
 
+			setSolveData(res)
 			console.log(res)
 			// AI 피드백이 solveData에 포함되어 있다면 사용
 			if (res.ai_feedback && !aiFeedback) {
@@ -168,6 +166,7 @@ export default function FeedbackWithSubmissionPageClient({
 					status: conditionResult.passed ? ("pass" as const) : ("fail" as const),
 				}))
 				setConditionResults(conditionCheckResults)
+				setIsConditionLoaded(true)
 			} else if (problemDetail && problemDetail.problem_condition && problemDetail.problem_condition.length > 0) {
 				// problem_condition을 기반으로 조건 결과 생성
 				const problemConditionResults = problemDetail.problem_condition.map((condition: string, index: number) => ({
@@ -181,12 +180,15 @@ export default function FeedbackWithSubmissionPageClient({
 					status: res.passed ? ("pass" as const) : ("fail" as const),
 				}))
 				setConditionResults(problemConditionResults)
+				setIsConditionLoaded(true)
 			} else {
 				// 조건이 없으면 빈 배열로 설정
 				setConditionResults([])
+				setIsConditionLoaded(true)
 			}
 		} catch (error) {
 			console.error("제출 기록 불러오기 중 오류 발생:", error)
+			setIsConditionLoaded(true)
 		}
 	}, [params.resultId, aiFeedback])
 
@@ -230,9 +232,11 @@ export default function FeedbackWithSubmissionPageClient({
 	}, [])
 
 	useEffect(() => {
-		fetchProblem()
-		fetchSolve()
-		fetchCodeLogs()
+		;(async () => {
+			await fetchProblem()
+			await fetchSolve()
+			await fetchCodeLogs()
+		})()
 	}, [fetchProblem, fetchSolve, fetchCodeLogs])
 
 	// 컴포넌트 마운트시 사용자 정보 먼저 가져오기

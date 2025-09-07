@@ -277,20 +277,20 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 		fetchProblem()
 	}, [fetchProblem])
 
-	useEffect(() => {
-		if (solveId) {
-			console.log("solveId로 코드 불러오기 시도:", solveId)
-			solve_api
-				.solve_get_by_problem_ref_id(Number(params.groupId), Number(params.examId), Number(params.problemId))
-				.then((res) => {
-					console.log("solve_get_by_problem_ref_id 응답:", res)
-					setCode(res.submitted_code ?? "")
-				})
-				.catch((err) => {
-					console.error("solve_get_by_problem_ref_id 에러:", err)
-				})
-		}
-	}, [solveId])
+	// useEffect(() => {
+	// 	if (solveId) {
+	// 		console.log("solveId로 코드 불러오기 시도:", solveId)
+	// 		solve_api
+	// 			.solve_get_by_problem_ref_id(Number(params.groupId), Number(params.examId), Number(params.problemId))
+	// 			.then((res) => {
+	// 				console.log("solve_get_by_problem_ref_id 응답:", res)
+	// 				setCode(res.submitted_code ?? "")
+	// 			})
+	// 			.catch((err) => {
+	// 				console.error("solve_get_by_problem_ref_id 에러:", err)
+	// 			})
+	// 	}
+	// }, [solveId])
 
 	useEffect(() => {
 		if (editorRef.current && code !== editorRef.current.getValue()) {
@@ -312,6 +312,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 		const { newCode, newCodeLogs, newTimeStamps } = collectLogs()
 
 		const pType = problem.problemType as SolveRequest["problemType"]
+		const normalizedLang = (language || "").toLowerCase()
 		let request: SolveRequest
 
 		switch (pType) {
@@ -321,9 +322,14 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 					alert("코드를 입력해주세요.")
 					return
 				}
+				if (!normalizedLang) {
+					alert("언어를 선택해주세요.")
+					return
+				}
 				request = {
 					problemType: pType,
-					codes: [{ language, code }],
+					codes: code,
+					code_language: normalizedLang,
 				}
 				break
 			}
@@ -352,7 +358,7 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 				}
 				request = {
 					problemType: pType,
-					answers: [shortAnswer],
+					answer_text: [shortAnswer],
 				}
 				break
 			}
