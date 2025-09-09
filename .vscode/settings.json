@@ -7,5 +7,5 @@
 	"editor.minimap.showSlider": "mouseover",
 	"editor.minimap.size": "proportional",
 	"editor.minimap.enabled": true,
-	"editor.minimap.autohide": true
+	"editor.minimap.autohide": "mouseover"
 }

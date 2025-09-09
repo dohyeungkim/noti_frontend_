@@ -43,6 +43,6 @@ export const feedbackDummy: FeedbackData = {
 		{ condition: "조건 3: @@", maxScore: 5, earnedScore: 2 },
 	],
 	professorFeedback: `
-교수 피드백 부분 더미데이터 내용~~
+
 `,
 }

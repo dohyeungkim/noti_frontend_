@@ -1254,9 +1254,14 @@ export const grading_api = {
 		if (student_id) params.set("user_id", student_id)
 
 		// /api/proxy/submissions/${group_id}/${workbook_id}
-		const res = await fetchWithAuth(
-			`/api/proxy/solves/groups/{group_id}/workbooks/{workbook_id}/submissions?${params.toString()}`
-		)
+		const base = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
+		const url =
+  			student_id ? `${base}?user_id=${encodeURIComponent(student_id)}` : base
+
+		const res = await fetchWithAuth(url, {
+  			method: "GET",
+  			credentials: "include",
+		})
 		if (!res.ok) throw new Error("제출 목록 가져오기 실패")
 		return res.json()
 	},
