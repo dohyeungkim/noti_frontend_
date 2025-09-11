@@ -332,10 +332,69 @@ export type ProblemUpdateRequest =
 	| ShortAnswerProblemUpdateRequest
 	| SubjectiveProblemUpdateRequest
 
+export type InputDataTestCaseRequest = {
+	input: string,
+	expected_output: string,
+	is_hidden: boolean
+}
+
+export type InputDataCodesRequest = {
+	language: string,
+	code: string,
+	is_main: boolean
+}
 export const problem_api = {
 	//
 	// ✨ 코딩·디버깅 문제 생성 (기존과 동일하게 problem_condition 포함)
 	//
+	async problem_create_by_excel(
+		title: string,
+		description: string,
+		difficulty: string,
+		problemType: string,
+		tags: string[],
+		rating_mode: "hard" | "space" | "regex" | "none" | "exact" | "partial" | "soft" | "active" | "deactive",
+		test_cases?: InputDataTestCaseRequest[],
+		reference_codes?: InputDataCodesRequest[],
+		base_code?: InputDataCodesRequest[],
+		problem_condition?: string[],
+		options?: string[],
+		correct_answers?: number[],
+		answer_text?: string | string[],
+		grading_criteria?: string[]
+	) {
+		const body: any = {
+			title,
+			description,
+			difficulty,
+			problemType,
+			tags,
+			rating_mode,
+			test_cases,
+			reference_codes,
+			base_code,
+			problem_condition,
+			options,
+			correct_answers,
+			answer_text,
+			grading_criteria,
+		}
+		const res = await fetchWithAuth("/api/proxy/problems", {
+			method: "POST",
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			console.error("🛑 problem_create error:", err)
+			const messages = Array.isArray(err.detail)
+				? err.detail.map((d: any) => `${d.loc.join(" → ")}: ${d.msg}`).join("\n")
+				: err.detail?.msg || err.message
+			throw new Error(messages || "Input Data 문제 생성 실패")
+		}
+		return res.json()
+	},
 	async problem_create(
 		title: string,
 		description: string,

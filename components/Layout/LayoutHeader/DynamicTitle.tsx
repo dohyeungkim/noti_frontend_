@@ -21,6 +21,9 @@ function getTitle(
 	group?: { group_name: string }
 ): string {
 	//홈
+	if (pathname === "/problemmake") {
+		return "✨ 문제 생성 페이지"
+	}
 	if (pathname.startsWith("/mypage")) {
 		return `🚀 ${truncateText(userName || "사용자")}님의 페이지`
 	}
@@ -29,12 +32,7 @@ function getTitle(
 	if (pathname.startsWith("/solved-problems")) {
 		return "🔥 내가 푼 문제 모음"
 	}
-
-	// 문제 파일탐색기
-	if (pathname.endsWith("finder")) {
-		return "📂 Problem Finder"
-	}
-
+	
 	//내가 등록한 문제들
 	if (pathname.startsWith("/registered-problems")) {
 		switch (true) {
@@ -56,6 +54,7 @@ function getTitle(
 				break
 		}
 	}
+	
 
 	if (pathname.startsWith("/feedback")) {
 		return "📖 피드백 보기"
@@ -68,7 +67,9 @@ function getTitle(
 	if (pathname.endsWith("/write")) {
 		return "🔥 도전하기"
 	}
+	
 
+	console.log("Debug:", { pathname, userName, problem, exam, group })
 	const segments = pathname.split("/").filter(Boolean)
 
 	// 각 세그먼트를 기반으로 적절한 제목 결정
