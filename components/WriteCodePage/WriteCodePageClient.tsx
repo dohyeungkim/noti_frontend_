@@ -86,8 +86,9 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 
 export default function WriteCodePageClient({ params }: WriteCodePageClientProps) {
 	const router = useRouter()
-	const { groupId } = useParams()
-
+	const { groupId } = useParams<{ groupId: string }>()
+	const workbook_id = Number(params.examId)
+	const problem_id  = Number(params.problemId)
 	const [problem, setProblem] = useState<ProblemDetail | undefined>(undefined)
 	type BackendProblemType = "coding" | "debugging" | "multiple_choice" | "short_answer" | "subjective"
 	// const EN_TO_KO: Record<BackendProblemType, ProblemType> = {
@@ -491,6 +492,9 @@ export default function WriteCodePageClient({ params }: WriteCodePageClientProps
 			const data = await run_code_api.run_code({
 				language: language,
 				code: code,
+				problem_id,                 // ✅ 추가
+    			group_id: Number(groupId),  // ✅ useParams에서 받은 값
+   				workbook_id, 
 				rating_mode: problem.rating_mode || "default",
 				test_cases: testCases.map((tc) => ({
 					input: tc.input,

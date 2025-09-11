@@ -5,18 +5,25 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/stores/auth"
-import { group_api, grading_api, ai_feedback_api, code_log_api } from "@/lib/api" // ★ code_log_api 추가
+import {
+  group_api,
+  grading_api, // 유지 (기타 함수 사용 가능성 대비)
+  ai_feedback_api,
+  code_log_api,
+  problem_ref_api,
+  type SubmissionSummary,
+} from "@/lib/api"
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { feedbackDummy } from "@/data/examModeFeedbackDummy"
 import { motion } from "framer-motion"
-import type { SubmissionSummary } from "@/lib/api"
-import { gradingDetailDummy } from "@/data/gradingDummy"
+import { fetchWithAuth } from "@/lib/fetchWithAuth" // ✅ 최소 추가: 직접 POST에 사용
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
 interface Submission {
-  submissionId: number
+  submissionId: number        // 백엔드의 submission_id
+  solveId: number             // ★ 백엔드의 solve_id (없으면 submission_id로 폴백)
   problemId: number
   answerType: string
   answer: string
@@ -37,12 +44,15 @@ export default function StudentGradingPage() {
   const [studentName, setStudentName] = useState<string>("")
   const [currentIdx, setCurrentIdx] = useState(0)
 
-  // === (NEW) 최신 코드 로그 캐시: solve_id → { code, timestamp } ===
+  // 최신 코드 로그 캐시: solve_id → { code, timestamp }
   const [latestLogCache, setLatestLogCache] = useState<Record<number, { code: string; timestamp: string }>>({})
 
-  // 응답이 평행배열이든 객체배열이든 안전하게 "가장 마지막"을 고르는 유틸
+  // 문제별 배점(points) 맵: problemId → points
+  const [pointsByProblem, setPointsByProblem] = useState<Record<number, number>>({})
+
+  // 가장 마지막 코드 로그 뽑기
   function pickLatestLog(data: any): { code: string; timestamp: string } | null {
-    // A) { code_logs: string[], timestamp: string[] }
+    // A) 평행 배열 형태
     if (Array.isArray(data?.code_logs) && Array.isArray(data?.timestamp)) {
       const zipped = data.code_logs
         .map((code: string, i: number) => ({ code, timestamp: data.timestamp[i] }))
@@ -50,7 +60,7 @@ export default function StudentGradingPage() {
         .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
       return zipped.at(-1) ?? null
     }
-    // B) [{ code, timestamp }, ...]
+    // B) 객체 배열 형태
     if (Array.isArray(data) && data.length) {
       const arr = data
         .filter((x) => typeof x?.timestamp === "string" && typeof x?.code === "string")
@@ -60,7 +70,7 @@ export default function StudentGradingPage() {
     return null
   }
 
-  // --- 데이터 로딩: 제출 목록 ---
+  // 제출 목록 로드
   const fetchSubmissions = useCallback(async () => {
     try {
       const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
@@ -69,18 +79,16 @@ export default function StudentGradingPage() {
         studentId
       )
 
-      // 기존 로직 유지(더미 메타로 기본 값 구성). 실제 표시값은 최신 로그가 있으면 그걸 사용.
-      const grouped = allSubs.reduce((acc: Submission[], s) => {
-        const meta = gradingDetailDummy.problems.find((p) => p.problemId === s.problem_id)
-        acc.push({
-          submissionId: s.submission_id,
-          problemId: s.problem_id,
-          answerType: meta?.type || "text",
-          answer: meta?.answer || "",
-          score: s.score ?? 0,
-        })
-        return acc
-      }, [])
+      // solve_id가 응답에 있으면 사용, 없으면 submission_id로 폴백
+      const grouped: Submission[] = allSubs.map((s: any) => ({
+        submissionId: s.submission_id,
+        solveId: typeof s.solve_id === "number" ? s.solve_id : s.submission_id,
+        problemId: s.problem_id,
+        answerType: "code",   // 필요 시 백엔드 값으로 대체
+        answer: "",           // 최신 코드 로그를 표시하므로 기본값은 빈 문자열
+        score: s.score ?? 0,
+      }))
+
       setSubmissions(grouped)
       setStudentName(allSubs[0]?.user_name || "")
     } catch (err) {
@@ -88,7 +96,24 @@ export default function StudentGradingPage() {
     }
   }, [groupId, examId, studentId])
 
-  // --- 최초 로딩: 그룹장 확인 + 제출 목록 ---
+  // 문제지 배점 로드
+  const fetchProblemPoints = useCallback(async () => {
+    try {
+      const list = await problem_ref_api.problem_ref_get(Number(groupId), Number(examId))
+      const map: Record<number, number> = {}
+      for (const item of list as any[]) {
+        if (item?.problem_id != null && typeof item?.points === "number") {
+          map[item.problem_id] = item.points
+        }
+      }
+      setPointsByProblem(map)
+    } catch (e) {
+      console.error("배점(points) 불러오기 실패:", e)
+      setPointsByProblem({})
+    }
+  }, [groupId, examId])
+
+  // 최초 로딩: 그룹장 확인 + 제출/배점 로드
   useEffect(() => {
     group_api
       .my_group_get()
@@ -99,17 +124,18 @@ export default function StudentGradingPage() {
       .catch(console.error)
 
     fetchSubmissions()
-  }, [groupId, fetchSubmissions])
+    fetchProblemPoints()
+  }, [groupId, fetchSubmissions, fetchProblemPoints])
 
   const isGroupOwner = userName === groupOwner
   const lastIdx = submissions.length - 1
   const current = submissions[currentIdx]
 
-  // === (NEW) 현재 제출의 코드 로그 로드 & 캐시 ===
+  // 현재 제출의 코드 로그 로드 & 캐시
   useEffect(() => {
-    const solveId = current?.submissionId
+    const solveId = current?.solveId
     if (!solveId) return
-    if (latestLogCache[solveId]) return // 캐시에 있으면 스킵
+    if (latestLogCache[solveId]) return
 
     let cancelled = false
     ;(async () => {
@@ -117,12 +143,10 @@ export default function StudentGradingPage() {
         const data = await code_log_api.code_logs_get_by_solve_id(solveId)
         if (cancelled) return
         const last = pickLatestLog(data)
-        if (last) {
-          setLatestLogCache((prev) => ({ ...prev, [solveId]: last }))
-        } else {
-          // 못 찾았어도 캐싱해서 중복 요청 방지
-          setLatestLogCache((prev) => ({ ...prev, [solveId]: { code: "", timestamp: "" } }))
-        }
+        setLatestLogCache((prev) => ({
+          ...prev,
+          [solveId]: last ?? { code: "", timestamp: "" },
+        }))
       } catch (e) {
         console.error("코드 로그 로드 실패:", e)
         setLatestLogCache((prev) => ({ ...prev, [solveId]: { code: "", timestamp: "" } }))
@@ -132,9 +156,10 @@ export default function StudentGradingPage() {
     return () => {
       cancelled = true
     }
-  }, [current?.submissionId, latestLogCache])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.solveId]) // 캐시 객체를 deps에 넣지 않아 불필요 재호출 방지
 
-  // --- 네비게이션 ---
+  // 네비게이션
   const goPrev = useCallback(() => {
     if (currentIdx > 0) setCurrentIdx((i) => i - 1)
     else router.back()
@@ -144,13 +169,13 @@ export default function StudentGradingPage() {
     if (currentIdx < lastIdx) setCurrentIdx((i) => i + 1)
   }, [currentIdx, lastIdx])
 
-  // --- 문제 메타 / 점수 ---
-  const problemMeta = useMemo(
-    () => gradingDetailDummy.problems.find((p) => p.problemId === current?.problemId),
-    [current?.problemId]
-  )
-  const maxScore = problemMeta?.score ?? 0
+  // 총점(배점)
+  const maxScore = useMemo(() => {
+    if (!current) return 0
+    return pointsByProblem[current.problemId] ?? 0
+  }, [pointsByProblem, current])
 
+  // 점수 수정
   const [isEditingScore, setIsEditingScore] = useState(false)
   const [editedScore, setEditedScore] = useState(current?.score ?? 0)
 
@@ -158,20 +183,50 @@ export default function StudentGradingPage() {
     if (current) setEditedScore(current.score)
   }, [current])
 
+  const [isEditingProfessor, setIsEditingProfessor] = useState(false)
+  const { professorFeedback: dummyProfessorFeedback } = feedbackDummy
+  const [newProfessorFeedback, setNewProfessorFeedback] = useState(dummyProfessorFeedback)
+
   const saveEditedScore = useCallback(async () => {
     if (!current) return
     try {
-      await grading_api.post_submission_score(current.submissionId, editedScore)
+      // 점수 값 방어적 처리 (NaN 및 범위)
+      const num = Number(editedScore)
+      const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+
+      // ✅ 최소 변경: 필요한 필드 함께 전송 (graded_by, reviewed, prof_feedback)
+      const res = await fetchWithAuth(`/api/proxy/solves/grading/${current.solveId ?? current.submissionId}/score`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          score: clamped,
+          graded_by: userName ?? null,                 // 백엔드 기대값에 따라 userId/username 중 선택
+          reviewed: true,                              // 저장=검토완료라면 true
+          prof_feedback: (newProfessorFeedback ?? "").toString(), // ✅ 필수 필드
+        }),
+      })
+
+      let payload: any = {}
+      try { payload = await res.json() } catch {}
+
+      if (!res.ok) {
+        const msg = Array.isArray(payload?.detail)
+          ? payload.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
+          : payload?.detail?.msg || payload?.detail || payload?.message || "채점 저장 실패"
+        throw new Error(msg)
+      }
+
       setSubmissions((prev) => {
         const next = [...prev]
-        next[currentIdx] = { ...next[currentIdx], score: editedScore }
+        next[currentIdx] = { ...next[currentIdx], score: clamped }
         return next
       })
       setIsEditingScore(false)
-    } catch (e) {
-      alert("점수 저장 실패")
+    } catch (e: any) {
+      alert(e?.message || "점수 저장 실패")
     }
-  }, [currentIdx, current, editedScore])
+  }, [currentIdx, current, editedScore, maxScore, userName, newProfessorFeedback]) // ✅ 의존성 보강
 
   const handleCompleteReview = useCallback(() => {
     if (!isGroupOwner) {
@@ -181,15 +236,10 @@ export default function StudentGradingPage() {
     router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
   }, [groupId, examId, isGroupOwner, router])
 
-  // --- 피드백 탭 상태 ---
-  const { professorFeedback: dummyProfessorFeedback } = feedbackDummy
+  // 피드백 탭 상태
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
 
-  // 교수 피드백 (지금은 로컬 편집만, 필요 시 API 연결)
-  const [isEditingProfessor, setIsEditingProfessor] = useState(false)
-  const [newProfessorFeedback, setNewProfessorFeedback] = useState(dummyProfessorFeedback)
-
-  // --- AI 피드백 로딩 상태 ---
+  // AI 피드백 상태
   const [aiFeedback, setAiFeedback] = useState<string>("")
   const [isAILoaded, setIsAILoaded] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -214,22 +264,20 @@ export default function StudentGradingPage() {
     }
   }, [])
 
-  // 현재 제출 변경 시 AI 피드백 호출 (기존 유지)
   useEffect(() => {
-    if (!current?.submissionId) return
+    if (!current?.solveId) return
     let cancelled = false
     ;(async () => {
-      await fetchAiFeedback(current.submissionId)
+      await fetchAiFeedback(current.solveId)
       if (cancelled) return
     })()
     return () => {
       cancelled = true
     }
-  }, [current?.submissionId, fetchAiFeedback])
+  }, [current?.solveId, fetchAiFeedback])
 
-  // 조건 검사는 일단 총점 기준 (기존 유지)
-  const passedCondition = (current?.score ?? 0) >= maxScore
-  const conditionFeedback = passedCondition ? "조건을 충족했습니다." : "다시 확인해주세요."
+  // 조건 검사: 총점 기준
+  const passedCondition = (current?.score ?? 0) >= (maxScore ?? 0)
 
   if (submissions.length === 0) {
     return (
@@ -243,13 +291,12 @@ export default function StudentGradingPage() {
     )
   }
 
-  // === (NEW) 에디터 표시용 파생값 ===
-  const latestLog = current?.submissionId ? latestLogCache[current.submissionId] : undefined
+  // 에디터 표시용 파생값
+  const latestLog = current?.solveId ? latestLogCache[current.solveId] : undefined
   const effectiveAnswerType = current?.answerType === "code" ? "code" : "text"
   const effectiveLanguage = effectiveAnswerType === "code" ? "javascript" : "plaintext"
   const fallbackAnswer =
     typeof current?.answer === "string" ? current.answer : JSON.stringify(current?.answer ?? "", null, 2)
-  // 🚩 최신 로그가 있으면 그 코드, 없으면 기존 current.answer 유지
   const effectiveAnswer = latestLog?.code ?? fallbackAnswer
 
   return (
@@ -279,8 +326,7 @@ export default function StudentGradingPage() {
             className="bg-white rounded-lg shadow border p-4 h-[600px]"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            // 문제/답안 변경 시 리마운트로 값/하이라이팅 보장
-            key={`${current?.submissionId ?? "no-sub"}-${effectiveAnswerType}`}
+            key={`${current?.solveId ?? "no-solve"}-${effectiveAnswerType}`}
           >
             {effectiveAnswer == null ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">
@@ -289,7 +335,7 @@ export default function StudentGradingPage() {
             ) : (
               <MonacoEditor
                 height="100%"
-                language={effectiveLanguage} // defaultLanguage 대신 language 사용
+                language={effectiveLanguage}
                 value={effectiveAnswer}
                 options={{ readOnly: true, minimap: { enabled: false }, wordWrap: "on", fontSize: 14 }}
               />
@@ -326,7 +372,7 @@ export default function StudentGradingPage() {
                     <div>{aiError}</div>
                     <button
                       className="underline"
-                      onClick={() => current?.submissionId && fetchAiFeedback(current.submissionId)}
+                      onClick={() => current?.solveId && fetchAiFeedback(current.solveId)}
                     >
                       다시 시도
                     </button>
@@ -388,11 +434,14 @@ export default function StudentGradingPage() {
             }`}
           >
             <div className="flex justify-between mb-1">
-              <span className="font-medium">{problemMeta?.title ?? "문제 제목"} 요구사항</span>
+              <span className="font-medium">요구사항</span>
               <span className="text-sm font-medium">{passedCondition ? "✔️ 통과" : "❌ 미통과"}</span>
             </div>
             <p className="text-sm text-gray-600">
               {passedCondition ? "조건을 충족했습니다." : "다시 확인해주세요."}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              총점: <b>{maxScore}</b>점
             </p>
           </div>
         </div>
@@ -414,9 +463,13 @@ export default function StudentGradingPage() {
               <input
                 type="number"
                 min={0}
-                max={maxScore}
+                max={maxScore || undefined}
                 value={editedScore}
-                onChange={(e) => setEditedScore(Number(e.target.value))}
+                onChange={(e) => {
+                  const v = Number(e.target.value)
+                  const clamped = Number.isNaN(v) ? 0 : Math.max(0, Math.min(v, maxScore || v))
+                  setEditedScore(clamped)
+                }}
                 className="w-16 p-1 border rounded"
               />
               <button onClick={saveEditedScore} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">

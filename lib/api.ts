@@ -1275,27 +1275,37 @@ export const grading_api = {
 		return res.json()
 	},
 
-	async post_submission_score(solve_id: number, score: number): Promise<SubmissionScore> {
-		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
-			const newScore: SubmissionScore = {
-				submission_score_id: mockSubmissionScores.length + 1,
-				solve_id,
-				score,
-				graded_by: "교수A",
-				created_at: new Date().toISOString(),
-			}
-			mockSubmissionScores.push(newScore)
-			return newScore
-		}
-		const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ score }),
-		})
-		if (!res.ok) throw new Error("채점 저장 실패")
-		return res.json()
-	},
+	async post_submission_score(
+  		solve_id: number,
+  		score: number,
+  		opts?: { graded_by?: string; reviewed?: boolean }
+	) {
+  	const payload = {
+    	score,
+    	graded_by: opts?.graded_by ?? null, // 필요 시 userId/username 중 백엔드 스키마에 맞춰 넣기
+    	reviewed: opts?.reviewed ?? true,   // 채점 저장과 동시에 검토완료로 표시할 거면 true
+  	};
+
+  	const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
+    	method: "POST",
+    	credentials: "include",
+    	headers: { "Content-Type": "application/json" },
+    	body: JSON.stringify(payload),
+  	});
+
+  	let body: any = {};
+  	try { body = await res.json(); } catch {}
+
+  	if (!res.ok) {
+    	// ✅ detail 배열을 사람이 보게 가공
+    	const msg = Array.isArray(body?.detail)
+      	? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
+      	: body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패";
+    	throw new Error(msg);
+  	}
+  	return body;
+	}
+,
 }
 
 // ====================== code_logs 관련 API ===========================
@@ -1421,8 +1431,12 @@ export const ai_feedback_api = {
 export const run_code_api = {
 	async run_code(requestData: {
 		language: string
+		problem_id?:number //추가
+		group_id?:number//추가
+		workbook_id?:number//추가
 		code: string
 		rating_mode: string
+		
 		test_cases: { input: string; expected_output: string }[]
 	}) {
 		const res = await fetchWithAuth("/api/proxy/solves/run_code", {
