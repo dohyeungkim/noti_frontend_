@@ -67,9 +67,13 @@ function getTitle(
 	if (pathname.endsWith("/write")) {
 		return "🔥 도전하기"
 	}
+
+	if (pathname.endsWith("finder")) {
+		return "📂 Problem Finder"
+	}
 	
 
-	console.log("Debug:", { pathname, userName, problem, exam, group })
+	// console.log("Debug:", { pathname, userName, problem, exam, group })
 	const segments = pathname.split("/").filter(Boolean)
 
 	// 각 세그먼트를 기반으로 적절한 제목 결정
