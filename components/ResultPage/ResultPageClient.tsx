@@ -18,7 +18,9 @@ import { UserIcon } from "lucide-react"
 // import { feedbackDummy } from "@/data/examModeFeedbackDummy"
 import ReactMarkdown from "react-markdown"
 import ProblemDetailRenderer from "@/components/ResultPage/ProblemDetailRenderer"
-import AnswerRenderer from "@/components/ResultPage/AnswerRenderer"
+//import AnswerRenderer from "@/components/ResultPage/AnswerRenderer"
+import AnswerRenderer from "@/components/MyRegisteredProblemPage/View/AnswerRenderer"
+
 
 interface SolveData {
 	problemType: string

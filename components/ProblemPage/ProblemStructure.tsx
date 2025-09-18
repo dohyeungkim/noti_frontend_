@@ -193,7 +193,7 @@ export default function ProblemStructure({ params }: { params: { groupId: string
 
 				{/* 오른쪽: 버튼 영역 */}
 				<div className="flex items-center gap-2 ml-auto">
-					{/* 채점하기 버튼: 그룹장일 때만 표시 */}
+					{/* 채점하기 버튼: 그룹장일 때만 표시, 일반 시험지는 채점할 필요가없어서*/}
 					{/* 자 도형님과 형준님께 알립니다. 이거 바로 아래에 있는 주석이 그냥 테스트용이고, 실제에선 두번째꺼 씁니다. */}
 					{isGroupOwner && (
 						<button

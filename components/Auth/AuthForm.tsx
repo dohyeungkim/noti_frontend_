@@ -182,6 +182,12 @@ export default function AuthForm() {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 이메일 입력 처리 정규식
 
   const [emailError, setEmailError] = useState<string | null>(null); // 이메일 입력 에러
+  const [idDuplicateError, setIdDuplicateError] = useState<string | null>(null); //id 중복 에러
+  const [emailDuplicateError, setEmailDuplicateError] = useState<string | null>(
+    null
+  ); // email 중복 에러
+  const [idSuccess, setIdSuccess] = useState<string | null>(null);
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
 
   // 기본 회원가입 정보
   const [basicInfo, setBasicInfo] = useState<BasicUserInfo>({
@@ -236,18 +242,21 @@ export default function AuthForm() {
     Boolean(basicInfo.password) &&
     Boolean(confirmPassword) &&
     basicInfo.password === confirmPassword &&
-    Boolean(basicInfo.gender); 
+    Boolean(basicInfo.gender)&&
+    Boolean(!idDuplicateError )&&
+    Boolean(!emailDuplicateError)
 
-  	const isStep2Valid = Boolean(personalInfo.age) && 
-  	Boolean(personalInfo.grade)&&
-  	personalInfo.major.trim().length >0;;
+  const isStep2Valid =
+    Boolean(personalInfo.age) &&
+    Boolean(personalInfo.grade) &&
+    personalInfo.major.trim().length > 0;
 
-   const isStep3Valid =
-  learningInfo.interests.length > 0 &&
-  learningInfo.learning_goals.length > 0 &&
-  learningInfo.preferred_fields.length > 0 &&
-  Boolean(learningInfo.programming_experience_level) &&
-  learningInfo.preferred_programming_languages.length > 0;
+  const isStep3Valid =
+    learningInfo.interests.length > 0 &&
+    learningInfo.learning_goals.length > 0 &&
+    learningInfo.preferred_fields.length > 0 &&
+    Boolean(learningInfo.programming_experience_level) &&
+    learningInfo.preferred_programming_languages.length > 0;
 
   // 기본 정보 입력 핸들러
   const handleBasicChange = (
@@ -281,46 +290,46 @@ export default function AuthForm() {
   };
 
   // 학습정보 배열 토글 핸들러
-const toggleLearningArrayField = (
-  field: keyof typeof learningInfo,
-  value: string
-) => {
-  if (field === "programming_experience_level") {
-    // 단일 문자열 필드는 그대로 단일 선택
-    setLearningInfo((prev) => ({
-      ...prev,
-      [field]: value as ProfileInfo["programming_experience_level"],
-    }));
-  } else {
-    // ⬇️ 배열 필드들도 항상 [value] 1개만 유지 (이미 선택된 걸 다시 눌러도 해제되지 않음)
-    setLearningInfo((prev) => {
-      if (field === "interests") {
-        return { ...prev, interests: [value] as ProfileInfo["interests"] };
-      }
-      if (field === "learning_goals") {
-        return {
-          ...prev,
-          learning_goals: [value] as ProfileInfo["learning_goals"],
-        };
-      }
-      if (field === "preferred_fields") {
-        return {
-          ...prev,
-          preferred_fields: [value] as ProfileInfo["preferred_fields"],
-        };
-      }
-      if (field === "preferred_programming_languages") {
-        return {
-          ...prev,
-          preferred_programming_languages: [
-            value,
-          ] as ProfileInfo["preferred_programming_languages"],
-        };
-      }
-      return prev;
-    });
-  }
-};
+  const toggleLearningArrayField = (
+    field: keyof typeof learningInfo,
+    value: string
+  ) => {
+    if (field === "programming_experience_level") {
+      // 단일 문자열 필드는 그대로 단일 선택
+      setLearningInfo((prev) => ({
+        ...prev,
+        [field]: value as ProfileInfo["programming_experience_level"],
+      }));
+    } else {
+      // ⬇️ 배열 필드들도 항상 [value] 1개만 유지 (이미 선택된 걸 다시 눌러도 해제되지 않음)
+      setLearningInfo((prev) => {
+        if (field === "interests") {
+          return { ...prev, interests: [value] as ProfileInfo["interests"] };
+        }
+        if (field === "learning_goals") {
+          return {
+            ...prev,
+            learning_goals: [value] as ProfileInfo["learning_goals"],
+          };
+        }
+        if (field === "preferred_fields") {
+          return {
+            ...prev,
+            preferred_fields: [value] as ProfileInfo["preferred_fields"],
+          };
+        }
+        if (field === "preferred_programming_languages") {
+          return {
+            ...prev,
+            preferred_programming_languages: [
+              value,
+            ] as ProfileInfo["preferred_programming_languages"],
+          };
+        }
+        return prev;
+      });
+    }
+  };
 
   // 비밀번호 확인 핸들러
   const handleConfirmPassword = (value: string) => {
@@ -334,7 +343,9 @@ const toggleLearningArrayField = (
 
     if (currentStep === 1) {
       if (!isStep1Valid) {
-        setError("모든 필드를 올바르게 입력해주세요. (이메일/성별/비밀번호 확인 포함)");
+        setError(
+          "모든 필드를 올바르게 입력해주세요. (이메일/성별/비밀번호 확인 포함)"
+        );
         return;
       }
     }
@@ -451,6 +462,49 @@ const toggleLearningArrayField = (
     });
     setConfirmPassword("");
     setSuccess(false);
+  };
+  // 아이디만 확인하고 싶을 때
+  const handleCheckUserIdDuplicate = async () => {
+    if (!basicInfo.user_id) {
+      setIdDuplicateError("사용자명을 입력해주세요.");
+      return;
+    }
+
+    setIdDuplicateError(null);
+    setIdSuccess(null);
+
+    try {
+      // 임시 더미 이메일 사용 (백엔드에서 무시할 수 있는 값)
+      const res = await auth_api.checkDuplicateUser(
+        basicInfo.user_id,
+        "dummy@temp.com" // 더미 이메일
+      );
+
+      if (res.is_user_exist) {
+        setIdDuplicateError("중복된 사용자명이 존재합니다.");
+      } else {
+        setIdSuccess("사용 가능한 사용자명입니다.");
+      }
+    } catch (err) {
+      setIdDuplicateError("중복 검사 실패");
+    }
+  };
+  // 이메일 중복확인 함수
+  const handleCheckEmailDuplicate = async () => {
+    setEmailDuplicateError(null);
+    setEmailSuccess(null);
+
+    try {
+      const res = await auth_api.checkDuplicateUser("", basicInfo.email);
+
+      if (res.is_email_exist) {
+        setEmailDuplicateError("중복된 이메일이 존재합니다.");
+      } else {
+        setEmailSuccess("사용가능한 이메일입니다.");
+      }
+    } catch (err) {
+      setEmailDuplicateError("중복 검사 실패");
+    }
   };
 
   return (
@@ -608,7 +662,24 @@ const toggleLearningArrayField = (
                         disabled={isLoading}
                         required
                       />
+                      {/* 중복확인 버튼 */}
+                      <button
+                        onClick={handleCheckUserIdDuplicate}
+                        className="px-6 py-2 ml-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium flex items-center justify-center min-w-[100px]"
+                      >
+                        중복확인
+                      </button>
                     </div>
+                    {idDuplicateError && (
+                      <p className="text-red-500 text-xs mt-2">
+                        {idDuplicateError}
+                      </p>
+                    )}
+                    {!idDuplicateError && idSuccess && (
+                      <p className="text-emerald-700 text-xs mt-2">
+                        {idSuccess}
+                      </p>
+                    )}
 
                     {/* username */}
                     <div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
@@ -668,7 +739,23 @@ const toggleLearningArrayField = (
                         disabled={isLoading}
                         required
                       />
+                      <button
+                        onClick={handleCheckEmailDuplicate}
+                        className="px-6 py-2 ml-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium flex items-center justify-center min-w-[100px]"
+                      >
+                        중복확인
+                      </button>
                     </div>
+                    {emailDuplicateError && (
+                      <p className="text-red-500 text-xs mt-2">
+                        {emailDuplicateError}
+                      </p>
+                    )}
+                    {!emailDuplicateError && emailSuccess && (
+                      <p className="text-emerald-700 text-xs mt-2">
+                        {emailSuccess}
+                      </p>
+                    )}
 
                     {/* password */}
                     <div className="flex items-center w-full px-4 py-3 rounded-full border border-gray-200 bg-gray-100 focus-within:border-mygreen hover:border-mygreen focus-within:bg-gray-50 hover:bg-gray-50">
@@ -946,7 +1033,7 @@ const toggleLearningArrayField = (
                     {/* 프로그래밍 경험 */}
                     <div className="text-left">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        프로그래밍 경험 수준 
+                        프로그래밍 경험 수준
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         {programmingExperienceOptions.map((option) => (
@@ -976,7 +1063,7 @@ const toggleLearningArrayField = (
                     {/* 선호 언어 */}
                     <div className="text-left">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        선호 프로그래밍 언어 
+                        선호 프로그래밍 언어
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         {preferredLanguageOptions.map((option) => (

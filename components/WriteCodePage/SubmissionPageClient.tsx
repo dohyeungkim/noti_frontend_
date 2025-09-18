@@ -1,65 +1,69 @@
-"use client"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { useEffect, useState, useCallback, useMemo } from "react"
-import { solve_api } from "@/lib/api"
+"use client";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { solve_api } from "@/lib/api";
 
 // ✅ 제출 데이터 타입 정의
 interface BaseSubmission {
-  problemType: "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
-  id: number
-  solve_id: number
-  problem_id: number
-  problem_name: string
-  user_id: string
-  passed: boolean
-  code_language: string
-  code_len: number
-  timestamp: string
-  group_id: number
-  workbook_id: number
+  problemType: "코딩" | "디버깅" | "객관식" | "단답형" | "주관식";
+  id: number;
+  solve_id: number;
+  problem_id: number;
+  problem_name: string;
+  user_id: string;
+  passed: boolean;
+  code_language: string;
+  code_len: number;
+  timestamp: string;
+  group_id: number;
+  workbook_id: number;
 }
 
 type CodingSubmission = BaseSubmission & {
-  problemType: "코딩" | "디버깅"
-  code_language: string
-  code_len: number
-}
-
+  problemType: "코딩" | "디버깅";
+  code_language: string;
+  code_len: number;
+};
 
 type NonCodeSubmission = BaseSubmission & {
-  problemType: "객관식" | "단답형" | "주관식"
-}
+  problemType: "객관식" | "단답형" | "주관식";
+};
 
-type Submission = CodingSubmission | NonCodeSubmission
+type Submission = CodingSubmission | NonCodeSubmission;
 
 // ✅ URL Params 타입 정의
 interface SubmissionPageParams {
-  groupId: string
-  examId: string
-  problemId: string
+  groupId: string;
+  examId: string;
+  problemId: string;
 }
 
 // ✅ Props 타입 정의
 interface SubmissionPageClientProps {
-  params: SubmissionPageParams
+  params: SubmissionPageParams;
 }
 
-export default function SubmissionPageClient({ params }: SubmissionPageClientProps) {
-  const router = useRouter()
+export default function SubmissionPageClient({
+  params,
+}: SubmissionPageClientProps) {
+  const router = useRouter();
 
   // ❗ useParams() 제거하고, 부모에서 받은 params만 사용
-  const groupIdNum = useMemo(() => Number(params.groupId), [params.groupId])
-  const examIdNum = useMemo(() => Number(params.examId), [params.examId])
-  const problemIdNum = useMemo(() => Number(params.problemId), [params.problemId])
+  const groupIdNum = useMemo(() => Number(params.groupId), [params.groupId]);
+  const examIdNum = useMemo(() => Number(params.examId), [params.examId]);
+  const problemIdNum = useMemo(
+    () => Number(params.problemId),
+    [params.problemId]
+  );
 
   // ✅ 검색 필드 상태
-  const [searchTitle, setSearchTitle] = useState<string>("")
-  const [searchUser, setSearchUser] = useState<string>("")
-  const [searchProblemId, setSearchProblemId] = useState<string>("")
-  const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [searchTitle, setSearchTitle] = useState<string>("");
+  const [searchUser, setSearchUser] = useState<string>("");
+  const [searchProblemId, setSearchProblemId] = useState<string>("");
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // ✅ 제출 내역 불러오기 (검색 적용)
   const fetchSubmissions = useCallback(async () => {
@@ -69,71 +73,83 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
       Number.isNaN(groupIdNum) ||
       Number.isNaN(examIdNum)
     ) {
-      return
+      return;
     }
 
     try {
-      setLoading(true)
-      setErrorMsg(null)
+      setLoading(true);
+      setErrorMsg(null);
 
-      let res: Submission[] = await solve_api.solve_get_by_problem_id(problemIdNum)
+      let res: Submission[] = await solve_api.solve_get_by_problem_ref_id(
+        groupIdNum,
+        examIdNum,
+        problemIdNum
+      );
 
       // ✅ 검색 필터 안전 적용 (undefined 대비)
-      const titleQ = (searchTitle ?? "").trim()
-      const userQ = (searchUser ?? "").trim()
-      const pidQ = (searchProblemId ?? "").trim()
+      const titleQ = (searchTitle ?? "").trim();
+      const userQ = (searchUser ?? "").trim();
+      const pidQ = (searchProblemId ?? "").trim();
 
       res = res.filter((p) => {
-        const okTitle = titleQ ? (p.problem_name ?? "").includes(titleQ) : true
-        const okUser = userQ ? (p.user_id ?? "").includes(userQ) : true
-        const okPid = pidQ ? String(p.problem_id) === pidQ : true
-        const okGroup = p.group_id === groupIdNum
-        const okWb = p.workbook_id === examIdNum
-        return okTitle && okUser && okPid && okGroup && okWb
-      })
+        const okTitle = titleQ ? (p.problem_name ?? "").includes(titleQ) : true;
+        const okUser = userQ ? (p.user_id ?? "").includes(userQ) : true;
+        const okPid = pidQ ? String(p.problem_id) === pidQ : true;
+        const okGroup = p.group_id === groupIdNum;
+        const okWb = p.workbook_id === examIdNum;
+        return okTitle && okUser && okPid && okGroup && okWb;
+      });
 
       // ✅ 시간, 제출 id 내림차순 정렬
       res.sort((a, b) => {
-        const t1 = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        if (t1 !== 0) return t1
-        return b.id - a.id
-      })
+        const t1 =
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        if (t1 !== 0) return t1;
+        return b.id - a.id;
+      });
 
-      setSubmissions(res)
+      setSubmissions(res);
     } catch (error: any) {
-      console.error("제출 내역을 불러오는 중 오류 발생:", error)
-      setErrorMsg(error?.message || "제출 내역을 불러오는 데 실패했어.")
-      setSubmissions([])
+      console.error("제출 내역을 불러오는 중 오류 발생:", error);
+      setErrorMsg(error?.message || "제출 내역을 불러오는 데 실패했어.");
+      setSubmissions([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [problemIdNum, groupIdNum, examIdNum, searchTitle, searchUser, searchProblemId])
+  }, [
+    problemIdNum,
+    groupIdNum,
+    examIdNum,
+    searchTitle,
+    searchUser,
+    searchProblemId,
+  ]);
 
   // ✅ 페이지 로드시 + 검색 조건 변경 시
   useEffect(() => {
-    fetchSubmissions()
-  }, [fetchSubmissions])
+    fetchSubmissions();
+  }, [fetchSubmissions]);
 
   // ✅ 검색 버튼 클릭
   const handleSearch = () => {
-    fetchSubmissions()
-  }
+    fetchSubmissions();
+  };
 
   // ✅ 날짜 변환 함수
   const formatShortDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const year = date.getFullYear().toString()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
+    const date = new Date(dateString);
+    const year = date.getFullYear().toString();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   // ✅ 테이블 행 클릭 시 이동
   const handleRowClick = (solvedId: number) => {
     router.push(
       `/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/result/${solvedId}`
-    )
-  }
+    );
+  };
 
   // ❗ route param 자체가 비정상일 때 안내
   if (
@@ -144,7 +160,9 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
     !params.examId ||
     Number.isNaN(examIdNum)
   ) {
-    return <p className="text-red-500">⚠️ 잘못된 접근입니다. (경로 파라미터 오류)</p>
+    return (
+      <p className="text-red-500">⚠️ 잘못된 접근입니다. (경로 파라미터 오류)</p>
+    );
   }
 
   return (
@@ -205,7 +223,9 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
       ) : loading ? (
         <p className="text-gray-500 text-center w-full">로딩 중…</p>
       ) : submissions.length === 0 ? (
-        <p className="text-xl text-gray-500 text-center w-full">제출 내역이 없습니다.</p>
+        <p className="text-xl text-gray-500 text-center w-full">
+          제출 내역이 없습니다.
+        </p>
       ) : (
         <div className="w-full flex justify-center">
           {/* ✅ 제출 내역 테이블 */}
@@ -230,14 +250,20 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
                     className="border-b hover:bg-gray-100 transition cursor-pointer"
                     onClick={() => handleRowClick(submission.solve_id)}
                   >
-                    <td className="px-4 py-3 text-center">{submission.solve_id}</td>
-                    <td className="px-4 py-3 text-center">{submission.problem_id}</td>
+                    <td className="px-4 py-3 text-center">
+                      {submission.solve_id}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {submission.problem_id}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       {(submission.problem_name ?? "").length > 10
                         ? `${(submission.problem_name ?? "").slice(0, 10)}...`
-                        : (submission.problem_name ?? "")}
+                        : submission.problem_name ?? ""}
                     </td>
-                    <td className="px-4 py-3 text-center">{submission.user_id ?? ""}</td>
+                    <td className="px-4 py-3 text-center">
+                      {submission.user_id ?? ""}
+                    </td>
                     <td
                       className={`px-4 py-3 text-center font-semibold ${
                         submission.passed ? "text-mygreen" : "text-mydelete"
@@ -245,11 +271,17 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
                     >
                       {submission.passed ? "✔ 맞았습니다" : "❌ 틀렸습니다"}
                     </td>
-                    <td className="px-4 py-3 text-center">{submission.code_language ?? "-"}</td>
                     <td className="px-4 py-3 text-center">
-                      {typeof submission.code_len === "number" ? submission.code_len : "-"}
+                      {submission.code_language ?? "-"}
                     </td>
-                    <td className="px-4 py-3 text-center">{formatShortDate(submission.timestamp)}</td>
+                    <td className="px-4 py-3 text-center">
+                      {typeof submission.code_len === "number"
+                        ? submission.code_len
+                        : "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {formatShortDate(submission.timestamp)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -258,5 +290,5 @@ export default function SubmissionPageClient({ params }: SubmissionPageClientPro
         </div>
       )}
     </motion.div>
-  )
+  );
 }

@@ -43,65 +43,67 @@ interface ExtendedUserRegisterRequest {
 export const auth_api = {
 	// 새로운 확장된 register 함수
 	// 회원가입 학번,
-	async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
-		success: boolean
-		message: string
-		user_id: number
-		profile_completion: number
-	}> {
-		console.log("Sending registration data:", JSON.stringify(registerData, null, 2))
+	// 기존: fetch(...)  ▶ 변경: fetchWithAuth(...)
+async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
+  success: boolean
+  message: string
+  user_id: number
+  profile_completion: number
+}> {
+  console.log("Sending registration data:", JSON.stringify(registerData, null, 2))
 
-		const res = await fetch(`/api/proxy/user/register`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(registerData),
-		})
+  const res = await fetchWithAuth(`/api/proxy/user/register`, {
+    method: "POST",
+    // 회원가입에서도 쿠키 기반 세션을 쓸 수 있으니 include 권장
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(registerData),
+  })
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			console.error(
-				"Registration error details:",
-				JSON.stringify(
-					{
-						status: res.status,
-						statusText: res.statusText,
-						errorData: errorData,
-						detail: errorData.detail,
-					},
-					null
-				)
-			)
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    console.error(
+      "Registration error details:",
+      JSON.stringify(
+        {
+          status: res.status,
+          statusText: res.statusText,
+          errorData: errorData,
+          detail: errorData.detail,
+        },
+        null
+      )
+    )
 
-			// detail 배열의 각 항목을 개별적으로 출력
-			if (errorData.detail && Array.isArray(errorData.detail)) {
-				console.error("Validation errors:")
-				errorData.detail.forEach(
-					(error: { type: string; loc: string[]; msg: string; input: Record<string, unknown> }, index: number) => {
-						console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2))
-					}
-				)
-			}
+    if (errorData.detail && Array.isArray(errorData.detail)) {
+      console.error("Validation errors:")
+      errorData.detail.forEach(
+        (error: { type: string; loc: string[]; msg: string; input: Record<string, unknown> }, index: number) => {
+          console.error(`Error ${index + 1}:`, JSON.stringify(error, null, 2))
+        }
+      )
+    }
 
-			throw new Error(errorData.detail?.msg || errorData.message || `회원가입 실패 (${res.status})`)
-		}
-		return res.json()
-	},
+    throw new Error(errorData.detail?.msg || errorData.message || `회원가입 실패 (${res.status})`)
+  }
+  return res.json()
+},
 
 	// 로그인
 	async login(userId: string, password: string) {
-		const res = await fetch("/api/proxy/user/login", {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ user_id: userId, password }),
-		})
+  const res = await fetchWithAuth("/api/proxy/user/login", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, password }),
+  })
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "로그인 실패")
-		}
-		return res.json()
-	},
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail?.msg || errorData.message || "로그인 실패")
+  }
+  return res.json()
+},
 
 	// 비밀번호 변경
 	async changePassword(
@@ -148,51 +150,55 @@ export const auth_api = {
 
 	// 사용자 정보 조회
 	async getUser(): Promise<{
-		user_id: string
-		username: string
-		email: string
-		created_at: string
-		last_login: string
-	}> {
-		const res = await fetch("/api/proxy/user/me", {
-			method: "GET",
-			credentials: "include",
-		})
+  user_id: string
+  username: string
+  email: string
+  created_at: string
+  last_login: string
+}> {
+  const res = await fetchWithAuth("/api/proxy/user/me", {
+    method: "GET",
+    credentials: "include",
+  })
 
-		if (!res.ok) {
-			if (res.status === 401) {
-				throw new Error("UNAUTHORIZED")
-			}
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "사용자 정보 조회 실패")
-		}
-		return res.json()
-	},
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("UNAUTHORIZED")
+    }
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail?.msg || errorData.message || "사용자 정보 조회 실패")
+  }
+  return res.json()
+},
 
 	// auth.ts 파일에서 사용되는 함수 -> 사용자 인증상태 확인
 	async checkAuthStatus(): Promise<boolean> {
-		try {
-			const res = await fetch("/api/proxy/user/me", {
-				method: "GET",
-				credentials: "include",
-			})
+	try {
+		const res = await fetchWithAuth("/api/proxy/user/me", {
+		method: "GET",
+		credentials: "include",
+		})
 
-			// 401이면 단순히 false 반환 (에러 로그 없음)
-			if (res.status === 401) {
-				return false
-			}
-
-			// 다른 에러가 있으면 false 반환
-			if (!res.ok) {
-				return false
-			}
-
-			// 성공하면 true 반환
-			return true
-		} catch {
-			// 네트워크 에러 등은 조용히 false 반환
-			return false
+		if (res.status === 401) return false
+		if (!res.ok) return false
+		return true
+	} catch {
+		return false
+	}
+  },
+  async checkDuplicateUser(user_id: string, email: string): Promise<{
+		is_user_exist: boolean,
+		is_email_exist: boolean
+	}> {
+		const res = await fetch("/api/proxy/register_checker", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ user_id, email }),
+		});
+		if (!res.ok) {
+			throw new Error("중복 검사 실패");
 		}
+		return res.json();
 	},
 }
 
@@ -724,17 +730,17 @@ export const problem_ref_api = {
 
 	// 문제 삭제
 	async problem_ref_delete(problem_id: number, group_id: number, workbook_id: number) {
-		const res = await fetch(`/api/proxy/problems_ref/${group_id}/${workbook_id}/${problem_id}`, {
-			method: "DELETE",
-			credentials: "include",
-		})
+  const res = await fetchWithAuth(`/api/proxy/problems_ref/${group_id}/${workbook_id}/${problem_id}`, {
+    method: "DELETE",
+    credentials: "include",
+  })
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "문제 지우기 실패")
-		}
-		return res.json()
-	},
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail?.msg || errorData.message || "문제 지우기 실패")
+  }
+  return res.json()
+},
 }
 
 // ====================== problem_like 관련 API ===========================
@@ -1164,22 +1170,19 @@ export const solve_api = {
 	 * @param problem_id
 	 * @returns
 	 */
-	// async solve_get_by_problem_ref_id(group_id: number, workbook_id: number, problem_id: number) {
-	// 	const res = await fetchWithAuth(
-	// 		`/api/proxy/solves/group_id/${group_id}/workbook_id/${workbook_id}/problem_id/${problem_id}`,
-	// 		{
-	// 			method: "GET",
-	// 			credentials: "include",
-	// 		}
-	// 	)
-
-	// 	if (!res.ok) {
-	// 		const errorData = await res.json().catch(() => ({}))
-	// 		throw new Error(errorData.detail?.msg || errorData.message || "제출 내용 가져오기 실패")
-	// 	}
-
-	// 	return res.json()
-	// },
+	async solve_get_by_problem_ref_id(group_id: number, workbook_id: number, problem_id: number) {
+  		const url = `/api/proxy/solves/group_id/${group_id}/workbook_id/${workbook_id}/problem_id/${problem_id}`
+  		const res = await fetchWithAuth(url, {
+    	method: "GET",
+    	credentials: "include",
+  		})
+  		if (!res.ok) {
+    	const body = await res.json().catch(() => ({}))
+    	const msg = body?.detail?.msg || body?.message || `채점 내용 가져오기 실패 (${res.status}) [GET ${url}]`
+    	throw new Error(msg)
+  	}
+  	return res.json()
+},
 
 	// 피드백 페이지에서 호출되는 Api
 	/**

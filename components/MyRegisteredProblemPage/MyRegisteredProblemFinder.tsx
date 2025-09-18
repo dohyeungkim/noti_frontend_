@@ -19,7 +19,7 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { dummyProblems, type ProblemDetail } from "@/data/finderProblems"
-
+import AddToWorkbookModal from "./AddToWorkbookModal"
 const DIFFICULTY_OPTIONS = [
 	{ label: "easy", value: "easy" },
 	{ label: "medium", value: "medium" },
