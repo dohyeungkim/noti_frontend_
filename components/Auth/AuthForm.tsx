@@ -534,7 +534,7 @@ export default function AuthForm() {
                       className="w-full bg-transparent outline-none"
                       type="text"
                       name="user_id"
-                      placeholder="사용자명"
+                      placeholder="학번"
                       value={loginData.user_id}
                       onChange={handleLoginChange}
                       disabled={isLoading}
@@ -656,7 +656,7 @@ export default function AuthForm() {
                         className="w-full bg-transparent outline-none"
                         type="text"
                         name="user_id"
-                        placeholder="사용자 ID *"
+                        placeholder="학번*"
                         value={basicInfo.user_id}
                         onChange={handleBasicChange}
                         disabled={isLoading}

@@ -32,14 +32,14 @@ interface WorkbookType {
 
 export default function ExamsClient() {
 	const router = useRouter()
-	const { userName } = useAuth()
+	const { userId } = useAuth()
 	const { groupId } = useParams() as {
 		groupId: string
 	}
 
 	const [workbooks, setWorkbooks] = useState<WorkbookType[]>([]) // workbook_get으로 받은 정보가 여기 workbook에 저장됨
 	const [groupOwner, setGroupOwner] = useState<string | null>(null) // 그룹장의 유저명 저장 (해당 그룹의 그룹장 ID를 저장)
-	const isGroupOwner = userName === groupOwner // 그룹장인지 확인하는 함수
+	const isGroupOwner = userId === groupOwner // 그룹장인지 확인하는 함수
 
 	const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -67,6 +67,7 @@ export default function ExamsClient() {
 	const fetchMyOwner = useCallback(async () => {
 		try {
 			const data = await group_api.my_group_get()
+			console.log(data)
 			const currentGroup = data.find((group: { group_id: number }) => group.group_id === Number(groupId))
 			setGroupOwner(currentGroup?.group_owner || null)
 		} catch (error) {
@@ -138,6 +139,7 @@ export default function ExamsClient() {
 								⚙️ 설정
 							</button>
 						)}
+						
 					</motion.div>
 				</div>
 				{/* 검색 & 정렬 & 보기 방식 변경 */}
