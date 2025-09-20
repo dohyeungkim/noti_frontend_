@@ -82,7 +82,9 @@ interface WriteCodePageClientProps {
 //     </div>
 //   )
 // }
-
+const normalizeMultiline = (s: string) => {
+  return s.includes("\n") ? s.replace(/\r/g, "").split("\n") : s;
+};
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 });
@@ -648,7 +650,7 @@ export default function WriteCodePageClient({
         workbook_id,
         rating_mode: problem.rating_mode || "default",
         test_cases: testCases.map((tc) => ({
-          input: tc.input,
+          input: normalizeMultiline(tc.input),
           expected_output: tc.output,
         })),
       });
