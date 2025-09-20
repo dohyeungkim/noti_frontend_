@@ -1,13 +1,25 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams } from "next/navigation";
-import { live_api, WatchingResponse } from "@/lib/api";
+import {
+  live_api,
+  WatchingResponse,
+  auth_api,
+  group_api,
+  problem_ref_api,
+} from "@/lib/api";
 
 /** ================== 타입 ================== */
 interface StudentStatus {
   studentName: string;
-  correct: number; // 표 합계는 cellMap으로 다시 계산됨
+  correct: number;
   wrong: number;
   notSolved: number;
   score: number;
@@ -15,24 +27,20 @@ interface StudentStatus {
 interface ProblemStatus {
   problemId: number;
   title: string;
-  type: string; // API에 없어서 "-"로 채움
+  type: string;
   correct: number;
   wrong: number;
   notSolved: number;
 }
+type CellStatus = "correct" | "wrong" | "pending";
+type CellMap = Record<string, CellStatus>;
 
-/** 학생-문제 셀 상태 */
-type CellStatus = "correct" | "wrong" | "pending"; // 맞음/틀림/미응시
-type CellMap = Record<string, CellStatus>; // key = `${studentName}-${problemId}`
-
-/** 상태 텍스트 (툴팁 등에 사용) */
 const badgeText: Record<CellStatus, string> = {
   correct: "맞",
   wrong: "틀",
   pending: "미",
 };
 
-/** SVG 아이콘 (외부 파일 없이 렌더) */
 function StatusIcon({
   status,
   size = 18,
@@ -105,8 +113,7 @@ function StatusIcon({
 }
 
 export default function ResultTotalWatching() {
-  /** ============ 라우터 파라미터 (app router) ============ */
-  // 👇 라우터 파라미터 받는 부분만 교체
+  /** ============ 라우터 파라미터 ============ */
   type RouteParams = {
     group_id?: string;
     groupId?: string;
@@ -115,18 +122,10 @@ export default function ResultTotalWatching() {
     exam_id?: string;
     examId?: string;
   };
-
   const p = useParams<RouteParams>();
-
-  // 폴더 이름에 맞춰 우선순위로 매칭 (exams 라우트면 exam_id / examId가 잡힘)
   const groupId = p.group_id ?? p.groupId ?? "";
   const workbookId =
     p.workbook_id ?? p.workbookId ?? p.exam_id ?? p.examId ?? "";
-
-  // 디버깅 로그 추가
-  useEffect(() => {
-    console.log("[params changed]", p, { groupId, workbookId });
-  }, [p, groupId, workbookId]);
 
   /** ============ 상태 ============ */
   const [students, setStudents] = useState<StudentStatus[]>([]);
@@ -135,53 +134,88 @@ export default function ResultTotalWatching() {
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
-  /** ============ API → 화면 상태 매핑 함수 ============ */
+  /** ============ 데이터 로드 ============ */
   const loadWatching = useCallback(async () => {
-    // 0) 파라미터 확인
-    console.log("[loadWatching] params:", { groupId, workbookId });
-
-    if (!groupId || !workbookId) {
-      console.warn("[loadWatching] groupId/workbookId가 비어있어서 호출 중단");
-      return;
-    }
+    if (!groupId || !workbookId) return;
 
     setLoading(true);
     setErrMsg(null);
     try {
-      console.log("[loadWatching] 호출 시작");
+      // 1) 실시간 제출 현황
       const data: WatchingResponse = await live_api.watching_get(
         groupId,
         workbookId
       );
-      console.log("📡 API watching_get response:", data);
 
-      // 1) 문제 집합
-      const problemMap = new Map<number, { title: string; type: string }>();
-      for (const st of data.students || []) {
+      // 2) 그룹장/본인 제외
+      let ownerId: string | number | undefined;
+      let meId: string | number | undefined;
+      try {
+        const [me, grp]: [{ user_id: string | number }, any] =
+          await Promise.all([
+            auth_api.getUser(),
+            group_api.group_get_by_id(Number(groupId)),
+          ]);
+        meId = me?.user_id;
+        ownerId =
+          grp?.owner_id ??
+          grp?.group_owner_id ??
+          grp?.owner_user_id ??
+          grp?.ownerId ??
+          grp?.leader_id ??
+          grp?.owner?.user_id;
+      } catch {
+        /* 소유자/내 계정 못 가져와도 계속 진행 */
+      }
+
+      const filteredStudents = (data.students || []).filter((st) => {
+        const sid = String(st.student_id);
+        return sid !== String(ownerId ?? "") && sid !== String(meId ?? "");
+      });
+
+      // 3) 문제지의 "정확한 순서" (refs 순서 보존)
+      const refs = await problem_ref_api.problem_ref_get(
+        Number(groupId),
+        Number(workbookId)
+      );
+
+      // 4) 타입 채우기용 딕셔너리
+      //    ✅ 추가: refs 자체에 담긴 타입을 먼저 수집 (제출이 없어도 타입이 표기되도록)
+      const refTypeById = new Map<number, string>();
+      for (const r of refs) {
+        const t =
+          (r as any).problem_type ||
+          (r as any).type ||
+          (r as any).question_type ||
+          (r as any).category;
+        if (t) refTypeById.set(r.problem_id, t as string);
+      }
+
+      //    기존: 제출 데이터에서 타입을 추정
+      const problemTypeById = new Map<number, string>();
+      for (const st of filteredStudents) {
         for (const sub of st.submission_problem_status || []) {
-          if (!problemMap.has(sub.problem_id)) {
-            problemMap.set(sub.problem_id, {
-              title: sub.problem_name,
-              // 👇 실제 problem_type을 보존해서 헤더에 표시
-              type: (sub as any).problem_type,
-            });
+          if (sub?.problem_id && (sub as any).problem_type) {
+            problemTypeById.set(sub.problem_id, (sub as any).problem_type);
           }
         }
       }
-      const problemsArr: ProblemStatus[] = Array.from(problemMap.entries())
-        .map(([pid, v]) => ({
-          problemId: pid,
-          title: v.title,
-          type: v.type || "-", // 👈 헤더에 타입 표시되도록 수정
-          correct: 0,
-          wrong: 0,
-          notSolved: 0,
-        }))
-        .sort((a, b) => a.problemId - b.problemId);
 
-      console.log("[step] problemsArr:", problemsArr);
+      // 5) 문제 배열: "문제지 순서" 그대로 (정렬 금지)
+      //    ✅ 우선순위: 제출기반(problemTypeById) → refs기반(refTypeById) → "-"
+      const problemsArr: ProblemStatus[] = refs.map((r) => ({
+        problemId: r.problem_id,
+        title: r.title,
+        type:
+          problemTypeById.get(r.problem_id) ??
+          refTypeById.get(r.problem_id) ??
+          "-",
+        correct: 0,
+        wrong: 0,
+        notSolved: 0,
+      }));
 
-      // 2) 학생별 최신 제출 맵
+      // 6) 학생별 최신 제출만 취합
       type Submission = {
         problem_id: number;
         problem_name: string;
@@ -192,28 +226,29 @@ export default function ResultTotalWatching() {
         created_at?: string | null;
       };
       const latestByStudent: Record<string, Map<number, Submission>> = {};
-
-      for (const st of data.students || []) {
+      for (const st of filteredStudents) {
         const name = st.student_name;
         const m = new Map<number, Submission>();
         for (const sub of st.submission_problem_status || []) {
           const prev = m.get(sub.problem_id);
-          if (!prev) m.set(sub.problem_id, sub as Submission);
-          else {
+          if (!prev) {
+            m.set(sub.problem_id, sub as Submission);
+          } else {
             const prevTime = new Date(prev.created_at || 0).getTime();
-            const curTime = new Date((sub as Submission).created_at || 0).getTime();
+            const curTime = new Date(
+              (sub as Submission).created_at || 0
+            ).getTime();
             if (curTime > prevTime) m.set(sub.problem_id, sub as Submission);
           }
         }
         latestByStudent[name] = m;
       }
-      console.log("[step] latestByStudent:", latestByStudent);
 
-      // 3) cellMap & students
+      // 7) 셀 맵/학생 통계
       const nextCellMap: CellMap = {};
       const nextStudents: StudentStatus[] = [];
 
-      for (const st of data.students || []) {
+      for (const st of filteredStudents) {
         const name = st.student_name;
         let c = 0,
           w = 0,
@@ -221,27 +256,14 @@ export default function ResultTotalWatching() {
 
         for (const pb of problemsArr) {
           const sub = latestByStudent[name]?.get(pb.problemId);
-
-          // ====== 🔸핵심 변경: 기본값 '미응시' 보장 로직 ======
-          // 제출 기록이 아예 없거나(created_at 없음), score가 숫자가 아니면 => 미응시
-          // 제출이 있고 통과면 correct, 통과 실패면 wrong
           let status: CellStatus = "pending";
           if (sub) {
             const hasTimestamp = !!sub.created_at;
             const hasScoreNumber = typeof sub.score === "number";
-
-            if (!hasTimestamp || !hasScoreNumber) {
-              status = "pending";
-            } else if (sub.is_passed) {
-              status = "correct";
-            } else {
-              status = "wrong";
-            }
-          } else {
-            status = "pending";
+            if (!hasTimestamp || !hasScoreNumber) status = "pending";
+            else if (sub.is_passed) status = "correct";
+            else status = "wrong";
           }
-          // ====================================================
-
           nextCellMap[`${name}-${pb.problemId}`] = status;
           if (status === "correct") c++;
           else if (status === "wrong") w++;
@@ -261,14 +283,8 @@ export default function ResultTotalWatching() {
           score: totalScore,
         });
       }
-      console.log("[step] nextStudents:", nextStudents);
-      console.log(
-        "[step] nextCellMap keys:",
-        Object.keys(nextCellMap).slice(0, 20),
-        "…"
-      );
 
-      // 4) 문제별 합계
+      // 8) 문제별 합계
       for (const pb of problemsArr) {
         let cc = 0,
           ww = 0,
@@ -284,33 +300,24 @@ export default function ResultTotalWatching() {
         pb.wrong = ww;
         pb.notSolved = pp;
       }
-      console.log("[step] problemsArr(with totals):", problemsArr);
 
-      // 5) 상태 반영
       setStudents(nextStudents);
       setProblems(problemsArr);
       setCellMap(nextCellMap);
-      console.log("[loadWatching] 상태 반영 완료");
     } catch (e: any) {
-      console.error("[loadWatching] 오류:", e);
       setErrMsg(e?.message || "현황을 불러오는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
-      console.log("[loadWatching] 종료");
     }
   }, [groupId, workbookId]);
 
-  /** 최초/파라미터 변경 시 로드 */
   useEffect(() => {
     loadWatching();
   }, [loadWatching]);
 
-  // ====== 헬퍼: 셀 상태 가져오기 ======
-  const getCell = (studentName: string, problemId: number): CellStatus => {
-    return cellMap[`${studentName}-${problemId}`] ?? "pending";
-  };
+  const getCell = (studentName: string, problemId: number): CellStatus =>
+    cellMap[`${studentName}-${problemId}`] ?? "pending";
 
-  // ====== 학생별 합계 (오른쪽 3칸) ======
   const studentTotals = useMemo(() => {
     const map: Record<
       string,
@@ -331,7 +338,6 @@ export default function ResultTotalWatching() {
     return map;
   }, [students, problems, cellMap]);
 
-  // ====== 문제별 합계 (맨 아래 1행) ======
   const problemTotals = useMemo(() => {
     const map: Record<
       number,
@@ -352,7 +358,6 @@ export default function ResultTotalWatching() {
     return map;
   }, [students, problems, cellMap]);
 
-  // ====== 전체 합계 (맨 아래 오른쪽 3칸) ======
   const grandTotals = useMemo(() => {
     let c = 0,
       w = 0,
@@ -368,14 +373,61 @@ export default function ResultTotalWatching() {
     return { correct: c, wrong: w, pending: p };
   }, [students, problems, cellMap]);
 
+  /* ========= 화면폭 안에서만 보여주는 열 가상화(윈도우링) ========= */
+  const STUDENT_COL_W = 160; // px
+  const TOTALS_W = 3 * 88; // px
+  const H_PADDING = 32; // px
+  const MIN_PROBLEM_COL_W = 120;
+
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(0);
+  const [startIdx, setStartIdx] = useState<number>(0);
+
+  const recalcVisible = useCallback(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    const avail = Math.max(0, w - (STUDENT_COL_W + TOTALS_W + H_PADDING));
+    const n = Math.max(1, Math.floor(avail / MIN_PROBLEM_COL_W));
+    setVisibleCount(n);
+    if (startIdx > 0 && startIdx + n > problems.length) {
+      setStartIdx(Math.max(0, problems.length - n));
+    }
+  }, [problems.length, startIdx]);
+
+  useEffect(() => {
+    recalcVisible();
+  }, [recalcVisible, problems.length, students.length]);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => recalcVisible());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [recalcVisible]);
+
+  const endIdx = Math.min(problems.length, startIdx + visibleCount);
+  const windowProblems = problems.slice(startIdx, endIdx);
+
+  const canLeft = startIdx > 0;
+  const canRight = endIdx < problems.length;
+
+  const goLeft = () => setStartIdx((s) => Math.max(0, s - visibleCount));
+  const goRight = () =>
+    setStartIdx((s) =>
+      Math.min(problems.length - visibleCount, s + visibleCount)
+    );
+
+  /* ===================== 렌더 ===================== */
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-screen-2xl mx-auto">
       <h1 className="text-2xl font-bold">실시간 학생 현황보기</h1>
 
       {/* 상단 요약 카드 */}
       <div className="grid md:grid-cols-12 gap-4">
         <div className="rounded-2xl border p-4">
-          <p className="text-sm text-gray-500">응시 학생 수</p>
+          <p className="text-sm text-gray-500">응시 학생</p>
           <p className="text-3xl font-semibold mt-1">{students.length}</p>
         </div>
         <div className="rounded-2xl border p-4">
@@ -397,12 +449,69 @@ export default function ResultTotalWatching() {
         </span>
       </div>
 
-      {/* ===== 통합 표 ===== */}
-      <div className="rounded-2xl border overflow-x-auto">
+      {/* ===== 표 프레임(화면 폭 기준) ===== */}
+      <div ref={frameRef} className="rounded-2xl border relative bg-white">
         <div className="border-b px-4 py-3 bg-gray-50 font-semibold flex items-center justify-between">
           <span>학생별 문제 풀이 현황</span>
 
-          {/* 새로고침 버튼 */}
+          {/* ✅ 가운데 컨트롤: ← [범위] → */}
+          <div className="flex items-center gap-2">
+            {/* ← */}
+            <button
+              type="button"
+              onClick={goLeft}
+              disabled={!canLeft}
+              aria-label="이전 문제들 보기"
+              className={`h-8 w-8 grid place-items-center rounded-md border transition
+              ${
+                canLeft
+                  ? "bg-white hover:bg-gray-100 text-gray-700 border-gray-300"
+                  : "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                className="w-4 h-4"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path d="M12.293 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L8.414 9H16a1 1 0 110 2H8.414l3.879 3.879a1 1 0 010 1.414z" />
+              </svg>
+            </button>
+
+            <div className="text-xs text-gray-600 tabular-nums w-[110px] text-center">
+              {problems.length > 0
+                ? `${startIdx + 1}–${endIdx} / ${problems.length}`
+                : "0 / 0"}
+            </div>
+
+            {/* → */}
+            <button
+              type="button"
+              onClick={goRight}
+              disabled={!canRight}
+              aria-label="다음 문제들 보기"
+              className={`h-8 w-8 grid place-items-center rounded-md border transition
+              ${
+                canRight
+                  ? "bg-white hover:bg-gray-100 text-gray-700 border-gray-300"
+                  : "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                className="w-4 h-4"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path d="M7.707 4.293a1 1 0 010 1.414L11.586 9H4a1 1 0 100 2h7.586l-3.879 3.879a1 1 0 101.414 1.414l5-5a1 1 0 000-1.414l-5-5a1 1 0 10-1.414 0z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 새로고침 */}
           <button
             onClick={loadWatching}
             disabled={loading}
@@ -433,118 +542,140 @@ export default function ResultTotalWatching() {
           </div>
         )}
 
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr className="border-b">
-              {/* 고정 컬럼: 학생 */}
-              <th className="px-4 py-2 text-left sticky left-0 bg-gray-50 z-10">
-                학생
-              </th>
-
-              {/* 문제 번호 헤더들 */}
-              {problems.map((p) => (
-                <th key={p.problemId} className="px-2 py-2 text-center">
-                  <div className="font-medium">문제 {p.problemId}</div>
-                  <div className="text-[11px] text-gray-500">{p.type}</div>
-                </th>
+        {/* 표 */}
+        <div className="overflow-hidden">
+          <table className="w-full table-fixed text-sm">
+            <colgroup>
+              <col style={{ width: `160px` }} />
+              {windowProblems.map((_p, i) => (
+                <col
+                  key={`pcol-${i}`}
+                  style={{ width: `${Math.max(MIN_PROBLEM_COL_W, 1)}px` }}
+                />
               ))}
+              <col style={{ width: "88px" }} />
+              <col style={{ width: "88px" }} />
+              <col style={{ width: "88px" }} />
+            </colgroup>
 
-              {/* 오른쪽 합계 3칸 */}
-              <th className="px-3 py-2 text-center">맞음</th>
-              <th className="px-3 py-2 text-center">틀림</th>
-              <th className="px-3 py-2 text-center">미응시</th>
-            </tr>
-          </thead>
+            <thead className="bg-gray-50">
+              <tr className="border-b">
+                <th className="px-4 py-2 text-left sticky left-0 bg-gray-50 z-10">
+                  학생
+                </th>
 
-          <tbody>
-            {students.map((s) => {
-              const sum = studentTotals[s.studentName] ?? {
-                correct: 0,
-                wrong: 0,
-                pending: 0,
-              };
-              return (
-                <tr key={s.studentName} className="border-b">
-                  {/* 학생 이름 (좌측 고정) */}
-                  <td className="px-4 py-2 sticky left-0 bg-white z-10 font-medium">
-                    {s.studentName}
-                  </td>
+                {windowProblems.map((p) => (
+                  <th
+                    key={p.problemId}
+                    className="px-2 py-2 text-center whitespace-nowrap"
+                    title={p.title}
+                  >
+                    <div className="font-medium max-w-[220px] mx-auto truncate">
+                      {p.title}
+                    </div>
+                    <div className="text-[11px] text-gray-500 truncate">
+                      {p.type}
+                    </div>
+                  </th>
+                ))}
 
-                  {/* 문제별 상태 아이콘 */}
-                  {problems.map((p) => {
-                    const st = getCell(s.studentName, p.problemId);
-                    return (
-                      <td key={p.problemId} className="px-2 py-2">
-                        <div className="flex items-center justify-center">
-                          <StatusIcon
-                            status={st}
-                            size={18}
-                            title={`${s.studentName} - 문제 ${p.problemId} (${p.title}) : ${badgeText[st]}`}
-                          />
-                        </div>
-                      </td>
-                    );
-                  })}
+                <th className="px-3 py-2 text-center whitespace-nowrap">
+                  맞음
+                </th>
+                <th className="px-3 py-2 text-center whitespace-nowrap">
+                  틀림
+                </th>
+                <th className="px-3 py-2 text-center whitespace-nowrap">
+                  미응시
+                </th>
+              </tr>
+            </thead>
 
-                  {/* 오른쪽 합계 */}
-                  <td className="px-2 py-2 text-center font-semibold text-emerald-600">
-                    {sum.correct}
-                  </td>
-                  <td className="px-2 py-2 text-center font-semibold text-rose-600">
-                    {sum.wrong}
-                  </td>
-                  <td className="px-2 py-2 text-center font-semibold text-gray-600">
-                    {sum.pending}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-
-          {/* ===== 맨 아래 문제별 합계 (가로 한 행) ===== */}
-          <tfoot>
-            <tr className="bg-gray-50 border-t">
-              <td className="px-4 py-2 sticky left-0 bg-gray-50 z-10 font-semibold">
-                문제별 합계
-              </td>
-
-              {/* 각 문제 칸: 맞/틀/미 수치 */}
-              {problems.map((p) => {
-                const t = problemTotals[p.problemId] ?? {
+            <tbody>
+              {students.map((s) => {
+                const sum = studentTotals[s.studentName] ?? {
                   correct: 0,
                   wrong: 0,
                   pending: 0,
                 };
                 return (
-                  <td key={p.problemId} className="px-2 py-2">
-                    <div className="flex items-center justify-center gap-2 text-[11px]">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <StatusIcon status="correct" size={15} /> {t.correct}
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                        <StatusIcon status="wrong" size={15} /> {t.wrong}
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
-                        <StatusIcon status="pending" size={15} /> {t.pending}
-                      </span>
-                    </div>
-                  </td>
+                  <tr key={s.studentName} className="border-b">
+                    <td className="px-4 py-2 sticky left-0 bg-white z-10 font-medium whitespace-nowrap">
+                      {s.studentName}
+                    </td>
+
+                    {windowProblems.map((p) => {
+                      const st = getCell(s.studentName, p.problemId);
+                      return (
+                        <td key={p.problemId} className="px-2 py-2">
+                          <div className="flex items-center justify-center">
+                            <StatusIcon
+                              status={st}
+                              size={18}
+                              title={`${s.studentName} • ${p.title} : ${badgeText[st]}`}
+                            />
+                          </div>
+                        </td>
+                      );
+                    })}
+
+                    <td className="px-2 py-2 text-center font-semibold text-emerald-600">
+                      {sum.correct}
+                    </td>
+                    <td className="px-2 py-2 text-center font-semibold text-rose-600">
+                      {sum.wrong}
+                    </td>
+                    <td className="px-2 py-2 text-center font-semibold text-gray-600">
+                      {sum.pending}
+                    </td>
+                  </tr>
                 );
               })}
+            </tbody>
 
-              {/* 오른쪽: 전체 합계 */}
-              <td className="px-2 py-2 text-center font-bold text-emerald-700">
-                {grandTotals.correct}
-              </td>
-              <td className="px-2 py-2 text-center font-bold text-rose-700">
-                {grandTotals.wrong}
-              </td>
-              <td className="px-2 py-2 text-center font-bold text-gray-700">
-                {grandTotals.pending}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+            <tfoot>
+              <tr className="bg-gray-50 border-t">
+                <td className="px-4 py-2 sticky left-0 bg-gray-50 z-10 font-semibold">
+                  문제별 합계
+                </td>
+
+                {windowProblems.map((p) => {
+                  const t = problemTotals[p.problemId] ?? {
+                    correct: 0,
+                    wrong: 0,
+                    pending: 0,
+                  };
+                  return (
+                    <td key={p.problemId} className="px-2 py-2">
+                      {/* 아이콘 제거: 색상 + 숫자만 */}
+                      <div className="flex flex-wrap items-center justify-center gap-1 text-[11px]">
+                        <span className="inline-flex shrink-0 items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {t.correct}
+                        </span>
+                        <span className="inline-flex shrink-0 items-center px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                          {t.wrong}
+                        </span>
+                        <span className="inline-flex shrink-0 items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                          {t.pending}
+                        </span>
+                      </div>
+                    </td>
+                  );
+                })}
+
+                <td className="px-2 py-2 text-center font-bold text-emerald-700">
+                  {grandTotals.correct}
+                </td>
+                <td className="px-2 py-2 text-center font-bold text-rose-700">
+                  {grandTotals.wrong}
+                </td>
+                <td className="px-2 py-2 text-center font-bold text-gray-700">
+                  {grandTotals.pending}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </div>
   );

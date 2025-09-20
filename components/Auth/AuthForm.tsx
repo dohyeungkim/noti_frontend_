@@ -170,6 +170,9 @@ const preferredLanguageOptions: OptionType[] = [
   { value: "other", label: "기타" },
 ];
 
+//학번 숫자만 입력하도록
+const onlyDigits = (s: string) => s.replace(/\D/g, "");
+
 export default function AuthForm() {
   const router = useRouter();
   const { setIsAuth } = useAuth();
@@ -237,16 +240,16 @@ export default function AuthForm() {
 
   // ✅ 스텝별 필수값 유효성
   const isStep1Valid =
-  Boolean(basicInfo.user_id) &&
-  Boolean(basicInfo.username) &&
-  Boolean(basicInfo.email) &&
-  EMAIL_RE.test(basicInfo.email) &&
-  Boolean(basicInfo.password) &&
-  Boolean(confirmPassword) &&
-  basicInfo.password === confirmPassword &&
-  Boolean(basicInfo.gender) &&
-  didPassIdCheck &&               
-  didPassEmailCheck; 
+    Boolean(basicInfo.user_id) &&
+    Boolean(basicInfo.username) &&
+    Boolean(basicInfo.email) &&
+    EMAIL_RE.test(basicInfo.email) &&
+    Boolean(basicInfo.password) &&
+    Boolean(confirmPassword) &&
+    basicInfo.password === confirmPassword &&
+    Boolean(basicInfo.gender) &&
+    didPassIdCheck &&
+    didPassEmailCheck;
 
   const isStep2Valid =
     Boolean(personalInfo.age) &&
@@ -264,22 +267,24 @@ export default function AuthForm() {
   const handleBasicChange = (
     e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }
   ) => {
-    const { name, value } = "target" in e ? e.target : e;
+    let { name, value } = "target" in e ? e.target : e;
+
+    // ✅ 회원가입 학번은 string으로 유지하되 숫자만 남김
+    if (name === "user_id") {
+      value = onlyDigits(value);
+    }
+
     setBasicInfo((prev) => ({ ...prev, [name]: value }));
 
-    // 이메일 검증
     if (name === "email") {
-      if (!value) {
-        setEmailError("이메일을 입력해 주세요.");
-      } else if (!EMAIL_RE.test(value)) {
+      if (!value) setEmailError("이메일을 입력해 주세요.");
+      else if (!EMAIL_RE.test(value))
         setEmailError("이메일 형식이 올바르지 않습니다.");
-      } else {
-        setEmailError(null);
-      }
+      else setEmailError(null);
     }
 
     if (name === "password" && confirmPassword) {
-      setError(value !== confirmPassword ? "비밀번호가 다릅니다." : null);
+      setError(value !== basicInfo.password ? "비밀번호가 다릅니다." : null);
     }
   };
 
@@ -663,6 +668,7 @@ export default function AuthForm() {
                         onChange={handleBasicChange}
                         disabled={isLoading}
                         required
+                        
                       />
                       {/* 중복확인 버튼 */}
                       <button

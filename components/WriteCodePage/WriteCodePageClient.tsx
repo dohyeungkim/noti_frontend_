@@ -1128,8 +1128,8 @@ export default function WriteCodePageClient({
                                 style={{ maxWidth: "100%" }}
                               />
                             </div>
-
-                            <div className="max-w-full overflow-hidden">
+                                {/* 테스트 케이스 출력 예상부분입니다. 혹시나 사용하실 것 같다면 따로 사용하시면 될 것 같습니다./*}
+                            {/* <div className="max-w-full overflow-hidden">
                               <label className="block text-xs text-gray-600 mb-1">
                                 예상
                               </label>
@@ -1152,7 +1152,7 @@ export default function WriteCodePageClient({
                                 className="w-full px-1 py-1 border border-gray-300 rounded text-xs resize-none font-mono"
                                 style={{ maxWidth: "100%" }}
                               />
-                            </div>
+                            </div> */}
 
                             {runResults[index]?.output && (
                               <div className="max-w-full overflow-hidden">
