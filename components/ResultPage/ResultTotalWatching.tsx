@@ -112,6 +112,14 @@ function StatusIcon({
   );
 }
 
+/** (추가) 보기용 타입 라벨 보정: 최소 수정(표기만 정리) */
+const prettifyType = (t: string | undefined | null) => {
+  const x = String(t ?? "").trim();
+  if (!x) return "-";
+  if (x === "단답식") return "단답형";
+  return x;
+};
+
 export default function ResultTotalWatching() {
   /** ============ 라우터 파라미터 ============ */
   type RouteParams = {
@@ -202,14 +210,13 @@ export default function ResultTotalWatching() {
       }
 
       // 5) 문제 배열: "문제지 순서" 그대로 (정렬 금지)
-      //    ✅ 우선순위: 제출기반(problemTypeById) → refs기반(refTypeById) → "-"
+      //    ✅ 우선순위 (최소 수정): refs기반(refTypeById) → 제출기반(problemTypeById) → "-"
       const problemsArr: ProblemStatus[] = refs.map((r) => ({
         problemId: r.problem_id,
         title: r.title,
-        type:
-          problemTypeById.get(r.problem_id) ??
-          refTypeById.get(r.problem_id) ??
-          "-",
+        type: prettifyType(
+          refTypeById.get(r.problem_id) ?? problemTypeById.get(r.problem_id) ?? "-"
+        ),
         correct: 0,
         wrong: 0,
         notSolved: 0,

@@ -14,7 +14,7 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
   auth_api,
-  problem_api,// 디버깅: 베이스 코드,  객관식
+  problem_api, // 디버깅: 베이스 코드,  객관식
   code_log_api,
   solve_api,
   ai_feedback_api,
@@ -29,7 +29,7 @@ import * as monaco from "monaco-editor";
 // ✅ 전역 로딩 스토어
 import { useLoadingStore } from "@/lib/loadingStore";
 // 🔥 CHANGE 1: 새로운 PresenceIndicator import 추가
-import { PresenceIndicator } from "./PresenceIndicator"	
+import { PresenceIndicator } from "./PresenceIndicator";
 
 // Problem 타입 정의 (확장)
 // interface Problem {
@@ -69,7 +69,7 @@ interface WriteCodePageClientProps {
     problemId: string;
     examId: string;
     groupId: string;
-    solveId: string// 추가한거 
+    solveId: string; // 추가한거
   };
 }
 
@@ -82,6 +82,16 @@ interface WriteCodePageClientProps {
 //     </div>
 //   )
 // }
+//문제 기본적으로 설정되는 것
+const normalizeLang = (raw?: string) => {
+  const s = (raw || "").toLowerCase().trim();
+  if (s === "c++" || s === "cpp" || s === "g++") return "cpp";
+  if (s.startsWith("python")) return "python";
+  if (s === "c" || s.startsWith("gcc") || s.startsWith("clang")) return "c";
+  if (s.startsWith("java")) return "java";
+  return ""; // 모르면 빈값
+};
+
 const normalizeMultiline = (s: string) => {
   return s.includes("\n") ? s.replace(/\r/g, "").split("\n") : s;
 };
@@ -120,7 +130,7 @@ export default function WriteCodePageClient({
   const isShort = problem?.problemType === "단답형";
   const isSubjective = problem?.problemType === "주관식";
 
-  const [problemConditions, setProblemConditions] = useState<string[]>([]);// 빈 배열로 초기화
+  const [problemConditions, setProblemConditions] = useState<string[]>([]); // 빈 배열로 초기화
 
   const searchParams = useSearchParams();
   const solveId = searchParams.get("solve_id");
@@ -137,7 +147,8 @@ export default function WriteCodePageClient({
 
   // 언어/코드 초기화 + 로컬 저장
   const languageStorageKey = `aprofi_language_${params.problemId}`;
-
+  //입 출력 예시 샘플
+  const [sampleCases, setSampleCases] = useState<TestCase[]>([]);
   // 언어 초기값: 쿼리파라미터 > localStorage > python
   const initialLanguage =
     (typeof window !== "undefined" &&
@@ -195,7 +206,9 @@ export default function WriteCodePageClient({
 
   // ===== 로컬 저장 동기화 =====
   useEffect(() => {
-    if (language) {localStorage.setItem(languageStorageKey, language)};
+    if (language) {
+      localStorage.setItem(languageStorageKey, language);
+    }
   }, [language, params.problemId, languageStorageKey]);
 
   // 코드가 바뀔 때 localStorage에 저장
@@ -212,7 +225,7 @@ export default function WriteCodePageClient({
         const res = await auth_api.getUser();
         setUserId(res.user_id);
         // nickname 속성이 없으므로 username 사용
-        
+
         setUserNickname(res.username || "사용자");
       } catch (error) {
         console.error("유저 정보를 불러오는 중 오류 발생:", error);
@@ -236,6 +249,73 @@ export default function WriteCodePageClient({
       );
       console.log("📋 문제 풀기 페이지 해당 문제 GET Api 응답:", res);
       setProblem(res);
+      try {
+        // 1) 백엔드에서 언어 추출
+        let backendLang = "";
+        // 디버깅: base_code[0].language 우선
+        if (
+          "base_code" in res &&
+          Array.isArray((res as any).base_code) &&
+          (res as any).base_code.length > 0
+        ) {
+          backendLang = (res as any).base_code[0]?.language || "";
+        }
+        // 코딩: reference_codes의 메인(is_main) 우선
+        if (
+          !backendLang &&
+          "reference_codes" in res &&
+          Array.isArray((res as any).reference_codes) &&
+          (res as any).reference_codes.length > 0
+        ) {
+          const main =
+            (res as any).reference_codes.find((c: any) => c.is_main) ||
+            (res as any).reference_codes[0];
+          backendLang = main?.language || "";
+        }
+
+        const normBackend = normalizeLang(backendLang);
+
+        // 2) 최종 언어 결정 (쿼리 > 백엔드 > 로컬스토리지 > python)
+        const fromQuery = (queryLanguage || "").toLowerCase().trim();
+        const fromLS =
+          (typeof window !== "undefined" &&
+            (localStorage.getItem(languageStorageKey) || "")
+              .toLowerCase()
+              .trim()) ||
+          "";
+
+        const finalLang = fromQuery || normBackend || fromLS || "python";
+
+        if (finalLang && finalLang !== (language || "").toLowerCase()) {
+          setLanguage(finalLang);
+          // 선택한 언어 기억
+          if (typeof window !== "undefined") {
+            localStorage.setItem(languageStorageKey, finalLang);
+          }
+        }
+
+        // 3) 코드 복원 (언어별 저장본 > 이미 세팅한 백엔드 코드 > 템플릿)
+        const savedKey = `aprofi_code_${finalLang}_${params.problemId}`;
+        const savedCode =
+          typeof window !== "undefined" ? localStorage.getItem(savedKey) : null;
+
+        if (savedCode !== null && savedCode !== "") {
+          setCode(savedCode);
+        } else {
+          // 위에서 base_code/reference_codes로 setCode 했다면 그대로 두고,
+          // 아무것도 없다면 템플릿 채움
+          const current = (
+            editorRef.current?.getValue?.() ??
+            code ??
+            ""
+          ).trim();
+          if (!current) {
+            setCode(defaultTemplates[finalLang] ?? "");
+          }
+        }
+      } catch {
+        /* 무시해도 됨 */
+      }
 
       // 문제 조건만 설정 (problem_condition 사용)
       if (
@@ -249,17 +329,17 @@ export default function WriteCodePageClient({
       }
 
       // ========== 디버깅 문제 ==========
-			// 디버깅 문제 베이스(현재 백엔드는 reference_codes로 넘겨주고 있어서 일단은 이렇게 함) 코드 랜더링 -  에디터에 띄워야됨
-			// if ("base_codes" in res && Array.isArray((res as any).base_codes) && (res as any).base_codes.length > 0) {
-			// if (
-			// 	"reference_codes" in res &&
-			// 	Array.isArray((res as any).reference_codes) &&
-			// 	(res as any).reference_codes.length > 0
-			// ) {
-			// 	setCode((res as any).reference_codes[0].code)
-			// } else {
-			// 	setCode("")
-			// }
+      // 디버깅 문제 베이스(현재 백엔드는 reference_codes로 넘겨주고 있어서 일단은 이렇게 함) 코드 랜더링 -  에디터에 띄워야됨
+      // if ("base_codes" in res && Array.isArray((res as any).base_codes) && (res as any).base_codes.length > 0) {
+      // if (
+      // 	"reference_codes" in res &&
+      // 	Array.isArray((res as any).reference_codes) &&
+      // 	(res as any).reference_codes.length > 0
+      // ) {
+      // 	setCode((res as any).reference_codes[0].code)
+      // } else {
+      // 	setCode("")
+      // }
 
       // 디버깅: 베이스 코드 렌더링
       if (
@@ -274,7 +354,6 @@ export default function WriteCodePageClient({
 
       // 샘플 테스트케이스 (키 오타, filter→map 수정)
       // 페이지 상단에 추가: 샘플 보관용(선택)
-      //const [sampleCases, setSampleCases] = useState<TestCase[]>([]);
 
       // fetchProblem 안에서
       let samples: TestCase[] = [];
@@ -290,17 +369,16 @@ export default function WriteCodePageClient({
       }
 
       // 샘플은 따로 저장만 하고…
-      //setSampleCases(samples);
+      setSampleCases(samples);
 
       // 사용자가 입력하는 영역은 항상 빈 케이스로 시작
       setTestCases([{ input: "", output: "" }]);
       // 샘플이 하나라도 있으면 그걸로, 없으면 기존처럼 빈 테스트케이스(아래가 기존 코드... 현재는 아마 샘플이있어도 안불러와질것임 변경해야함;;)
-			// if (sampleTestCases.length > 0) {
-			// 	setTestCases(sampleTestCases)
-			// } else {
-			// 	setTestCases([{ input: "", output: "" }])
-			// }
-
+      // if (sampleTestCases.length > 0) {
+      // 	setTestCases(sampleTestCases)
+      // } else {
+      // 	setTestCases([{ input: "", output: "" }])
+      // }
 
       // 객관식
       if (
@@ -309,17 +387,16 @@ export default function WriteCodePageClient({
         Array.isArray((res as any).options) &&
         Array.isArray((res as any).correct_answers)
       ) {
-        
         setChoiceOptions((res as any).options ?? []);
         const correct = (res as any).correct_answers ?? [];
         setAllowMultiple(correct.length > 1);
 
         // 안전하게 배열 보장(아래가 기존코드임)
-				//const opts: string[] = Array.isArray((res as any).options) ? (res as any).options : []
-				//setChoiceOptions(opts)
+        //const opts: string[] = Array.isArray((res as any).options) ? (res as any).options : []
+        //setChoiceOptions(opts)
 
-				//const correct = Array.isArray((res as any).correct_answers) ? (res as any).correct_answers : []
-				//setAllowMultiple(correct.length > 1)
+        //const correct = Array.isArray((res as any).correct_answers) ? (res as any).correct_answers : []
+        //setAllowMultiple(correct.length > 1)
 
         // 초기 선택값 리셋(경고 방지)
         setSelectedSingle(null);
@@ -559,53 +636,51 @@ export default function WriteCodePageClient({
     return { newCode, newCodeLogs, newTimeStamps };
   };
 
+  // const submitLogs = async () => {
+  // 	setLoading(true)
+  // 	setError("")
 
-  
-	// const submitLogs = async () => {
-	// 	setLoading(true)
-	// 	setError("")
+  // 	try {
+  // 		const newCode = editorRef.current?.getValue() || ""
+  // 		const newCodeLogs = [...codeLogs, newCode]
+  // 		const newTimeStamps = [...timeStamps, new Date().toISOString()]
 
-	// 	try {
-	// 		const newCode = editorRef.current?.getValue() || ""
-	// 		const newCodeLogs = [...codeLogs, newCode]
-	// 		const newTimeStamps = [...timeStamps, new Date().toISOString()]
+  // 		const data = await solve_api.solve_create(
+  // 			Number(params.groupId),
+  // 			Number(params.examId),
+  // 			Number(params.problemId),
+  // 			userId,
+  // 			newCode,
+  // 			language
+  // 		)
+  // 		await code_log_api.code_log_create(Number(data.solve_id), userId, newCodeLogs, newTimeStamps)
+  // 		ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch((err) => {
+  // 			console.error("AI 피드백 호출 실패:", err)
+  // 		})
+  // 		console.log("제출 성공:", newCodeLogs, newTimeStamps)
+  // 		setCodeLogs([])
+  // 		setTimeStamps([])
 
-	// 		const data = await solve_api.solve_create(
-	// 			Number(params.groupId),
-	// 			Number(params.examId),
-	// 			Number(params.problemId),
-	// 			userId,
-	// 			newCode,
-	// 			language
-	// 		)
-	// 		await code_log_api.code_log_create(Number(data.solve_id), userId, newCodeLogs, newTimeStamps)
-	// 		ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch((err) => {
-	// 			console.error("AI 피드백 호출 실패:", err)
-	// 		})
-	// 		console.log("제출 성공:", newCodeLogs, newTimeStamps)
-	// 		setCodeLogs([])
-	// 		setTimeStamps([])
+  // 		if (problemType === "coding" || problemType === "debugging") {
+  // 			Object.keys(localStorage).forEach((key) => {
+  // 				if (key.startsWith("aprofi_code_") && key.endsWith(`_${params.problemId}`)) {
+  // 					localStorage.removeItem(key)
+  // 				}
+  // 			})
+  // 		}
 
-	// 		if (problemType === "coding" || problemType === "debugging") {
-	// 			Object.keys(localStorage).forEach((key) => {
-	// 				if (key.startsWith("aprofi_code_") && key.endsWith(`_${params.problemId}`)) {
-	// 					localStorage.removeItem(key)
-	// 				}
-	// 			})
-	// 		}
+  // 		router.push(`/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`)
+  // 	} catch (err) {
+  // 		alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`)
+  // 	} finally {
+  // 		setLoading(false)
+  // 	}
+  // }
 
-	// 		router.push(`/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`)
-	// 	} catch (err) {
-	// 		alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`)
-	// 	} finally {
-	// 		setLoading(false)
-	// 	}
-	// }
-
-	// 테스트케이스 실행 관련 상태 (기존 테스트 케이스 실행 코드..)
+  // 테스트케이스 실행 관련 상태 (기존 테스트 케이스 실행 코드..)
   // const [testCases, setTestCases] = useState<TestCase[]>([])
-	// const [runResults, setRunResults] = useState<RunResult[]>([])
-	// const [isTestRunning, setIsTestRunning] = useState(false)
+  // const [runResults, setRunResults] = useState<RunResult[]>([])
+  // const [isTestRunning, setIsTestRunning] = useState(false)
 
   const handleTestCaseChange = (
     idx: number,
@@ -788,12 +863,15 @@ export default function WriteCodePageClient({
         transition={{ delay: 0.2 }}
       >
         <div>
-          {<div>
-					{/* 🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용 */}
-					{userId && userNickname && <PresenceIndicator pageId={pageId} user={currentUser} />} 
-				</div>
-      
-      }</div>
+          {
+            <div>
+              {/* 🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용 */}
+              {userId && userNickname && (
+                <PresenceIndicator pageId={pageId} user={currentUser} />
+              )}
+            </div>
+          }
+        </div>
 
         {/* 오른쪽: 실행 + 제출 버튼 묶음 */}
         <div className="flex items-center gap-2">
@@ -858,6 +936,75 @@ export default function WriteCodePageClient({
               className="editor-content prose prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-4 prose-h1:mb-4 prose-h2:text-2xl prose-h2:mt-4 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-4 prose-h3:mb-4 prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6 prose-li:mb-2 mb-6"
               dangerouslySetInnerHTML={{ __html: problem.description }}
             />
+            {/* 문제 생성시때 만드는 입출력{테스트 케이스} 예상공간*/}
+            {sampleCases.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="bg-white shadow-md rounded-2xl p-5 mb-6 border border-gray-200"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-bold text-gray-800">
+                    입력 / 출력
+                  </h3>
+                  <span className="text-xs text-gray-500">
+                    총 {sampleCases.length}개
+                  </span>
+                </div>
+
+                {/* 한 컬럼으로 넓게 */}
+                <div className="grid grid-cols-1 gap-4">
+                  {sampleCases.map((tc, i) => {
+                    const hasInput = Boolean(
+                      tc.input && tc.input.trim().length > 0
+                    );
+                    return (
+                      <div
+                        key={i}
+                        className="bg-blue-50 shadow-md rounded-2xl p-5 mb-6 border border-blue-200"
+                      >
+                        {/* 헤더: 번호만 (라벨 제거) */}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-semibold text-gray-700">
+                            #{i + 1}
+                          </span>
+                          {/* 배지 제거 */}
+                        </div>
+
+                        <div className="space-y-3">
+                          {/* 입력 섹션: 비었으면 아예 숨김 */}
+                          {hasInput && (
+                            <div className="w-full">
+                              <div className="text-xs font-semibold text-gray-600 mb-1">
+                                입력
+                              </div>
+                              <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono text-sm overflow-auto">
+                                <pre className="whitespace-pre-wrap break-all">
+                                  {tc.input}
+                                </pre>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 예상 출력 섹션: 항상 표시 */}
+                          <div className="w-full">
+                            <div className="text-xs font-semibold text-gray-600 mb-1">
+                              예상 출력
+                            </div>
+                            <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono text-sm overflow-auto">
+                              <pre className="whitespace-pre-wrap break-all">
+                                {tc.output || "(빈 출력)"}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
 
             {problemConditions &&
               isCodingOrDebugging &&
@@ -1128,7 +1275,7 @@ export default function WriteCodePageClient({
                                 style={{ maxWidth: "100%" }}
                               />
                             </div>
-                                {/* 테스트 케이스 출력 예상부분입니다. 혹시나 사용하실 것 같다면 따로 사용하시면 될 것 같습니다./*}
+                            {/* 테스트 케이스 출력 예상부분입니다. 혹시나 사용하실 것 같다면 따로 사용하시면 될 것 같습니다./*}
                             {/* <div className="max-w-full overflow-hidden">
                               <label className="block text-xs text-gray-600 mb-1">
                                 예상
