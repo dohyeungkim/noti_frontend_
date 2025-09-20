@@ -24,7 +24,7 @@ export function usePresence(pageId: string, currentUser: { userId: string; nickn
 
 		const sessionId = `${currentUser.userId}-${Date.now()}`
 
-		const ws = new WebSocket(`ws://210.115.227.15:8099/ws/presence/${pageId}`)
+		const ws = new WebSocket(`ws://210.115.227.15:18099/ws/presence/${pageId}`)
 
 		ws.onopen = () => {
 			console.log("✅ WebSocket 연결 성공")

@@ -189,6 +189,8 @@ export default function AuthForm() {
   const [idSuccess, setIdSuccess] = useState<string | null>(null);
   const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
 
+  const didPassIdCheck = !!idSuccess && !idDuplicateError;
+  const didPassEmailCheck = !!emailSuccess && !emailDuplicateError;
   // 기본 회원가입 정보
   const [basicInfo, setBasicInfo] = useState<BasicUserInfo>({
     password: "",
@@ -235,16 +237,16 @@ export default function AuthForm() {
 
   // ✅ 스텝별 필수값 유효성
   const isStep1Valid =
-    Boolean(basicInfo.user_id) &&
-    Boolean(basicInfo.username) &&
-    Boolean(basicInfo.email) &&
-    EMAIL_RE.test(basicInfo.email) &&
-    Boolean(basicInfo.password) &&
-    Boolean(confirmPassword) &&
-    basicInfo.password === confirmPassword &&
-    Boolean(basicInfo.gender)&&
-    Boolean(!idDuplicateError )&&
-    Boolean(!emailDuplicateError)
+  Boolean(basicInfo.user_id) &&
+  Boolean(basicInfo.username) &&
+  Boolean(basicInfo.email) &&
+  EMAIL_RE.test(basicInfo.email) &&
+  Boolean(basicInfo.password) &&
+  Boolean(confirmPassword) &&
+  basicInfo.password === confirmPassword &&
+  Boolean(basicInfo.gender) &&
+  didPassIdCheck &&               
+  didPassEmailCheck; 
 
   const isStep2Valid =
     Boolean(personalInfo.age) &&

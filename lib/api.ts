@@ -729,7 +729,7 @@ export const problem_ref_api = {
 	},
 
 	// 문제 삭제
-	async problem_ref_delete(problem_id: number, group_id: number, workbook_id: number) {
+	async problem_ref_delete(group_id: number, workbook_id: number, problem_id: number ) {
   const res = await fetchWithAuth(`/api/proxy/problems_ref/${group_id}/${workbook_id}/${problem_id}`, {
     method: "DELETE",
     credentials: "include",
@@ -1490,27 +1490,135 @@ export const ai_feedback_api = {
 
 // ====================== 코드 실행(run_code) API ===========================
 
-export const run_code_api = {
-	async run_code(requestData: {
-		language: string
-		problem_id?:number //추가
-		group_id?:number//추가
-		workbook_id?:number//추가
-		code: string
-		rating_mode: string
-		
-		test_cases: { input: string; expected_output: string }[]
-	}) {
-		const res = await fetchWithAuth("/api/proxy/solves/run_code", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(requestData),
-		})
+/** run_code 요청/응답 타입 (백엔드 스키마에 맞춰 유연하게) */
+export type RunCodeTestCaseReq = {
+  /** 요청: 문자열 한 줄로 보낼 수도 있고, ["Hello","World"]처럼 배열로도 보낼 수 있게 허용 */
+  input: string | string[]
+  expected_output: string
+}
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "코드 실행 실패")
-		}
-		return res.json()
-	},
+export type RunCodeTestCaseRes = {
+  /** 응답: 백엔드는 배열 형태(["Hello","World"])로 내려옴 */
+  input: string[]
+  expected_output: string
+  /** 선택: 백엔드가 내려줄 수 있는 필드들 (있으면 활용) */
+  actual_output?: string
+  passed?: boolean
+  message?: string
+  error?: string
+}
+
+export interface RunCodeRequest {
+  language: string
+  code: string
+  rating_mode: string | RatingMode
+  /** 선택: 컨텍스트를 백엔드에 전달하고 싶을 때 */
+  problem_id?: number
+  group_id?: number
+  workbook_id?: number
+  /** 테스트케이스: 요청은 input이 string | string[] 둘 다 허용 */
+  test_cases: RunCodeTestCaseReq[]
+}
+
+export interface RunCodeResponse {
+  language: string
+  code: string
+  rating_mode: string
+  group_id?: number
+  workbook_id?: number
+  problem_id?: number
+  /** 응답은 input이 string[]로 내려옴 */
+  test_cases: RunCodeTestCaseRes[]
+  /** 그 외 추가로 내려올 수 있는 필드들 */
+  [k: string]: any
+}
+
+export const run_code_api = {
+  async run_code(requestData: RunCodeRequest): Promise<RunCodeResponse> {
+    const res = await fetchWithAuth("/api/proxy/solves/run_code", {
+      method: "POST",
+      credentials: "include", // ✅ 쿠키 일관성
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestData),
+    })
+
+    let body: any = {}
+    try {
+      body = await res.json()
+    } catch {
+      /* noop */
+    }
+
+    if (!res.ok) {
+      const msg = Array.isArray(body?.detail)
+        ? body.detail.map((d: any) => `${(d.loc || []).join(" > ")}: ${d.msg}`).join("\n")
+        : body?.detail?.msg || body?.message || "코드 실행 실패"
+      throw new Error(msg)
+    }
+
+    // 타입 보장: test_cases.input을 배열 형태로 정규화 (혹시 문자열로 오더라도 안전하게)
+    if (Array.isArray(body?.test_cases)) {
+      body.test_cases = body.test_cases.map((tc: any) => ({
+        ...tc,
+        input: Array.isArray(tc?.input) ? tc.input : (typeof tc?.input === "string" ? [tc.input] : []),
+      }))
+    }
+
+    return body as RunCodeResponse
+  },
+}
+
+// ====================== live watching 타입 ===========================
+export interface WatchingSubmission {
+  problem_id: number
+  problem_name: string
+  problem_type: string 
+  is_passed: boolean
+  max_score: number
+  score: number
+  created_at: string
+}
+
+export interface WatchingStudent {
+  student_id: string
+  student_name: string
+  submission_problem_status: WatchingSubmission[]
+}
+
+export interface WatchingResponse {
+  workbook_id: string
+  total_students: number
+  students: WatchingStudent[]
+}
+// ====================== live watching 관련 API ===========================
+
+export const live_api = {
+  /** 실시간 학생/문제 현황 */
+  async watching_get(
+    group_id: string | number,
+    workbook_id: string | number
+  ): Promise<WatchingResponse> {
+    const gid = encodeURIComponent(String(group_id))
+    const wid = encodeURIComponent(String(workbook_id))
+    const url = `/api/proxy/live/${gid}/${wid}/watching`
+
+    const res = await fetchWithAuth(url, {
+      method: "GET",
+      credentials: "include",
+    })
+
+    if (!res.ok) {
+      let body: any = {}
+      try {
+        body = await res.json()
+      } catch {}
+      const msg =
+        body?.detail?.msg ||
+        body?.message ||
+        `실시간 현황 조회 실패 (${res.status}) [GET ${url}]`
+      throw new Error(msg)
+    }
+
+    return res.json()
+  },
 }

@@ -18,158 +18,171 @@ import GalleryView from "./MyRefisteredProblemGallary"
 import TableView from "./MyRefisteredProblemTable"
 
 interface Question {
-	problem_id: number
-	title: string
-	group: string
-	paper: string
-	solvedCount: number
-	createdAt?: string
-	description?: string
+  problem_id: number
+  title: string
+  group: string
+  paper: string
+  solvedCount: number
+  createdAt?: string
+  description?: string
 }
 
 export default function MyRegisteredProblemView() {
-	const router = useRouter()
-	const [search, setSearch] = useState("")
-	const [questions, setQuestions] = useState<Question[]>([])
-	const [filteredData, setFilteredData] = useState<Question[]>([])
-	const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
-	const [sortOrder, setSortOrder] = useState("등록일순")
-	const [selectedProblem, setSelectedProblem] = useState<Question | null>(null)
+  const router = useRouter()
+  const [search, setSearch] = useState("")
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [filteredData, setFilteredData] = useState<Question[]>([])
+  const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
+  const [sortOrder, setSortOrder] = useState("등록일순")
+  const [selectedProblem, setSelectedProblem] = useState<Question | null>(null)
 
-	const handleDeleteButtonClick = async (problem_id: number) => {
-		try {
-			await problem_api.problem_delete(problem_id)
-			fetchProblems()
-		} catch (error) {
-			console.error("문제 삭제 중 에러 발생:", error)
-		}
-	}
+  const handleDeleteButtonClick = async (problem_id: number) => {
+    try {
+      await problem_api.problem_delete(problem_id)
+      fetchProblems()
+    } catch (error) {
+      console.error("문제 삭제 중 에러 발생:", error)
+    }
+  }
 
-	// 문제 목록 가져오기
-	const fetchProblems = useCallback(async () => {
-		try {
-			const res = await problem_api.problem_get()
-			setQuestions(res)
-			setFilteredData(res)
-		} catch (error) {
-			console.error("내 문제 목록 불러오기 오류:", error)
-			alert("내 문제 목록을 불러오는 중 오류가 발생했습니다.")
-		}
-	}, [])
+  // ✅ ProblemDetail -> Question 어댑터 (API에 없을 수도 있는 필드는 기본값)
+  const toQuestion = (p: any): Question => ({
+    problem_id: p?.problem_id,
+    title: p?.title ?? "(제목 없음)",
+    group: p?.group_name ?? "-",          // API에 없으면 "-"로
+    paper: p?.workbook_name ?? "-",       // API에 없으면 "-"로
+    solvedCount: Number(p?.attempt_count ?? 0), // 통계 미포함이면 0
+    createdAt: p?.created_at,
+    description: p?.description ?? "",
+  })
 
-	useEffect(() => {
-		fetchProblems()
-	}, [fetchProblems])
+  // 문제 목록 가져오기
+  const fetchProblems = useCallback(async () => {
+    try {
+      const res = await problem_api.problem_get() // ProblemDetail[]
+      // ✅ 상태에 바로 넣지 말고 UI 모델로 변환
+      const normalized = Array.isArray(res) ? res.map(toQuestion) : []
+      setQuestions(normalized)
+      setFilteredData(normalized)
+    } catch (error) {
+      console.error("내 문제 목록 불러오기 오류:", error)
+      alert("내 문제 목록을 불러오는 중 오류가 발생했습니다.")
+    }
+  }, [])
 
-	// 검색 필터
-	const filteredQuestions = questions.filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
+  useEffect(() => {
+    fetchProblems()
+  }, [fetchProblems])
 
-	// 정렬
-	const sortedData = [...filteredQuestions].sort((a, b) => {
-		if (sortOrder === "제목순") {
-			return a.title.localeCompare(b.title)
-		} else if (sortOrder === "등록일순") {
-			return new Date(b.createdAt ?? "1970-01-01").getTime() - new Date(a.createdAt ?? "1970-01-01").getTime()
-		}
-		return 0
-	})
+  // 검색 필터
+  const filteredQuestions = questions.filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
 
-	const handleNavigate = () => {
-		router.push("/registered-problems/create")
-	}
+  // 정렬
+  const sortedData = [...filteredQuestions].sort((a, b) => {
+    if (sortOrder === "제목순") {
+      return a.title.localeCompare(b.title)
+    } else if (sortOrder === "등록일순") {
+      return new Date(b.createdAt ?? "1970-01-01").getTime() - new Date(a.createdAt ?? "1970-01-01").getTime()
+    }
+    return 0
+  })
 
-	return (
-		<div className="space-y-2">
-			{/* 🔹 문제 만들기 버튼 */}
-			<motion.div
-				className="flex justify-end mb-2"
-				initial={{ opacity: 0, y: 6 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.3, delay: 0.1 }}
-			>
-				<button
-					onClick={handleNavigate}
-					className="flex items-center bg-black text-white px-3 py-2 rounded-lg text-xs cursor-pointer
+  const handleNavigate = () => {
+    router.push("/registered-problems/create")
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* 🔹 문제 만들기 버튼 */}
+      <motion.div
+        className="flex justify-end mb-2"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <button
+          onClick={handleNavigate}
+          className="flex items-center bg-black text-white px-3 py-2 rounded-lg text-xs cursor-pointer
           hover:bg-gray-500 transition-all duration-200 ease-in-out
           active:scale-95"
-				>
-					<FontAwesomeIcon icon={faPlus} className="mr-1.5 text-xs" />
-					문제 만들기
-				</button>
-			</motion.div>
+        >
+          <FontAwesomeIcon icon={faPlus} className="mr-1.5 text-xs" />
+          문제 만들기
+        </button>
+      </motion.div>
 
-			{/* 🔹 검색 + 보기 전환 + 정렬 버튼 */}
-			<motion.div
-				className="flex items-center gap-2 mb-2 w-full"
-				initial={{ opacity: 0, y: 6 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.3, delay: 0.2 }}
-			>
-				<div className="flex-grow min-w-0">
-					<SearchBar
-						searchQuery={search}
-						setSearchQuery={setSearch}
-						className="animate-fade-in text-xs h-6 px-2 py-1"
-					/>
-				</div>
-				<ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in scale-75 h-6" />
-				<SortButton
-					sortOptions={["등록일순", "제목순"]}
-					onSortChange={(selectedSort) => setSortOrder(selectedSort)}
-					className="text-xs px-3 py-2 h-7"
-				/>
-			</motion.div>
+      {/* 🔹 검색 + 보기 전환 + 정렬 버튼 */}
+      <motion.div
+        className="flex items-center gap-2 mb-2 w-full"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <div className="flex-grow min-w-0">
+          <SearchBar
+            searchQuery={search}
+            setSearchQuery={setSearch}
+            className="animate-fade-in text-xs h-6 px-2 py-1"
+          />
+        </div>
+        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in scale-75 h-6" />
+        <SortButton
+          sortOptions={["등록일순", "제목순"]}
+          onSortChange={(selectedSort) => setSortOrder(selectedSort)}
+          className="text-xs px-3 py-2 h-7"
+        />
+      </motion.div>
 
-			{/* 🔹 문제 목록 제목 */}
-			<motion.h2
-				className="text-lg font-bold mb-3 m-1.5 pt-3"
-				initial={{ opacity: 0, x: -6 }}
-				animate={{ opacity: 1, x: 0 }}
-				transition={{ duration: 0.3, delay: 0.3 }}
-			>
-				나의 문제
-			</motion.h2>
+      {/* 🔹 문제 목록 제목 */}
+      <motion.h2
+        className="text-lg font-bold mb-3 m-1.5 pt-3"
+        initial={{ opacity: 0, x: -6 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
+        나의 문제
+      </motion.h2>
 
-			<motion.hr
-				className="border-b-1 border-gray-300 my-3 m-1.5"
-				initial={{ opacity: 0, scaleX: 0 }}
-				animate={{ opacity: 1, scaleX: 1 }}
-				transition={{ duration: 0.3, delay: 0.3 }}
-			/>
+      <motion.hr
+        className="border-b-1 border-gray-300 my-3 m-1.5"
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      />
 
-			{/* 🔹 갤러리 뷰 OR 테이블 뷰 */}
-			<motion.div
-				key={viewMode}
-				initial={{ opacity: 0, y: 6 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.3, delay: 0.4 }}
-				className="text-sm"
-			>
-				{sortedData.length === 0 ? (
-					search ? (
-						<p className="text-center text-gray-500 py-6 text-sm">
-							🔍 <strong>&quot;{search}&quot;</strong>에 대한 검색 결과가 없습니다.
-						</p>
-					) : (
-						<p className="text-center text-gray-500 py-6 text-sm">📭 등록된 문제가 없습니다. 문제를 추가해보세요!</p>
-					)
-				) : viewMode === "gallery" ? (
-					<div className="origin-top-left">
-						<GalleryView
-							filteredData={sortedData}
-							selectedProblem={selectedProblem}
-							handleCloseDetail={() => setSelectedProblem(null)}
-							handleHoverStartProblem={(problem) => setSelectedProblem(problem)}
-							handleHoverEndProblem={() => setSelectedProblem(null)}
-							handleDeleteButtonClick={handleDeleteButtonClick}
-						/>
-					</div>
-				) : (
-					<div className="">
-						<TableView filteredData={sortedData} handleDeleteButtonClick={handleDeleteButtonClick} />
-					</div>
-				)}
-			</motion.div>
-		</div>
-	)
+      {/* 🔹 갤러리 뷰 OR 테이블 뷰 */}
+      <motion.div
+        key={viewMode}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
+        className="text-sm"
+      >
+        {sortedData.length === 0 ? (
+          search ? (
+            <p className="text-center text-gray-500 py-6 text-sm">
+              🔍 <strong>&quot;{search}&quot;</strong>에 대한 검색 결과가 없습니다.
+            </p>
+          ) : (
+            <p className="text-center text-gray-500 py-6 text-sm">📭 등록된 문제가 없습니다. 문제를 추가해보세요!</p>
+          )
+        ) : viewMode === "gallery" ? (
+          <div className="origin-top-left">
+            <GalleryView
+              filteredData={sortedData}
+              selectedProblem={selectedProblem}
+              handleCloseDetail={() => setSelectedProblem(null)}
+              handleHoverStartProblem={(problem) => setSelectedProblem(problem)}
+              handleHoverEndProblem={() => setSelectedProblem(null)}
+              handleDeleteButtonClick={handleDeleteButtonClick}
+            />
+          </div>
+        ) : (
+          <div className="">
+            <TableView filteredData={sortedData} handleDeleteButtonClick={handleDeleteButtonClick} />
+          </div>
+        )}
+      </motion.div>
+    </div>
+  )
 }

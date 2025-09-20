@@ -57,6 +57,7 @@ export default function ManageGroup() {
   const [showModalAccAll, setShowModalAccAll] = useState(false);
   const [isBulkAccepting, setIsBulkAccepting] = useState(false);
 
+  
   // 문제지(워크북) 관련 상태 (배열로 여러 문제지 관리)
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
 
@@ -268,6 +269,7 @@ export default function ManageGroup() {
       await fetchGroup();
       alert("그룹 및 문제지 정보가 성공적으로 업데이트되었습니다.");
       setShowModalSave(false);
+      router.push("/mypage")
     } catch (err) {
       console.error("정보 업데이트 에러", err);
       alert("정보 업데이트 중 오류 발생");
