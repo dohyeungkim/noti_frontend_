@@ -29,7 +29,7 @@ import * as monaco from "monaco-editor";
 // ✅ 전역 로딩 스토어
 import { useLoadingStore } from "@/lib/loadingStore";
 // 🔥 CHANGE 1: 새로운 PresenceIndicator import 추가
-import { PresenceIndicator } from "./PresenceIndicator";
+// import { PresenceIndicator } from "./PresenceIndicator";
 
 // ===================== (중요) 전역 템플릿 상수로 이동 =====================
 const DEFAULT_TEMPLATES: { [lang: string]: string } = {
@@ -884,16 +884,16 @@ export default function WriteCodePageClient({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div>
+        {/* <div>
           {
             <div>
-              {/* 🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용 */}
+              🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용
               {userId && userNickname && (
                 <PresenceIndicator pageId={pageId} user={currentUser} />
               )}
             </div>
           }
-        </div>
+        </div> */}
 
         {/* 오른쪽: 실행 + 제출 버튼 묶음 */}
         <div className="flex items-center gap-2">
