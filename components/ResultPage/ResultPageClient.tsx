@@ -486,10 +486,10 @@ export default function FeedbackWithSubmissionPageClient({
 						</motion.div>
 					)}
 					{/* 오른쪽: 조건 및 AI 피드백 조건 뜨는 창*/}
-					<div className="space-y-6 h-[600px] flex flex-col">
+					<div className="space-y-6 h-[600px] flex flex-col min-h-0">
 						{/* 조건 검사 결과 섹션 - 높이 확장 */}
 						<motion.div
-							className="bg-white rounded-lg shadow-sm border flex-1"
+							className="bg-white rounded-lg shadow-sm border flex-1 flex flex-col min-h-0"
 							initial={{ opacity: 0, x: 20 }}
 							animate={{ opacity: 1, x: 0 }}
 							transition={{ duration: 0.4, delay: 0.2 }}
@@ -525,7 +525,7 @@ export default function FeedbackWithSubmissionPageClient({
 									</div>
 								)}
 							</div>
-							<div className="p-4 space-y-4 h-full overflow-y-auto">
+							<div className="p-4 space-y-4 flex-1 overflow-y-auto">
 								{!isConditionLoaded ? (
 									// 조건 로딩 중
 									<div className="flex items-center justify-center h-32">

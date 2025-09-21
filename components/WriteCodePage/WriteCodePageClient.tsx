@@ -92,7 +92,7 @@ interface WriteCodePageClientProps {
 //   )
 // }
 
-// 문제 만들때 설정하는 언어로 열리게끔 
+// 문제 만들때 설정하는 언어로 열리게끔
 const normalizeLang = (raw?: string) => {
   const s = (raw || "").toLowerCase().trim();
   if (s === "c++" || s === "cpp" || s === "g++") return "cpp";
@@ -102,9 +102,7 @@ const normalizeLang = (raw?: string) => {
   return ""; // 모르면 빈값
 };
 
-const normalizeMultiline = (s: string) => {
-  return s.includes("\n") ? s.replace(/\r/g, "").split("\n") : s;
-};
+const normalizeMultiline = (s: string) => s.replace(/\r\n?/g, "\n");
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 });
@@ -424,8 +422,15 @@ export default function WriteCodePageClient({
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  // ✅ deps 최소화: defaultTemplates/ language / storageKey 등 제외
-  }, [params.groupId, params.examId, params.problemId, queryLanguage, languageStorageKey, language]);
+    // ✅ deps 최소화: defaultTemplates/ language / storageKey 등 제외
+  }, [
+    params.groupId,
+    params.examId,
+    params.problemId,
+    queryLanguage,
+    languageStorageKey,
+    language,
+  ]);
 
   useEffect(() => {
     fetchUser();
@@ -477,6 +482,20 @@ export default function WriteCodePageClient({
     setCurrentRun(null);
 
     try {
+      // 1) 사용자가 적어 둔 입력들 중 '비어있지 않은 것만' 모아서 보냄
+      const userCases = Array.isArray(testCases)
+        ? testCases
+            .filter((tc) => (tc.input ?? "").trim() !== "")
+            .map((tc) => ({
+              input: normalizeMultiline(tc.input || ""), // 항상 string으로 정규화
+              expected_output: "", // 타입 맞추기용 더미
+            }))
+        : [];
+
+      // 2) 입력이 하나도 없으면 더미 케이스 1개
+      const cases =
+        userCases.length > 0 ? userCases : [{ input: "", expected_output: "" }];
+
       const data = await run_code_api.run_code({
         language,
         code: codeToRun,
@@ -484,18 +503,24 @@ export default function WriteCodePageClient({
         group_id: Number(groupId),
         workbook_id,
         rating_mode: problem.rating_mode || "default",
-        // 빈 배열 대신 더미 케이스 1개 — results[0]을 확보
-        test_cases: [{ input: "", expected_output: "" }],
+        test_cases: cases,
       });
 
-      const first = Array.isArray(data?.results) ? data.results[0] : undefined;
-      const output =
-        data?.output ??
-        data?.stdout ??
-        first?.output ??
-        first?.actual_output ??
-        "";
-      const errorText = data?.error ?? data?.stderr ?? first?.error ?? "";
+      // 3) 여러 케이스를 보냈다면 결과도 모두 묶어서 보여줌(개행 유지)
+      const outputs: string[] = Array.isArray(data?.results)
+        ? data.results.map((r: any) =>
+            String(r?.actual_output ?? r?.stdout ?? r?.output ?? "")
+          )
+        : [String(data?.actual_output ?? data?.stdout ?? data?.output ?? "")];
+
+      const errorText = Array.isArray(data?.results)
+        ? data.results
+            .map((r: any) => r?.error ?? r?.stderr ?? "")
+            .filter(Boolean)
+            .join("\n")
+        : data?.error ?? data?.stderr ?? "";
+
+      const joinedOutput = outputs.filter(Boolean).join("\n");
 
       const success =
         typeof data?.success === "boolean"
@@ -504,10 +529,12 @@ export default function WriteCodePageClient({
           ? false
           : true;
 
-      const time_ms = data?.time_ms ?? first?.time_ms;
+      const time_ms = Array.isArray(data?.results)
+        ? data.results[0]?.time_ms
+        : data?.time_ms;
 
       setCurrentRun({
-        output: String(output ?? ""),
+        output: joinedOutput || "",
         error: errorText ? String(errorText) : undefined,
         time_ms: typeof time_ms === "number" ? time_ms : undefined,
         success,
@@ -747,8 +774,9 @@ export default function WriteCodePageClient({
         workbook_id,
         rating_mode: problem.rating_mode || "default",
         test_cases: testCases.map((tc) => ({
-          input: normalizeMultiline(tc.input),
-          expected_output: tc.output,
+          // 문자열 그대로(개행만 LF로 통일)
+          input: normalizeMultiline(tc.input || ""),
+          expected_output: normalizeMultiline(tc.output || ""),
         })),
       });
 
@@ -758,8 +786,13 @@ export default function WriteCodePageClient({
         data.results?.map((result: any, index: number) => ({
           input: testCases[index].input,
           expected: testCases[index].output,
-          output: result.output || result.actual_output || "",
-          passed: result.passed || result.success || false,
+          // ✅ diff말고 실제 출력 우선
+          output:
+            result.actual_output ??
+            result.stdout ??
+            result.output ?? // (백업으로만 사용)
+            "",
+          passed: result.passed ?? result.success ?? false,
         })) || [];
 
       setRunResults(results);
@@ -784,7 +817,9 @@ export default function WriteCodePageClient({
     const saved = localStorage.getItem(
       `aprofi_code_${newLang}_${params.problemId}`
     );
-    setCode(saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]);
+    setCode(
+      saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]
+    );
   };
 
   // **리사이즈 구현**
@@ -877,9 +912,9 @@ export default function WriteCodePageClient({
     <div className="flex items-center gap-2 justify-end"></div>
   ) : (
     <>
-      {/* 상단영역: 제충버튼, 실시간 사용자 현황 */}
+      {/* 상단영역: 제출버튼, 실시간 사용자 현황 */}
       <motion.div
-        className="flex items-center gap-2 justify-between"
+        className="flex items-center gap-2 justify-end"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
@@ -968,7 +1003,7 @@ export default function WriteCodePageClient({
               >
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-bold text-gray-800">
-                    입력 / 출력 
+                    입력 / 출력
                   </h3>
                   <span className="text-xs text-gray-500">
                     총 {sampleCases.length}개
@@ -1328,10 +1363,10 @@ export default function WriteCodePageClient({
                                 <label className="block text-xs text-gray-600 mb-1">
                                   실제
                                 </label>
-                                <div className="w-full px-1 py-1 border border-gray-200 rounded bg-gray-50 font-mono text-xs overflow-hidden">
-                                  <span className="break-all">
+                                <div className="w-full px-1 py-1 border border-gray-200 rounded bg-gray-50 font-mono text-xs overflow-auto">
+                                  <pre className="whitespace-pre-wrap break-all">
                                     {runResults[index].output}
-                                  </span>
+                                  </pre>
                                 </div>
                               </div>
                             )}
