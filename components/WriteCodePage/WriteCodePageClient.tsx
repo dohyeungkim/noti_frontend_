@@ -31,6 +31,15 @@ import { useLoadingStore } from "@/lib/loadingStore";
 // 🔥 CHANGE 1: 새로운 PresenceIndicator import 추가
 import { PresenceIndicator } from "./PresenceIndicator";
 
+// ===================== (중요) 전역 템플릿 상수로 이동 =====================
+const DEFAULT_TEMPLATES: { [lang: string]: string } = {
+  python: "",
+  c: "#include<stdio.h>\n\nint main() {\n    return 0;\n}",
+  cpp: "#include<iostream>\n\nint main() {\n    return 0;\n}",
+  java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
+};
+// =======================================================================
+
 // Problem 타입 정의 (확장)
 // interface Problem {
 // 	// 학생에게 보여주는 핃르들
@@ -82,7 +91,8 @@ interface WriteCodePageClientProps {
 //     </div>
 //   )
 // }
-//문제 기본적으로 설정되는 것
+
+// 문제 만들때 설정하는 언어로 열리게끔 
 const normalizeLang = (raw?: string) => {
   const s = (raw || "").toLowerCase().trim();
   if (s === "c++" || s === "cpp" || s === "g++") return "cpp";
@@ -137,14 +147,6 @@ export default function WriteCodePageClient({
   const queryLanguage = searchParams.get("language");
   // const [problemType, setProblemType] = useState<String>("coding")
 
-  // 언어별 디폴트 코드 템플릿
-  const defaultTemplates: { [lang: string]: string } = {
-    python: "",
-    c: "#include<stdio.h>\n\nint main() {\n    return 0;\n}",
-    cpp: "#include<iostream>\n\nint main() {\n    return 0;\n}",
-    java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
-  };
-
   // 언어/코드 초기화 + 로컬 저장
   const languageStorageKey = `aprofi_language_${params.problemId}`;
   //입 출력 예시 샘플
@@ -160,7 +162,7 @@ export default function WriteCodePageClient({
   const storageKey = `aprofi_code_${initialLanguage}_${params.problemId}`;
   const initialCode =
     (typeof window !== "undefined" && localStorage.getItem(storageKey)) ||
-    defaultTemplates[initialLanguage];
+    DEFAULT_TEMPLATES[initialLanguage];
   const [code, setCode] = useState<string>(initialCode);
 
   // 객관식 문제: 옵션, 복수정답 여부, 선택된 인덱스(단일, 복수)
@@ -171,7 +173,6 @@ export default function WriteCodePageClient({
 
   // 주관식 문제 답
   const [subjectiveAnswer, setSubjectiveAnswer] = useState<string>("");
-
   // 단답형 문제 답
   const [shortAnswer, setShortAnswer] = useState<string>("");
 
@@ -234,7 +235,16 @@ export default function WriteCodePageClient({
   }, [userId]);
 
   // ===== 문제 정보 가져오기=====
+
+  // 동일 문제 중복 초기화 방지용 가드
+  const initializedRef = useRef<string | null>(null);
+
   const fetchProblem = useCallback(async () => {
+    // ✅ 동일 문제 재초기화 가드
+    const key = `${params.groupId}-${params.examId}-${params.problemId}`;
+    if (initializedRef.current === key) return;
+    initializedRef.current = key;
+
     try {
       console.log(
         "문제 API 호출 파라미터:",
@@ -249,73 +259,82 @@ export default function WriteCodePageClient({
       );
       console.log("📋 문제 풀기 페이지 해당 문제 GET Api 응답:", res);
       setProblem(res);
-      try {
-        // 1) 백엔드에서 언어 추출
-        let backendLang = "";
-        // 디버깅: base_code[0].language 우선
-        if (
-          "base_code" in res &&
-          Array.isArray((res as any).base_code) &&
-          (res as any).base_code.length > 0
-        ) {
-          backendLang = (res as any).base_code[0]?.language || "";
+
+      // =========================== 템플릿/저장/베이스코드 적용 순서 ===========================
+      // 1) base_code (디버깅) 우선
+      // 2) 저장된 코드(LocalStorage)
+      // 3) 템플릿(DEFAULT_TEMPLATES)
+      let codeInitialized = false;
+
+      // 1) 디버깅: 베이스 코드가 오면 최우선 적용
+      if (
+        "base_code" in res &&
+        Array.isArray((res as any).base_code) &&
+        (res as any).base_code.length > 0 &&
+        typeof (res as any).base_code[0]?.code === "string"
+      ) {
+        setCode((res as any).base_code[0].code);
+        codeInitialized = true;
+      }
+
+      // 2) 백엔드/쿼리/로컬스토리지 기반 언어 결정
+      let backendLang = "";
+      // 디버깅: base_code[0].language 우선
+      if (
+        "base_code" in res &&
+        Array.isArray((res as any).base_code) &&
+        (res as any).base_code.length > 0
+      ) {
+        backendLang = (res as any).base_code[0]?.language || "";
+      }
+      // 코딩: reference_codes의 메인(is_main) 우선
+      if (
+        !backendLang &&
+        "reference_codes" in res &&
+        Array.isArray((res as any).reference_codes) &&
+        (res as any).reference_codes.length > 0
+      ) {
+        const main =
+          (res as any).reference_codes.find((c: any) => c.is_main) ||
+          (res as any).reference_codes[0];
+        backendLang = main?.language || "";
+      }
+
+      const normBackend = normalizeLang(backendLang);
+      const fromQuery = (queryLanguage || "").toLowerCase().trim();
+      const fromLS =
+        (typeof window !== "undefined" &&
+          (localStorage.getItem(languageStorageKey) || "")
+            .toLowerCase()
+            .trim()) ||
+        "";
+      const finalLang = fromQuery || normBackend || fromLS || "python";
+
+      if (finalLang && finalLang !== (language || "").toLowerCase()) {
+        setLanguage(finalLang);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(languageStorageKey, finalLang);
         }
-        // 코딩: reference_codes의 메인(is_main) 우선
-        if (
-          !backendLang &&
-          "reference_codes" in res &&
-          Array.isArray((res as any).reference_codes) &&
-          (res as any).reference_codes.length > 0
-        ) {
-          const main =
-            (res as any).reference_codes.find((c: any) => c.is_main) ||
-            (res as any).reference_codes[0];
-          backendLang = main?.language || "";
-        }
+      }
 
-        const normBackend = normalizeLang(backendLang);
-
-        // 2) 최종 언어 결정 (쿼리 > 백엔드 > 로컬스토리지 > python)
-        const fromQuery = (queryLanguage || "").toLowerCase().trim();
-        const fromLS =
-          (typeof window !== "undefined" &&
-            (localStorage.getItem(languageStorageKey) || "")
-              .toLowerCase()
-              .trim()) ||
-          "";
-
-        const finalLang = fromQuery || normBackend || fromLS || "python";
-
-        if (finalLang && finalLang !== (language || "").toLowerCase()) {
-          setLanguage(finalLang);
-          // 선택한 언어 기억
-          if (typeof window !== "undefined") {
-            localStorage.setItem(languageStorageKey, finalLang);
-          }
-        }
-
-        // 3) 코드 복원 (언어별 저장본 > 이미 세팅한 백엔드 코드 > 템플릿)
+      // 3) 저장 코드가 있으면 적용 (아직 코드가 안 정해졌을 때만)
+      if (!codeInitialized) {
         const savedKey = `aprofi_code_${finalLang}_${params.problemId}`;
         const savedCode =
           typeof window !== "undefined" ? localStorage.getItem(savedKey) : null;
 
         if (savedCode !== null && savedCode !== "") {
           setCode(savedCode);
-        } else {
-          // 위에서 base_code/reference_codes로 setCode 했다면 그대로 두고,
-          // 아무것도 없다면 템플릿 채움
-          const current = (
-            editorRef.current?.getValue?.() ??
-            code ??
-            ""
-          ).trim();
-          if (!current) {
-            setCode(defaultTemplates[finalLang] ?? "");
-          }
+          codeInitialized = true;
         }
-      } catch {
-        /* 무시해도 됨 */
       }
+
+      // 4) 템플릿 적용 (여전히 코드가 비어있다면)
+      if (!codeInitialized) {
+        setCode(DEFAULT_TEMPLATES[finalLang] ?? "");
+        codeInitialized = true;
+      }
+      // ==========================================================================
 
       // 문제 조건만 설정 (problem_condition 사용)
       if (
@@ -341,21 +360,21 @@ export default function WriteCodePageClient({
       // 	setCode("")
       // }
 
-      // 디버깅: 베이스 코드 렌더링
+      // 💡 이미 위에서 base_code/저장/템플릿 순으로 코드가 초기화되었기 때문에
+      // 여기서는 **덮어쓰지 않도록** 가드만 걸어둔다 (빈값으로 초기화하지 않음)
       if (
         "base_code" in res &&
         Array.isArray((res as any).base_code) &&
         (res as any).base_code.length > 0
       ) {
-        setCode((res as any).base_code[0].code);
+        // 이미 적용된 경우가 대부분이므로 추가 동작 없음
+        // setCode((res as any).base_code[0].code)  // <-- 덮어쓰기 금지
       } else {
-        setCode("");
+        // setCode("")  // <-- 빈 코드로 덮어쓰기 금지
       }
 
       // 샘플 테스트케이스 (키 오타, filter→map 수정)
       // 페이지 상단에 추가: 샘플 보관용(선택)
-
-      // fetchProblem 안에서
       let samples: TestCase[] = [];
       if ("test_cases" in res && Array.isArray((res as any).test_cases)) {
         const raw = (res as any).test_cases as Array<any>;
@@ -405,15 +424,18 @@ export default function WriteCodePageClient({
     } catch (error) {
       console.error("문제 불러오기 중 오류 발생:", error);
     }
-  }, [params.groupId, params.examId, params.problemId]);
+  // ✅ deps 최소화: defaultTemplates/ language / storageKey 등 제외
+  }, [params.groupId, params.examId, params.problemId, queryLanguage, languageStorageKey, language]);
 
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
   useEffect(() => {
+    // ✅ fetchProblem 자체가 아니라 문제 식별자 변화에 따라 호출
     fetchProblem();
-  }, [fetchProblem]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.groupId, params.examId, params.problemId, queryLanguage]);
 
   // useEffect(() => {
   // 	if (solveId) {
@@ -639,12 +661,12 @@ export default function WriteCodePageClient({
   // const submitLogs = async () => {
   // 	setLoading(true)
   // 	setError("")
-
+  //
   // 	try {
   // 		const newCode = editorRef.current?.getValue() || ""
   // 		const newCodeLogs = [...codeLogs, newCode]
   // 		const newTimeStamps = [...timeStamps, new Date().toISOString()]
-
+  //
   // 		const data = await solve_api.solve_create(
   // 			Number(params.groupId),
   // 			Number(params.examId),
@@ -660,7 +682,7 @@ export default function WriteCodePageClient({
   // 		console.log("제출 성공:", newCodeLogs, newTimeStamps)
   // 		setCodeLogs([])
   // 		setTimeStamps([])
-
+  //
   // 		if (problemType === "coding" || problemType === "debugging") {
   // 			Object.keys(localStorage).forEach((key) => {
   // 				if (key.startsWith("aprofi_code_") && key.endsWith(`_${params.problemId}`)) {
@@ -668,7 +690,7 @@ export default function WriteCodePageClient({
   // 				}
   // 			})
   // 		}
-
+  //
   // 		router.push(`/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`)
   // 	} catch (err) {
   // 		alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`)
@@ -762,7 +784,7 @@ export default function WriteCodePageClient({
     const saved = localStorage.getItem(
       `aprofi_code_${newLang}_${params.problemId}`
     );
-    setCode(saved !== null && saved !== "" ? saved : defaultTemplates[newLang]);
+    setCode(saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]);
   };
 
   // **리사이즈 구현**
@@ -946,7 +968,7 @@ export default function WriteCodePageClient({
               >
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-bold text-gray-800">
-                    입력 / 출력
+                    입력 / 출력 
                   </h3>
                   <span className="text-xs text-gray-500">
                     총 {sampleCases.length}개
