@@ -190,8 +190,9 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
 		is_user_exist: boolean,
 		is_email_exist: boolean
 	}> {
-		const res = await fetch("/api/proxy/register_checker", {
+		const res = await fetchWithAuth("/api/proxy/register_checker/", {
 			method: "POST",
+			credentials: "include",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ user_id, email }),
 		});
