@@ -23,9 +23,7 @@ import {
   SolveRequest,
 } from "@/lib/api";
 import type { ProblemDetail } from "@/lib/api";
-import { editor } from "monaco-editor";
-import * as monaco from "monaco-editor";
-
+import type { editor } from "monaco-editor";
 // ✅ 전역 로딩 스토어
 import { useLoadingStore } from "@/lib/loadingStore";
 // 🔥 CHANGE 1: 새로운 PresenceIndicator import 추가
@@ -902,11 +900,11 @@ export default function WriteCodePageClient({
   }
 
   // 실시간 사용자 현황을 위한 pageId와 user 데이터 생성
-  const pageId = `problem-${params.groupId}-${params.examId}-${params.problemId}`;
-  const currentUser = {
-    userId: userId,
-    nickname: userNickname,
-  };
+  // const pageId = `problem-${params.groupId}-${params.examId}-${params.problemId}`;
+  // const currentUser = {
+  //   userId: userId,
+  //   nickname: userNickname,
+  // };
 
   return !problem ? (
     <div className="flex items-center gap-2 justify-end"></div>
