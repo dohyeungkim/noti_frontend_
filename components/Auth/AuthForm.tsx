@@ -238,19 +238,7 @@ export default function AuthForm() {
     return (currentStep / 4) * 100;
   };
 
-  // ✅ 스텝별 필수값 유효성 원래쓰는 코드
-  // const isStep1Valid =
-  //   Boolean(basicInfo.user_id) &&
-  //   Boolean(basicInfo.username) &&
-  //   Boolean(basicInfo.email) &&
-  //   EMAIL_RE.test(basicInfo.email) &&
-  //   Boolean(basicInfo.password) &&
-  //   Boolean(confirmPassword) &&
-  //   basicInfo.password === confirmPassword &&
-  //   Boolean(basicInfo.gender) &&
-  //   didPassIdCheck &&
-  //   didPassEmailCheck;
-
+  // ✅ 스텝별 필수값 유효성
   const isStep1Valid =
     Boolean(basicInfo.user_id) &&
     Boolean(basicInfo.username) &&
@@ -259,7 +247,9 @@ export default function AuthForm() {
     Boolean(basicInfo.password) &&
     Boolean(confirmPassword) &&
     basicInfo.password === confirmPassword &&
-    Boolean(basicInfo.gender);
+    Boolean(basicInfo.gender) &&
+    didPassIdCheck &&
+    didPassEmailCheck;
 
   const isStep2Valid =
     Boolean(personalInfo.age) &&
@@ -282,7 +272,6 @@ export default function AuthForm() {
     // ✅ 회원가입 학번은 string으로 유지하되 숫자만 남김
     if (name === "user_id") {
       value = onlyDigits(value);
-      
     }
 
     setBasicInfo((prev) => ({ ...prev, [name]: value }));
@@ -483,19 +472,13 @@ export default function AuthForm() {
   };
   // 아이디만 확인하고 싶을 때
   const handleCheckUserIdDuplicate = async () => {
-    if (!basicInfo.user_id) {
-      setIdDuplicateError("사용자명을 입력해주세요.");
-      return;
-    }
-
     setIdDuplicateError(null);
     setIdSuccess(null);
 
     try {
       // 임시 더미 이메일 사용 (백엔드에서 무시할 수 있는 값)
-      const res = await auth_api.checkDuplicateUser(
-        basicInfo.user_id,
-        "dummy@temp.com" // 더미 이메일
+      const res = await auth_api.checkDuplicateUserId(
+        basicInfo.user_id
       );
 
       if (res.is_user_exist) {
@@ -513,7 +496,7 @@ export default function AuthForm() {
     setEmailSuccess(null);
 
     try {
-      const res = await auth_api.checkDuplicateUser("", basicInfo.email);
+      const res = await auth_api.checkDuplicateUserEmail(basicInfo.email);
 
       if (res.is_email_exist) {
         setEmailDuplicateError("중복된 이메일이 존재합니다.");

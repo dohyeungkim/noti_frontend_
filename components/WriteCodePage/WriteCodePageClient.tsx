@@ -963,7 +963,10 @@ export default function WriteCodePageClient({
         className="flex flex-1 min-h-0 w-full overflow-hidden mt-2"
       >
         {/* 내부 스크롤만 허용 */}
-        <div className="overflow-y-auto h-[calc(100%-72px)] p-2 pr-2">
+        <div
+          className="overflow-y-auto h-[calc(100%-72px)] p-2 pr-2 flex-none"
+          style={{ width: leftWidth }} // ✅ 드래그 폭 적용
+        >
           {/* 문제 설명 */}
           <div
             className="editor-content prose prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-4 prose-h1:mb-4 prose-h2:text-2xl prose-h2:mt-4 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-4 prose-h3:mb-4 prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6 prose-li:mb-2 mb-6"
