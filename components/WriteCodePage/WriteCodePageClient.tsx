@@ -32,8 +32,8 @@ import { useLoadingStore } from "@/lib/loadingStore";
 // ===================== (중요) 전역 템플릿 상수로 이동 =====================
 const DEFAULT_TEMPLATES: { [lang: string]: string } = {
   python: "",
-  c: "#include<stdio.h>\n\nint main() {\n    return 0;\n}",
-  cpp: "#include<iostream>\n\nint main() {\n    return 0;\n}",
+  c: "#include <stdio.h>\n\nint main() {\n    return 0;\n}",
+  cpp: "#include <iostream>\n\nint main() {\n    return 0;\n}",
   java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
 };
 // =======================================================================
@@ -89,6 +89,13 @@ interface WriteCodePageClientProps {
 //     </div>
 //   )
 // }
+const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
+  { value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
+  { value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
+  { value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
+  { value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
+  { value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
+];
 
 // 문제 만들때 설정하는 언어로 열리게끔
 const normalizeLang = (raw?: string) => {
@@ -921,23 +928,35 @@ export default function WriteCodePageClient({
     <div className="h-screen overflow-hidden flex flex-col">
       {/* 상단영역: 제출버튼, 실시간 사용자 현황 */}
       <motion.div
-        className="flex items-center gap-2 justify-end px-2 pt-3 shrink-0"
-        initial={{ opacity: 0, scale: 0.9 }}
+        className="flex items-center justify-between px-3 pt-3 shrink-0"
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
       >
-        {/* <div>
-          {
-            <div>
-              🔥 CHANGE 3: 새로운 PresenceIndicator 컴포넌트 사용
-              {userId && userNickname && (
-                <PresenceIndicator pageId={pageId} user={currentUser} />
-              )}
-            </div>
-          }
-        </div> */}
+        {/* 왼쪽: 문제 제목 (말줄임 처리) + 선택: 유형 배지 */}
+        <div className="flex items-center min-w-0 gap-2">
+          <h1
+            title={problem.title || ""}
+            className="text-base md:text-3xl font-semibold text-gray-900 truncate max-w-[60vw]"
+          >
+            {problem.title || "문제 제목"}
+          </h1>
 
-        {/* 오른쪽: 실행 + 제출 버튼 묶음 */}
+          {/* 문제 유형 배지 — 필요 없으면 이 span 한 줄 삭제해도 됨 */}
+          {problem.problemType && (
+            <span
+              className={`ml-1 inline-flex items-center rounded-full px-2 py-[2px] text-xs font-medium
+      ${
+        PROBLEM_TYPES.find((t) => t.value === problem.problemType)?.color ||
+        "bg-gray-100 text-gray-700"
+      }`}
+            >
+              {problem.problemType}
+            </span>
+          )}
+        </div>
+
+        {/* 오른쪽: 제출 버튼 (기존 그대로) */}
         <div className="flex items-center gap-2">
           <motion.button
             onClick={handleSubmit}
