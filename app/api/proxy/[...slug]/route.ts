@@ -1,3 +1,122 @@
+// // app/api/proxy/[...slug]/route.ts
+// import { NextRequest, NextResponse } from "next/server"
+
+// // solve 관련 route 포함, 공통 프록시 핸들러
+// async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
+//   const { pathname, search } = new URL(req.url)
+
+//   // 프런트 /api/proxy/*  -> 백엔드 /api/*
+//   const externalApiUrl = `${process.env.NEXT_PUBLIC_API_URL}${pathname.replace(
+//     "/api/proxy",
+//     "/api"
+//   )}${search}`
+
+//   // 요청 헤더 구성
+//   const token = req.cookies.get("access_token")?.value
+//   const headers: HeadersInit = {
+//     "Content-Type": req.headers.get("content-type") ?? "application/json",
+//   }
+//   if (token) headers["Authorization"] = `Bearer ${token}`
+
+//   // 👉 디버깅 로그
+//   console.log("[Proxy] Incoming:", req.method, pathname + search)
+//   console.log("[Proxy] Token from cookie:", token ? "✅ 존재함" : "❌ 없음")
+//   console.log("[Proxy] Forward headers:", headers)
+
+//   // 바디: GET/HEAD 제외
+//   const hasBody = !(req.method === "GET" || req.method === "HEAD")
+//   const body = hasBody ? await req.text() : undefined
+//   if (hasBody) {
+//     console.log("[Proxy] Forward body:", body)
+//   }
+
+//   // 업스트림 호출
+//   let upstream: Response
+//   try {
+//     upstream = await fetch(externalApiUrl, {
+//       method: req.method,
+//       headers,
+//       body,
+//       redirect: "manual",
+//     })
+//   } catch (e: any) {
+//     console.error("[Proxy] Fetch error:", e?.message ?? e)
+//     return NextResponse.json(
+//       { message: "Bad Gateway (proxy fetch failed)", detail: String(e?.message ?? e) },
+//       { status: 502 },
+//     )
+//   }
+
+//   // 👉 업스트림 응답 로깅
+//   console.log("[Proxy] Upstream response:", upstream.status, upstream.statusText)
+
+//   // 응답 본문 일부만 찍기 (403 같은 경우 디버깅용)
+//   try {
+//     const clone = upstream.clone()
+//     const text = await clone.text()
+//     console.log("[Proxy] Upstream body (truncated):", text.slice(0, 300))
+//   } catch (err) {
+//     console.log("[Proxy] Upstream body read error:", err)
+//   }
+
+//   const respHeaders = new Headers(upstream.headers)
+//   respHeaders.delete("content-encoding")
+//   respHeaders.delete("transfer-encoding")
+//   respHeaders.set("cache-control", "no-store")
+
+//   // 로그인 시 쿠키 저장 처리 (기존 로직 유지)
+//   if (pathname === "/api/proxy/user/login" && upstream.ok) {
+//     const ct = upstream.headers.get("content-type") || ""
+//     if (ct.includes("application/json")) {
+//       try {
+//         const data = await upstream.clone().json()
+//         if (data?.access_token) {
+//           const isProd = process.env.NODE_ENV === "production"
+//           const next = new NextResponse(upstream.body, {
+//             status: upstream.status,
+//             headers: respHeaders,
+//           })
+//           next.cookies.set("access_token", data.access_token, {
+//             httpOnly: true,
+//             secure: isProd,
+//             sameSite: isProd ? "none" : "lax",
+//             maxAge: 2 * 60 * 60,
+//             path: "/",
+//           })
+//           console.log("[Proxy] Set-Cookie: access_token 저장 완료")
+//           return next
+//         }
+//       } catch (err) {
+//         console.log("[Proxy] Login response JSON parse 실패:", err)
+//       }
+//     }
+//   }
+
+//   // 기본 패스스루
+//   return new NextResponse(upstream.body, {
+//     status: upstream.status,
+//     headers: respHeaders,
+//   })
+// }
+
+// // HTTP 메서드별 라우트 설정
+// export async function GET(req: NextRequest) {
+//   return middlewareHandler(req)
+// }
+// export async function POST(req: NextRequest) {
+//   return middlewareHandler(req)
+// }
+// export async function PUT(req: NextRequest) {
+//   return middlewareHandler(req)
+// }
+// export async function PATCH(req: NextRequest) {
+//   return middlewareHandler(req)
+// }
+// export async function DELETE(req: NextRequest) {
+//   return middlewareHandler(req)
+// }
+
+
 // app/api/proxy/[...slug]/route.ts
 import { NextRequest, NextResponse } from "next/server"
 
@@ -11,16 +130,24 @@ async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
     "/api"
   )}${search}`
 
-  // 요청 헤더 구성 (기존 로직 유지)
+  // 요청 헤더 구성
   const token = req.cookies.get("access_token")?.value
   const headers: HeadersInit = {
     "Content-Type": req.headers.get("content-type") ?? "application/json",
   }
   if (token) headers["Authorization"] = `Bearer ${token}`
 
-  // 바디: GET/HEAD 제외하고 text로 안전 처리 (기존 로직 유지)
+  // 👉 디버깅 로그
+  console.log("[Proxy] Incoming:", req.method, pathname + search)
+  console.log("[Proxy] Token from cookie:", token ? "✅ 존재함" : "❌ 없음")
+  console.log("[Proxy] Forward headers:", headers)
+
+  // 바디: GET/HEAD 제외
   const hasBody = !(req.method === "GET" || req.method === "HEAD")
   const body = hasBody ? await req.text() : undefined
+  if (hasBody) {
+    console.log("[Proxy] Forward body:", body)
+  }
 
   // 업스트림 호출
   let upstream: Response
@@ -32,28 +159,35 @@ async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
       redirect: "manual",
     })
   } catch (e: any) {
-    // 네트워크 실패 시 프록시 502로 명확히
-    const err = NextResponse.json(
-      { message: "Bad Gateway (proxy fetch failed)\n", detail: String(e?.message ?? e)},
+    console.error("[Proxy] Fetch error:", e?.message ?? e)
+    return NextResponse.json(
+      { message: "Bad Gateway (proxy fetch failed)", detail: String(e?.message ?? e) },
       { status: 502 },
     )
-    console.log(e.message)
-    return err
   }
 
-  // 응답 헤더 정리 (스트리밍 안정화)
+  // 👉 업스트림 응답 로깅
+  console.log("[Proxy] Upstream response:", upstream.status, upstream.statusText)
+
+  // 응답 본문 일부만 찍기 (403 같은 경우 디버깅용)
+  try {
+    const clone = upstream.clone()
+    const text = await clone.text()
+    console.log("[Proxy] Upstream body (truncated):", text.slice(0, 300))
+  } catch (err) {
+    console.log("[Proxy] Upstream body read error:", err)
+  }
+
   const respHeaders = new Headers(upstream.headers)
   respHeaders.delete("content-encoding")
   respHeaders.delete("transfer-encoding")
   respHeaders.set("cache-control", "no-store")
 
-  // ✅ 로그인 요청이면 access_token 쿠키 저장 (기존 기능 유지)
-  // 주의: 프록시 경로 기준으로 비교
+  // 로그인 시 쿠키 저장 처리 (기존 로직 유지)
   if (pathname === "/api/proxy/user/login" && upstream.ok) {
     const ct = upstream.headers.get("content-type") || ""
     if (ct.includes("application/json")) {
       try {
-        // 본문은 그대로 내보내야 하므로 clone으로 파싱
         const data = await upstream.clone().json()
         if (data?.access_token) {
           const isProd = process.env.NODE_ENV === "production"
@@ -63,39 +197,40 @@ async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
           })
           next.cookies.set("access_token", data.access_token, {
             httpOnly: true,
-            secure: isProd,                // dev에선 false, prod에선 true
+            secure: isProd,
             sameSite: isProd ? "none" : "lax",
             maxAge: 2 * 60 * 60,
             path: "/",
           })
+          console.log("[Proxy] Set-Cookie: access_token 저장 완료")
           return next
         }
-      } catch {
-        // 로그인 응답이 JSON이 아니거나 파싱 실패하면 그냥 패스스루
+      } catch (err) {
+        console.log("[Proxy] Login response JSON parse 실패:", err)
       }
     }
   }
 
-  // ✅ 기본: 본문을 그대로 패스스루 (JSON 파싱 금지)
+  // 기본 패스스루
   return new NextResponse(upstream.body, {
     status: upstream.status,
     headers: respHeaders,
   })
 }
 
-// HTTP 메서드별 라우트 설정 (기존과 동일)
-export async function GET(req: NextRequest): Promise<NextResponse> {
+// HTTP 메서드별 라우트 설정
+export async function GET(req: NextRequest) {
   return middlewareHandler(req)
 }
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
   return middlewareHandler(req)
 }
-export async function PUT(req: NextRequest): Promise<NextResponse> {
+export async function PUT(req: NextRequest) {
   return middlewareHandler(req)
 }
-export async function PATCH(req: NextRequest): Promise<NextResponse> {
+export async function PATCH(req: NextRequest) {
   return middlewareHandler(req)
 }
-export async function DELETE(req: NextRequest): Promise<NextResponse> {
+export async function DELETE(req: NextRequest) {
   return middlewareHandler(req)
 }

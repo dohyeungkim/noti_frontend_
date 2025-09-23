@@ -763,7 +763,7 @@ export default function FeedbackWithSubmissionPageClient({
 							<div className="space-y-3">
 								<div className="flex items-center gap-4 mb-3">
 									<label className="block text-sm font-medium text-gray-700">새 댓글 작성</label>
-									{/* 익명 체크박스 */}
+									{/* 익명 체크박스
 									<label className="flex items-center space-x-2 cursor-pointer">
 										<input
 											type="checkbox"
@@ -772,7 +772,7 @@ export default function FeedbackWithSubmissionPageClient({
 											onChange={(e) => setIsAnonymous(e.target.checked)}
 										/>
 										<span className="text-sm text-gray-700">익명으로 작성</span>
-									</label>
+									</label> */}
 								</div>
 
 								<div className="flex items-end gap-3">
