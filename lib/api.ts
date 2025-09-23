@@ -189,8 +189,8 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
   async checkDuplicateUser(user_id: string, email: string): Promise<{
 		is_user_exist: boolean,
 		is_email_exist: boolean
-	}> {
-		const res = await fetchWithAuth("/api/proxy/user/register_checker", {
+	}> {//user를 껴야해
+		const res = await fetchWithAuth("/api/proxy/register_checker", {
 			method: "POST",
 			credentials: "include",
 			headers: { "Content-Type": "application/json" },
