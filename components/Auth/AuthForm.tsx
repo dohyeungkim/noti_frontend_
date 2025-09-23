@@ -282,6 +282,7 @@ export default function AuthForm() {
     // ✅ 회원가입 학번은 string으로 유지하되 숫자만 남김
     if (name === "user_id") {
       value = onlyDigits(value);
+      
     }
 
     setBasicInfo((prev) => ({ ...prev, [name]: value }));

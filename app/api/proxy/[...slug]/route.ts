@@ -33,10 +33,12 @@ async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
     })
   } catch (e: any) {
     // 네트워크 실패 시 프록시 502로 명확히
-    return NextResponse.json(
-      { message: "Bad Gateway (proxy fetch failed)", detail: String(e?.message ?? e) },
-      { status: 502 }
+    const err = NextResponse.json(
+      { message: "Bad Gateway (proxy fetch failed)\n", detail: String(e?.message ?? e)},
+      { status: 502 },
     )
+    console.log(e.message)
+    return err
   }
 
   // 응답 헤더 정리 (스트리밍 안정화)
@@ -63,7 +65,7 @@ async function middlewareHandler(req: NextRequest): Promise<NextResponse> {
             httpOnly: true,
             secure: isProd,                // dev에선 false, prod에선 true
             sameSite: isProd ? "none" : "lax",
-            maxAge: 30 * 60,
+            maxAge: 2 * 60 * 60,
             path: "/",
           })
           return next
