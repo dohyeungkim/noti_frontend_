@@ -186,36 +186,28 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
 		return false
 	}
   },
-  async checkDuplicateUserId(user_id: string): Promise<{
-		is_user_exist: boolean,
-	}> {
-		const res = await fetchWithAuth("/api/proxy/user/register_checker/id", {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({user_id}),
-		});
-		if (!res.ok) {
-			throw new Error("중복 검사 실패");
-		}
-		return res.json();
-	},
+  async checkDuplicateUserId(user_id: string): Promise<{ is_user_exist: boolean }> {
+    const res = await fetchWithAuth("/api/proxy/user/register_checker/id", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id }),
+    })
+    if (!res.ok) throw new Error("중복 검사 실패")
+    return res.json()
+  },
 
-	async checkDuplicateUserEmail(email: string):
-	Promise<{
-    is_email_exist: boolean,
-	}> {
+  async checkDuplicateUserEmail(email: string): Promise<{ is_email_exist: boolean }> {
     const res = await fetchWithAuth("/api/proxy/user/register_checker/email", {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json"},
-			body: JSON.stringify({email}),
-		});
-		if(!res.ok) {
-			throw new Error("중복 검사 실패");
-		}
-		return res.json();
-	},
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+    if (!res.ok) throw new Error("중복 검사 실패")
+    return res.json()
+  },
+
 }
 
 // ====================== problem 관련 API ===========================

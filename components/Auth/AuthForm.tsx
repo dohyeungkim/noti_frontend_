@@ -265,28 +265,33 @@ export default function AuthForm() {
 
   // 기본 정보 입력 핸들러
   const handleBasicChange = (
-    e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }
-  ) => {
-    let { name, value } = "target" in e ? e.target : e;
+  e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }
+) => {
+  let { name, value } = "target" in e ? e.target : e;
 
-    // ✅ 회원가입 학번은 string으로 유지하되 숫자만 남김
-    if (name === "user_id") {
-      value = onlyDigits(value);
-    }
+  if (name === "user_id") {
+    value = onlyDigits(value);
+    // ✅ 아이디 입력이 바뀌면 중복확인 상태 초기화
+    setIdSuccess(null);
+    setIdDuplicateError(null);
+  }
 
-    setBasicInfo((prev) => ({ ...prev, [name]: value }));
+  if (name === "email") {
+    // ✅ 이메일 입력이 바뀌면 중복확인 상태 초기화
+    setEmailSuccess(null);
+    setEmailDuplicateError(null);
 
-    if (name === "email") {
-      if (!value) setEmailError("이메일을 입력해 주세요.");
-      else if (!EMAIL_RE.test(value))
-        setEmailError("이메일 형식이 올바르지 않습니다.");
-      else setEmailError(null);
-    }
+    if (!value) setEmailError("이메일을 입력해 주세요.");
+    else if (!EMAIL_RE.test(value)) setEmailError("이메일 형식이 올바르지 않습니다.");
+    else setEmailError(null);
+  }
 
-    if (name === "password" && confirmPassword) {
-      setError(value !== basicInfo.password ? "비밀번호가 다릅니다." : null);
-    }
-  };
+  setBasicInfo((prev) => ({ ...prev, [name]: value }));
+
+  if (name === "password" && confirmPassword) {
+    setError(value !== basicInfo.password ? "비밀번호가 다릅니다." : null);
+  }
+};
 
   // 개인정보 입력 핸들러
   const handlePersonalChange = (

@@ -216,7 +216,7 @@ export default function ExamsClient() {
             </p>
           )}
         </motion.div>
-        ;{/* 모달 */}
+        {/* 모달 */}
         <AnimatePresence>
           {isModalOpen && (
             <WorkBookCreateModal
