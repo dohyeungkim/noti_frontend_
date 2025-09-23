@@ -32,8 +32,8 @@ import { useLoadingStore } from "@/lib/loadingStore";
 // ===================== (중요) 전역 템플릿 상수로 이동 =====================
 const DEFAULT_TEMPLATES: { [lang: string]: string } = {
   python: "",
-  c: "#include <stdio.h>\n\nint main() {\n    return 0;\n}",
-  cpp: "#include <iostream>\n\nint main() {\n    return 0;\n}",
+  c: "#include<stdio.h>\n\nint main() {\n    return 0;\n}",
+  cpp: "#include<iostream>\n\nint main() {\n    return 0;\n}",
   java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
 };
 // =======================================================================
@@ -89,6 +89,7 @@ interface WriteCodePageClientProps {
 //     </div>
 //   )
 // }
+// 뱃지 색고정
 const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
   { value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
   { value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
@@ -96,6 +97,9 @@ const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
   { value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
   { value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
 ];
+
+// ❌ (버그) 컴포넌트 바깥에서 useRef 사용 금지
+// const submittingRef = useRef(false);
 
 // 문제 만들때 설정하는 언어로 열리게끔
 const normalizeLang = (raw?: string) => {
@@ -119,6 +123,9 @@ export default function WriteCodePageClient({
   const { groupId } = useParams<{ groupId: string }>();
   const workbook_id = Number(params.examId);
   const problem_id = Number(params.problemId);
+
+  // ★ CHANGE: submittingRef는 컴포넌트 내부로 이동
+  const submittingRef = useRef(false);
 
   const [problem, setProblem] = useState<ProblemDetail | undefined>(undefined);
   type BackendProblemType =
@@ -208,6 +215,20 @@ export default function WriteCodePageClient({
   const [runResults, setRunResults] = useState<RunResult[]>([]);
   const [isTestRunning, setIsTestRunning] = useState(false);
 
+  // ★ CHANGE: 마운트/가시성 상태 추가(하이드레이션 후에만 API 호출)
+  const [mounted, setMounted] = useState(false);
+  const [pageVisible, setPageVisible] = useState(
+    typeof document === "undefined"
+      ? false
+      : document.visibilityState === "visible"
+  );
+  useEffect(() => {
+    setMounted(true);
+    const onVis = () => setPageVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
   // ===== 로컬 저장 동기화 =====
   useEffect(() => {
     if (language) {
@@ -229,7 +250,6 @@ export default function WriteCodePageClient({
         const res = await auth_api.getUser();
         setUserId(res.user_id);
         // nickname 속성이 없으므로 username 사용
-
         setUserNickname(res.username || "사용자");
       } catch (error) {
         console.error("유저 정보를 불러오는 중 오류 발생:", error);
@@ -238,7 +258,6 @@ export default function WriteCodePageClient({
   }, [userId]);
 
   // ===== 문제 정보 가져오기=====
-
   // 동일 문제 중복 초기화 방지용 가드
   const initializedRef = useRef<string | null>(null);
 
@@ -351,33 +370,18 @@ export default function WriteCodePageClient({
       }
 
       // ========== 디버깅 문제 ==========
-      // 디버깅 문제 베이스(현재 백엔드는 reference_codes로 넘겨주고 있어서 일단은 이렇게 함) 코드 랜더링 -  에디터에 띄워야됨
-      // if ("base_codes" in res && Array.isArray((res as any).base_codes) && (res as any).base_codes.length > 0) {
-      // if (
-      // 	"reference_codes" in res &&
-      // 	Array.isArray((res as any).reference_codes) &&
-      // 	(res as any).reference_codes.length > 0
-      // ) {
-      // 	setCode((res as any).reference_codes[0].code)
-      // } else {
-      // 	setCode("")
-      // }
-
-      // 💡 이미 위에서 base_code/저장/템플릿 순으로 코드가 초기화되었기 때문에
-      // 여기서는 **덮어쓰지 않도록** 가드만 걸어둔다 (빈값으로 초기화하지 않음)
+      // (덮어쓰기 금지 가드 유지)
       if (
         "base_code" in res &&
         Array.isArray((res as any).base_code) &&
         (res as any).base_code.length > 0
       ) {
-        // 이미 적용된 경우가 대부분이므로 추가 동작 없음
         // setCode((res as any).base_code[0].code)  // <-- 덮어쓰기 금지
       } else {
         // setCode("")  // <-- 빈 코드로 덮어쓰기 금지
       }
 
-      // 샘플 테스트케이스 (키 오타, filter→map 수정)
-      // 페이지 상단에 추가: 샘플 보관용(선택)
+      // 샘플 테스트케이스
       let samples: TestCase[] = [];
       if ("test_cases" in res && Array.isArray((res as any).test_cases)) {
         const raw = (res as any).test_cases as Array<any>;
@@ -390,17 +394,10 @@ export default function WriteCodePageClient({
         samples = base;
       }
 
-      // 샘플은 따로 저장만 하고…
       setSampleCases(samples);
 
       // 사용자가 입력하는 영역은 항상 빈 케이스로 시작
       setTestCases([{ input: "", output: "" }]);
-      // 샘플이 하나라도 있으면 그걸로, 없으면 기존처럼 빈 테스트케이스(아래가 기존 코드... 현재는 아마 샘플이있어도 안불러와질것임 변경해야함;;)
-      // if (sampleTestCases.length > 0) {
-      // 	setTestCases(sampleTestCases)
-      // } else {
-      // 	setTestCases([{ input: "", output: "" }])
-      // }
 
       // 객관식
       if (
@@ -412,13 +409,6 @@ export default function WriteCodePageClient({
         setChoiceOptions((res as any).options ?? []);
         const correct = (res as any).correct_answers ?? [];
         setAllowMultiple(correct.length > 1);
-
-        // 안전하게 배열 보장(아래가 기존코드임)
-        //const opts: string[] = Array.isArray((res as any).options) ? (res as any).options : []
-        //setChoiceOptions(opts)
-
-        //const correct = Array.isArray((res as any).correct_answers) ? (res as any).correct_answers : []
-        //setAllowMultiple(correct.length > 1)
 
         // 초기 선택값 리셋(경고 방지)
         setSelectedSingle(null);
@@ -437,15 +427,18 @@ export default function WriteCodePageClient({
     language,
   ]);
 
+  // ★ CHANGE: UI가 뜬 뒤(마운트) & 페이지가 보일 때만 API 호출
   useEffect(() => {
+    if (!mounted || !pageVisible) return;
     fetchUser();
-  }, [fetchUser]);
+  }, [mounted, pageVisible, fetchUser]);
 
   useEffect(() => {
+    if (!mounted || !pageVisible) return;
     // ✅ fetchProblem 자체가 아니라 문제 식별자 변화에 따라 호출
     fetchProblem();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.groupId, params.examId, params.problemId, queryLanguage]);
+  }, [mounted, pageVisible, params.groupId, params.examId, params.problemId, queryLanguage]);
 
   // useEffect(() => {
   // 	if (solveId) {
@@ -487,17 +480,15 @@ export default function WriteCodePageClient({
     setCurrentRun(null);
 
     try {
-      // 1) 사용자가 적어 둔 입력들 중 '비어있지 않은 것만' 모아서 보냄
       const userCases = Array.isArray(testCases)
         ? testCases
             .filter((tc) => (tc.input ?? "").trim() !== "")
             .map((tc) => ({
-              input: normalizeMultiline(tc.input || ""), // 항상 string으로 정규화
-              expected_output: "", // 타입 맞추기용 더미
+              input: normalizeMultiline(tc.input || ""),
+              expected_output: "",
             }))
         : [];
 
-      // 2) 입력이 하나도 없으면 더미 케이스 1개
       const cases =
         userCases.length > 0 ? userCases : [{ input: "", expected_output: "" }];
 
@@ -511,7 +502,6 @@ export default function WriteCodePageClient({
         test_cases: cases,
       });
 
-      // 3) 여러 케이스를 보냈다면 결과도 모두 묶어서 보여줌(개행 유지)
       const outputs: string[] = Array.isArray(data?.results)
         ? data.results.map((r: any) =>
             String(r?.actual_output ?? r?.stdout ?? r?.output ?? "")
@@ -557,6 +547,9 @@ export default function WriteCodePageClient({
 
   // ===== 제출 =====
   const handleSubmit = async () => {
+    // 중복 클릭 방지
+    if (submittingRef.current) return;
+
     if (!params.groupId || !params.examId || !params.problemId) {
       alert("❌ 오류: 필요한 값이 없습니다!");
       return;
@@ -591,7 +584,6 @@ export default function WriteCodePageClient({
           code_language: normalizedLang,
         };
 
-        // ✅ 코딩/디버깅일 때만 코드 변경 로그 수집
         const logs = collectLogs();
         newCodeLogs = logs.newCodeLogs;
         newTimeStamps = logs.newTimeStamps;
@@ -645,11 +637,12 @@ export default function WriteCodePageClient({
       }
     }
 
+    // ✅ 로딩 시작 + 중복 클릭 가드 on
     start();
     setLoading(true);
+    submittingRef.current = true;
 
     try {
-      // ========== 422 ==========
       const data = await solve_api.solve_create(
         Number(params.groupId),
         Number(params.examId),
@@ -657,28 +650,31 @@ export default function WriteCodePageClient({
         userId,
         request
       );
+
       await code_log_api.code_log_create(
         Number(data.solve_id),
         userId,
         newCodeLogs,
         newTimeStamps
       );
-      // 🫧 피드백 관련 Ai 호출 - 문제 조건 넘겨주고, 배점, 조건 별 평가,
+
+      // 실패해도 무시
       ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch(() => {});
 
+      // ✅ 성공: 로딩 해제하지 않고 바로 이동(버튼 회색 유지)
       router.push(
         `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`
       );
+      // 여기서 setLoading(false)/stop() 호출하지 않음
     } catch (err) {
-      alert(
-        `❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`
-      );
-    } finally {
-      stop();
+      // ✅ 실패: 즉시 버튼 풀림
+      alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
+      stop();
+      submittingRef.current = false;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // ❌ finally 블록/딜레이 삭제 (성공 시에는 절대 로딩 풀지 않기!)
   };
 
   const collectLogs = () => {
@@ -689,47 +685,6 @@ export default function WriteCodePageClient({
     setTimeStamps([]);
     return { newCode, newCodeLogs, newTimeStamps };
   };
-
-  // const submitLogs = async () => {
-  // 	setLoading(true)
-  // 	setError("")
-  //
-  // 	try {
-  // 		const newCode = editorRef.current?.getValue() || ""
-  // 		const newCodeLogs = [...codeLogs, newCode]
-  // 		const newTimeStamps = [...timeStamps, new Date().toISOString()]
-  //
-  // 		const data = await solve_api.solve_create(
-  // 			Number(params.groupId),
-  // 			Number(params.examId),
-  // 			Number(params.problemId),
-  // 			userId,
-  // 			newCode,
-  // 			language
-  // 		)
-  // 		await code_log_api.code_log_create(Number(data.solve_id), userId, newCodeLogs, newTimeStamps)
-  // 		ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch((err) => {
-  // 			console.error("AI 피드백 호출 실패:", err)
-  // 		})
-  // 		console.log("제출 성공:", newCodeLogs, newTimeStamps)
-  // 		setCodeLogs([])
-  // 		setTimeStamps([])
-  //
-  // 		if (problemType === "coding" || problemType === "debugging") {
-  // 			Object.keys(localStorage).forEach((key) => {
-  // 				if (key.startsWith("aprofi_code_") && key.endsWith(`_${params.problemId}`)) {
-  // 					localStorage.removeItem(key)
-  // 				}
-  // 			})
-  // 		}
-  //
-  // 		router.push(`/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`)
-  // 	} catch (err) {
-  // 		alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`)
-  // 	} finally {
-  // 		setLoading(false)
-  // 	}
-  // }
 
   // 테스트케이스 실행 관련 상태 (기존 테스트 케이스 실행 코드..)
   // const [testCases, setTestCases] = useState<TestCase[]>([])
@@ -822,9 +777,7 @@ export default function WriteCodePageClient({
     const saved = localStorage.getItem(
       `aprofi_code_${newLang}_${params.problemId}`
     );
-    setCode(
-      saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]
-    );
+    setCode(saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]);
   };
 
   // **리사이즈 구현**
