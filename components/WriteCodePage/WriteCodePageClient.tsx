@@ -939,23 +939,6 @@ export default function WriteCodePageClient({
 
         {/* 오른쪽: 실행 + 제출 버튼 묶음 */}
         <div className="flex items-center gap-2">
-          {isCodingOrDebugging && (
-            <motion.button
-              onClick={handleRunCurrentCode}
-              disabled={isRunningCurrent}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`${
-                isRunningCurrent
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-mygreen hover:bg-green-700"
-              } text-white px-6 py-1.5 rounded-xl text-md`}
-              title="Ctrl+Enter 로 실행"
-            >
-              {isRunningCurrent ? "실행중..." : "코드 실행 (Ctrl/⌘+Enter)"}
-            </motion.button>
-          )}
-
           <motion.button
             onClick={handleSubmit}
             disabled={loading}
@@ -1158,25 +1141,50 @@ export default function WriteCodePageClient({
                   {/* ===== 실행 결과 카드 ===== */}
                   <div className="bg-white rounded-xl shadow-lg border flex flex-col min-h-0">
                     {/* 헤더 */}
-                    <div className="flex items-center h-12 px-3 border-b">
-                      <div className="font-bold text-sm mr-2">실행 결과</div>
-                      {currentRun ? (
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded ${
-                            currentRun.success
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {currentRun.success ? "성공" : "실패"}
-                          {typeof currentRun.time_ms === "number"
-                            ? ` · ${currentRun.time_ms}ms`
-                            : ""}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-500">
-                          대기 중...
-                        </span>
+                    <div className="flex items-center h-12 px-3 border-b justify-between">
+                      {/* 왼쪽: 제목 + 상태 */}
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold text-sm">실행 결과</div>
+                        {currentRun ? (
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded ${
+                              currentRun.success
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {currentRun.success ? "성공" : "실패"}
+                            {typeof currentRun.time_ms === "number"
+                              ? ` · ${currentRun.time_ms}ms`
+                              : ""}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-500">
+                            대기 중...
+                          </span>
+                        )}
+                      </div>
+
+                      {/* 오른쪽 끝: 코드 실행 버튼 + 단축키 안내 */}
+                      {isCodingOrDebugging && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">
+                            (Ctrl/⌘+Enter)
+                          </span>
+                          <motion.button
+                            onClick={handleRunCurrentCode}
+                            disabled={isRunningCurrent}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`${
+                              isRunningCurrent
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-mygreen hover:bg-green-700"
+                            } text-white px-4 py-1.5 rounded-xl text-sm`}
+                          >
+                            {isRunningCurrent ? "실행중..." : "실행"}
+                          </motion.button>
+                        </div>
                       )}
                     </div>
 
@@ -1213,32 +1221,36 @@ export default function WriteCodePageClient({
                   {/* ===== 테스트케이스 카드 ===== */}
                   <div className="bg-white rounded-xl shadow-lg border flex flex-col min-h-0">
                     {/* 헤더 */}
-                    <div className="flex items-center h-16 px-3 border-b">
+                    <div className="flex items-center h-12 px-3 border-b">
                       <div className="font-bold text-sm mr-2">테스트케이스</div>
 
                       <div className="ml-auto flex items-center gap-2">
-                        <button
+                        <motion.button
                           onClick={addTestCase}
-                          className="bg-yellow-400 hover:bg-yellow-500 text-black h-8 px-3 rounded text-sm transition-colors flex-shrink-0"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-1.5 rounded-xl text-sm"
                         >
                           추가
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                           onClick={handleTestRun}
                           disabled={isTestRunning}
-                          className={`flex items-center ${
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`${
                             isTestRunning
                               ? "bg-gray-400 cursor-not-allowed"
                               : "bg-mygreen hover:bg-green-700"
-                          } text-white h-8 px-3 rounded text-sm transition-colors flex-shrink-0`}
+                          } text-white px-4 py-1.5 rounded-xl text-sm`}
                         >
                           {isTestRunning ? "실행중" : "실행"}
-                        </button>
+                        </motion.button>
                       </div>
                     </div>
 
                     {/* 리스트 */}
-                    <div className="p-3 overflow-y-auto h-full">
+                    <div className="p-3 overflow-y-auto max-h-[300px]">
                       <div className="space-y-2">
                         {testCases.map((tc, index) => (
                           <div
