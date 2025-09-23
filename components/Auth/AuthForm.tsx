@@ -238,7 +238,19 @@ export default function AuthForm() {
     return (currentStep / 4) * 100;
   };
 
-  // ✅ 스텝별 필수값 유효성
+  // ✅ 스텝별 필수값 유효성 원래쓰는 코드
+  // const isStep1Valid =
+  //   Boolean(basicInfo.user_id) &&
+  //   Boolean(basicInfo.username) &&
+  //   Boolean(basicInfo.email) &&
+  //   EMAIL_RE.test(basicInfo.email) &&
+  //   Boolean(basicInfo.password) &&
+  //   Boolean(confirmPassword) &&
+  //   basicInfo.password === confirmPassword &&
+  //   Boolean(basicInfo.gender) &&
+  //   didPassIdCheck &&
+  //   didPassEmailCheck;
+
   const isStep1Valid =
     Boolean(basicInfo.user_id) &&
     Boolean(basicInfo.username) &&
@@ -247,9 +259,7 @@ export default function AuthForm() {
     Boolean(basicInfo.password) &&
     Boolean(confirmPassword) &&
     basicInfo.password === confirmPassword &&
-    Boolean(basicInfo.gender) &&
-    didPassIdCheck &&
-    didPassEmailCheck;
+    Boolean(basicInfo.gender);
 
   const isStep2Valid =
     Boolean(personalInfo.age) &&
