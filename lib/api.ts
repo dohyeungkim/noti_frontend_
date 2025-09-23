@@ -609,22 +609,16 @@ export const problem_api = {
 
 	/** 그룹/시험/문제별 조회 */
 	async problem_get_by_id_group(group_id: number, workbook_id: number, problem_id: number): Promise<ProblemDetail> {
-  const url = `/api/proxy/groups/${group_id}/workbooks/${workbook_id}/problems/${problem_id}`
-  const res = await fetchWithAuth(url, {
-    method: "GET",
-    credentials: "include",
-  })
-  if (!res.ok) {
-    // 에러 바디를 그대로 보여주면 403 원인(멤버 아님/게시기간 아님) 바로 확인 가능
-    let msg = `문제 정보 가져오기 실패 (${res.status}) [GET ${url}]`
-    try {
-      const body = await res.json()
-      msg = body?.detail?.msg || body?.message || msg
-    } catch {}
-    throw new Error(msg)
-  }
-  return res.json()
-},
+		const res = await fetchWithAuth(`/api/proxy/problems/${group_id}/${workbook_id}/${problem_id}`, {
+			method: "GET",
+			credentials: "include",
+		})
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(err.detail?.msg || err.message || "문제 정보 가져오기 실패")
+		}
+		return res.json()
+	},
 
 	/** 문제 삭제 */
 	async problem_delete(problem_id: number): Promise<{ success: boolean }> {
