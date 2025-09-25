@@ -17,6 +17,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/stores/auth";
 import PasswordChange, { PasswordChangeHandles } from "../Auth/PasswordChange";
 import { group_api } from "@/lib/api";
+import { useRouter } from "next/navigation"; // ✅ App Router
 
 interface DrawerProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface DrawerProps {
 }
 
 export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
+  const router = useRouter(); // ✅
   const { userName, checkAuthStatus } = useAuth();
   const [groups, setGroups] = useState<
     {
@@ -74,8 +76,14 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
         {/* 프로필 영역 */}
         <div className="flex items-center p-3 bg-gray-200 text-gray-700">
           <button
+            type="button"
             className="text-sm cursor-pointer bg-transparent border-none"
-            onClick={() => setIsOpen(true)}
+            onClick={() => {
+              // ❌ setIsOpen(true) 제거: 프로필 클릭 시 사이드바가 열리지 않도록 수정
+              router.push("/profile"); // ✅ 프로필 페이지로 이동만 수행
+            }}
+            aria-label="프로필 열기"
+            title="프로필 열기"
           >
             <FontAwesomeIcon
               icon={faUserCircle}
@@ -91,10 +99,13 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
             {userName ? `안녕하세요. ${userName}님!` : "Loading..."}
           </p>
           <button
+            type="button"
             className={`ml-auto transition-all duration-300 ${
               isOpen ? "block" : "hidden"
             }`}
             onClick={() => setIsOpen(false)}
+            aria-label="사이드바 접기"
+            title="사이드바 접기"
           >
             <FontAwesomeIcon
               icon={faArrowLeft}
@@ -120,10 +131,10 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
                 text: "내가 등록한 문제들",
               },
               {
-								href: "/finder",
-								icon: faFolderOpen,
-								text: "내가 등록한 문제 테이블",
-							},
+                href: "/finder",
+                icon: faFolderOpen,
+                text: "내가 등록한 문제 테이블",
+              },
               {
                 //파일로 문제 생성
                 href: "/problemmake",
@@ -140,7 +151,10 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
                   className="no-underline text-gray-700 flex items-center hover:text-black"
                   aria-label={text}
                 >
-                  <button className="border-none bg-transparent text-sm cursor-pointer">
+                  <button
+                    type="button"
+                    className="border-none bg-transparent text-sm cursor-pointer"
+                  >
                     <FontAwesomeIcon icon={icon} className="text-gray-500" />
                   </button>
 
@@ -236,7 +250,6 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               aria-label="로그아웃"
             >
               <Logout ref={logoutRef} />
-
               <span
                 className={`text-gray-700 ml-1.5 transition-all duration-300 text-xs ${
                   isOpen ? "inline" : "hidden"
@@ -244,7 +257,6 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
               >
                 로그아웃
               </span>
-
               {!isOpen && (
                 <span
                   className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2
@@ -261,10 +273,13 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
       </div>
 
       <button
+        type="button"
         className={`fixed z-[9999] top-[8px] left-[52px] bg-gray-100 text-black rounded-full w-6 h-6 text-sm cursor-pointer ${
           isOpen ? "hidden" : "block"
         }`}
         onClick={() => setIsOpen(true)}
+        aria-label="사이드바 펼치기"
+        title="사이드바 펼치기"
       >
         <FontAwesomeIcon
           icon={faArrowRight}

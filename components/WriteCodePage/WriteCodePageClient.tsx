@@ -158,7 +158,7 @@ export default function WriteCodePageClient({
   // const [problemType, setProblemType] = useState<String>("coding")
 
   // 언어/코드 초기화 + 로컬 저장
-  const languageStorageKey = `noti_language_${params.problemId}`;
+  const languageStorageKey = `NOTI_language_${params.problemId}`;
   //입 출력 예시 샘플
   const [sampleCases, setSampleCases] = useState<TestCase[]>([]);
   // 언어 초기값: 쿼리파라미터 > localStorage > python
@@ -169,7 +169,7 @@ export default function WriteCodePageClient({
   const [language, setLanguage] = useState(initialLanguage);
 
   // 코드 초기값: localStorage > 템플릿
-  const storageKey = `noti_code_${initialLanguage}_${params.problemId}`;
+  const storageKey = `NOTI_code_${initialLanguage}_${params.problemId}`;
   const initialCode =
     (typeof window !== "undefined" && localStorage.getItem(storageKey)) ||
     DEFAULT_TEMPLATES[initialLanguage];
@@ -187,7 +187,6 @@ export default function WriteCodePageClient({
   const [shortAnswer, setShortAnswer] = useState<string>("");
 
   // 제출/에러/로그
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [codeLogs, setCodeLogs] = useState<string[]>([]);
   const [timeStamps, setTimeStamps] = useState<string[]>([]);
@@ -239,7 +238,7 @@ export default function WriteCodePageClient({
   // 코드가 바뀔 때 localStorage에 저장
   useEffect(() => {
     if (language && params.problemId) {
-      localStorage.setItem(`noti_code_${language}_${params.problemId}`, code);
+      localStorage.setItem(`NOTI_code_${language}_${params.problemId}`, code);
     }
   }, [code, language, params.problemId]);
 
@@ -341,7 +340,7 @@ export default function WriteCodePageClient({
 
       // 3) 저장 코드가 있으면 적용 (아직 코드가 안 정해졌을 때만)
       if (!codeInitialized) {
-        const savedKey = `noti_code_${finalLang}_${params.problemId}`;
+        const savedKey = `NOTI_code_${finalLang}_${params.problemId}`;
         const savedCode =
           typeof window !== "undefined" ? localStorage.getItem(savedKey) : null;
 
@@ -639,7 +638,6 @@ export default function WriteCodePageClient({
 
     // ✅ 로딩 시작 + 중복 클릭 가드 on
     start();
-    setLoading(true);
     submittingRef.current = true;
 
     try {
@@ -669,7 +667,6 @@ export default function WriteCodePageClient({
     } catch (err) {
       // ✅ 실패: 즉시 버튼 풀림
       alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`);
-      setLoading(false);
       stop();
       submittingRef.current = false;
     }
@@ -775,7 +772,7 @@ export default function WriteCodePageClient({
     const newLang = e.target.value;
     setLanguage(newLang);
     const saved = localStorage.getItem(
-      `noti_code_${newLang}_${params.problemId}`
+      `NOTI_code_${newLang}_${params.problemId}`
     );
     setCode(saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]);
   };
@@ -911,20 +908,20 @@ export default function WriteCodePageClient({
 
         {/* 오른쪽: 제출 버튼 (기존 그대로) */}
         <div className="flex items-center gap-2">
-          <motion.button
-            onClick={handleSubmit}
-            disabled={loading}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`${
-              loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-black hover:bg-gray-500"
-            } text-white px-16 py-1.5 rounded-xl text-md`}
-          >
-            {loading ? "제출 중..." : "제출하기"}
-          </motion.button>
-        </div>
+  <motion.button
+    onClick={handleSubmit}
+    disabled={submittingRef.current} 
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className={`${
+      submittingRef.current
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-black hover:bg-gray-500"
+    } text-white px-16 py-1.5 rounded-xl text-md`}
+  >
+    {submittingRef.current ? "제출 중..." : "제출하기"}
+  </motion.button>
+</div>
       </motion.div>
 
       {error && <p className="text-red-500 text-center mt-2">{error}</p>}

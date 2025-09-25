@@ -168,7 +168,7 @@ const ProblemList = ({
                       key={p.problem_id}
                       onClick={() =>
                         router.push(
-                          `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`
+                          `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}/write`
                         )
                       }
                       className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"

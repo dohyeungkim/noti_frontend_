@@ -6,8 +6,8 @@ import GlobalLoading from "@/components/GlobalLoading" // ✅ 전역 로딩 오�
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Noti",
-  description: "Teaching with Noti",
+  title: "NOTI",
+  description: "Teaching with NOTI",
 }
 
 export default function RootLayout({

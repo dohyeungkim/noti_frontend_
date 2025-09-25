@@ -1,95 +1,107 @@
-"use client"
+"use client";
 // 내가 등록한 문제들 조회하는 페이지
 /**
  * 파일 탐색기 기능
  *
  *
  */
-import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faPlus } from "@fortawesome/free-solid-svg-icons"
-import SearchBar from "@/components/ui/SearchBar"
-import ViewToggle from "@/components/ui/ViewToggle"
-import SortButton from "@/components/ui/SortButton"
-import { motion } from "framer-motion"
-import { problem_api } from "@/lib/api"
-import GalleryView from "./MyRefisteredProblemGallary"
-import TableView from "./MyRefisteredProblemTable"
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import SearchBar from "@/components/ui/SearchBar";
+import ViewToggle from "@/components/ui/ViewToggle";
+import SortButton from "@/components/ui/SortButton";
+import { motion } from "framer-motion";
+import { problem_api } from "@/lib/api";
+import GalleryView from "./MyRefisteredProblemGallary";
+import TableView from "./MyRefisteredProblemTable";
 
 interface Question {
-  problem_id: number
-  title: string
-  group: string
-  paper: string
-  solvedCount: number
-  createdAt?: string
-  description?: string
+  problem_id: number;
+  title: string;
+  group: string;
+  paper: string;
+  solvedCount: number;
+  createdAt?: string;
+  description?: string;
 }
 
 export default function MyRegisteredProblemView() {
-  const router = useRouter()
-  const [search, setSearch] = useState("")
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [filteredData, setFilteredData] = useState<Question[]>([])
-  const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery")
-  const [sortOrder, setSortOrder] = useState("등록일순")
-  const [selectedProblem, setSelectedProblem] = useState<Question | null>(null)
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [filteredData, setFilteredData] = useState<Question[]>([]);
+  const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
+  const [sortOrder, setSortOrder] = useState("등록일순");
+  const [selectedProblem, setSelectedProblem] = useState<Question | null>(null);
 
   const handleDeleteButtonClick = async (problem_id: number) => {
     try {
-      await problem_api.problem_delete(problem_id)
-      fetchProblems()
+      await problem_api.problem_delete(problem_id);
+      fetchProblems();
     } catch (error) {
-      console.error("문제 삭제 중 에러 발생:", error)
+      console.error("문제 삭제 중 에러 발생:", error);
     }
-  }
+  };
 
   // ✅ ProblemDetail -> Question 어댑터 (API에 없을 수도 있는 필드는 기본값)
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return "-";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "-";
+    return d.toISOString().split("T")[0]; // YYYY-MM-DD
+  };
+
+  // ✅ ProblemDetail -> Question 어댑터
   const toQuestion = (p: any): Question => ({
     problem_id: p?.problem_id,
     title: p?.title ?? "(제목 없음)",
-    group: p?.group_name ?? "-",          // API에 없으면 "-"로
-    paper: p?.workbook_name ?? "-",       // API에 없으면 "-"로
-    solvedCount: Number(p?.attempt_count ?? 0), // 통계 미포함이면 0
+    group: p?.description ?? "-", // 기존 group_name 대신 description왜 변수명이 이러냐고요? 원래는 그룹을 넣으려고 했던것 같아서 일딴은 사용하는 변수명만 바꿨습니다<div className=""></div>(진형준)
+    paper: formatDate(p?.created_at), // YYYY-MM-DD 포맷으로 마찬가지로 변수명이 왜이러냐 불편하면 바꿔주세요 혹시몰라서 안바꿨어요 (진형준)
+    solvedCount: Number(p?.attempt_count ?? 0),
     createdAt: p?.created_at,
     description: p?.description ?? "",
-  })
-
+  });
   // 문제 목록 가져오기
   const fetchProblems = useCallback(async () => {
     try {
-      const res = await problem_api.problem_get() // ProblemDetail[]
+      const res = await problem_api.problem_get(); // ProblemDetail[]
       // ✅ 상태에 바로 넣지 말고 UI 모델로 변환
-      const normalized = Array.isArray(res) ? res.map(toQuestion) : []
-      setQuestions(normalized)
-      setFilteredData(normalized)
+      const normalized = Array.isArray(res) ? res.map(toQuestion) : [];
+      setQuestions(normalized);
+      setFilteredData(normalized);
     } catch (error) {
-      console.error("내 문제 목록 불러오기 오류:", error)
-      alert("내 문제 목록을 불러오는 중 오류가 발생했습니다.")
+      console.error("내 문제 목록 불러오기 오류:", error);
+      alert("내 문제 목록을 불러오는 중 오류가 발생했습니다.");
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    fetchProblems()
-  }, [fetchProblems])
+    fetchProblems();
+  }, [fetchProblems]);
 
   // 검색 필터
-  const filteredQuestions = questions.filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
+  const filteredQuestions = questions.filter((item) =>
+    item.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   // 정렬
   const sortedData = [...filteredQuestions].sort((a, b) => {
     if (sortOrder === "제목순") {
-      return a.title.localeCompare(b.title)
+      return a.title.localeCompare(b.title);
     } else if (sortOrder === "등록일순") {
-      return new Date(b.createdAt ?? "1970-01-01").getTime() - new Date(a.createdAt ?? "1970-01-01").getTime()
+      return (
+        new Date(b.createdAt ?? "1970-01-01").getTime() -
+        new Date(a.createdAt ?? "1970-01-01").getTime()
+      );
     }
-    return 0
-  })
+    return 0;
+  });
 
   const handleNavigate = () => {
-    router.push("/registered-problems/create")
-  }
+    router.push("/registered-problems/create");
+  };
 
   return (
     <div className="space-y-2">
@@ -125,7 +137,11 @@ export default function MyRegisteredProblemView() {
             className="animate-fade-in text-xs h-6 px-2 py-1"
           />
         </div>
-        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} className="animate-fade-in scale-75 h-6" />
+        <ViewToggle
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          className="animate-fade-in scale-75 h-6"
+        />
         <SortButton
           sortOptions={["등록일순", "제목순"]}
           onSortChange={(selectedSort) => setSortOrder(selectedSort)}
@@ -161,10 +177,13 @@ export default function MyRegisteredProblemView() {
         {sortedData.length === 0 ? (
           search ? (
             <p className="text-center text-gray-500 py-6 text-sm">
-              🔍 <strong>&quot;{search}&quot;</strong>에 대한 검색 결과가 없습니다.
+              🔍 <strong>&quot;{search}&quot;</strong>에 대한 검색 결과가
+              없습니다.
             </p>
           ) : (
-            <p className="text-center text-gray-500 py-6 text-sm">📭 등록된 문제가 없습니다. 문제를 추가해보세요!</p>
+            <p className="text-center text-gray-500 py-6 text-sm">
+              📭 등록된 문제가 없습니다. 문제를 추가해보세요!
+            </p>
           )
         ) : viewMode === "gallery" ? (
           <div className="origin-top-left">
@@ -179,10 +198,13 @@ export default function MyRegisteredProblemView() {
           </div>
         ) : (
           <div className="">
-            <TableView filteredData={sortedData} handleDeleteButtonClick={handleDeleteButtonClick} />
+            <TableView
+              filteredData={sortedData}
+              handleDeleteButtonClick={handleDeleteButtonClick}
+            />
           </div>
         )}
       </motion.div>
     </div>
-  )
+  );
 }
