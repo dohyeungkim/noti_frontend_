@@ -601,7 +601,7 @@ export default function AuthForm() {
                 🎉 회원가입 완료!
               </h3>
               <p className="text-gray-600 mb-2">
-                APROFI에 오신 것을 환영합니다!
+                Noti에 오신 것을 환영합니다!
               </p>
               <p className="text-gray-500 text-sm mb-8">
                 프로필이 성공적으로 저장되었습니다.

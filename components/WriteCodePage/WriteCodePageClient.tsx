@@ -158,7 +158,7 @@ export default function WriteCodePageClient({
   // const [problemType, setProblemType] = useState<String>("coding")
 
   // 언어/코드 초기화 + 로컬 저장
-  const languageStorageKey = `aprofi_language_${params.problemId}`;
+  const languageStorageKey = `noti_language_${params.problemId}`;
   //입 출력 예시 샘플
   const [sampleCases, setSampleCases] = useState<TestCase[]>([]);
   // 언어 초기값: 쿼리파라미터 > localStorage > python
@@ -169,7 +169,7 @@ export default function WriteCodePageClient({
   const [language, setLanguage] = useState(initialLanguage);
 
   // 코드 초기값: localStorage > 템플릿
-  const storageKey = `aprofi_code_${initialLanguage}_${params.problemId}`;
+  const storageKey = `noti_code_${initialLanguage}_${params.problemId}`;
   const initialCode =
     (typeof window !== "undefined" && localStorage.getItem(storageKey)) ||
     DEFAULT_TEMPLATES[initialLanguage];
@@ -239,7 +239,7 @@ export default function WriteCodePageClient({
   // 코드가 바뀔 때 localStorage에 저장
   useEffect(() => {
     if (language && params.problemId) {
-      localStorage.setItem(`aprofi_code_${language}_${params.problemId}`, code);
+      localStorage.setItem(`noti_code_${language}_${params.problemId}`, code);
     }
   }, [code, language, params.problemId]);
 
@@ -341,7 +341,7 @@ export default function WriteCodePageClient({
 
       // 3) 저장 코드가 있으면 적용 (아직 코드가 안 정해졌을 때만)
       if (!codeInitialized) {
-        const savedKey = `aprofi_code_${finalLang}_${params.problemId}`;
+        const savedKey = `noti_code_${finalLang}_${params.problemId}`;
         const savedCode =
           typeof window !== "undefined" ? localStorage.getItem(savedKey) : null;
 
@@ -775,7 +775,7 @@ export default function WriteCodePageClient({
     const newLang = e.target.value;
     setLanguage(newLang);
     const saved = localStorage.getItem(
-      `aprofi_code_${newLang}_${params.problemId}`
+      `noti_code_${newLang}_${params.problemId}`
     );
     setCode(saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]);
   };
