@@ -94,7 +94,7 @@ export default function GroupList({ groups }: GroupListProps) {
                 </p>
               </div>
               <div className="flex">
-                <p className="mb-1">👥 수강생: {group.member_count}명</p>
+                <p className="mb-1">👥 수강생: {group.member_count-1}명</p>
               </div>
             </div>
           </div>

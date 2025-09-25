@@ -19,6 +19,8 @@ import {
 /** ================== 타입 ================== */
 interface StudentStatus {
   studentName: string;
+  /** ★ 추가: 학번(문자/숫자 어떤 형태여도 수용) */
+  studentNo?: string | number;
   correct: number;
   wrong: number;
   notSolved: number;
@@ -176,7 +178,7 @@ export default function ResultTotalWatching() {
         /* 소유자/내 계정 못 가져와도 계속 진행 */
       }
 
-      const filteredStudents = (data.students || []).filter((st) => {
+      const filteredStudents = (data.students || []).filter((st: any) => {
         const sid = String(st.student_id);
         return sid !== String(ownerId ?? "") && sid !== String(meId ?? "");
       });
@@ -188,7 +190,6 @@ export default function ResultTotalWatching() {
       );
 
       // 4) 타입 채우기용 딕셔너리
-      //    ✅ 추가: refs 자체에 담긴 타입을 먼저 수집 (제출이 없어도 타입이 표기되도록)
       const refTypeById = new Map<number, string>();
       for (const r of refs) {
         const t =
@@ -199,9 +200,8 @@ export default function ResultTotalWatching() {
         if (t) refTypeById.set(r.problem_id, t as string);
       }
 
-      //    기존: 제출 데이터에서 타입을 추정
       const problemTypeById = new Map<number, string>();
-      for (const st of filteredStudents) {
+      for (const st of filteredStudents as any[]) {
         for (const sub of st.submission_problem_status || []) {
           if (sub?.problem_id && (sub as any).problem_type) {
             problemTypeById.set(sub.problem_id, (sub as any).problem_type);
@@ -209,8 +209,8 @@ export default function ResultTotalWatching() {
         }
       }
 
-      // 5) 문제 배열: "문제지 순서" 그대로 (정렬 금지)
-      //    ✅ 우선순위 (최소 수정): refs기반(refTypeById) → 제출기반(problemTypeById) → "-"
+      // 5) 문제 배열: "문제지 순서" 그대로
+        
       const problemsArr: ProblemStatus[] = refs.map((r) => ({
         problemId: r.problem_id,
         title: r.title,
@@ -233,8 +233,8 @@ export default function ResultTotalWatching() {
         created_at?: string | null;
       };
       const latestByStudent: Record<string, Map<number, Submission>> = {};
-      for (const st of filteredStudents) {
-        const name = st.student_name;
+      for (const st of filteredStudents as any[]) {
+        const name = st.student_name as string;
         const m = new Map<number, Submission>();
         for (const sub of st.submission_problem_status || []) {
           const prev = m.get(sub.problem_id);
@@ -251,12 +251,27 @@ export default function ResultTotalWatching() {
         latestByStudent[name] = m;
       }
 
-      // 7) 셀 맵/학생 통계
+      // 7) 셀 맵/학생 통계 (+ 학번 수집)
       const nextCellMap: CellMap = {};
       const nextStudents: StudentStatus[] = [];
 
-      for (const st of filteredStudents) {
-        const name = st.student_name;
+      /** ★ 학번 추출 유틸: API마다 키가 다를 수 있어서 후보들을 순서대로 확인 */
+      const pickStudentNo = (st: any): string | number | undefined => {
+        return (
+          st.student_no ??
+          st.student_number ??
+          st.studentCode ??
+          st.student_code ??
+          st.studentId ?? // 별칭으로 학번 쓰는 경우
+          st.username ?? // 아이디를 학번처럼 쓰는 경우
+          st.student_id // 마지막 수단(내부 id) – 진짜 학번 없을 때만
+        );
+      };
+
+      for (const st of filteredStudents as any[]) {
+        const name: string = st.student_name;
+        const studentNo = pickStudentNo(st);
+
         let c = 0,
           w = 0,
           pCount = 0;
@@ -278,12 +293,13 @@ export default function ResultTotalWatching() {
         }
 
         const totalScore = (st.submission_problem_status || []).reduce(
-          (sum, s: any) => sum + (typeof s.score === "number" ? s.score : 0),
+          (sum: number, s: any) => sum + (typeof s.score === "number" ? s.score : 0),
           0
         );
 
         nextStudents.push({
           studentName: name,
+          studentNo, // ★ 추가 저장
           correct: c,
           wrong: w,
           notSolved: pCount,
@@ -557,7 +573,7 @@ export default function ResultTotalWatching() {
               {windowProblems.map((_p, i) => (
                 <col
                   key={`pcol-${i}`}
-                  style={{ width: `${Math.max(MIN_PROBLEM_COL_W, 1)}px` }}
+                  style={{ width: `${Math.max(120, 1)}px` }}
                 />
               ))}
               <col style={{ width: "88px" }} />
@@ -568,7 +584,7 @@ export default function ResultTotalWatching() {
             <thead className="bg-gray-50">
               <tr className="border-b">
                 <th className="px-4 py-2 text-left sticky left-0 bg-gray-50 z-10">
-                  학생
+                  학생 / 학번
                 </th>
 
                 {windowProblems.map((p) => (
@@ -608,7 +624,9 @@ export default function ResultTotalWatching() {
                 return (
                   <tr key={s.studentName} className="border-b">
                     <td className="px-4 py-2 sticky left-0 bg-white z-10 font-medium whitespace-nowrap">
+                      {/* ★ 표기 변경: 이름 / 학번 */}
                       {s.studentName}
+                      {s.studentNo ? ` / ${s.studentNo}` : ""}
                     </td>
 
                     {windowProblems.map((p) => {
@@ -654,7 +672,6 @@ export default function ResultTotalWatching() {
                   };
                   return (
                     <td key={p.problemId} className="px-2 py-2">
-                      {/* 아이콘 제거: 색상 + 숫자만 */}
                       <div className="flex flex-wrap items-center justify-center gap-1 text-[11px]">
                         <span className="inline-flex shrink-0 items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           {t.correct}

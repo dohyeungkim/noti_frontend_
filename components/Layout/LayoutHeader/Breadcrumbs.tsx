@@ -155,7 +155,13 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
       </nav>
     )
   }
-
+  if (segments.length === 0) {
+  return (
+    <nav className="text-gray-500 text-xs mb-1.5">
+      <BreadcrumbLink href="/" label="🏠 홈" />
+    </nav>
+  )
+}
   return null
 }
 
