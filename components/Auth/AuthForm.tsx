@@ -475,6 +475,7 @@ export default function AuthForm() {
     setConfirmPassword("");
     setSuccess(false);
   };
+
   // 아이디만 확인하고 싶을 때
   const handleCheckUserIdDuplicate = async () => {
     setIdDuplicateError(null);
@@ -486,15 +487,22 @@ export default function AuthForm() {
         basicInfo.user_id
       );
 
-      if (res.is_user_exist) {
+      // ✅ FIX: 백엔드 규격에 맞춰 키 이름을 정확히 사용하고, 메시지를 상호 배타적으로 세팅
+      const exists = !!res?.is_user_id_exist; // true면 존재(중복), false면 미존재(사용 가능)
+
+      if (exists) {
         setIdDuplicateError("중복된 사용자명이 존재합니다.");
+        setIdSuccess(null);
       } else {
         setIdSuccess("사용 가능한 사용자명입니다.");
+        setIdDuplicateError(null);
       }
     } catch (err) {
       setIdDuplicateError("중복 검사 실패");
+      setIdSuccess(null);
     }
   };
+
   // 이메일 중복확인 함수
   const handleCheckEmailDuplicate = async () => {
     setEmailDuplicateError(null);
@@ -503,13 +511,17 @@ export default function AuthForm() {
     try {
       const res = await auth_api.checkDuplicateUserEmail(basicInfo.email);
 
+      // (유지) 백엔드가 {"is_email_exist": boolean} 으로 내려준다고 가정
       if (res.is_email_exist) {
         setEmailDuplicateError("중복된 이메일이 존재합니다.");
+        setEmailSuccess(null);
       } else {
         setEmailSuccess("사용가능한 이메일입니다.");
+        setEmailDuplicateError(null);
       }
     } catch (err) {
       setEmailDuplicateError("중복 검사 실패");
+      setEmailSuccess(null);
     }
   };
 

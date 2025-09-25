@@ -186,7 +186,7 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
 		return false
 	}
   },
-  async checkDuplicateUserId(user_id: string): Promise<{ is_user_exist: boolean }> {
+  async checkDuplicateUserId(user_id: string): Promise<{ is_user_id_exist: boolean }> {
     const res = await fetchWithAuth("/api/proxy/user/register_checker/id", {
       method: "POST",
       credentials: "include",
@@ -194,9 +194,20 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
       body: JSON.stringify({ user_id }),
     })
     if (!res.ok) throw new Error("중복 검사 실패")
-    return res.json()
+
+    // 백엔드 표준: {"is_user_id_exist": boolean}
+    // 혹시 서버가 다른 키로 줄 경우 대비한 안전 가드
+    const data = await res.json().catch(() => ({} as any))
+    const is_user_id_exist =
+      typeof data?.is_user_id_exist === "boolean"
+        ? data.is_user_id_exist
+        : // 과거/변형 키 대응 (방어적)
+          !!(data?.is_user_exist ?? data?.exists ?? data?.exist ?? data?.data?.is_user_id_exist)
+
+    return { is_user_id_exist }
   },
 
+  // (참고) 이메일 중복확인: 백엔드가 {"is_email_exist": boolean}로 주면 그대로 유지 OK
   async checkDuplicateUserEmail(email: string): Promise<{ is_email_exist: boolean }> {
     const res = await fetchWithAuth("/api/proxy/user/register_checker/email", {
       method: "POST",
@@ -205,7 +216,12 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
       body: JSON.stringify({ email }),
     })
     if (!res.ok) throw new Error("중복 검사 실패")
-    return res.json()
+    const data = await res.json().catch(() => ({} as any))
+    const is_email_exist =
+      typeof data?.is_email_exist === "boolean"
+        ? data.is_email_exist
+        : !!(data?.exists ?? data?.exist ?? data?.data?.is_email_exist)
+    return { is_email_exist }
   },
 
 }
