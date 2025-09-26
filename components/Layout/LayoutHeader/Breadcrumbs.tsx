@@ -83,7 +83,7 @@ export default function Breadcrumbs({ pathname, group, exam, problem }: Breadcru
     return (
       <nav className="text-gray-500 text-xs mb-1.5">
         {/* 🔹 나의 페이지 (홈) */}
-        <BreadcrumbLink href="/mypage" label="🚀 나의 페이지" />
+        <BreadcrumbLink href="/mypage" label="🚀 그룹 페이지" />
       </nav>
     )
   }

@@ -6,5 +6,5 @@
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  redirect("/mygroups"); // 즉시 리디렉트
+  redirect("/mypage"); // 즉시 리디렉트
 }

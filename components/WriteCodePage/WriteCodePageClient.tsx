@@ -380,7 +380,6 @@ export default function WriteCodePageClient({
         // setCode("")  // <-- 빈 코드로 덮어쓰기 금지
       }
 
-      // 샘플 테스트케이스
       let samples: TestCase[] = [];
       if ("test_cases" in res && Array.isArray((res as any).test_cases)) {
         const raw = (res as any).test_cases as Array<any>;
@@ -392,11 +391,9 @@ export default function WriteCodePageClient({
         }));
         samples = base;
       }
-
       setSampleCases(samples);
-
-      // 사용자가 입력하는 영역은 항상 빈 케이스로 시작
-      setTestCases([{ input: "", output: "" }]);
+      // ✅ 첫 번째 샘플 입력을 기본 테스트 입력으로 세팅
+      setTestCases([{ input: samples[0]?.input ?? "", output: "" }]);
 
       // 객관식
       if (
@@ -437,7 +434,14 @@ export default function WriteCodePageClient({
     // ✅ fetchProblem 자체가 아니라 문제 식별자 변화에 따라 호출
     fetchProblem();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, pageVisible, params.groupId, params.examId, params.problemId, queryLanguage]);
+  }, [
+    mounted,
+    pageVisible,
+    params.groupId,
+    params.examId,
+    params.problemId,
+    queryLanguage,
+  ]);
 
   // useEffect(() => {
   // 	if (solveId) {
@@ -666,7 +670,9 @@ export default function WriteCodePageClient({
       // 여기서 setLoading(false)/stop() 호출하지 않음
     } catch (err) {
       // ✅ 실패: 즉시 버튼 풀림
-      alert(`❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`);
+      alert(
+        `❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`
+      );
       stop();
       submittingRef.current = false;
     }
@@ -774,7 +780,9 @@ export default function WriteCodePageClient({
     const saved = localStorage.getItem(
       `NOTI_code_${newLang}_${params.problemId}`
     );
-    setCode(saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]);
+    setCode(
+      saved !== null && saved !== "" ? saved : DEFAULT_TEMPLATES[newLang]
+    );
   };
 
   // **리사이즈 구현**
@@ -908,20 +916,20 @@ export default function WriteCodePageClient({
 
         {/* 오른쪽: 제출 버튼 (기존 그대로) */}
         <div className="flex items-center gap-2">
-  <motion.button
-    onClick={handleSubmit}
-    disabled={submittingRef.current} 
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    className={`${
-      submittingRef.current
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-black hover:bg-gray-500"
-    } text-white px-16 py-1.5 rounded-xl text-md`}
-  >
-    {submittingRef.current ? "제출 중..." : "제출하기"}
-  </motion.button>
-</div>
+          <motion.button
+            onClick={handleSubmit}
+            disabled={submittingRef.current}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`${
+              submittingRef.current
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-black hover:bg-gray-500"
+            } text-white px-16 py-1.5 rounded-xl text-md`}
+          >
+            {submittingRef.current ? "제출 중..." : "제출하기"}
+          </motion.button>
+        </div>
       </motion.div>
 
       {error && <p className="text-red-500 text-center mt-2">{error}</p>}
@@ -937,10 +945,22 @@ export default function WriteCodePageClient({
           style={{ width: leftWidth }} // ✅ 드래그 폭 적용
         >
           {/* 문제 설명 */}
-          <div
-            className="editor-content prose prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-4 prose-h1:mb-4 prose-h2:text-2xl prose-h2:mt-4 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-4 prose-h3:mb-4 prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6 prose-li:mb-2 mb-6"
-            dangerouslySetInnerHTML={{ __html: problem.description }}
-          />
+          {(() => {
+            const desc = normalizeMultiline(problem?.description ?? "");
+            const hasHtmlTag = /<[^>]+>/.test(desc); // 아주 단순한 판별(충분)
+
+            return (
+              <div className="editor-content prose prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-4 prose-h1:mb-4 prose-h2:text-2xl prose-h2:mt-4 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-4 prose-h3:mb-4 prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6 prose-li:mb-2 mb-6">
+                {hasHtmlTag ? (
+                  // 백엔드가 진짜 HTML을 내려주는 경우: 그대로 렌더
+                  <div dangerouslySetInnerHTML={{ __html: desc }} />
+                ) : (
+                  // 순수 텍스트인 경우: 개행 유지
+                  <div className="whitespace-pre-wrap break-words">{desc}</div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ✅ 순서 변경: 문제 조건 먼저 */}
           {problemConditions &&
@@ -1108,209 +1128,118 @@ export default function WriteCodePageClient({
                   />
                 </div>
 
-                {/* ✅ 실행결과 카드 + 테스트케이스 카드 (각각 독립) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-5 min-h-0">
-                  {/* ===== 실행 결과 카드 ===== */}
-                  <div className="bg-white rounded-xl shadow-lg border flex flex-col min-h-0">
-                    {/* 헤더 */}
-                    <div className="flex items-center h-12 px-3 border-b justify-between">
-                      {/* 왼쪽: 제목 + 상태 */}
-                      <div className="flex items-center gap-2">
-                        <div className="font-bold text-sm">실행 결과</div>
-                        {currentRun ? (
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded ${
-                              currentRun.success
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {currentRun.success ? "성공" : "실패"}
-                            {typeof currentRun.time_ms === "number"
-                              ? ` · ${currentRun.time_ms}ms`
-                              : ""}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-500">
-                            대기 중...
-                          </span>
-                        )}
+                {/* ✅ 실행 입력/결과 통합 카드 */}
+                <div className="bg-white rounded-xl shadow-lg border flex flex-col mt-4 mb-5 min-h-0">
+                  {/* 헤더 */}
+                  <div className="flex items-center h-12 px-3 border-b justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="font-bold text-sm">
+                        실행 (입력 → 출력)
                       </div>
-
-                      {/* 오른쪽 끝: 코드 실행 버튼 + 단축키 안내 */}
-                      {isCodingOrDebugging && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">
-                            (Ctrl/⌘+Enter)
-                          </span>
-                          <motion.button
-                            onClick={handleRunCurrentCode}
-                            disabled={isRunningCurrent}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={`${
-                              isRunningCurrent
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-mygreen hover:bg-green-700"
-                            } text-white px-4 py-1.5 rounded-xl text-sm`}
-                          >
-                            {isRunningCurrent ? "실행중..." : "실행"}
-                          </motion.button>
-                        </div>
+                      {currentRun ? (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded ${
+                            currentRun.success
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {currentRun.success ? "성공" : "실패"}
+                          {typeof currentRun.time_ms === "number"
+                            ? ` · ${currentRun.time_ms}ms`
+                            : ""}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500">
+                          대기 중...
+                        </span>
                       )}
                     </div>
 
-                    {/* 본문 */}
-                    {showCurrentRunPanel && (
-                      <div className="p-3 space-y-3 overflow-y-auto flex-1">
-                        <div>
-                          <div className="text-xs font-semibold text-gray-700 mb-1">
-                            표준 출력
-                          </div>
-                          <div className="w-full px-2 py-2 border border-gray-200 rounded bg-gray-50 font-mono text-xs overflow-y-auto max-h-40">
-                            <pre className="whitespace-pre-wrap break-all">
-                              {currentRun?.output || "(출력 없음)"}
-                            </pre>
-                          </div>
-                        </div>
-
-                        {currentRun?.error && (
-                          <div>
-                            <div className="text-xs font-semibold text-gray-700 mb-1">
-                              에러 출력
-                            </div>
-                            <div className="w-full px-2 py-2 border border-red-200 rounded bg-red-50 font-mono text-xs overflow-y-auto max-h-40 text-red-700">
-                              <pre className="whitespace-pre-wrap break-all">
-                                {currentRun.error}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {/* 단축키 안내 */}
+                      <span className="text-xs text-gray-400">
+                        (Ctrl/⌘+Enter)
+                      </span>
+                      <motion.button
+                        onClick={handleRunCurrentCode}
+                        disabled={isRunningCurrent}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`${
+                          isRunningCurrent
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-mygreen hover:bg-green-700"
+                        } text-white px-4 py-1.5 rounded-xl text-sm`}
+                      >
+                        {isRunningCurrent ? "실행중..." : "실행"}
+                      </motion.button>
+                    </div>
                   </div>
 
-                  {/* ===== 테스트케이스 카드 ===== */}
-                  <div className="bg-white rounded-xl shadow-lg border flex flex-col min-h-0">
-                    {/* 헤더 */}
-                    <div className="flex items-center h-12 px-3 border-b">
-                      <div className="font-bold text-sm mr-2">테스트케이스</div>
-
-                      <div className="ml-auto flex items-center gap-2">
-                        <motion.button
-                          onClick={addTestCase}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-1.5 rounded-xl text-sm"
-                        >
-                          추가
-                        </motion.button>
-                        <motion.button
-                          onClick={handleTestRun}
-                          disabled={isTestRunning}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`${
-                            isTestRunning
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-mygreen hover:bg-green-700"
-                          } text-white px-4 py-1.5 rounded-xl text-sm`}
-                        >
-                          {isTestRunning ? "실행중" : "실행"}
-                        </motion.button>
+                  {/* 본문: 왼쪽 입력 / 오른쪽 출력 */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 overflow-y-auto">
+                    {/* 입력 영역 (2/5) */}
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-xs font-semibold text-gray-700">
+                          입력
+                        </div>
+                        {/* 선택: 샘플 입력이 여러 개면 드롭다운으로 바꿔넣기 */}
                       </div>
+
+                      <textarea
+                        rows={4}
+                        value={testCases[0]?.input ?? ""}
+                        onChange={(e) =>
+                          setTestCases([{ input: e.target.value, output: "" }])
+                        }
+                        onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                            e.preventDefault();
+                            handleRunCurrentCode();
+                          }
+                        }}
+                        onInput={(e) => {
+                          const ta = e.currentTarget;
+                          ta.style.height = "auto";
+                          ta.style.height = `${ta.scrollHeight}px`;
+                        }}
+                        placeholder="표준 입력으로 전달할 값을 적어주세요"
+                        className="w-full px-2 py-2 border border-gray-300 rounded text-sm resize-none font-mono"
+                        style={{ minHeight: "120px" }}
+                      />
                     </div>
 
-                    {/* 리스트 */}
-                    <div className="p-3 overflow-y-auto max-h-[300px]">
-                      <div className="space-y-2">
-                        {testCases.map((tc, index) => (
-                          <div
-                            key={index}
-                            className={`border rounded p-2 max-w-full overflow-hidden ${
-                              runResults[index]?.passed === true
-                                ? "border-green-300 bg-green-50"
-                                : runResults[index]?.passed === false
-                                ? "border-red-300 bg-red-50"
-                                : "border-gray-200"
-                            }`}
-                          >
-                            {/* 카드 헤더 */}
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-semibold text-gray-700">
-                                #{index + 1}
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <div className="text-xs">
-                                  {runResults[index]?.passed === true ? (
-                                    <span className="text-green-600">✔</span>
-                                  ) : runResults[index]?.passed === false ? (
-                                    <span className="text-red-600">✗</span>
-                                  ) : (
-                                    <span className="text-gray-500">-</span>
-                                  )}
-                                </div>
-                                {!tc.isSample && (
-                                  <button
-                                    onClick={() => removeTestCase(index)}
-                                    className="px-1 py-0.5 bg-red-200 hover:bg-red-300 text-red-700 rounded text-xs"
-                                  >
-                                    ×
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* 본문 */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs text-gray-600 mb-1">
-                                  입력
-                                </label>
-                                <textarea
-                                  rows={1}
-                                  value={tc.input}
-                                  onChange={(e) =>
-                                    handleTestCaseChange(
-                                      index,
-                                      "input",
-                                      e.target.value
-                                    )
-                                  }
-                                  onInput={(e) => {
-                                    const ta = e.currentTarget;
-                                    ta.style.height = "auto";
-                                    ta.style.height = `${ta.scrollHeight}px`;
-                                  }}
-                                  placeholder="입력"
-                                  className="w-full px-2 py-2 border border-gray-300 rounded text-xs resize-none font-mono"
-                                  style={{ minHeight: "96px" }}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block text-xs text-gray-600 mb-1">
-                                  실행 결과
-                                </label>
-                                <div
-                                  className={`w-full px-2 py-2 border rounded font-mono text-xs overflow-y-auto max-h-32 ${
-                                    runResults[index]?.passed === false
-                                      ? "border-red-300 bg-red-50"
-                                      : "border-gray-200 bg-gray-50"
-                                  }`}
-                                  style={{ minHeight: "96px" }}
-                                >
-                                  <pre className="whitespace-pre-wrap break-all">
-                                    {runResults[index]?.output
-                                      ? runResults[index].output
-                                      : "(아직 실행 전)"}
-                                  </pre>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                    {/* 출력 영역 (3/5) */}
+                    <div className="md:col-span-3 flex flex-col">
+                      <div className="text-xs font-semibold text-gray-700 mb-1">
+                        실행 결과
                       </div>
+                      <div
+                        className="w-full px-2 py-2 border border-gray-200 rounded bg-gray-50 font-mono text-xs overflow-y-auto"
+                        style={{ minHeight: "120px", maxHeight: "240px" }}
+                      >
+                        <pre className="whitespace-pre-wrap break-all">
+                          {currentRun?.output || "(출력 없음)"}
+                        </pre>
+                      </div>
+
+                      {currentRun?.error && (
+                        <>
+                          <div className="text-xs font-semibold text-gray-700 mt-3 mb-1">
+                            에러 출력
+                          </div>
+                          <div
+                            className="w-full px-2 py-2 border border-red-200 rounded bg-red-50 font-mono text-xs overflow-y-auto text-red-700"
+                            style={{ minHeight: "96px", maxHeight: "240px" }}
+                          >
+                            <pre className="whitespace-pre-wrap break-all">
+                              {currentRun.error}
+                            </pre>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

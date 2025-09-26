@@ -1,4 +1,5 @@
 // hooks/useRouteLoading.ts
+//화면 넘어갈때 이상한거 방지?하려고 만들었는데 아직 제대로 사용안했음
 "use client";
 import { useTransition, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
