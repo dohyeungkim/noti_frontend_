@@ -1178,7 +1178,7 @@ export default function WriteCodePageClient({
                   </div>
 
                   {/* 본문: 왼쪽 입력 / 오른쪽 출력 */}
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-3 overflow-y-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-3 overflow-y-auto">
                     {/* 입력 영역 (2/5) */}
                     <div className="md:col-span-2">
                       <div className="flex items-center justify-between mb-1">
@@ -1212,7 +1212,7 @@ export default function WriteCodePageClient({
                     </div>
 
                     {/* 출력 영역 (3/5) */}
-                    <div className="md:col-span-3 flex flex-col">
+                    <div className="md:col-span-4 flex flex-col">
                       <div className="text-xs font-semibold text-gray-700 mb-1">
                         실행 결과
                       </div>

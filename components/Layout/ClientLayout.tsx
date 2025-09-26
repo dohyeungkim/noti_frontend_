@@ -1,32 +1,40 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/stores/auth"
-import { usePathname } from "next/navigation"
+import { useAuth } from "@/stores/auth";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { useState } from "react"
-import DrawerWrapper from "@/components/Layout/DrawerWrapper"
-import PageHeaderWrapper from "@/components/Layout/PageHeaderWrapper"
-import BackFloatingButton from "@/components/Layout/BackFloatingButton"
+import DrawerWrapper from "@/components/Layout/DrawerWrapper";
+import PageHeaderWrapper from "@/components/Layout/PageHeaderWrapper";
+import BackFloatingButton from "@/components/Layout/BackFloatingButton";
+import GlobalLoading from "@/components/GlobalLoading";
+import { useLoadingStore } from "@/lib/loadingStore"; // ✅ 추가
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { isAuth } = useAuth()
-  const pathname = usePathname()
-  const isAuthPage = pathname.startsWith("/auth")
+  const { isAuth } = useAuth();
+  const pathname = usePathname();
+  const isAuthPage = pathname.startsWith("/auth");
 
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // 좌우 패딩 조절 값 (열리면 사이드바 너비 고려)
+  // ✅ 라우트가 바뀌면 전역 로딩 무조건 끄기
+  const { forceHide } = useLoadingStore();
+  useEffect(() => {
+    forceHide();
+  }, [pathname, forceHide]);
+
   const leftPadding = isDrawerOpen
     ? "ml-[15%] mr-[5%]"
-    : "ml-[13%] mr-[5%] md:ml-[15%] md:mr-[8%] lg:ml-[8%] lg:mr-[4%]"
-
-  if (isAuthPage) {
-    return <div className="min-h-screen w-full">{children}</div>
-  }
+    : "ml-[13%] mr-[5%] md:ml-[15%] md:mr-[8%] lg:ml-[8%] lg:mr-[4%]";
 
   return (
     <div className="flex flex-col min-h-screen">
-      {isAuth ? (
+      {/* 전역 로딩 오버레이 */}
+      <GlobalLoading />
+
+      {isAuthPage ? (
+        <div className="min-h-screen w-full">{children}</div>
+      ) : isAuth ? (
         <div className="flex-grow flex w-full">
           <DrawerWrapper onToggle={setIsDrawerOpen} />
           <main
@@ -37,13 +45,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               {children}
             </div>
           </main>
-
-          {/* ✅ 전역 뒤로가기 버튼 (사이드바와 독립적으로 항상 고정) */}
           <BackFloatingButton hidden={isDrawerOpen} fallback="/mypage" />
         </div>
       ) : (
         <div className="min-h-screen w-full">{children}</div>
       )}
     </div>
-  )
+  );
 }

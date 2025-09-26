@@ -235,7 +235,7 @@ export default function FeedbackWithSubmissionPageClient({
       console.error("제출 기록 불러오기 중 오류 발생:", error);
       setIsConditionLoaded(true);
     }
-  }, [params.resultId, aiFeedback]);
+  }, [params.resultId]);
 
   const fetchCodeLogs = useCallback(async () => {
     try {
@@ -352,14 +352,20 @@ export default function FeedbackWithSubmissionPageClient({
   }, [activeTab]);
 
   useEffect(() => {
-    if (!solveData || !codeLogs) return;
-    const t = solveData.problemType;
-    if (t === "코딩" || t === "디버깅") {
-      setIsLoaded(true);
-    } else if (problemDetail) {
-      setIsLoaded(true);
+  let cancelled = false;
+  (async () => {
+    try {
+      await Promise.all([
+        fetchProblem(),
+        fetchSolve(),
+        fetchCodeLogs(),
+      ]);
+    } finally {
+      if (!cancelled) setIsLoaded(true); // 어떤 API가 실패해도 페이지는 뜨게
     }
-  }, [problemDetail, solveData, codeLogs]);
+  })();
+  return () => { cancelled = true; };
+}, [fetchProblem, fetchSolve, fetchCodeLogs]);
 
   // 댓글 전송 핸들러
   const handleAddComment = async () => {
