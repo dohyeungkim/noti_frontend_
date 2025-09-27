@@ -97,6 +97,10 @@ export default function FeedbackWithSubmissionPageClient({
     resultId: string;
   };
 }) {
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+  const [copySuspicion, setCopySuspicion] = useState(false);
+  const [showCopyModal, setShowCopyModal] = useState(false);
   const [problemDetail, setProblemDetail] = useState<ProblemDetail | null>(
     null
   );
@@ -125,6 +129,45 @@ export default function FeedbackWithSubmissionPageClient({
 
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai">("ai");
 
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const cur = Number(params.problemId);
+      const prevId = cur - 1;
+      const nextId = cur + 1;
+
+      try {
+        if (prevId >= 1) {
+          await problem_api.problem_get_by_id_group(
+            Number(params.groupId),
+            Number(params.examId),
+            prevId
+          );
+          if (!cancelled) setCanPrev(true);
+        } else {
+          if (!cancelled) setCanPrev(false);
+        }
+      } catch {
+        if (!cancelled) setCanPrev(false);
+      }
+
+      try {
+        await problem_api.problem_get_by_id_group(
+          Number(params.groupId),
+          Number(params.examId),
+          nextId
+        );
+        if (!cancelled) setCanNext(true);
+      } catch {
+        if (!cancelled) setCanNext(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params.groupId, params.examId, params.problemId]);
   // AI 피드백 가져오기
   useEffect(() => {
     const fetchAiFeedback = async () => {
@@ -242,7 +285,21 @@ export default function FeedbackWithSubmissionPageClient({
       const res = await code_log_api.code_logs_get_by_solve_id(
         Number(params.resultId)
       );
-      setCodeLogs(res);
+      // res: { copy_suspicion: boolean; logs: { code: string; timestamp: string }[] }
+
+      // CodeLogReplay가 기대하는 타입으로 세팅
+      const mapped: CodeLog[] = (res?.logs ?? []).map((l, idx) => ({
+        id: idx + 1, // ✅ 필수 필드 추가
+        code: l.code,
+        timestamp: l.timestamp,
+      }));
+      setCodeLogs(mapped);
+      setCopySuspicion(!!res?.copy_suspicion);
+
+      if (res?.copy_suspicion) {
+        setShowCopyModal(true); // ⚠️ 여기서 모달 오픈
+      }
+
       logGet(`code_logs_get_by_solve_id(${params.resultId})`, res);
     } catch (error) {
       console.error("코드 로그 불러오기 중 오류 발생:", error);
@@ -280,6 +337,32 @@ export default function FeedbackWithSubmissionPageClient({
           : c.is_problem_message !== true // 제출별 탭: 문제용이 아닌 코멘트만
     );
   }, [comments, activeTab]);
+  //이전문제가기
+  const goToPrevProblemForSolve = useCallback(async () => {
+    const prevId = Number(params.problemId) - 1;
+    try {
+      await problem_api.problem_get_by_id_group(
+        Number(params.groupId),
+        Number(params.examId),
+        prevId
+      );
+
+      const lang = solveData?.code_language?.toLowerCase() || "";
+      const qs = lang ? `?language=${encodeURIComponent(lang)}` : "";
+
+      router.push(
+        `/mygroups/${params.groupId}/exams/${params.examId}/problems/${prevId}/write${qs}`
+      );
+    } catch (e) {
+      alert("이전 문제가 없거나 접근 권한이 없어.");
+    }
+  }, [
+    params.groupId,
+    params.examId,
+    params.problemId,
+    solveData?.code_language,
+    router,
+  ]);
 
   //다음으로 넘어가기인데 문제의 번호같은것이 연속적이지 않기에 문제의 workbook_id에서만든 숫자가 넘어와서 다음문제로 넘어가도록해야함(수정해야할듯)
   const goToNextProblemForSolve = useCallback(async () => {
@@ -352,20 +435,18 @@ export default function FeedbackWithSubmissionPageClient({
   }, [activeTab]);
 
   useEffect(() => {
-  let cancelled = false;
-  (async () => {
-    try {
-      await Promise.all([
-        fetchProblem(),
-        fetchSolve(),
-        fetchCodeLogs(),
-      ]);
-    } finally {
-      if (!cancelled) setIsLoaded(true); // 어떤 API가 실패해도 페이지는 뜨게
-    }
-  })();
-  return () => { cancelled = true; };
-}, [fetchProblem, fetchSolve, fetchCodeLogs]);
+    let cancelled = false;
+    (async () => {
+      try {
+        await Promise.all([fetchProblem(), fetchSolve(), fetchCodeLogs()]);
+      } finally {
+        if (!cancelled) setIsLoaded(true); // 어떤 API가 실패해도 페이지는 뜨게
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchProblem, fetchSolve, fetchCodeLogs]);
 
   // 댓글 전송 핸들러
   const handleAddComment = async () => {
@@ -498,11 +579,12 @@ export default function FeedbackWithSubmissionPageClient({
   const aiMd = toMarkdownText(
     activeFeedbackTab === "ai" ? aiFeedback ?? solveData?.ai_feedback : null
   );
-  console.log(
-    "aiFeedback typeof/value",
-    typeof (aiFeedback ?? solveData?.ai_feedback),
-    aiFeedback ?? solveData?.ai_feedback
-  );
+  //AI피드백콘솔
+  // console.log(
+  //   "aiFeedback typeof/value",
+  //   typeof (aiFeedback ?? solveData?.ai_feedback),
+  //   aiFeedback ?? solveData?.ai_feedback
+  // );
 
   return (
     <div className="flex min-h-screen">
@@ -525,25 +607,60 @@ export default function FeedbackWithSubmissionPageClient({
               문제의 피드백
             </h1>
           </div>
-		  {/* 문제 상세 정보 */}
-        {problemDetail && (
-			
-          <motion.div
-		  
-            className="mt-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.6 }}
-          >
-			<div className="mt-6">
-              <h2 className="text-lg font-bold mb-2">문제 상세보기</h2>
-              {/* <ProblemDetailRenderer problem={problemDetail} /> */}
+          {/* === 붙여넣기 의심 모달 === */}
+          {showCopyModal && (
+            <div className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.18 }}
+                className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl">⚠️</div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900">
+                      붙여넣기 의심 감지
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-600">
+                      이번 제출 과정에서 비정상적인 대량 편집/붙여넣기 패턴이
+                      감지됐어. 필요시 조교/담당자가 검토할 수 있어.
+                    </p>
+                    {copySuspicion && (
+                      <p className="mt-2 text-xs text-gray-500">
+                        (세부: copy_suspicion = true)
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    onClick={() => setShowCopyModal(false)}
+                    className="px-4 py-2 rounded-lg bg-mygreen text-white hover:bg-mydarkgreen"
+                  >
+                    확인
+                  </button>
+                </div>
+              </motion.div>
             </div>
-            <ResultPageProblemDetail problem={problemDetail} />
-            
-          </motion.div>
-        )}
-		
+          )}
+          {/* 문제 상세 정보 */}
+          {problemDetail && (
+            <motion.div
+              className="mt-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
+            >
+              <div className="mt-6">
+                <h2 className="text-lg font-bold mb-2">문제 상세보기</h2>
+                {/* <ProblemDetailRenderer problem={problemDetail} /> */}
+              </div>
+              <ResultPageProblemDetail problem={problemDetail} />
+            </motion.div>
+          )}
+
           <div className="flex items-center gap-4 ml-2">
             {/* <span className="text-sm text-gray-600">🔥 열심히다.</span> */}
             {/* {isExamMode && (
@@ -943,43 +1060,71 @@ export default function FeedbackWithSubmissionPageClient({
           </div>
         </motion.div>
 
-        {/* 액션 버튼들 */}
         <motion.div
-          className="mt-6 flex gap-3"
+          className="mt-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.5 }}
         >
-          <button
-            className="px-6 py-2 bg-mygreen text-white rounded-lg shadow hover:bg-mydarkgreen transition-colors"
-            onClick={() =>
-              router.push(
-                `/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/result/`
-              )
-            }
-          >
-            전체 제출 보러가기
-          </button>
-          <button
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors"
-            onClick={() =>
-              router.push(
-                `/mygroups/${params.groupId}/exams/${params.examId}/problems/${
-                  params.problemId
-                }/write?solve_id=${params.resultId}&language=${
-                  solveData?.code_language?.toLowerCase() || ""
-                }`
-              )
-            }
-          >
-            다시 풀러 가기
-          </button>
-          <button
-            className="px-6 py-2 bg-purple-500 text-white rounded-lg shadow hover:bg-purple-600 transition-colors"
-            onClick={goToNextProblemForSolve}
-          >
-            다음 문제 풀기
-          </button>
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+            {/* 왼쪽: 이전 문제 */}
+            <div className="flex justify-start">
+              <button
+                className="px-6 py-2 rounded-lg shadow transition-colors text-white
+                   disabled:bg-gray-300 disabled:cursor-not-allowed
+                   bg-mygreen hover:bg-mydarkgreen"
+                onClick={goToPrevProblemForSolve}
+                disabled={!canPrev}
+              >
+                이전 문제 가기
+              </button>
+            </div>
+
+            {/* 중앙: 전체 제출 / 다시 풀기 */}
+            <div className="flex justify-center gap-3">
+              <button
+                className="px-6 py-2 rounded-lg shadow transition-colors text-white
+                   disabled:bg-gray-300 disabled:cursor-not-allowed
+                   bg-mygreen hover:bg-mydarkgreen"
+                onClick={() =>
+                  router.push(
+                    `/mygroups/${params.groupId}/exams/${params.examId}/problems/${params.problemId}/result/`
+                  )
+                }
+              >
+                전체 제출 보러가기
+              </button>
+              <button
+                className="px-6 py-2 rounded-lg shadow transition-colors text-white
+                   disabled:bg-gray-300 disabled:cursor-not-allowed
+                   bg-mygreen hover:bg-mydarkgreen"
+                onClick={() =>
+                  router.push(
+                    `/mygroups/${params.groupId}/exams/${
+                      params.examId
+                    }/problems/${params.problemId}/write?solve_id=${
+                      params.resultId
+                    }&language=${solveData?.code_language?.toLowerCase() || ""}`
+                  )
+                }
+              >
+                다시 풀러 가기
+              </button>
+            </div>
+
+            {/* 오른쪽: 다음 문제 */}
+            <div className="flex justify-end">
+              <button
+                className="px-6 py-2 rounded-lg shadow transition-colors text-white
+                   disabled:bg-gray-300 disabled:cursor-not-allowed
+                   bg-mygreen hover:bg-mydarkgreen"
+                onClick={goToNextProblemForSolve}
+                disabled={!canNext}
+              >
+                다음 문제 풀기
+              </button>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

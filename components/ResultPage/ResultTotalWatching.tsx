@@ -26,6 +26,10 @@ interface StudentStatus {
   notSolved: number;
   score: number;
 }
+
+/** ★ suspect 상태 추가 */
+type CellStatus = "correct" | "wrong" | "pending" | "suspect";
+
 interface ProblemStatus {
   problemId: number;
   title: string;
@@ -34,13 +38,14 @@ interface ProblemStatus {
   wrong: number;
   notSolved: number;
 }
-type CellStatus = "correct" | "wrong" | "pending";
 type CellMap = Record<string, CellStatus>;
 
+/** ★ badge 텍스트 suspect 추가 */
 const badgeText: Record<CellStatus, string> = {
   correct: "맞",
   wrong: "틀",
   pending: "미",
+  suspect: "의", // AI 의심
 };
 
 function StatusIcon({
@@ -96,6 +101,31 @@ function StatusIcon({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+      </svg>
+    );
+  }
+  /** ★ suspect 노란색 아이콘 */
+  if (status === "suspect") {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        aria-label="AI 의심"
+        role="img"
+        className={className}
+      >
+        {title && <title>{title}</title>}
+        {/* amber-500 */}
+        <circle cx="12" cy="12" r="12" fill="#F59E0B" />
+        {/* 느낌표 모양 */}
+        <path
+          d="M12 6v8"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <circle cx="12" cy="17" r="1.5" fill="white" />
       </svg>
     );
   }
@@ -210,27 +240,29 @@ export default function ResultTotalWatching() {
       }
 
       // 5) 문제 배열: "문제지 순서" 그대로
-        
       const problemsArr: ProblemStatus[] = refs.map((r) => ({
         problemId: r.problem_id,
         title: r.title,
         type: prettifyType(
-          refTypeById.get(r.problem_id) ?? problemTypeById.get(r.problem_id) ?? "-"
+          refTypeById.get(r.problem_id) ??
+            problemTypeById.get(r.problem_id) ??
+            "-"
         ),
         correct: 0,
         wrong: 0,
         notSolved: 0,
       }));
 
-      // 6) 학생별 최신 제출만 취합
+      // 6) 학생별 최신 제출만 취합 (★ copy_suspicion 포함)
       type Submission = {
         problem_id: number;
         problem_name: string;
-        problem_type: string;
+        problem_type?: string;
         is_passed: boolean;
         max_score: number;
         score: number | null;
         created_at?: string | null;
+        copy_suspicion?: boolean; // ★
       };
       const latestByStudent: Record<string, Map<number, Submission>> = {};
       for (const st of filteredStudents as any[]) {
@@ -278,22 +310,35 @@ export default function ResultTotalWatching() {
 
         for (const pb of problemsArr) {
           const sub = latestByStudent[name]?.get(pb.problemId);
+
           let status: CellStatus = "pending";
           if (sub) {
             const hasTimestamp = !!sub.created_at;
             const hasScoreNumber = typeof sub.score === "number";
-            if (!hasTimestamp || !hasScoreNumber) status = "pending";
-            else if (sub.is_passed) status = "correct";
-            else status = "wrong";
+
+            // ✅ 우선순위 1: 최신 제출에서 AI 의심이면 무조건 노란색
+            if (sub.copy_suspicion === true) {
+              status = "suspect";
+            } else if (!hasTimestamp || !hasScoreNumber) {
+              status = "pending";
+            } else if (sub.is_passed) {
+              status = "correct";
+            } else {
+              status = "wrong";
+            }
           }
+
           nextCellMap[`${name}-${pb.problemId}`] = status;
+
+          // 집계 규칙 그대로: suspect는 '틀림'으로 합산
           if (status === "correct") c++;
-          else if (status === "wrong") w++;
+          else if (status === "wrong" || status === "suspect") w++;
           else pCount++;
         }
 
         const totalScore = (st.submission_problem_status || []).reduce(
-          (sum: number, s: any) => sum + (typeof s.score === "number" ? s.score : 0),
+          (sum: number, s: any) =>
+            sum + (typeof s.score === "number" ? s.score : 0),
           0
         );
 
@@ -307,7 +352,7 @@ export default function ResultTotalWatching() {
         });
       }
 
-      // 8) 문제별 합계
+      // 8) 문제별 합계 (★ suspect는 '틀림'으로 집계)
       for (const pb of problemsArr) {
         let cc = 0,
           ww = 0,
@@ -316,7 +361,7 @@ export default function ResultTotalWatching() {
           const cell =
             nextCellMap[`${s.studentName}-${pb.problemId}`] ?? "pending";
           if (cell === "correct") cc++;
-          else if (cell === "wrong") ww++;
+          else if (cell === "wrong" || cell === "suspect") ww++;
           else pp++;
         }
         pb.correct = cc;
@@ -353,7 +398,8 @@ export default function ResultTotalWatching() {
       problems.forEach((pb) => {
         const st = getCell(s.studentName, pb.problemId);
         if (st === "correct") c++;
-        else if (st === "wrong") w++;
+        else if (st === "wrong" || st === "suspect")
+          w++; // ★ suspect를 wrong으로 집계
         else p++;
       });
       map[s.studentName] = { correct: c, wrong: w, pending: p };
@@ -373,7 +419,7 @@ export default function ResultTotalWatching() {
       students.forEach((s) => {
         const st = getCell(s.studentName, pb.problemId);
         if (st === "correct") c++;
-        else if (st === "wrong") w++;
+        else if (st === "wrong" || st === "suspect") w++; // ★
         else p++;
       });
       map[pb.problemId] = { correct: c, wrong: w, pending: p };
@@ -389,7 +435,7 @@ export default function ResultTotalWatching() {
       problems.forEach((pb) => {
         const st = getCell(s.studentName, pb.problemId);
         if (st === "correct") c++;
-        else if (st === "wrong") w++;
+        else if (st === "wrong" || st === "suspect") w++; // ★
         else p++;
       });
     });
@@ -466,6 +512,10 @@ export default function ResultTotalWatching() {
         </span>
         <span className="inline-flex items-center gap-2">
           <StatusIcon status="wrong" size={16} /> 틀림
+        </span>
+        {/* ★ 노란색 AI의심 추가 */}
+        <span className="inline-flex items-center gap-2">
+          <StatusIcon status="suspect" size={16} /> AI의심
         </span>
         <span className="inline-flex items-center gap-2">
           <StatusIcon status="pending" size={16} /> 미응시
@@ -624,7 +674,7 @@ export default function ResultTotalWatching() {
                 return (
                   <tr key={s.studentName} className="border-b">
                     <td className="px-4 py-2 sticky left-0 bg-white z-10 font-medium whitespace-nowrap">
-                      {/* ★ 표기 변경: 이름 / 학번 */}
+                      {/* 이름 / 학번 */}
                       {s.studentName}
                       {s.studentNo ? ` / ${s.studentNo}` : ""}
                     </td>

@@ -10,7 +10,8 @@ import SortButton from "../ui/SortButton"
 interface Group {
   group_id: number
   group_name: string
-  group_owner: string
+  group_owner: string                 // 아이디(폴백용)
+  owner_name?: string                 // ✅ 실제 이름(응답에 있음)
   group_private_state: boolean
   is_member: boolean
   is_pending_member: boolean
@@ -33,6 +34,7 @@ export default function MyPage() {
     try {
       setLoading(true)
       setError("")
+      // owner_name을 포함해 그대로 받아옴
       const data: Group[] = await group_api.group_get()
       setGroups(data)
       setFilteredGroups(data)
@@ -86,7 +88,7 @@ export default function MyPage() {
     try {
       const res = await member_request_api.member_request_create(group_id)
       if (res?.message) alert(res.message)
-      // 필요시 여기서 fetchGroups()로 강제 동기화도 가능
+      // 필요시 강제 동기화
       // await fetchGroups()
     } catch (e: any) {
       // 실패 시 롤백
@@ -114,7 +116,7 @@ export default function MyPage() {
         />
       </motion.div>
 
-      {/* ✅ 제목 + 오른쪽 새로고침 버튼 (요청한 위치) */}
+      {/* ✅ 제목 + 오른쪽 새로고침 버튼 */}
       <div className="flex items-center justify-between m-2 pt-3.5">
         <motion.h2
           className="text-2xl font-bold"
@@ -174,7 +176,10 @@ export default function MyPage() {
                   </p>
                   <div className="flex justify-between items-center text-sm font-semibold mb-3">
                     <span className="text-gray-700">
-                      👨‍🏫 그룹장: <span className="text-gray-900">{group.group_owner}</span>
+                      👨‍🏫 그룹장:{" "}
+                      <span className="text-gray-900">
+                        {group.owner_name || group.group_owner /* ✅ owner_name 우선 표시 */}
+                      </span>
                     </span>
                   </div>
 

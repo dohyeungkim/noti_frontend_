@@ -1,6 +1,7 @@
-import { fetchWithAuth } from "./fetchWithAuth"
+import { fetchWithAuth} from "./fetchWithAuth"
 
 // ====================== 타입 정의 ===========================
+
 interface ProfileInfo {
 	age: "under_18" | "18_24" | "25_29" | "30_34" | "35_39" | "over_40"
 	grade: "high_school" | "freshman" | "sophomore" | "junior" | "senior" | "graduate" | "working_professional" | "other"
@@ -133,20 +134,34 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
 	},
 
 	// 로그아웃
-	async logout(): Promise<{
-		success: boolean
-		message: string
-	}> {
-		const res = await fetchWithAuth("/api/logout", {
-			method: "POST",
-		})
+	async logout(): Promise<void> {
+    // ❗ 실제 라우트 경로 확인: /api/auth/logout 을 쓰고 있으면 여기도 맞춰줘
+    const res = await fetch("/api/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Cache-Control": "no-store" },
+    });
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "로그아웃 실패")
-		}
-		return res.json()
-	},
+    // 204도 성공으로 처리 (res.ok는 2xx면 true)
+    if (!res.ok) {
+      // 서버가 가끔 JSON 바디를 보내는 경우를 대비해서만 안전 처리 (선택)
+      let msg = `로그아웃 실패 (${res.status})`;
+      try {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const j = await res.json();
+          msg = j?.message || j?.detail || msg;
+        } else {
+          const t = await res.text();
+          if (t) msg = t;
+        }
+      } catch {}
+      throw new Error(msg);
+    }
+
+    // ✅ 여기서는 절대 res.json() 호출하지 마!
+    return;
+  },
 
 	// 사용자 정보 조회
 	async getUser(): Promise<{
@@ -1393,44 +1408,131 @@ export const grading_api = {
 	}
 ,
 }
+// ====================== user(profile) 관련 타입/API ===========================
+export interface UserProfile {
+  user_id: string
+  username: string
+  email: string
+  created_at: string
 
+  gender: string
+  birthday: string
+  phone: string
+  address: string
+  school: string
+  introduction: string
+
+  grade: string
+  major: string
+  interests: string[]
+  learning_goals: string[]
+  preferred_fields: string[]
+  programming_experience_level: "beginner" | "intermediate" | "advanced" | string
+  preferred_programming_languages: string[]
+}
+export const user_api = {
+  /** GET /api/proxy/user/profile */
+  async user_profile_get(): Promise<UserProfile> {
+  const res = await fetchWithAuth("/api/proxy/user/profile", {
+    method: "GET",
+    credentials: "include",
+  })
+
+  let bodyText = ""
+  try {
+    bodyText = await res.text()
+  } catch {}
+
+  if (!res.ok) {
+    // 가능한 경우 JSON으로도 파싱해봄
+    let parsed: any = null
+    try { parsed = bodyText ? JSON.parse(bodyText) : null } catch {}
+
+    if (res.status === 401) {
+      throw new Error("UNAUTHORIZED")
+    }
+    const serverMsg =
+      parsed?.detail?.msg || parsed?.message || bodyText || res.statusText
+    throw new Error(`프로필 조회 실패 (${res.status}) :: ${serverMsg}`)
+  }
+
+  // ok면 JSON으로 반환
+  try {
+    return JSON.parse(bodyText)
+  } catch {
+    throw new Error("프로필 응답 파싱 실패")
+  }
+},
+
+  /** PATCH /api/proxy/user/profile */
+  async user_profile_update(profile: UserProfile): Promise<UserProfile> {
+    const res = await fetchWithAuth("/api/proxy/user/profile", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(profile),
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      if (res.status === 401) throw new Error("UNAUTHORIZED")
+      throw new Error(errorData.detail?.msg || errorData.message || `프로필 업데이트 실패 (${res.status})`)
+    }
+
+    return res.json()
+  },
+}
 // ====================== code_logs 관련 API ===========================
 export const code_log_api = {
-	async code_log_create(solve_id: number, user_id: string, code_logs: string[], timestamp: string[]) {
-		const res = await fetchWithAuth("/api/proxy/code_logs", {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				solve_id: solve_id,
-				user_id: user_id,
-				code_logs: code_logs,
-				timestamp: timestamp,
-			}),
-		})
+  async code_log_create(
+    solve_id: number,
+    user_id: string,
+    code_logs: string[],
+    timestamp: string[]
+  ) {
+    const res = await fetchWithAuth("/api/proxy/code_logs", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        solve_id,
+        user_id,
+        code_logs,
+        timestamp,
+      }),
+    });
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "코드 로깅 실패")
-		}
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(
+        errorData.detail?.msg || errorData.message || "코드 로깅 실패"
+      );
+    }
 
-		return res.json()
-	},
+    return res.json();
+  },
 
-	async code_logs_get_by_solve_id(solve_id: number) {
-		const res = await fetchWithAuth(`/api/proxy/code_logs/${solve_id}`, {
-			method: "GET",
-			credentials: "include",
-		})
+	async code_logs_get_by_solve_id(solve_id: number): Promise<{
+    copy_suspicion: boolean;
+    logs: { code: string; timestamp: string }[];
+  }> {
+    const res = await fetchWithAuth(`/api/proxy/code_logs/${solve_id}`, {
+      method: "GET",
+      credentials: "include",
+    });
 
-		if (!res.ok) {
-			const errorData = await res.json().catch(() => ({}))
-			throw new Error(errorData.detail?.msg || errorData.message || "코드 로그 내용 가져오기 실패")
-		}
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(
+        errorData.detail?.msg ||
+          errorData.message ||
+          "코드 로그 내용 가져오기 실패"
+      );
+    }
 
-		return res.json()
-	},
-}
+    return res.json();
+  },
+};
 
 // ====================== comments 관련 API ===========================
 
@@ -1591,16 +1693,16 @@ export const run_code_api = {
     return body as RunCodeResponse
   },
 }
-
 // ====================== live watching 타입 ===========================
 export interface WatchingSubmission {
   problem_id: number
   problem_name: string
-  problem_type: string 
+  problem_type?: string        // ✅ 어떤 응답엔 없을 수 있으니 optional 처리
   is_passed: boolean
   max_score: number
   score: number
   created_at: string
+  copy_suspicion?: boolean | 0 | 1 | "0" | "1" | "true" | "false"; // ★ 추가
 }
 
 export interface WatchingStudent {
@@ -1614,8 +1716,9 @@ export interface WatchingResponse {
   total_students: number
   students: WatchingStudent[]
 }
-// ====================== live watching 관련 API ===========================
 
+
+// ====================== live watching 관련 API ===========================
 export const live_api = {
   /** 실시간 학생/문제 현황 */
   async watching_get(
@@ -1626,16 +1729,22 @@ export const live_api = {
     const wid = encodeURIComponent(String(workbook_id))
     const url = `/api/proxy/live/${gid}/${wid}/watching`
 
+    console.log("[live_api.watching_get] 요청 URL:", url)
+
     const res = await fetchWithAuth(url, {
       method: "GET",
       credentials: "include",
     })
+
+    console.log("[live_api.watching_get] 상태코드:", res.status)
 
     if (!res.ok) {
       let body: any = {}
       try {
         body = await res.json()
       } catch {}
+      console.error("[live_api.watching_get] 오류 응답:", body)
+
       const msg =
         body?.detail?.msg ||
         body?.message ||
@@ -1643,6 +1752,9 @@ export const live_api = {
       throw new Error(msg)
     }
 
-    return res.json()
+    const json = await res.json()
+    console.log("[live_api.watching_get] 성공 응답:", json)
+    return json
   },
+
 }

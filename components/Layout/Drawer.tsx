@@ -210,37 +210,7 @@ export default function Drawer({ isOpen, setIsOpen }: DrawerProps) {
         {/* 비밀번호 변경, 로그아웃 */}
         <div className="absolute bottom-0 left-0 w-full pl-3 pb-2">
           <ul className="list-none p-0">
-            {/* 비밀번호 변경 */}
-            <li
-              className="my-3 flex items-center gap-1.5 cursor-pointer relative group"
-              onClick={() => passwordChangeRef.current?.openModal()}
-              title="비밀번호 변경하기"
-              aria-label="비밀번호 변경하기"
-            >
-              {/* 기존 컴포넌트(아이콘/버튼)는 그대로 사용 */}
-              <PasswordChange ref={passwordChangeRef} />
 
-              {/* 사이드바 펼쳐졌을 때는 텍스트 노출 */}
-              <span
-                className={`text-gray-700 ml-1.5 transition-all duration-300 text-xs ${
-                  isOpen ? "inline" : "hidden"
-                }`}
-              >
-                비밀번호 변경하기
-              </span>
-
-              {/* 사이드바 접혔을 때만 툴팁 노출 (네비와 동일 스타일) */}
-              {!isOpen && (
-                <span
-                  className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2
-            whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white
-            opacity-0 shadow-md transition-opacity duration-150
-            group-hover:opacity-100 z-[2000]"
-                >
-                  비밀번호 변경하기
-                </span>
-              )}
-            </li>
 
             {/* 로그아웃 */}
             <li

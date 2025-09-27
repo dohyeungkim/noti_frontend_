@@ -1,6 +1,6 @@
 "use client";
 //모든 필드를 채우도록 바꿈, 건너뛰기 없앰 2025-09-10
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth_api } from "@/lib/api";
 import { useAuth } from "@/stores/auth";
@@ -111,7 +111,6 @@ const ageRangeOptions: OptionType[] = [
   { value: "35_39", label: "35-39세" },
   { value: "over_40", label: "40세 이상" },
 ];
-
 const academicYearOptions: OptionType[] = [
   { value: "high_school", label: "고등학생" },
   { value: "freshman", label: "대학교 1학년" },
@@ -173,7 +172,9 @@ const preferredLanguageOptions: OptionType[] = [
 //학번 숫자만 입력하도록
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
 
+
 export default function AuthForm() {
+  const [expiredMsg, setExpiredMsg] = useState("");
   const router = useRouter();
   const { setIsAuth } = useAuth();
   const [loginData, setLoginData] = useState({ user_id: "", password: "" });
@@ -213,6 +214,16 @@ export default function AuthForm() {
     grade: "",
     major: "",
   });
+
+  useEffect(() => {
+  // fetchWithAuth에서 sessionStorage.setItem("auth_expired", "1") 해둔 것 확인
+  try {
+    if (sessionStorage.getItem("auth_expired") === "1") {
+      setExpiredMsg("토큰이 만료되었습니다. 다시 로그인해주세요.");
+      sessionStorage.removeItem("auth_expired");
+    }
+  } catch {}
+}, []);
 
   // 학습 정보
   const [learningInfo, setLearningInfo] = useState<{
@@ -265,33 +276,34 @@ export default function AuthForm() {
 
   // 기본 정보 입력 핸들러
   const handleBasicChange = (
-  e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }
-) => {
-  let { name, value } = "target" in e ? e.target : e;
+    e: React.ChangeEvent<HTMLInputElement> | { name: string; value: string }
+  ) => {
+    let { name, value } = "target" in e ? e.target : e;
 
-  if (name === "user_id") {
-    value = onlyDigits(value);
-    // ✅ 아이디 입력이 바뀌면 중복확인 상태 초기화
-    setIdSuccess(null);
-    setIdDuplicateError(null);
-  }
+    if (name === "user_id") {
+      value = onlyDigits(value);
+      // ✅ 아이디 입력이 바뀌면 중복확인 상태 초기화
+      setIdSuccess(null);
+      setIdDuplicateError(null);
+    }
 
-  if (name === "email") {
-    // ✅ 이메일 입력이 바뀌면 중복확인 상태 초기화
-    setEmailSuccess(null);
-    setEmailDuplicateError(null);
+    if (name === "email") {
+      // ✅ 이메일 입력이 바뀌면 중복확인 상태 초기화
+      setEmailSuccess(null);
+      setEmailDuplicateError(null);
 
-    if (!value) setEmailError("이메일을 입력해 주세요.");
-    else if (!EMAIL_RE.test(value)) setEmailError("이메일 형식이 올바르지 않습니다.");
-    else setEmailError(null);
-  }
+      if (!value) setEmailError("이메일을 입력해 주세요.");
+      else if (!EMAIL_RE.test(value))
+        setEmailError("이메일 형식이 올바르지 않습니다.");
+      else setEmailError(null);
+    }
 
-  setBasicInfo((prev) => ({ ...prev, [name]: value }));
+    setBasicInfo((prev) => ({ ...prev, [name]: value }));
 
-  if (name === "password" && confirmPassword) {
-    setError(value !== basicInfo.password ? "비밀번호가 다릅니다." : null);
-  }
-};
+    if (name === "password" && confirmPassword) {
+      setError(value !== basicInfo.password ? "비밀번호가 다릅니다." : null);
+    }
+  };
 
   // 개인정보 입력 핸들러
   const handlePersonalChange = (
@@ -483,9 +495,7 @@ export default function AuthForm() {
 
     try {
       // 임시 더미 이메일 사용 (백엔드에서 무시할 수 있는 값)
-      const res = await auth_api.checkDuplicateUserId(
-        basicInfo.user_id
-      );
+      const res = await auth_api.checkDuplicateUserId(basicInfo.user_id);
 
       // ✅ FIX: 백엔드 규격에 맞춰 키 이름을 정확히 사용하고, 메시지를 상호 배타적으로 세팅
       const exists = !!res?.is_user_id_exist; // true면 존재(중복), false면 미존재(사용 가능)
@@ -530,17 +540,28 @@ export default function AuthForm() {
       {/* 헤더 */}
       <header className="text-white absolute top-0 left-0 p-4">
         <Image
-          src="/NOTI-logo.png"
-          alt="NOTI Logo"
-          width={220}
-          height={50}
-          priority
-        />
+  src="/NOTI-logo.png"
+  alt="NOTI Logo"
+  width={120}
+  height={30}
+  className="w-40 h-auto"   // width만 바꾸고 height는 auto로!
+/>
       </header>
+      {expiredMsg && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          {expiredMsg}
+        </div>
+      )}
 
       {/* 본문 섹션 */}
       <section className="flex items-center justify-center w-full px-10 pt-10">
         <Card>
+          {expiredMsg && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+              {expiredMsg}
+            </div>
+          )}
+
           {!isRegistering ? (
             // 로그인 폼
             <>
@@ -612,9 +633,7 @@ export default function AuthForm() {
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
                 🎉 회원가입 완료!
               </h3>
-              <p className="text-gray-600 mb-2">
-                NOTI에 오신 것을 환영합니다!
-              </p>
+              <p className="text-gray-600 mb-2">NOTI에 오신 것을 환영합니다!</p>
               <p className="text-gray-500 text-sm mb-8">
                 프로필이 성공적으로 저장되었습니다.
               </p>
@@ -679,7 +698,6 @@ export default function AuthForm() {
                         onChange={handleBasicChange}
                         disabled={isLoading}
                         required
-                        
                       />
                       {/* 중복확인 버튼 */}
                       <button
