@@ -2,6 +2,7 @@
 // 채점 기능 관련, 현재 목데이터로 진행중.
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { workbook_api } from "@/lib/api";
 import { motion } from "framer-motion";
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
 import {
@@ -126,7 +127,7 @@ export default function FeedbackWithSubmissionPageClient({
   // ❌ 시험모드 더미데이터 총점, 각 조건별 최대 배점과 획득 점수 정보 배열, Markdown 형식 교수 피드백 - 홍
   // const { totalScore, maxScore, professorFeedback: dummyProfessorFeedback } = feedbackDummy
   // const { conditionScores } = feedbackDummy
-
+  const [isExamMode, setIsExamMode] = useState<boolean>(false);
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai">("ai");
 
   useEffect(() => {
@@ -447,7 +448,38 @@ export default function FeedbackWithSubmissionPageClient({
       cancelled = true;
     };
   }, [fetchProblem, fetchSolve, fetchCodeLogs]);
+  useEffect(() => {
+    let cancelled = false;
 
+    (async () => {
+      try {
+        // 문제지(=시험지) 상세 조회
+        const wb = await workbook_api.workbook_get_by_id(Number(params.examId));
+
+        if (cancelled) return;
+
+        const exam = wb; // 백엔드 응답 스키마가 { ... } 또는 { workbook: {...} } 일 수도 있는데
+        // 지금 네 api.ts 정의상 바로 workbook 객체를 리턴한다고 가정
+
+        const testMode = !!exam?.is_test_mode;
+        setIsExamMode(testMode);
+
+        // (선택) 시험 시간창 체크: now가 test_start_time~test_end_time 사이인지
+        if (testMode && exam?.test_start_time && exam?.test_end_time) {
+          const now = new Date();
+          const start = new Date(exam.test_start_time);
+          const end = new Date(exam.test_end_time);
+        }
+      } catch (e) {
+        console.error("workbook 정보 조회 실패:", e);
+        setIsExamMode(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params.examId]);
   // 댓글 전송 핸들러
   const handleAddComment = async () => {
     if (!newComment.trim()) {
@@ -1096,8 +1128,8 @@ export default function FeedbackWithSubmissionPageClient({
               </button>
               <button
                 className="px-6 py-2 rounded-lg shadow transition-colors text-white
-                   disabled:bg-gray-300 disabled:cursor-not-allowed
-                   bg-mygreen hover:bg-mydarkgreen"
+             disabled:bg-gray-300 disabled:cursor-not-allowed
+             bg-mygreen hover:bg-mydarkgreen"
                 onClick={() =>
                   router.push(
                     `/mygroups/${params.groupId}/exams/${
@@ -1106,6 +1138,13 @@ export default function FeedbackWithSubmissionPageClient({
                       params.resultId
                     }&language=${solveData?.code_language?.toLowerCase() || ""}`
                   )
+                }
+                // 🔒 시험모드면 재도전 금지
+                disabled={isExamMode} // 또는 disabled={isExamMode && isInTestWindow}
+                title={
+                  isExamMode
+                    ? "시험 모드에서는 재도전이 비활성화돼."
+                    : undefined
                 }
               >
                 다시 풀러 가기
