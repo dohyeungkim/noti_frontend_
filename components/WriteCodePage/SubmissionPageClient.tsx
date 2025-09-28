@@ -229,7 +229,7 @@ export default function SubmissionPageClient({
       ) : (
         <div className="w-full flex justify-center">
           {/* ✅ 제출 내역 테이블 */}
-          <div className="overflow-x-auto w-full max-w-4xl">
+          <div className="overflow-x-auto w-full max-w-5xl">
             <table className="w-full border-collapse rounded-lg shadow-md overflow-hidden mx-auto">
               <thead className="bg-gray-100 text-gray-700 text-sm uppercase">
                 <tr>
@@ -257,8 +257,8 @@ export default function SubmissionPageClient({
                       {submission.problem_id}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {(submission.problem_name ?? "").length > 10
-                        ? `${(submission.problem_name ?? "").slice(0, 10)}...`
+                      {(submission.problem_name ?? "").length > 20
+                        ? `${(submission.problem_name ?? "").slice(0, 20)}...`
                         : submission.problem_name ?? ""}
                     </td>
                     <td className="px-4 py-3 text-center">

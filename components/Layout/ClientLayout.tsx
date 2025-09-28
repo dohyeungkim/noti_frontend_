@@ -23,9 +23,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     forceHide();
   }, [pathname, forceHide]);
 
-  const leftPadding = isDrawerOpen
-    ? "ml-[15%] mr-[5%]"
-    : "ml-[13%] mr-[5%] md:ml-[15%] md:mr-[8%] lg:ml-[8%] lg:mr-[4%]";
+  const leftPadding = isDrawerOpen //전체 레이아웃 처리 한후에 왼쪽으로 모아놓음 조금키웠음09-29
+    ? "ml-[12%] mr-[5%]"
+    : "ml-[10%] mr-[5%] md:ml-[15%] md:mr-[8%] lg:ml-[8%] lg:mr-[4%]";
 
   return (
     <div className="flex flex-col min-h-screen">

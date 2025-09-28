@@ -719,7 +719,6 @@ export default function FeedbackWithSubmissionPageClient({
             )}
           </div>
         </motion.div>
-
         {/* 레이아웃 그리드 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 왼쪽: 사용자가 작성한 답안 */}
@@ -727,12 +726,14 @@ export default function FeedbackWithSubmissionPageClient({
           {problemDetail?.problemType === "코딩" ||
           problemDetail?.problemType === "디버깅" ? (
             <motion.div
-              className="bg-white rounded-lg shadow-sm border p-4"
+              className="bg-white rounded-lg shadow-sm border p-4 h-[600px] flex flex-col min-h-0"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <CodeLogReplay codeLogs={codeLogs} idx={0} />
+        <div className="flex-1 min-h-0 overflow-auto overflow-x-auto rounded-md">
+      <CodeLogReplay codeLogs={codeLogs} idx={0} />
+    </div>
             </motion.div>
           ) : (
             // 객관식, 주관식, 단답형 문제일 때
@@ -894,58 +895,8 @@ export default function FeedbackWithSubmissionPageClient({
                 )}
               </div>
             </motion.div>
-
-            {/* AI 피드백 섹션 - 고정 높이 */}
-            <motion.div
-              className="bg-white rounded-lg shadow-sm border h-48"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-            >
-              {/* 탭 헤더 */}
-              <div className="p-2 flex space-x-2 border-b">
-                <button
-                  className={`px-4 py-1 text-sm font-medium ${
-                    activeFeedbackTab === "ai"
-                      ? "bg-green-100 text-green-700 border-b-white"
-                      : "text-gray-600 "
-                  }`}
-                  onClick={() => setActiveFeedbackTab("ai")}
-                >
-                  AI 피드백
-                </button>
-                {/* <button
-									className={`px-4 py-1 text-sm font-medium ${
-										activeFeedbackTab === "professor" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600"
-									}`}
-									onClick={() => setActiveFeedbackTab("professor")}
-								>
-									교수 피드백
-								</button> */}
-              </div>
-
-              {/* 탭 내용 */}
-              <div className="p-4 h-32 overflow-y-auto">
-                {!isAILoaded && activeFeedbackTab === "ai" ? (
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                    <span className="text-sm">AI 피드백을 불러오는 중...</span>
-                  </div>
-                ) : (
-                  <div className="prose prose-sm max-w-none text-gray-800">
-                    <ReactMarkdown>
-                      {/* {activeFeedbackTab === "ai"
-												? aiFeedback || solveData?.ai_feedback || "AI 피드백이 없습니다."
-												: "AI 피드백이 없습니다."} */}
-                      {aiMd}
-                    </ReactMarkdown>
-                  </div>
-                )}
-              </div>
-            </motion.div>
           </div>
         </div>
-
         {/* 하단: 문제별 | 제출별 탭과 코멘트 */}
         <motion.div
           className="mt-6 bg-white rounded-lg shadow-sm border"
@@ -984,9 +935,43 @@ export default function FeedbackWithSubmissionPageClient({
               </button>
             </div>
           </div>
+          {/* === AI 피드백 (가로 전체) === */}
+          <motion.div
+            className="mt-8 mx-8 bg-white rounded-lg shadow-sm border"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          >
+            {/* 탭 헤더 (필요하면 다른 탭 추가 가능) */}
+            <div className="p-2 flex space-x-2 border-b">
+              <button
+                className={`px-4 py-1 text-sm font-medium ${
+                  activeFeedbackTab === "ai"
+                    ? "bg-green-100 text-green-700 border-b-white"
+                    : "text-gray-600 "
+                }`}
+                onClick={() => setActiveFeedbackTab("ai")}
+              >
+                AI 피드백
+              </button>
+            </div>
 
+            {/* 본문: 높이 넉넉 + 스크롤 */}
+            <div className="p-4 max-h-[40vh] overflow-y-auto">
+              {!isAILoaded && activeFeedbackTab === "ai" ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span className="text-sm">AI 피드백을 불러오는 중...</span>
+                </div>
+              ) : (
+                <div className="prose prose-sm max-w-none text-gray-800">
+                  <ReactMarkdown>{aiMd}</ReactMarkdown>
+                </div>
+              )}
+            </div>
+          </motion.div>
           {/* 코멘트 섹션 */}
-          <div className="p-6">
+          <div className="p-8">
             <h4 className="font-semibold text-gray-800 mb-4">
               {activeTab === "problem"
                 ? `📝 문제 ${params.problemId}번의 댓글`
@@ -1091,7 +1076,6 @@ export default function FeedbackWithSubmissionPageClient({
             </div>
           </div>
         </motion.div>
-
         <motion.div
           className="mt-6"
           initial={{ opacity: 0, y: 20 }}
@@ -1165,7 +1149,18 @@ export default function FeedbackWithSubmissionPageClient({
             </div>
           </div>
         </motion.div>
+        <div className="h-6" /> {/* 여백 */}
       </div>
     </div>
   );
+}
+{
+  /* <button
+									className={`px-4 py-1 text-sm font-medium ${
+										activeFeedbackTab === "professor" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600"
+									}`}
+									onClick={() => setActiveFeedbackTab("professor")}
+								>
+									교수 피드백
+								</button> */
 }

@@ -7,7 +7,7 @@
  * 객관식 - 선지 가져와야됨 + 답 인덱스 갯수 가져와서 답 여러개면 복수형 문제라고 알려주고 복수 선택 가능하게 하기 !!
  * 주관식 - 가져올 값 없음
  */
-
+import { useMemo } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { useRef, useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
@@ -100,7 +100,6 @@ const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
 
 // ❌ (버그) 컴포넌트 바깥에서 useRef 사용 금지
 // const submittingRef = useRef(false);
-
 // 문제 만들때 설정하는 언어로 열리게끔
 const normalizeLang = (raw?: string) => {
   const s = (raw || "").toLowerCase().trim();
@@ -110,6 +109,35 @@ const normalizeLang = (raw?: string) => {
   if (s.startsWith("java")) return "java";
   return ""; // 모르면 빈값
 };
+//설정언어로만 제출하게끔
+function getExpectedLang(p?: ProblemDetail): string {
+  if (!p) return "";
+  let backendLang = "";
+
+  // 디버깅: base_code 기준
+  if (
+    "base_code" in p &&
+    Array.isArray((p as any).base_code) &&
+    (p as any).base_code.length > 0
+  ) {
+    backendLang = (p as any).base_code[0]?.language || "";
+  }
+
+  // 코딩: reference_codes의 is_main 우선
+  if (
+    !backendLang &&
+    "reference_codes" in p &&
+    Array.isArray((p as any).reference_codes) &&
+    (p as any).reference_codes.length > 0
+  ) {
+    const main =
+      (p as any).reference_codes.find((c: any) => c.is_main) ||
+      (p as any).reference_codes[0];
+    backendLang = main?.language || "";
+  }
+
+  return normalizeLang(backendLang);
+}
 
 const normalizeMultiline = (s: string) => s.replace(/\r\n?/g, "\n");
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
@@ -144,6 +172,7 @@ export default function WriteCodePageClient({
 
   // 문제 유형 플래그
   // 👻❌ solve 쪽은 문제 유형 영어로. 프론트는 한글로
+
   const isCodingOrDebugging =
     problem?.problemType === "코딩" || problem?.problemType === "디버깅";
   const isMultiple = problem?.problemType === "객관식";
@@ -167,7 +196,10 @@ export default function WriteCodePageClient({
       (queryLanguage || localStorage.getItem(languageStorageKey))) ||
     "python";
   const [language, setLanguage] = useState(initialLanguage);
-
+  const expectedLang = useMemo(() => getExpectedLang(problem), [problem]);
+  const normalizedLang = (language || "").toLowerCase();
+  const langMismatch =
+    isCodingOrDebugging && !!expectedLang && normalizedLang !== expectedLang;
   // 코드 초기값: localStorage > 템플릿
   const storageKey = `NOTI_code_${initialLanguage}_${params.problemId}`;
   const initialCode =
@@ -581,6 +613,14 @@ export default function WriteCodePageClient({
           alert("언어를 선택해주세요.");
           return;
         }
+        // 🔒 언어 불일치 가드
+        if (expectedLang && normalizedLang !== expectedLang) {
+          alert(
+            `이 문제는 ${expectedLang.toUpperCase()}로만 제출할 수 있어. 현재 선택: ${normalizedLang.toUpperCase()}`
+          );
+          return;
+        }
+
         request = {
           problemType: pType,
           codes: code,
@@ -918,16 +958,25 @@ export default function WriteCodePageClient({
         <div className="flex items-center gap-2">
           <motion.button
             onClick={handleSubmit}
-            disabled={submittingRef.current}
+            disabled={submittingRef.current || langMismatch}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            title={
+              langMismatch
+                ? `이 문제는 ${expectedLang.toUpperCase()}로만 제출 가능해`
+                : undefined
+            }
             className={`${
-              submittingRef.current
+              submittingRef.current || langMismatch
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-black hover:bg-gray-500"
             } text-white px-16 py-1.5 rounded-xl text-md`}
           >
-            {submittingRef.current ? "제출 중..." : "제출하기"}
+            {submittingRef.current
+              ? "제출 중..."
+              : langMismatch
+              ? "언어 불일치"
+              : "제출하기"}
           </motion.button>
         </div>
       </motion.div>
@@ -1067,7 +1116,7 @@ export default function WriteCodePageClient({
             {/* 코딩/디버깅 타입일 때 */}
             {isCodingOrDebugging && (
               <>
-                <div className="flex items-center mb-2 max-w_full overflow-hidden shrink-0">
+                <div className="flex items-center mb-2 max-w_full overflow-hidden shrink-0 gap-2">
                   <select
                     value={language}
                     onChange={handleLanguageChange}
@@ -1078,6 +1127,18 @@ export default function WriteCodePageClient({
                     <option value="cpp">C++</option>
                     <option value="java">Java</option>
                   </select>
+
+                  {expectedLang && (
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        langMismatch
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                      }`}
+                    >
+                      요구 언어: {expectedLang.toUpperCase()}
+                    </span>
+                  )}
                 </div>
 
                 {/* ✔ 남는 높이 꽉 채움 */}
