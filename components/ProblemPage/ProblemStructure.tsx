@@ -307,6 +307,7 @@ export default function ProblemStructure({
           isGroupOwner={isGroupOwner}
           refresh={refresh}
           setRefresh={setRefresh}
+          isTestMode={!!workbook?.is_test_mode} 
         />
       )}
       <ProblemSelector

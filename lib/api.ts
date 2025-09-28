@@ -1614,8 +1614,96 @@ export const ai_feedback_api = {
 	},
 }
 
-// ====================== 코드 실행(run_code) API ===========================
 
+// ====================== run_code_example API ===========================
+
+/** 요청 타입: 문제 없이 예제 코드 실행 전용 */
+export type RunCodeExampleTestCaseReq = {
+  /** 문자열 한 줄 또는 여러 줄 입력 */
+  input: string | string[]
+  expected_output: string
+}
+
+export interface RunCodeExampleRequest {
+  language: string            // "python" 등
+  code: string                // 실행할 코드
+  rating_mode: RatingMode | "space" | "regex" | "none" | "exact" | "partial" | "soft"
+  test_cases: RunCodeExampleTestCaseReq[]
+}
+
+/** 응답 타입: 백엔드가 results 배열만 내려주는 간단형 */
+export interface RunCodeExampleResult {
+  output: string
+  passed: boolean
+}
+
+export interface RunCodeExampleResponse {
+  results: RunCodeExampleResult[]
+  /** 백엔드가 여분 필드를 줄 수 있으니 확장 허용 */
+  [k: string]: any
+}
+
+export const run_code_example_api = {
+  /**
+   * 예제 코드 실행 (문제 컨텍스트 없이)
+   * POST /api/proxy/problems/run_code
+   *
+   * 사용 예:
+   * await run_code_example_api.run({
+   *   language: "python",
+   *   code: 'a=input().strip(); b=input().strip(); print(f"{a} {b}")',
+   *   rating_mode: "space",
+   *   test_cases: [
+   *     { input: ["Hello", "World"], expected_output: "Hello World" },
+   *     { input: ["3", "5"], expected_output: "3 5" },
+   *   ],
+   * })
+   */
+  async run(requestData: RunCodeExampleRequest): Promise<RunCodeExampleResponse> {
+    // 입력 정규화: input이 string이면 배열로 변환
+    const normalized = {
+      ...requestData,
+      test_cases: requestData.test_cases.map(tc => ({
+        ...tc,
+        input: Array.isArray(tc.input) ? tc.input : (typeof tc.input === "string" ? [tc.input] : []),
+      })),
+    }
+
+    const res = await fetchWithAuth("/api/proxy/problems/run_code", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(normalized),
+    })
+
+    // 응답 파싱 (text → json 안전 처리)
+    let bodyText = ""
+    try { bodyText = await res.text() } catch {}
+    let body: any = {}
+    try { body = bodyText ? JSON.parse(bodyText) : {} } catch { body = {} }
+
+    if (!res.ok) {
+      const msg = Array.isArray(body?.detail)
+        ? body.detail.map((d: any) => `${(d.loc || []).join(" > ")}: ${d.msg}`).join("\n")
+        : body?.detail?.msg || body?.message || `코드 실행 실패 (${res.status})`
+      throw new Error(msg)
+    }
+
+    // 결과 형태 보장: results가 없으면 빈 배열
+    if (!Array.isArray(body?.results)) {
+      body.results = []
+    }
+
+    // 결과의 각 output을 문자열로 강제(혹시 null/undefined 방지)
+    body.results = body.results.map((r: any) => ({
+      output: typeof r?.output === "string" ? r.output : String(r?.output ?? ""),
+      passed: !!r?.passed,
+    }))
+
+    return body as RunCodeExampleResponse
+  },
+}
+// ====================== 코드 실행(run_code) API ===========================
 /** run_code 요청/응답 타입 (백엔드 스키마에 맞춰 유연하게) */
 export type RunCodeTestCaseReq = {
   /** 요청: 문자열 한 줄로 보낼 수도 있고, ["Hello","World"]처럼 배열로도 보낼 수 있게 허용 */

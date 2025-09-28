@@ -5,18 +5,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { problem_api, problem_ref_api } from "@/lib/api";
-
-// interface Problem {
-// 	problem_id: number
-// 	title: string
-// 	description: string
-// 	attempt_count: number
-// 	pass_count: number
-
-// 	problem_type?: string // 문제 유형 (옵션) 새로 추가하는 내용. 일단 지금은 코딩- 홍
-// 	problem_score?: number // 배점 (옵션) 새로 추가하는 내용. 일단 지금은 10점으로 써놈- 홍
-// }
+import { problem_ref_api } from "@/lib/api";
 
 interface ProblemRef {
   problem_id: number;
@@ -33,8 +22,10 @@ interface ProblemListProps {
   groupId: number;
   workbookId: number;
   isGroupOwner: boolean;
-  refresh: boolean; // Added refresh prop
-  setRefresh: React.Dispatch<React.SetStateAction<boolean>>; // Added setRefresh prop
+  refresh: boolean;
+  setRefresh: React.Dispatch<React.SetStateAction<boolean>>;
+  /** ✅ 상위에서 내려주는 시험모드 여부 */
+  isTestMode: boolean;
 }
 
 const ProblemList = ({
@@ -44,18 +35,16 @@ const ProblemList = ({
   isGroupOwner,
   refresh,
   setRefresh,
+  isTestMode,
 }: ProblemListProps) => {
   const router = useRouter();
 
-  const [currentProblems, setCurrentProblems] =
-    useState<ProblemRef[]>(problems);
-  // 부모가 새 리스트를 내려줄 때 로컬 상태도 갱신
+  const [currentProblems, setCurrentProblems] = useState<ProblemRef[]>(problems);
+
   useEffect(() => {
     setCurrentProblems(problems);
   }, [problems]);
 
-  // 문제 배점 수정 모달창 관련 필드 ??????????????????
-  // const [points, setPoints] = useState<ProblemRef>(points) // 문제 배점
   const [editingProblem, setEditingProblem] = useState<ProblemRef | null>(null);
   const [editScore, setEditScore] = useState<number>(0);
 
@@ -73,6 +62,17 @@ const ProblemList = ({
     }
   };
 
+  /** ✅ 시험모드 접근 가드: 제출 1회 이상이면 접근 차단 */
+  const onRowClick = (p: ProblemRef) => {
+    if (isTestMode && p.attempt_count >= 1) {
+      alert("시험모드에서는 이미 1회 제출한 문제에 접근할 수 없습니다.");
+      return;
+    }
+    router.push(
+      `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}/write`
+    );
+  };
+
   return (
     <section>
       <div className="w-full overflow-x-auto">
@@ -80,27 +80,13 @@ const ProblemList = ({
           <thead className="bg-gray-200">
             <tr className="border-b-4 border-gray-200 text-gray-800">
               <th className="px-5 py-4 text-center text-lg font-semibold">#</th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                문제 유형
-              </th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                문제 제목
-              </th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                시도한 횟수
-              </th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                맞은 횟수
-              </th>
-              <th className="px-5 py-4 text-center text-lg font-semibold">
-                배점
-              </th>
-              {isGroupOwner && (
-                <th className="px-5 py-4 text-center text-lg font-semibold"></th>
-              )}
-              {isGroupOwner && (
-                <th className="px-5 py-4 text-center text-lg font-semibold"></th>
-              )}
+              <th className="px-5 py-4 text-center text-lg font-semibold">문제 유형</th>
+              <th className="px-5 py-4 text-center text-lg font-semibold">문제 제목</th>
+              <th className="px-5 py-4 text-center text-lg font-semibold">시도한 횟수</th>
+              <th className="px-5 py-4 text-center text-lg font-semibold">맞은 횟수</th>
+              <th className="px-5 py-4 text-center text-lg font-semibold">배점</th>
+              {isGroupOwner && <th className="px-5 py-4 text-center text-lg font-semibold"></th>}
+              {isGroupOwner && <th className="px-5 py-4 text-center text-lg font-semibold"></th>}
             </tr>
           </thead>
           <tbody>
@@ -109,7 +95,6 @@ const ProblemList = ({
                 .sort((a, b) => {
                   const pick = (s: string) => (s ?? "").trim();
                   const getPriority = (s: string) => {
-                    // 첫 글자 기준 그룹: 숫자(0) → 한글(1) → 영어 대문자(2) → 영어 소문자(3) → 기타(4)
                     if (/^\d/.test(s)) return 0;
                     if (/^[ㄱ-ㅎ가-힣]/.test(s)) return 1;
                     if (/^[A-Z]/.test(s)) return 2;
@@ -122,56 +107,39 @@ const ProblemList = ({
                   const pa = getPriority(ta);
                   const pb = getPriority(tb);
 
-                  if (pa !== pb) return pa - pb; // 그룹 우선순위
-
-                  // 같은 그룹이면 한국어 기준 + 숫자 자연 정렬
+                  if (pa !== pb) return pa - pb;
                   return ta.localeCompare(tb, "ko", { numeric: true });
                 })
                 .map((p, index) => {
                   const PROBLEM_TYPES = [
-                    {
-                      value: "코딩",
-                      label: "코딩",
-                      color: "bg-blue-100 text-blue-800",
-                    },
-                    {
-                      value: "디버깅",
-                      label: "디버깅",
-                      color: "bg-red-100 text-red-800",
-                    },
-                    {
-                      value: "객관식",
-                      label: "객관식",
-                      color: "bg-green-100 text-green-800",
-                    },
-                    {
-                      value: "주관식",
-                      label: "주관식",
-                      color: "bg-purple-100 text-purple-800",
-                    },
-                    {
-                      value: "단답형",
-                      label: "단답형",
-                      color: "bg-yellow-100 text-yellow-800",
-                    },
+                    { value: "코딩", label: "코딩", color: "bg-blue-100 text-blue-800" },
+                    { value: "디버깅", label: "디버깅", color: "bg-red-100 text-red-800" },
+                    { value: "객관식", label: "객관식", color: "bg-green-100 text-green-800" },
+                    { value: "주관식", label: "주관식", color: "bg-purple-100 text-purple-800" },
+                    { value: "단답형", label: "단답형", color: "bg-yellow-100 text-yellow-800" },
                   ] as const;
 
-                  const typeInfo = PROBLEM_TYPES.find(
-                    (t) => t.value === (p as any).problemType
-                  ) ?? {
-                    label: "-",
-                    color: "bg-blue-100 text-blue-800",
-                  };
+                  const typeInfo =
+                    PROBLEM_TYPES.find((t) => t.value === (p as any).problemType) ??
+                    { label: "-", color: "bg-blue-100 text-blue-800" };
+
+                  // 🔒 시험모드일 때 attempt_count >= 1 이면 접근 불가
+                  const locked = isTestMode && p.attempt_count >= 1;
 
                   return (
                     <tr
                       key={p.problem_id}
-                      onClick={() =>
-                        router.push(
-                          `/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}/write`
-                        )
+                      onClick={() => onRowClick(p)}
+                      className={`transition-colors duration-200 border-b border-gray-300 ${
+                        locked
+                          ? "cursor-not-allowed bg-gray-50 hover:bg-gray-50 opacity-70"
+                          : "hover:bg-gray-100 cursor-pointer"
+                      }`}
+                      title={
+                        locked
+                          ? "시험모드: 이미 1회 제출하여 더 이상 접근할 수 없습니다."
+                          : undefined
                       }
-                      className="transition-colors duration-200 border-b border-gray-300 hover:bg-gray-100 cursor-pointer"
                     >
                       <td className="px-5 py-4 text-center">{index + 1}</td>
 
@@ -184,6 +152,7 @@ const ProblemList = ({
                         </span>
                       </td>
 
+                      {/* 문제 제목 */}
                       <td
                         className="px-5 py-4 text-center truncate max-w-[200px] overflow-hidden whitespace-nowrap"
                         title={p.title}
@@ -192,32 +161,31 @@ const ProblemList = ({
                           ? `${p.title.slice(0, 15)}...`
                           : p.title}
                       </td>
+
                       <td className="px-5 py-4 text-center">
                         {p.attempt_count}
                       </td>
                       <td className="px-5 py-4 text-center">{p.pass_count}</td>
-                      {/* 👻❌ - 백엔드 수정해야됨 ~ 포인트 값 하나 내려줘야됨! */}
                       <td className="px-5 py-4 text-center">
                         {p.points ?? "-"}
                       </td>
-                      {/* <td className="px-5 py-4 text-center">
-											<button
-												onClick={() => router.push(`/mygroups/${groupId}/exams/${workbookId}/problems/${p.problem_id}`)}
-												className="w-full py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out active:scale-95 bg-mygreen text-white hover:bg-opacity-80"
-											>
-												도전하기
-											</button>
-										</td> */}
+
                       {/* 문제 수정하기, 삭제하기 - 그룹장 권한 */}
                       {isGroupOwner && (
                         <td className="px-5 py-4 text-center">
                           <button
                             onClick={(e) => {
                               setEditingProblem(p);
-                              setEditScore(p.points); //문제의 점수를 연동해야함
+                              setEditScore(p.points);
                               e.stopPropagation();
                             }}
                             className="text-blue-600 hover:text-red-700 text-sm font-semibold"
+                            disabled={locked}
+                            title={
+                              locked
+                                ? "시험모드: 이미 1회 제출하여 배점 수정/삭제만 가능합니다."
+                                : undefined
+                            }
                           >
                             배점 수정
                           </button>
@@ -252,11 +220,11 @@ const ProblemList = ({
             )}
           </tbody>
         </table>
-        {/* 모달창 추가*/}
+
+        {/* 배점 수정 모달 */}
         {editingProblem && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-[400px] p-6 relative shadow-lg">
-              {/* 닫기 버튼 */}
               <button
                 onClick={() => setEditingProblem(null)}
                 className="absolute top-2 right-2 text-gray-500 hover:text-black text-lg"
@@ -281,7 +249,6 @@ const ProblemList = ({
                   onClick={async () => {
                     try {
                       await problem_ref_api.problem_ref_edit_points(
-                        //점수수정모달 연동해야함
                         groupId,
                         workbookId,
                         editingProblem.problem_id,

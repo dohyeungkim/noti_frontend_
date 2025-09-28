@@ -79,9 +79,31 @@ export default function ExamsClient() {
     }
   }, [groupId]);
 
-  const handleEnterExam = (workbookId: number) => {
+  // ▼▼▼ 추가: 상세 페이지에서 is_test_mode를 바로 활용할 수 있도록 sessionStorage에 저장 + 라우팅
+  const goToWorkbook = (workbookId: number, isTestMode: boolean) => {
+    try {
+      // 상세 페이지(문제 리스트 페이지)에서 사용할 수 있도록 저장
+      // 예: 상세 페이지에서 sessionStorage.getItem(`wb_is_test_mode_${workbookId}`) === "true"
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(
+          `wb_is_test_mode_${workbookId}`,
+          String(isTestMode)
+        );
+      }
+    } catch {
+      // sessionStorage 사용 불가해도 라우팅은 진행
+    }
     router.push(`/mygroups/${groupId}/exams/${workbookId}`);
   };
+
+  // 기존 핸들러는 시그니처 유지하면서 내부에서 test/normal을 구분해 주입
+  const handleEnterExamNormal = (workbookId: number) => {
+    goToWorkbook(workbookId, false);
+  };
+  const handleEnterExamTest = (workbookId: number) => {
+    goToWorkbook(workbookId, true);
+  };
+  // ▲▲▲ 추가 끝
 
   const handleClick = () => {
     router.push(`/manage/${groupId}`);
@@ -192,7 +214,9 @@ export default function ExamsClient() {
               </h3>
               <ExamGallery
                 workbooks={normalList}
-                handleEnterExam={handleEnterExam}
+                // 기존 시그니처 유지: ExamGallery는 workbookId만 넘겨줘도 됨
+                // 내부에서 normal 섹션은 항상 false로 세팅된 핸들러를 사용
+                handleEnterExam={handleEnterExamNormal}
                 isGroupOwner={isGroupOwner}
               />
             </section>
@@ -206,7 +230,8 @@ export default function ExamsClient() {
             <section>
               <ExamGallery
                 workbooks={testList}
-                handleEnterExam={handleEnterExam}
+                // 시험 모드 섹션은 항상 true로 세팅된 핸들러를 사용
+                handleEnterExam={handleEnterExamTest}
                 isGroupOwner={isGroupOwner}
               />
             </section>
