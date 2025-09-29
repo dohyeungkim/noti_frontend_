@@ -8,9 +8,9 @@ import {
   faIdBadge,
   faLock,
   faLanguage,
-  faGlobe, // 다른 곳에서 쓰면 유지
+  faGlobe,
   faCakeCandles,
-  faShieldHalved, // 남는 곳 없으면 나중에 정리 가능
+  faShieldHalved,
   faCamera,
   faEarthAsia,
   faChartLine,
@@ -23,10 +23,9 @@ import {
   faBookOpen,
   faUserGraduate,
   faCode,
-  faLocationDot, // ✅ 주소 아이콘
+  faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
 
-// 🔗 프로젝트의 API 모듈
 import { auth_api, user_api } from "@/lib/api";
 
 /* ====================== 타입 ====================== */
@@ -36,8 +35,8 @@ type ProfileCore = {
   email: string;
   created_at: string;
 
-  gender?: string | null;
-  birthday?: string | null;
+  gender?: string | null; // "male" | "female" | null
+  birthday?: string | null; // "YYYY-MM-DD" or ISO
   phone?: string | null;
   address?: string | null;
   school?: string | null;
@@ -55,13 +54,13 @@ type ProfileCore = {
 
 type ProfileView = {
   user_id: string;
-  name: string;
+  username: string;
   email: string;
   createdAt: string;
   birth: string;
-  country: string;
-  language: string;
-  gender?: string | null;
+  country: string; // UI 전용
+  language: string; // UI 전용
+  gender?: string | null; // "남성" | "여성" | ""
   phone?: string | null;
   address?: string | null;
   school?: string | null;
@@ -76,13 +75,12 @@ type ProfileView = {
 
   solvedCount: number;
   attemptedCount: number;
-  lastVisit: string; // ISO
+  lastVisit: string;
 };
 
-/** ✅ 더미 없는 초기 상태 */
 const EMPTY_PROFILE: ProfileView = {
   user_id: "",
-  name: "",
+  username: "",
   email: "",
   createdAt: "",
   birth: "",
@@ -100,12 +98,37 @@ const EMPTY_PROFILE: ProfileView = {
   preferred_fields: [],
   programming_experience_level: "",
   preferred_programming_languages: [],
-  // ⬇ 내 활동 요약은 유지(초깃값 0)
   solvedCount: 0,
   attemptedCount: 0,
   lastVisit: "",
 };
 
+/* ---------------- Utils: 변환/정규화 ---------------- */
+const genderToUi = (g?: string | null) =>
+  g === "male" ? "남성" : g === "female" ? "여성" : "";
+
+const genderToApi = (g?: string | null) =>
+  g === "남성" ? "male" : g === "여성" ? "female" : "";
+
+const toYMD = (isoLike?: string | null) => {
+  if (!isoLike) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoLike)) return isoLike;
+  const d = new Date(isoLike);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+// PATCH 바디(업데이트 전용)
+type UpdatePayload = Partial<Omit<ProfileCore, "created_at">> & { user_id: string };
+
+// 타입 깐깐하면 any 래핑
+const updateProfile = (payload: UpdatePayload) =>
+  (user_api.user_profile_update as any)(payload);
+
+/* ---------------- Component ---------------- */
 export default function ProfilePage() {
   const [user, setUser] = useState<ProfileView>(EMPTY_PROFILE);
   const [pwLoading, setPwLoading] = useState(false);
@@ -113,22 +136,21 @@ export default function ProfilePage() {
 
   // ===== 모달 상태 =====
   const [openEmail, setOpenEmail] = useState(false);
-  const [openName, setOpenName] = useState(false);
   const [openBirth, setOpenBirth] = useState(false);
   const [openCountry, setOpenCountry] = useState(false);
   const [openLanguage, setOpenLanguage] = useState(false);
-
+  const [openUsername, setOpenUsername] = useState(false);
+  const [tmpUsername, setTmpUsername] = useState("");
   const [openSchool, setOpenSchool] = useState(false);
   const [openMajor, setOpenMajor] = useState(false);
   const [openGrade, setOpenGrade] = useState(false);
   const [openGender, setOpenGender] = useState(false);
   const [openExpLevel, setOpenExpLevel] = useState(false);
-  const [openPhone, setOpenPhone] = useState(false); // ✅ 전화번호 모달
-  const [openAddress, setOpenAddress] = useState(false); // ✅ 주소 모달
+  const [openPhone, setOpenPhone] = useState(false);
+  const [openAddress, setOpenAddress] = useState(false);
 
   // ===== 임시 입력값 =====
   const [tmpEmail, setTmpEmail] = useState("");
-  const [tmpName, setTmpName] = useState("");
   const [tmpBirth, setTmpBirth] = useState("");
   const [tmpCountry, setTmpCountry] = useState("");
   const [tmpLanguage, setTmpLanguage] = useState("");
@@ -141,14 +163,14 @@ export default function ProfilePage() {
   const [tmpGender, setTmpGender] = useState("");
   const [tmpExpLevel, setTmpExpLevel] = useState("");
   const [tmpPhone, setTmpPhone] = useState("");
-  const [tmpAddress, setTmpAddress] = useState(""); // ✅ 주소 입력값
+  const [tmpAddress, setTmpAddress] = useState("");
 
-  /** ---------- 메모장(= introduction 동기화) ---------- */
+  // 메모(= introduction)
   const [memo, setMemo] = useState<string>("");
   const [tmpMemo, setTmpMemo] = useState<string>("");
   const [memoSavedAt, setMemoSavedAt] = useState<string | null>(null);
 
-  // ✅ 최초 로드 시 API에서 프로필 불러오기 (더미 없음)
+  // 최초 로드
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -158,14 +180,13 @@ export default function ProfilePage() {
 
         const mapped: ProfileView = {
           user_id: res.user_id ?? "",
-          name: res.username ?? "",
+          username: res.username ?? "",
           email: res.email ?? "",
           createdAt: res.created_at ?? "",
-          birth: res.birthday ?? "",
-          // API에 없다면 비워둠 (이전엔 Korea/한국어 하드코딩)
+          birth: toYMD(res.birthday) ?? "",
           country: "",
           language: "",
-          gender: res.gender ?? "",
+          gender: genderToUi(res.gender) ?? "",
           phone: res.phone ?? "",
           address: res.address ?? "",
           school: res.school ?? "",
@@ -176,39 +197,34 @@ export default function ProfilePage() {
           learning_goals: res.learning_goals ?? [],
           preferred_fields: res.preferred_fields ?? [],
           programming_experience_level: res.programming_experience_level ?? "",
-          preferred_programming_languages:
-            res.preferred_programming_languages ?? [],
-          // 활동 요약은 페이지 내에서만 관리 (API 붙이면 여기서 세팅)
+          preferred_programming_languages: res.preferred_programming_languages ?? [],
           solvedCount: user.solvedCount ?? 0,
           attemptedCount: user.attemptedCount ?? 0,
           lastVisit: user.lastVisit ?? "",
         };
 
         setUser(mapped);
+        setTmpUsername(mapped.username);
 
         // 모달 입력값 초기화
         setTmpEmail(mapped.email);
-        setTmpName(mapped.name);
         setTmpBirth(mapped.birth);
         setTmpCountry(mapped.country);
         setTmpLanguage(mapped.language);
-
         setTmpSchool(mapped.school || "");
         setTmpMajor(mapped.major || "");
         setTmpGrade(mapped.grade || "");
         setTmpGender(mapped.gender || "");
         setTmpExpLevel(mapped.programming_experience_level || "");
         setTmpPhone(mapped.phone || "");
-        setTmpAddress(mapped.address || ""); // ✅ 초기화
+        setTmpAddress(mapped.address || "");
 
-        // 메모장 동기화 (기본 문구 NO)
+        // 메모장 동기화
         const intro = (res.introduction ?? "").trim();
-        const initialMemo = intro; // 빈 값 그대로 두기
-        setMemo(initialMemo);
-        setTmpMemo(initialMemo);
+        setMemo(intro);
+        setTmpMemo(intro);
       } catch (e) {
         console.warn("profile_get 실패", e);
-        // 실패 시에도 더미 주입 X (그대로 비워두기)
         setMemo("");
         setTmpMemo("");
       }
@@ -219,54 +235,72 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ===== 직렬화 =====
-  function toPayload(u: ProfileView) {
-    return {
-      user_id: u.user_id,
-      username: u.name,
-      email: u.email,
-      created_at: u.createdAt,
-
-      gender: u.gender ?? "",
-      birthday: u.birth ?? "",
-      phone: u.phone ?? "",
-      address: u.address ?? "",
-      school: u.school ?? "",
-      introduction: u.introduction ?? "",
-
-      grade: u.grade ?? "",
-      major: u.major ?? "",
-      interests: u.interests ?? [],
-      learning_goals: u.learning_goals ?? [],
-      preferred_fields: u.preferred_fields ?? [],
-      programming_experience_level:
-        (u.programming_experience_level as string) ?? "",
-      preferred_programming_languages: u.preferred_programming_languages ?? [],
-    };
+  /* ===== delta 빌더 ===== */
+  function mapViewToCoreFragment(key: keyof ProfileView, value: any): Partial<UpdatePayload> {
+    switch (key) {
+      case "username": return { username: value };
+      case "email": return { email: value };
+      case "gender": return { gender: genderToApi(value) || undefined };
+      case "birth": return { birthday: toYMD(value) || undefined };
+      case "phone": return { phone: value || undefined };
+      case "address": return { address: value || undefined };
+      case "school": return { school: value || undefined };
+      case "introduction": return { introduction: value || undefined };
+      case "grade": return { grade: value || undefined };
+      case "major": return { major: value || undefined };
+      case "interests": return { interests: value ?? [] };
+      case "learning_goals": return { learning_goals: value ?? [] };
+      case "preferred_fields": return { preferred_fields: value ?? [] };
+      case "programming_experience_level":
+        return { programming_experience_level: (value as string) || undefined };
+      case "preferred_programming_languages":
+        return { preferred_programming_languages: value ?? [] };
+      // name, country, language, createdAt, solvedCount, attemptedCount, lastVisit → 서버 전송 X
+      default: return {};
+    }
   }
 
-  // ===== 적용 핸들러 =====
+  function buildUpdatePayload(prev: ProfileView, next: ProfileView, keys: (keyof ProfileView)[]): UpdatePayload {
+    const payload: UpdatePayload = { user_id: next.user_id };
+    for (const k of keys) {
+      if (prev[k] === next[k]) continue;
+      Object.assign(payload, mapViewToCoreFragment(k, next[k]));
+    }
+    // 빈값 제거
+    Object.keys(payload).forEach((k) => {
+      const v = (payload as any)[k];
+      if (v === "" || v === null || v === undefined) delete (payload as any)[k];
+    });
+    return payload;
+  }
+
+  const optimisticPatch = async (next: ProfileView, changedKeys: (keyof ProfileView)[]) => {
+    const prev = user;
+    setUser(next);
+    try {
+      const body = buildUpdatePayload(prev, next, changedKeys);
+      // 변경이 없으면 호출 스킵
+      if (Object.keys(body).length > 1) {
+        await updateProfile(body);
+      }
+    } catch (e) {
+      console.warn("PATCH 실패, 롤백", e);
+      setUser(prev);
+      alert("저장에 실패했어. 잠시 후 다시 시도해줘.");
+      throw e;
+    }
+  };
+
+  /* ===== 적용 핸들러 ===== */
   const applyPassword = async () => {
     const current = (tmpPw.current || "").trim();
     const next = (tmpPw.next || "").trim();
     const confirm = (tmpPw.confirm || "").trim();
 
-    if (!current || !next) {
-      setPwError("현재 비밀번호와 새 비밀번호를 입력해주세요.");
-      return;
-    }
-    if (next !== confirm) {
-      setPwError("새 비밀번호가 일치하지 않습니다.");
-      return;
-    }
-    if (current === next) {
-      setPwError("현재 비밀번호와 새 비밀번호가 동일합니다.");
-      return;
-    }
-    if (next.length < 4) {
-      setPwError("비밀번호는 4자 이상이어야 합니다.");
-      return;
-    }
+    if (!current || !next) { setPwError("현재 비밀번호와 새 비밀번호를 입력해주세요."); return; }
+    if (next !== confirm) { setPwError("새 비밀번호가 일치하지 않습니다."); return; }
+    if (current === next) { setPwError("현재 비밀번호와 새 비밀번호가 동일합니다."); return; }
+    if (next.length < 4) { setPwError("비밀번호는 4자 이상이어야 합니다."); return; }
     try {
       setPwLoading(true);
       setPwError(null);
@@ -282,35 +316,20 @@ export default function ProfilePage() {
   };
 
   const applyEmail = async () => {
-    setUser((u) => {
-      const next = { ...u, email: tmpEmail };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("이메일 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, email: tmpEmail.trim() };
+    await optimisticPatch(next, ["email"]);
     setOpenEmail(false);
   };
 
-  const applyName = async () => {
-    setUser((u) => {
-      const next = { ...u, name: tmpName };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("이름 PATCH 실패:", e));
-      return next;
-    });
-    setOpenName(false);
+  const applyUsername = async () => {
+    const next = { ...user, username: tmpUsername.trim() };
+    await optimisticPatch(next, ["username"]);
+    setOpenUsername(false);
   };
 
   const applyBirth = async () => {
-    setUser((u) => {
-      const next = { ...u, birth: tmpBirth };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("생년월일 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, birth: toYMD(tmpBirth) };
+    await optimisticPatch(next, ["birth"]);
     setOpenBirth(false);
   };
 
@@ -325,99 +344,58 @@ export default function ProfilePage() {
   };
 
   const applySchool = async () => {
-    setUser((u) => {
-      const next = { ...u, school: tmpSchool.trim() };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("학교 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, school: (tmpSchool || "").trim() };
+    await optimisticPatch(next, ["school"]);
     setOpenSchool(false);
   };
 
   const applyMajor = async () => {
-    setUser((u) => {
-      const next = { ...u, major: tmpMajor.trim() };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("전공 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, major: (tmpMajor || "").trim() };
+    await optimisticPatch(next, ["major"]);
     setOpenMajor(false);
   };
 
   const applyGrade = async () => {
-    setUser((u) => {
-      const next = { ...u, grade: tmpGrade.trim() };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("학년 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, grade: (tmpGrade || "").trim() };
+    await optimisticPatch(next, ["grade"]);
     setOpenGrade(false);
   };
 
   const applyGender = async () => {
-    setUser((u) => {
-      const next = { ...u, gender: (tmpGender || "").trim() };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("성별 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, gender: (tmpGender || "").trim() };
+    await optimisticPatch(next, ["gender"]);
     setOpenGender(false);
   };
 
   const applyExpLevel = async () => {
-    setUser((u) => {
-      const next = {
-        ...u,
-        programming_experience_level: (tmpExpLevel || "").trim(),
-      };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("경험수준 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, programming_experience_level: (tmpExpLevel || "").trim() };
+    await optimisticPatch(next, ["programming_experience_level"]);
     setOpenExpLevel(false);
   };
 
   const applyPhone = async () => {
-    setUser((u) => {
-      const next = { ...u, phone: tmpPhone.trim() };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("전화번호 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, phone: (tmpPhone || "").trim() };
+    await optimisticPatch(next, ["phone"]);
     setOpenPhone(false);
   };
 
   const applyAddress = async () => {
-    // ✅ 주소 저장
-    setUser((u) => {
-      const next = { ...u, address: tmpAddress.trim() };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("주소 PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, address: (tmpAddress || "").trim() };
+    await optimisticPatch(next, ["address"]);
     setOpenAddress(false);
   };
 
-  const saveMemo = () => {
+  const saveMemo = async () => {
     const v = tmpMemo.trim();
     setMemo(v);
     setMemoSavedAt(new Date().toISOString());
-    setUser((u) => {
-      const next = { ...u, introduction: v };
-      user_api
-        .user_profile_update(toPayload(next))
-        .catch((e) => console.warn("메모(소개) PATCH 실패:", e));
-      return next;
-    });
+    const next = { ...user, introduction: v };
+    try {
+      await optimisticPatch(next, ["introduction"]);
+    } catch {}
   };
 
+  /* ===== 파생 값 ===== */
   const formattedLastVisit = useMemo(
     () => (user.lastVisit ? formatDate(user.lastVisit) : ""),
     [user.lastVisit]
@@ -432,6 +410,7 @@ export default function ProfilePage() {
     [memoSavedAt]
   );
 
+  /* ===== View ===== */
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       {/* 핵심 레이아웃 */}
@@ -444,7 +423,7 @@ export default function ProfilePage() {
             </div>
             <button
               className="mt-4 text-sm text-emerald-700 hover:underline flex items-center justify-center gap-2"
-              onClick={() => alert("아직 구현하지 않은 기능입니다.")} // ✅ 유지
+              onClick={() => alert("아직 구현하지 않은 기능입니다.")}
             >
               <FontAwesomeIcon icon={faCamera} />
               사진 추가
@@ -470,26 +449,32 @@ export default function ProfilePage() {
                   </button>
                 </div>
               </div>
+              {formattedSavedAt ? (
+                <p className="mt-1 text-[11px] text-gray-500">
+                  마지막 저장: {formattedSavedAt}
+                </p>
+              ) : null}
             </div>
           </div>
 
           {/* 중앙: 이름/기본 정보 */}
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold">
-              {user.name || "이름 미설정"}
-            </h1>
-            <button
-              className="mt-1 text-sm text-emerald-700 hover:underline"
-              onClick={() => {
-                setTmpName(user.name || "");
-                setOpenName(true);
-              }}
-            >
-              이름 편집
-            </button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl md:text-4xl font-extrabold">
+                {user.username || "닉네임 미설정"}
+              </h1>
+              <button
+                className="text-sm text-emerald-700 hover:underline"
+                onClick={() => {
+                  setTmpUsername(user.username || "");
+                  setOpenUsername(true);
+                }}
+              >
+                닉네임 편집
+              </button>
+            </div>
 
             <div className="mt-6 space-y-4">
-              {/* 가입일 */}
               <InfoRow
                 icon={faIdBadge}
                 label={
@@ -499,31 +484,18 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 이메일 */}
               <InfoRow
                 icon={faEnvelope}
                 label={user.email || "이메일 미설정"}
-                action={
-                  <InlineLink
-                    label="이메일 변경"
-                    onClick={() => setOpenEmail(true)}
-                  />
-                }
+                action={<InlineLink label="이메일 변경" onClick={() => setOpenEmail(true)} />}
               />
 
-              {/* 비밀번호 */}
               <InfoRow
                 icon={faLock}
                 label="비밀번호"
-                action={
-                  <InlineLink
-                    label="비밀번호 변경"
-                    onClick={() => setOpenPassword(true)}
-                  />
-                }
+                action={<InlineLink label="비밀번호 변경" onClick={() => setOpenPassword(true)} />}
               />
 
-              {/* 생년월일 (년-월-일만) */}
               <InfoRow
                 icon={faCakeCandles}
                 label={
@@ -531,15 +503,9 @@ export default function ProfilePage() {
                     ? formatDateYMD(user.birth)
                     : "생년월일을 설정해주세요"
                 }
-                action={
-                  <InlineLink
-                    label="생년월일 편집"
-                    onClick={() => setOpenBirth(true)}
-                  />
-                }
+                action={<InlineLink label="생년월일 편집" onClick={() => setOpenBirth(true)} />}
               />
 
-              {/* 국가/지역 */}
               <InfoRow
                 icon={faEarthAsia}
                 label={user.country || "국가/지역 미설정"}
@@ -554,7 +520,6 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 표시 언어 */}
               <InfoRow
                 icon={faLanguage}
                 label={user.language || "표시 언어 미설정"}
@@ -569,7 +534,6 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 학교 */}
               <InfoRow
                 icon={faSchool}
                 label={
@@ -588,7 +552,6 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 성별 */}
               <InfoRow
                 icon={faVenusMars}
                 label={user.gender ? `성별: ${user.gender}` : "성별 미설정"}
@@ -603,11 +566,10 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 전화번호 */}
               <InfoRow
                 icon={faPhone}
                 label={
-                  user.phone && user.phone.trim().length > 0
+                  user.phone && (user.phone as string).trim().length > 0
                     ? `전화: ${user.phone}`
                     : "전화번호를 추가해주세요"
                 }
@@ -622,11 +584,10 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* ✅ 주소 */}
               <InfoRow
                 icon={faLocationDot}
                 label={
-                  user.address && user.address.trim().length > 0
+                  user.address && (user.address as string).trim().length > 0
                     ? `주소: ${user.address}`
                     : "주소를 입력해주세요"
                 }
@@ -641,7 +602,6 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 전공 */}
               <InfoRow
                 icon={faBookOpen}
                 label={user.major ? `전공: ${user.major}` : "전공 미설정"}
@@ -656,7 +616,6 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 학년 */}
               <InfoRow
                 icon={faUserGraduate}
                 label={user.grade ? `학년: ${user.grade}` : "학년 미설정"}
@@ -671,7 +630,6 @@ export default function ProfilePage() {
                 }
               />
 
-              {/* 경험 수준 */}
               <InfoRow
                 icon={faCode}
                 label={
@@ -692,7 +650,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 오른쪽: 활동 요약 (유지) */}
+          {/* 오른쪽: 활동 요약 */}
           <div className="space-y-4">
             <div className="rounded-2xl border bg-gray-50 p-4">
               <h3 className="font-bold text-sm flex items-center gap-2">
@@ -718,8 +676,8 @@ export default function ProfilePage() {
                   </div>
                   <div className="h-2 w-full rounded-full bg-white border">
                     <div
-                      className="h-2 rounded-full bg-emerald-500"
-                      style={{ width: `${solvedRate}%` }}
+                      className="h-2 rounded-full"
+                      style={{ width: `${solvedRate}%`, backgroundColor: "#10b981" }}
                     />
                   </div>
                 </div>
@@ -736,11 +694,7 @@ export default function ProfilePage() {
 
       {/* ===== 모달들 ===== */}
       {openEmail && (
-        <Modal
-          title="이메일 변경"
-          onClose={() => setOpenEmail(false)}
-          onSave={applyEmail}
-        >
+        <Modal title="이메일 변경" onClose={() => setOpenEmail(false)} onSave={applyEmail}>
           <label className="block text-sm text-gray-700 mb-1">새 이메일</label>
           <input
             className="w-full rounded-xl border p-2 outline-none"
@@ -763,9 +717,7 @@ export default function ProfilePage() {
           }}
           onSave={applyPassword}
         >
-          <label className="block text-sm text-gray-700 mb-1">
-            현재 비밀번호
-          </label>
+          <label className="block text-sm text-gray-700 mb-1">현재 비밀번호</label>
           <input
             type="password"
             className="w-full rounded-xl border p-2 outline-none mb-3"
@@ -774,10 +726,7 @@ export default function ProfilePage() {
             placeholder="현재 비밀번호"
             disabled={pwLoading}
           />
-
-          <label className="block text-sm text-gray-700 mb-1">
-            새 비밀번호
-          </label>
+          <label className="block text-sm text-gray-700 mb-1">새 비밀번호</label>
           <input
             type="password"
             className="w-full rounded-xl border p-2 outline-none mb-3"
@@ -786,10 +735,7 @@ export default function ProfilePage() {
             placeholder="새 비밀번호 (4자 이상)"
             disabled={pwLoading}
           />
-
-          <label className="block text-sm text-gray-700 mb-1">
-            새 비밀번호 확인
-          </label>
+          <label className="block text-sm text-gray-700 mb-1">새 비밀번호 확인</label>
           <input
             type="password"
             className="w-full rounded-xl border p-2 outline-none"
@@ -798,34 +744,25 @@ export default function ProfilePage() {
             placeholder="새 비밀번호 확인"
             disabled={pwLoading}
           />
-
           {pwError && <p className="mt-3 text-sm text-red-600">{pwError}</p>}
           {pwLoading && <p className="mt-2 text-xs text-gray-500">변경 중…</p>}
         </Modal>
       )}
 
-      {openName && (
-        <Modal
-          title="이름 변경"
-          onClose={() => setOpenName(false)}
-          onSave={applyName}
-        >
-          <label className="block text-sm text-gray-700 mb-1">새 이름</label>
+      {openUsername && (
+        <Modal title="닉네임 변경" onClose={() => setOpenUsername(false)} onSave={applyUsername}>
+          <label className="block text-sm text-gray-700 mb-1">새 닉네임</label>
           <input
             className="w-full rounded-xl border p-2 outline-none"
-            value={tmpName}
-            onChange={(e) => setTmpName(e.target.value)}
-            placeholder="홍길동"
+            value={tmpUsername}
+            onChange={(e) => setTmpUsername(e.target.value)}
+            placeholder="새 닉네임"
           />
         </Modal>
       )}
 
       {openBirth && (
-        <Modal
-          title="생년월일 편집"
-          onClose={() => setOpenBirth(false)}
-          onSave={applyBirth}
-        >
+        <Modal title="생년월일 편집" onClose={() => setOpenBirth(false)} onSave={applyBirth}>
           <input
             type="date"
             className="w-full rounded-xl border p-2 outline-none"
@@ -835,13 +772,8 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {/* 국가/지역 · 표시 언어 모달은 보관만 (현재 버튼은 alert으로 처리) */}
       {openCountry && (
-        <Modal
-          title="국가/지역 변경"
-          onClose={() => setOpenCountry(false)}
-          onSave={applyCountry}
-        >
+        <Modal title="국가/지역 변경" onClose={() => setOpenCountry(false)} onSave={applyCountry}>
           <input
             className="w-full rounded-xl border p-2 outline-none"
             value={tmpCountry}
@@ -852,27 +784,18 @@ export default function ProfilePage() {
       )}
 
       {openLanguage && (
-        <Modal
-          title="표시 언어 변경"
-          onClose={() => setOpenLanguage(false)}
-          onSave={applyLanguage}
-        >
-          <input
-            className="w-full rounded-xl border p-2 outline-none"
-            value={tmpLanguage}
-            onChange={(e) => setTmpLanguage(e.target.value)}
-            placeholder="한국어 (Korean)"
-          />
+        <Modal title="표시 언어 변경" onClose={() => setOpenLanguage(false)} onSave={applyLanguage}>
+        <input
+          className="w-full rounded-xl border p-2 outline-none"
+          value={tmpLanguage}
+          onChange={(e) => setTmpLanguage(e.target.value)}
+          placeholder="한국어 (Korean)"
+        />
         </Modal>
       )}
 
-      {/* 학교 */}
       {openSchool && (
-        <Modal
-          title="학교 편집"
-          onClose={() => setOpenSchool(false)}
-          onSave={applySchool}
-        >
+        <Modal title="학교 편집" onClose={() => setOpenSchool(false)} onSave={applySchool}>
           <input
             className="w-full rounded-xl border p-2 outline-none"
             value={tmpSchool}
@@ -882,13 +805,8 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {/* 전공 */}
       {openMajor && (
-        <Modal
-          title="전공 편집"
-          onClose={() => setOpenMajor(false)}
-          onSave={applyMajor}
-        >
+        <Modal title="전공 편집" onClose={() => setOpenMajor(false)} onSave={applyMajor}>
           <input
             className="w-full rounded-xl border p-2 outline-none"
             value={tmpMajor}
@@ -898,13 +816,8 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {/* 학년 */}
       {openGrade && (
-        <Modal
-          title="학년 편집"
-          onClose={() => setOpenGrade(false)}
-          onSave={applyGrade}
-        >
+        <Modal title="학년 편집" onClose={() => setOpenGrade(false)} onSave={applyGrade}>
           <input
             className="w-full rounded-xl border p-2 outline-none"
             value={tmpGrade}
@@ -914,13 +827,8 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {/* 성별 */}
       {openGender && (
-        <Modal
-          title="성별 편집"
-          onClose={() => setOpenGender(false)}
-          onSave={applyGender}
-        >
+        <Modal title="성별 편집" onClose={() => setOpenGender(false)} onSave={applyGender}>
           <select
             className="w-full rounded-xl border p-2 outline-none"
             value={tmpGender || ""}
@@ -933,13 +841,8 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {/* 경험 수준 */}
       {openExpLevel && (
-        <Modal
-          title="프로그래밍 경험 수준"
-          onClose={() => setOpenExpLevel(false)}
-          onSave={applyExpLevel}
-        >
+        <Modal title="프로그래밍 경험 수준" onClose={() => setOpenExpLevel(false)} onSave={applyExpLevel}>
           <select
             className="w-full rounded-xl border p-2 outline-none"
             value={tmpExpLevel || ""}
@@ -953,13 +856,8 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {/* ✅ 전화번호 */}
       {openPhone && (
-        <Modal
-          title="전화번호 편집"
-          onClose={() => setOpenPhone(false)}
-          onSave={applyPhone}
-        >
+        <Modal title="전화번호 편집" onClose={() => setOpenPhone(false)} onSave={applyPhone}>
           <input
             type="tel"
             className="w-full rounded-xl border p-2 outline-none"
@@ -970,13 +868,8 @@ export default function ProfilePage() {
         </Modal>
       )}
 
-      {/* ✅ 주소 */}
       {openAddress && (
-        <Modal
-          title="주소 편집"
-          onClose={() => setOpenAddress(false)}
-          onSave={applyAddress}
-        >
+        <Modal title="주소 편집" onClose={() => setOpenAddress(false)} onSave={applyAddress}>
           <input
             className="w-full rounded-xl border p-2 outline-none"
             value={tmpAddress}
@@ -1005,9 +898,9 @@ function formatDate(isoLike: string) {
   }
 }
 
-// ✅ 생년월일 전용(년-월-일만)
 function formatDateYMD(isoLike: string) {
   try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(isoLike)) return isoLike;
     const d = new Date(isoLike);
     return new Intl.DateTimeFormat("ko-KR", {
       year: "numeric",
@@ -1044,32 +937,15 @@ function InfoRow({
   );
 }
 
-function InlineLink({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
+function InlineLink({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <button
-      className="text-sm text-emerald-700 hover:underline"
-      onClick={onClick}
-    >
+    <button className="text-sm text-emerald-700 hover:underline" onClick={onClick}>
       {label}
     </button>
   );
 }
 
-function StatRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: any;
-  label: string;
-  value: string;
-}) {
+function StatRow({ icon, label, value }: { icon: any; label: string; value: string }) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -1083,7 +959,6 @@ function StatRow({
   );
 }
 
-/** 공용 모달 */
 function Modal({
   title,
   onClose,
