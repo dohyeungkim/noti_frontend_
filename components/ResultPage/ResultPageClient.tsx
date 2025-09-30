@@ -2,7 +2,7 @@
 // 채점 기능 관련, 현재 목데이터로 진행중.
 
 import { useEffect, useState, useCallback } from "react";
-import { workbook_api, group_api, chating_ai } from "@/lib/api";
+import { workbook_api, group_api, chating_ai,problem_ref_api } from "@/lib/api";
 import { motion } from "framer-motion";
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
 import {
@@ -173,6 +173,9 @@ export default function FeedbackWithSubmissionPageClient({
     params.resultId,
   ]);
 
+  const DISABLE_PROF = true; //제거해
+  const DISABLE_DEV = true; //지워 제거해
+
   const [isConditionLoaded, setIsConditionLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "prof" | "dev">("ai");
   // 추가: 탭 내 텍스트 입력 상태 (필요 최소만)
@@ -186,45 +189,6 @@ export default function FeedbackWithSubmissionPageClient({
   // const { totalScore, maxScore, professorFeedback: dummyProfessorFeedback } = feedbackDummy
   // const { conditionScores } = feedbackDummy
   const [isExamMode, setIsExamMode] = useState<boolean>(false);
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const cur = Number(params.problemId);
-      const prevId = cur - 1;
-      const nextId = cur + 1;
-
-      try {
-        if (prevId >= 1) {
-          await problem_api.problem_get_by_id_group(
-            Number(params.groupId),
-            Number(params.examId),
-            prevId
-          );
-          if (!cancelled) setCanPrev(true);
-        } else {
-          if (!cancelled) setCanPrev(false);
-        }
-      } catch {
-        if (!cancelled) setCanPrev(false);
-      }
-
-      try {
-        await problem_api.problem_get_by_id_group(
-          Number(params.groupId),
-          Number(params.examId),
-          nextId
-        );
-        if (!cancelled) setCanNext(true);
-      } catch {
-        if (!cancelled) setCanNext(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [params.groupId, params.examId, params.problemId]);
   // AI 피드백 가져오기
   useEffect(() => {
     const fetchAiFeedback = async () => {
@@ -363,58 +327,48 @@ export default function FeedbackWithSubmissionPageClient({
     }
   }, [params.resultId]);
 
-  //이전문제가기
-  const goToPrevProblemForSolve = useCallback(async () => {
-    const prevId = Number(params.problemId) - 1;
-    try {
-      await problem_api.problem_get_by_id_group(
-        Number(params.groupId),
-        Number(params.examId),
-        prevId
-      );
-
+  const [orderedProblemIds, setOrderedProblemIds] = useState<number[]>([]);
+  const [curIdx, setCurIdx] = useState<number>(-1);
+  const goToPrevProblemForSolve = useCallback(() => {
+    if (curIdx > 0 && orderedProblemIds.length > 0) {
+      const prevProblemId = orderedProblemIds[curIdx - 1];
       const lang = solveData?.code_language?.toLowerCase() || "";
       const qs = lang ? `?language=${encodeURIComponent(lang)}` : "";
-
       router.push(
-        `/mygroups/${params.groupId}/exams/${params.examId}/problems/${prevId}/write${qs}`
+        `/mygroups/${params.groupId}/exams/${params.examId}/problems/${prevProblemId}/write${qs}`
       );
-    } catch (e) {
-      alert("이전 문제가 없거나 접근 권한이 없어.");
+      return;
     }
+    alert("이전 문제가 없거나 접근 권한이 없어.");
   }, [
+    curIdx,
+    orderedProblemIds,
     params.groupId,
     params.examId,
-    params.problemId,
     solveData?.code_language,
     router,
   ]);
 
-  //다음으로 넘어가기인데 문제의 번호같은것이 연속적이지 않기에 문제의 workbook_id에서만든 숫자가 넘어와서 다음문제로 넘어가도록해야함(수정해야할듯)
-  const goToNextProblemForSolve = useCallback(async () => {
-    const nextId = Number(params.problemId) + 1;
-    try {
-      // 존재 확인만 하고…
-      await problem_api.problem_get_by_id_group(
-        Number(params.groupId),
-        Number(params.examId),
-        nextId
-      );
-
-      // 언어는 그냥 이번 제출 언어만 사용(없으면 쿼리 생략)
+  const goToNextProblemForSolve = useCallback(() => {
+    if (
+      curIdx >= 0 &&
+      orderedProblemIds.length > 0 &&
+      curIdx < orderedProblemIds.length - 1
+    ) {
+      const nextProblemId = orderedProblemIds[curIdx + 1];
       const lang = solveData?.code_language?.toLowerCase() || "";
       const qs = lang ? `?language=${encodeURIComponent(lang)}` : "";
-
       router.push(
-        `/mygroups/${params.groupId}/exams/${params.examId}/problems/${nextId}/write${qs}`
+        `/mygroups/${params.groupId}/exams/${params.examId}/problems/${nextProblemId}/write${qs}`
       );
-    } catch (e) {
-      alert("다음 문제가 없거나 접근 권한이 없어.");
+      return;
     }
+    alert("다음 문제가 없거나 접근 권한이 없어.");
   }, [
+    curIdx,
+    orderedProblemIds,
     params.groupId,
     params.examId,
-    params.problemId,
     solveData?.code_language,
     router,
   ]);
@@ -430,7 +384,44 @@ export default function FeedbackWithSubmissionPageClient({
       console.error("사용자 아이디 불러오기 실패:", error);
     }
   }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // ✅ 이 한 방으로 해당 시험지(워크북)의 문제 목록 전부 획득
+        const refs = await problem_ref_api.problem_ref_get(
+          Number(params.groupId),
+          Number(params.examId)
+        );
 
+        // 응답 스키마: { problem_id, title, ... }[]
+        // 별도 order 필드 없으면, 온 순서대로 사용
+        const ids = refs.map((r) => Number(r.problem_id));
+
+        const curId = Number(params.problemId);
+        const idx = ids.indexOf(curId);
+
+        if (!cancelled) {
+          setOrderedProblemIds(ids);
+          setCurIdx(idx);
+          setCanPrev(idx > 0);
+          setCanNext(idx >= 0 && idx < ids.length - 1);
+        }
+      } catch (e) {
+        console.error("문제 목록 로드 실패:", e);
+        // 실패 시엔 버튼 비활성 처리
+        if (!cancelled) {
+          setOrderedProblemIds([]);
+          setCurIdx(-1);
+          setCanPrev(false);
+          setCanNext(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.groupId, params.examId, params.problemId]);
   useEffect(() => {
     (async () => {
       await fetchProblem();
@@ -931,7 +922,7 @@ export default function FeedbackWithSubmissionPageClient({
                   AI 피드백
                 </button>
 
-                <button
+                {/* <button
                   className={`px-6 py-3 text-sm font-medium ${
                     activeTab === "prof"
                       ? "text-yellow-600 border-b-2 border-yellow-500 bg-yellow-50"
@@ -940,11 +931,31 @@ export default function FeedbackWithSubmissionPageClient({
                   onClick={() => setActiveTab("prof")}
                 >
                   교수님께 질문하기
+                </button> */}
+
+                <button //제거해 지울 것
+                  className={`px-6 py-3 text-sm font-medium ${
+                    activeTab === "prof"
+                      ? "text-yellow-600 border-b-2 border-yellow-500 bg-yellow-50"
+                      : "text-gray-500"
+                  } ${
+                    DISABLE_PROF
+                      ? "opacity-50 cursor-not-allowed pointer-events-none"
+                      : "hover:text-gray-700"
+                  }`}
+                  disabled={DISABLE_PROF}
+                  aria-disabled={DISABLE_PROF}
+                  onClick={() => !DISABLE_PROF && setActiveTab("prof")}
+                  title={
+                    DISABLE_PROF ? "지금은 이 탭을 사용할 수 없어" : undefined
+                  }
+                >
+                  교수님께 질문하기
                 </button>
               </div>
 
               {/* 오른쪽 단독: 개발자에게 물어보기 */}
-              <button
+              {/* <button
                 className={`ml-auto px-6 py-3 text-sm font-medium inline-flex items-center gap-2 ${
                   activeTab === "dev"
                     ? "text-red-600 border-b-2 border-red-600 bg-red-50"
@@ -954,12 +965,34 @@ export default function FeedbackWithSubmissionPageClient({
                 title="개발자에게 물어보기"
               >
                 오류 보고 <span aria-hidden>🔧</span>
+              </button> */}
+
+              <button
+                className={`ml-auto px-6 py-3 text-sm font-medium inline-flex items-center gap-2 ${
+                  activeTab === "dev"
+                    ? "text-red-600 border-b-2 border-red-600 bg-red-50"
+                    : "text-gray-500"
+                } ${
+                  DISABLE_DEV
+                    ? "opacity-50 cursor-not-allowed pointer-events-none"
+                    : "hover:text-gray-700"
+                }`}
+                disabled={DISABLE_DEV}
+                aria-disabled={DISABLE_DEV}
+                onClick={() => !DISABLE_DEV && setActiveTab("dev")}
+                title={
+                  DISABLE_DEV
+                    ? "지금은 이 탭을 사용할 수 없어"
+                    : "개발자에게 물어보기"
+                }
+              >
+                오류 보고 <span aria-hidden>🔧</span>
               </button>
             </div>
           </div>
 
           {/* 탭 본문 */}
-          <div className="p-4 max-h-[40vh] overflow-y-auto">
+          <div className="p-4 max-h-[70vh] overflow-y-auto">
             {/* 1) AI 피드백 */}
             {activeTab === "ai" && (
               <div className="rounded-xl border bg-white overflow-hidden">
@@ -984,10 +1017,10 @@ export default function FeedbackWithSubmissionPageClient({
                         <ReactMarkdown>{aiMd}</ReactMarkdown>
                       </div>
 
-                      {/* === 추가: 채팅형 추가 질문 (더미) === */}
+                      {/* === 추가: 채팅형 추가 질문=== */}
                       <div className="mt-4 border-t pt-4">
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          추가로 물어보기 (더미)
+                          AI에게 추가로 물어보기
                         </h4>
 
                         {/* 메시지 리스트 */}
