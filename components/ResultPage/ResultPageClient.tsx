@@ -2,7 +2,7 @@
 // 채점 기능 관련, 현재 목데이터로 진행중.
 
 import { useEffect, useState, useCallback } from "react";
-import { workbook_api, group_api } from "@/lib/api";
+import { workbook_api, group_api, chating_ai } from "@/lib/api";
 import { motion } from "framer-motion";
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
 import {
@@ -112,7 +112,7 @@ export default function FeedbackWithSubmissionPageClient({
   const [chatMsgs, setChatMsgs] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      content: "AI 피드백에 대해 궁금한 점을 물어봐줘. 더미 응답으로 알려줄게!",
+      content: "추가로 궁금한 거 질문해줘!",
       ts: Date.now(),
     },
   ]);
@@ -130,25 +130,48 @@ export default function FeedbackWithSubmissionPageClient({
     setChatInput("");
     setChatLoading(true);
 
-    // 2) 더미 응답(프론트에서만 setTimeout)
-    setTimeout(() => {
-      const hint =
-        conditionResults?.find?.((c) => !c.passed)?.condition ||
-        (problemDetail?.title ? `문제 "${problemDetail.title}"` : "현재 문제");
-      const dummy = `다음 힌트를 참고해봐 👉
-- ${hint} 에서 실패한 조건이 있으면, 실패 조건을 먼저 통과시키는 게 좋아.
-- 테스트 입력을 최소 2~3개로 쪼개서, 기대/실제 결과를 표로 비교해봐.
-- 시간 복잡도나 엣지 케이스(빈 문자열, 0, 음수, 최대값)도 확인해!
+    try {
+      // 2) 실제 서버 호출 (path param은 페이지 params에서 그대로 가져와 숫자로 변환)
+      const gid = Number(params.groupId);
+      const wid = Number(params.examId);
+      const pid = Number(params.problemId);
+      const sid = Number(params.resultId);
 
-(이건 더미 응답이고, 실제 연결되면 AI가 서버에서 답변을 줄 예정이야.)`;
+      const { context_ai_ans } = await chating_ai.ask(gid, wid, pid, sid, msg);
 
+      // 3) 서버 응답을 어시스턴트 메시지로 추가
       setChatMsgs((prev) => [
         ...prev,
-        { role: "assistant", content: dummy, ts: Date.now() },
+        {
+          role: "assistant",
+          content: context_ai_ans ?? "(빈 응답)",
+          ts: Date.now(),
+        },
       ]);
+    } catch (err: any) {
+      // 4) 에러도 채팅 거품으로 보여주면 UX가 좋아
+      const fallback =
+        (typeof err?.message === "string" && err.message) ||
+        "AI 응답을 가져오지 못했어. 잠시 후 다시 시도해줘.";
+      setChatMsgs((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `⚠️ ${fallback}`,
+          ts: Date.now(),
+        },
+      ]);
+    } finally {
       setChatLoading(false);
-    }, 600);
-  }, [chatInput, chatLoading, conditionResults, problemDetail]);
+    }
+  }, [
+    chatInput,
+    chatLoading,
+    params.groupId,
+    params.examId,
+    params.problemId,
+    params.resultId,
+  ]);
 
   const [isConditionLoaded, setIsConditionLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "prof" | "dev">("ai");
@@ -986,7 +1009,70 @@ export default function FeedbackWithSubmissionPageClient({
                                 }`}
                                 style={{ maxWidth: "80%" }}
                               >
-                                {m.content}
+                                <div
+                                  className={`prose prose-sm max-w-none
+    ${m.role === "user" ? "prose-invert" : ""}
+    prose-pre:whitespace-pre-wrap break-words`}
+                                >
+                                  <ReactMarkdown
+                                    // GFM 쓰려면 아래 라인 켜기
+
+                                    // 링크 새탭, 코드블록 등 커스터마이즈 가능
+
+                                    components={{
+                                      // 인라인/블록 코드에 약간의 여백을 주고, 코드블록 내부 줄바꿈 보장
+                                      code(props) {
+                                        const { children, className, ...rest } =
+                                          props;
+                                        return (
+                                          <code
+                                            className={`rounded px-1 ${
+                                              className || ""
+                                            }`}
+                                            {...rest}
+                                          >
+                                            {children}
+                                          </code>
+                                        );
+                                      },
+                                      pre(props) {
+                                        const { children, ...rest } = props;
+                                        return (
+                                          <pre
+                                            className="rounded-md p-3 overflow-x-auto"
+                                            {...rest}
+                                          >
+                                            {children}
+                                          </pre>
+                                        );
+                                      },
+                                      a(props) {
+                                        const { children, ...rest } = props;
+                                        return (
+                                          <a
+                                            {...rest}
+                                            className="underline underline-offset-2"
+                                            target="_blank"
+                                            rel="noreferrer"
+                                          >
+                                            {children}
+                                          </a>
+                                        );
+                                      },
+                                      li(props) {
+                                        // 말풍선 폭 좁을 때 리스트 마커 줄바꿈 깔끔하게
+                                        const { children, ...rest } = props;
+                                        return (
+                                          <li {...rest} className="break-words">
+                                            {children}
+                                          </li>
+                                        );
+                                      },
+                                    }}
+                                  >
+                                    {m.content}
+                                  </ReactMarkdown>
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -1004,7 +1090,7 @@ export default function FeedbackWithSubmissionPageClient({
                         <div className="mt-2 flex items-end gap-2">
                           <textarea
                             className="flex-1 h-12 resize-none rounded-md border p-2 text-sm focus:outline-none focus:ring-2 focus:ring-mygreen"
-                            placeholder="추가로 궁금한 걸 적어줘 (더미 응답)"
+                            placeholder="추가로 궁금한 걸 적어줘"
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -1022,11 +1108,6 @@ export default function FeedbackWithSubmissionPageClient({
                             보내기
                           </button>
                         </div>
-
-                        <p className="mt-1 text-[11px] text-gray-500">
-                          * 현재는 더미 응답이야. 나중에 서버 연결하면 실제 AI가
-                          답해줄 거야.
-                        </p>
                       </div>
                       {/* === 추가 끝 === */}
                     </>

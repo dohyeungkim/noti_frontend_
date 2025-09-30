@@ -39,7 +39,73 @@ interface ExtendedUserRegisterRequest {
 	gender: string
 	profile_info: ProfileInfo
 }
+// ====================== chatting_ai 관련 타입 ===========================
+export interface ChattingAIRequest {
+  context_user: string; // 예: "C언어를 알고싶어"
+}
 
+export interface ChattingAIResponse {
+  context_ai_ans: string; // 예: "C언어를 알고싶어"
+}
+
+// ====================== chatting_ai API ===========================
+export const chating_ai = {
+  /**
+   * POST /api/proxy/chatting/groups/{group_id}/workbooks/{workbook_id}/problems/{problem_id}/submissions/{submission_id}
+   * body: { context_user: string }
+   * res : { context_ai_ans: string }
+   */
+  async ask(
+    group_id: number,
+    workbook_id: number,
+    problem_id: number,
+    submission_id: number,
+    context_user: string
+  ): Promise<ChattingAIResponse> {
+    const gid = encodeURIComponent(String(group_id));
+    const wid = encodeURIComponent(String(workbook_id));
+    const pid = encodeURIComponent(String(problem_id));
+    const sid = encodeURIComponent(String(submission_id));
+
+    const url = `/api/proxy/chatting/groups/${gid}/workbooks/${wid}/problems/${pid}/submissions/${sid}`;
+
+    const res = await fetchWithAuth(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(<ChattingAIRequest>{ context_user }),
+    });
+
+    // 안전 파싱 (text -> json)
+    let bodyText = "";
+    try { bodyText = await res.text(); } catch {}
+
+    let body: any = {};
+    try { body = bodyText ? JSON.parse(bodyText) : {}; } catch { body = {}; }
+
+    if (!res.ok) {
+      const msg = Array.isArray(body?.detail)
+        ? body.detail
+            .map((d: any) => {
+              const loc = Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc;
+              return `${loc}: ${d.msg}`;
+            })
+            .join("\n")
+        : body?.detail?.msg ||
+          body?.detail ||
+          body?.message ||
+          `chatting_ai 실패 (${res.status}) [POST ${url}]`;
+      throw new Error(msg);
+    }
+
+    // 최소 필드 보장
+    if (typeof body?.context_ai_ans !== "string") {
+      throw new Error("서버 응답에 context_ai_ans가 없습니다.");
+    }
+
+    return body as ChattingAIResponse;
+  },
+};
 // ====================== Auth 관련 API ===========================
 export const auth_api = {
 	// 새로운 확장된 register 함수
