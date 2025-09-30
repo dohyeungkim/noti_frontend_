@@ -102,6 +102,53 @@ export default function FeedbackWithSubmissionPageClient({
   const [conditionResults, setConditionResults] = useState<ConditionResult[]>(
     []
   );
+  type ChatRole = "user" | "assistant";
+  interface ChatMessage {
+    role: ChatRole;
+    content: string;
+    ts: number;
+  }
+
+  const [chatMsgs, setChatMsgs] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      content: "AI 피드백에 대해 궁금한 점을 물어봐줘. 더미 응답으로 알려줄게!",
+      ts: Date.now(),
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const sendFollowup = useCallback(async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatLoading) return;
+
+    // 1) 유저 메시지 추가
+    setChatMsgs((prev) => [
+      ...prev,
+      { role: "user", content: msg, ts: Date.now() },
+    ]);
+    setChatInput("");
+    setChatLoading(true);
+
+    // 2) 더미 응답(프론트에서만 setTimeout)
+    setTimeout(() => {
+      const hint =
+        conditionResults?.find?.((c) => !c.passed)?.condition ||
+        (problemDetail?.title ? `문제 "${problemDetail.title}"` : "현재 문제");
+      const dummy = `다음 힌트를 참고해봐 👉
+- ${hint} 에서 실패한 조건이 있으면, 실패 조건을 먼저 통과시키는 게 좋아.
+- 테스트 입력을 최소 2~3개로 쪼개서, 기대/실제 결과를 표로 비교해봐.
+- 시간 복잡도나 엣지 케이스(빈 문자열, 0, 음수, 최대값)도 확인해!
+
+(이건 더미 응답이고, 실제 연결되면 AI가 서버에서 답변을 줄 예정이야.)`;
+
+      setChatMsgs((prev) => [
+        ...prev,
+        { role: "assistant", content: dummy, ts: Date.now() },
+      ]);
+      setChatLoading(false);
+    }, 600);
+  }, [chatInput, chatLoading, conditionResults, problemDetail]);
 
   const [isConditionLoaded, setIsConditionLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "prof" | "dev">("ai");
@@ -378,47 +425,61 @@ export default function FeedbackWithSubmissionPageClient({
 
   // activeTab 변경시에만 댓글 새로고침
   useEffect(() => {
-  let cancelled = false;
+    let cancelled = false;
 
-  (async () => {
-    // 1) 그룹명
-    const gName =
-      solveData?.group_name?.trim() ||
-      (await (async () => {
-        try {
-          const g = await group_api.group_get_by_id(Number(params.groupId));
-          return g?.group_name || "";
-        } catch { return ""; }
-      })()) ||
-      String(params.groupId);
+    (async () => {
+      // 1) 그룹명
+      const gName =
+        solveData?.group_name?.trim() ||
+        (await (async () => {
+          try {
+            const g = await group_api.group_get_by_id(Number(params.groupId));
+            return g?.group_name || "";
+          } catch {
+            return "";
+          }
+        })()) ||
+        String(params.groupId);
 
-    // 2) 문제지명(워크북)
-    const wName =
-      solveData?.workbook_name?.trim() ||
-      (await (async () => {
-        try {
-          const wb = await workbook_api.workbook_get_by_id(Number(params.examId));
-          // 백엔드 스키마에 따라 workbook_name 또는 name 등으로 올 수 있음
-          return wb?.workbook_name || wb?.name || "";
-        } catch { return ""; }
-      })()) ||
-      String(params.examId);
+      // 2) 문제지명(워크북)
+      const wName =
+        solveData?.workbook_name?.trim() ||
+        (await (async () => {
+          try {
+            const wb = await workbook_api.workbook_get_by_id(
+              Number(params.examId)
+            );
+            // 백엔드 스키마에 따라 workbook_name 또는 name 등으로 올 수 있음
+            return wb?.workbook_name || wb?.name || "";
+          } catch {
+            return "";
+          }
+        })()) ||
+        String(params.examId);
 
-    // 3) 문제명
-    const pName =
-      solveData?.problem_name?.trim() ||
-      problemDetail?.title?.trim() ||
-      String(params.problemId);
+      // 3) 문제명
+      const pName =
+        solveData?.problem_name?.trim() ||
+        problemDetail?.title?.trim() ||
+        String(params.problemId);
 
-    if (!cancelled) {
-      setGroupLabel(gName);
-      setWorkbookLabel(wName);
-      setProblemLabel(pName);
-    }
-  })();
+      if (!cancelled) {
+        setGroupLabel(gName);
+        setWorkbookLabel(wName);
+        setProblemLabel(pName);
+      }
+    })();
 
-  return () => { cancelled = true; };
-}, [solveData, problemDetail, params.groupId, params.examId, params.problemId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    solveData,
+    problemDetail,
+    params.groupId,
+    params.examId,
+    params.problemId,
+  ]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -883,6 +944,7 @@ export default function FeedbackWithSubmissionPageClient({
                 <div className="px-4 py-3 border-b bg-green-100">
                   <h3 className="font-semibold text-green-800">AI 피드백</h3>
                 </div>
+
                 {/* 본문 */}
                 <div className="p-4">
                   {!isAILoaded ? (
@@ -893,9 +955,81 @@ export default function FeedbackWithSubmissionPageClient({
                       </span>
                     </div>
                   ) : (
-                    <div className="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap break-words">
-                      <ReactMarkdown>{aiMd}</ReactMarkdown>
-                    </div>
+                    <>
+                      {/* 원본 AI 피드백 마크다운 */}
+                      <div className="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap break-words">
+                        <ReactMarkdown>{aiMd}</ReactMarkdown>
+                      </div>
+
+                      {/* === 추가: 채팅형 추가 질문 (더미) === */}
+                      <div className="mt-4 border-t pt-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                          추가로 물어보기 (더미)
+                        </h4>
+
+                        {/* 메시지 리스트 */}
+                        <div className="max-h-56 overflow-y-auto rounded-md border p-3 space-y-2 bg-gray-50">
+                          {chatMsgs.map((m, idx) => (
+                            <div
+                              key={m.ts + idx}
+                              className={`flex ${
+                                m.role === "user"
+                                  ? "justify-end"
+                                  : "justify-start"
+                              }`}
+                            >
+                              <div
+                                className={`px-3 py-2 rounded-2xl text-sm shadow ${
+                                  m.role === "user"
+                                    ? "bg-mygreen text-white rounded-br-sm"
+                                    : "bg-white text-gray-800 border rounded-bl-sm"
+                                }`}
+                                style={{ maxWidth: "80%" }}
+                              >
+                                {m.content}
+                              </div>
+                            </div>
+                          ))}
+
+                          {chatLoading && (
+                            <div className="flex justify-start">
+                              <div className="px-3 py-2 rounded-2xl text-sm bg-white border text-gray-500">
+                                응답 생성 중...
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 입력창 */}
+                        <div className="mt-2 flex items-end gap-2">
+                          <textarea
+                            className="flex-1 h-12 resize-none rounded-md border p-2 text-sm focus:outline-none focus:ring-2 focus:ring-mygreen"
+                            placeholder="추가로 궁금한 걸 적어줘 (더미 응답)"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                sendFollowup();
+                              }
+                            }}
+                          />
+                          <button
+                            className="px-4 h-10 rounded-lg shadow text-white bg-mygreen hover:bg-mydarkgreen disabled:bg-gray-300"
+                            disabled={chatLoading || !chatInput.trim()}
+                            onClick={sendFollowup}
+                          >
+                            보내기
+                          </button>
+                        </div>
+
+                        <p className="mt-1 text-[11px] text-gray-500">
+                          * 현재는 더미 응답이야. 나중에 서버 연결하면 실제 AI가
+                          답해줄 거야.
+                        </p>
+                      </div>
+                      {/* === 추가 끝 === */}
+                    </>
                   )}
                 </div>
               </div>
@@ -920,7 +1054,7 @@ export default function FeedbackWithSubmissionPageClient({
                     onClick={() => {
                       const profEmail = ""; // TODO: 교수님 이메일 있으면 채워넣기
                       const subject = `질문: ${problemLabel} (#${params.problemId})`;
-const body = `${profMsg}
+                      const body = `${profMsg}
 
 ---
 문맥정보

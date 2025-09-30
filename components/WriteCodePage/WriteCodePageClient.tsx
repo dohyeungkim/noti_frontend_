@@ -930,9 +930,9 @@ export default function WriteCodePageClient({
     <div>로딩 중...</div>
   ) : (
     <div className="h-screen overflow-hidden flex flex-col">
-      {/* 상단영역: 제출버튼, 실시간 사용자 현황 */}
+      {/* 상단영역: 제출버튼*/}
       <motion.div
-        className="flex items-center justify-between px-3 pt-3 shrink-0"
+        className="flex items-center justify-between px-3 pt-3 mb-6 shrink-0"
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.2 }}
@@ -991,525 +991,528 @@ export default function WriteCodePageClient({
 
       {/* 메인: 남은 높이 전부 차지, 배경 스크롤 금지 */}
       <main
-        ref={containerRef}
-        className="flex flex-1 min-h-0 w-full overflow-hidden mt-2"
+  ref={containerRef}
+  className="flex flex-1 min-h-0 w-full overflow-hidden mt-2"
+>
+  {/* ========== 코딩 / 디버깅 / 객관식 : 좌우 분할 ========== */}
+  {(isCodingOrDebugging || isMultiple) && (
+    <>
+      {/* 내부 스크롤만 허용 (왼쪽: 설명/조건/입출력) */}
+      <div
+        className="overflow-y-auto h-[calc(100%-72px)] p-2 pr-2 flex-none"
+        style={{ width: leftWidth }} // ✅ 드래그 폭 적용
       >
-        {/* 내부 스크롤만 허용 */}
-        <div
-          className="overflow-y-auto h-[calc(100%-72px)] p-2 pr-2 flex-none"
-          style={{ width: leftWidth }} // ✅ 드래그 폭 적용
-        >
-          {/* 문제 설명 (Markdown 지원) */}
-          {(() => {
-            const desc = normalizeMultiline(problem?.description ?? "");
+        {/* 문제 설명 (Markdown 지원) */}
+        {(() => {
+          const desc = normalizeMultiline(problem?.description ?? "");
 
-            type MarkdownCodeProps = React.HTMLAttributes<HTMLElement> & {
-              inline?: boolean;
-              className?: string;
-              children?: React.ReactNode;
-            };
+          type MarkdownCodeProps = React.HTMLAttributes<HTMLElement> & {
+            inline?: boolean;
+            className?: string;
+            children?: React.ReactNode;
+          };
 
-            // 2) 인라인/블록 분기 구현
-            const Code = ({
-              inline,
-              className,
-              children,
-              ...props
-            }: MarkdownCodeProps) => {
-              const lang = /language-(\w+)/.exec(className ?? "")?.[1];
+          const Code = ({
+            inline,
+            className,
+            children,
+            ...props
+          }: MarkdownCodeProps) => {
+            const lang = /language-(\w+)/.exec(className ?? "")?.[1];
 
-              if (inline) {
-                return (
-                  <code className="px-1 py-0.5 rounded bg-gray-100 font-mono text-sm">
-                    {children}
-                  </code>
-                );
-              }
-
+            if (inline) {
               return (
-                <pre className="p-4 overflow-x-auto bg-gray-50 border border-gray-200 rounded-lg">
-                  <code
-                    className={className ?? (lang ? `language-${lang}` : "")}
-                    {...props}
-                  >
-                    {children}
-                  </code>
-                </pre>
+                <code className="px-1 py-0.5 rounded bg-gray-100 font-mono text-sm">
+                  {children}
+                </code>
               );
-            };
-
-            // 3) components에 타입 캐스팅해서 넣기
-            const components: Components = {
-              code: Code as unknown as Components["code"],
-
-              table({ children }) {
-                return (
-                  <div className="overflow-x-auto border rounded-lg">
-                    <table className="min-w-full">{children}</table>
-                  </div>
-                );
-              },
-
-              a({ children, href, title, rel, target }) {
-                return (
-                  <a
-                    href={href}
-                    title={title}
-                    rel={rel ?? "noopener noreferrer"}
-                    target={target ?? "_blank"}
-                    className="text-blue-600 underline hover:no-underline"
-                  >
-                    {children}
-                  </a>
-                );
-              },
-
-              img({ src, alt, title }) {
-                return (
-                  <img
-                    src={src || ""}
-                    alt={alt || ""}
-                    title={title}
-                    className="rounded-lg max-w-full h-auto"
-                  />
-                );
-              },
-            };
+            }
 
             return (
-              <div
-                className="editor-content prose prose-slate max-w-none
-        prose-headings:font-bold prose-pre:bg-gray-50 prose-pre:border
-        prose-pre:border-gray-200 prose-pre:rounded-xl prose-code:text-pink-700
-        prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-        prose-img:rounded-lg mb-6"
-              >
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkBreaks]}
-                  // ⚠️ 신뢰 가능한 컨텐츠일 때만 사용
-                  rehypePlugins={[rehypeRaw /*, rehypeSanitize*/]}
-                  components={components}
+              <pre className="p-4 overflow-x-auto bg-gray-50 border border-gray-200 rounded-lg">
+                <code
+                  className={className ?? (lang ? `language-${lang}` : "")}
+                  {...props}
                 >
-                  {desc}
-                </ReactMarkdown>
-              </div>
+                  {children}
+                </code>
+              </pre>
             );
-          })()}
+          };
 
-          {/* ✅ 순서 변경: 문제 조건 먼저 */}
-          {problemConditions &&
-            isCodingOrDebugging &&
-            problemConditions.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="bg-white shadow-md rounded-xl p-4 mb-6 border border-gray-200"
-              >
-                <h3 className="text-lg font-bold mb-3 text-gray-800">
-                  문제 조건
-                </h3>
-                <div className="border-t border-gray-300 mb-3"></div>
-                <div className="space-y-2">
-                  {problemConditions.map((condition, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <span className="text-sm font-semibold text-gray-700 min-w-[20px] mt-0.5">
-                        {index + 1}.
-                      </span>
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        {condition}
-                      </p>
-                    </div>
-                  ))}
+          const components: Components = {
+            code: Code as unknown as Components["code"],
+            table({ children }) {
+              return (
+                <div className="overflow-x-auto border rounded-lg">
+                  <table className="min-w-full">{children}</table>
                 </div>
-              </motion.div>
-            )}
+              );
+            },
+            a({ children, href, title, rel, target }) {
+              return (
+                <a
+                  href={href}
+                  title={title}
+                  rel={rel ?? "noopener noreferrer"}
+                  target={target ?? "_blank"}
+                  className="text-blue-600 underline hover:no-underline"
+                >
+                  {children}
+                </a>
+              );
+            },
+            img({ src, alt, title }) {
+              return (
+                <img
+                  src={src || ""}
+                  alt={alt || ""}
+                  title={title}
+                  className="rounded-lg max-w-full h-auto"
+                />
+              );
+            },
+          };
 
-          {/* ✅ 그리고 입력/출력 카드 */}
-          {sampleCases.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="bg-white shadow-md rounded-2xl p-5 mb-6 border border-gray-200"
+          return (
+            <div
+              className="editor-content prose prose-slate max-w-none
+                prose-headings:font-bold prose-pre:bg-gray-50 prose-pre:border
+                prose-pre:border-gray-200 prose-pre:rounded-xl prose-code:text-pink-700
+                prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+                prose-img:rounded-lg mb-6"
             >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-bold text-gray-800">입력 / 출력</h3>
-                <span className="text-xs text-gray-500">
-                  총 {sampleCases.length}개
-                </span>
-              </div>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                // ⚠️ 신뢰 가능한 컨텐츠일 때만 사용
+                rehypePlugins={[rehypeRaw /*, rehypeSanitize*/]}
+                components={components}
+              >
+                {desc}
+              </ReactMarkdown>
+            </div>
+          );
+        })()}
 
-              <div className="grid grid-cols-1 gap-4">
-                {sampleCases.map((tc, i) => {
-                  const hasInput = Boolean(
-                    tc.input && tc.input.trim().length > 0
-                  );
-                  return (
-                    <div
-                      key={i}
-                      className="bg-blue-50 shadow-md rounded-2xl p-5 border border-blue-200"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-semibold text-gray-700">
-                          #{i + 1}
-                        </span>
-                      </div>
-
-                      <div className="space-y-3">
-                        {hasInput && (
-                          <div className="w-full">
-                            <div className="text-xs font-semibold text-gray-600 mb-1">
-                              입력
-                            </div>
-                            <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono text-sm overflow-auto">
-                              <pre className="whitespace-pre-wrap break-all">
-                                {tc.input}
-                              </pre>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="w-full">
-                          <div className="text-xs font-semibold text-gray-600 mb-1">
-                            예상 출력
-                          </div>
-                          <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono text-sm overflow-auto">
-                            <pre className="whitespace-pre-wrap break-all">
-                              {tc.output || "(빈 출력)"}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+        {/* 문제 조건 (코딩/디버깅에서만) */}
+        {problemConditions &&
+          isCodingOrDebugging &&
+          problemConditions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-white shadow-md rounded-xl p-4 mb-6 border border-gray-200"
+            >
+              <h3 className="text-lg font-bold mb-3 text-gray-800">문제 조건</h3>
+              <div className="border-t border-gray-300 mb-3"></div>
+              <div className="space-y-2">
+                {problemConditions.map((condition, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <span className="text-sm font-semibold text-gray-700 min-w-[20px] mt-0.5">
+                      {index + 1}.
+                    </span>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {condition}
+                    </p>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
-        </div>
 
-        {/* 드래그 핸들 */}
-        <div
-          onMouseDown={onMouseDown}
-          className="w-2 cursor-col-resize bg-gray-300 hover:bg-gray-400 transition-colors flex-shrink-0 border-l border-r border-gray-200"
-        />
+        {/* 입력/출력 카드 */}
+        {sampleCases.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="bg-white shadow-md rounded-2xl p-5 mb-6 border border-gray-200"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-800">입력 / 출력</h3>
+              <span className="text-xs text-gray-500">
+                총 {sampleCases.length}개
+              </span>
+            </div>
 
-        {/* 코드 에디터 (오른쪽) */}
-        <div className="flex flex-col overflow-hidden flex-1 min-w-[400px]">
-          <div className="flex flex-col h-full w-full max-w-full overflow-hidden pl-2">
-            {/* 코딩/디버깅 타입일 때 */}
-            {isCodingOrDebugging && (
-              <>
-                <div className="flex items-center mb-2 max-w_full overflow-hidden shrink-0 gap-2">
-                  <select
-                    value={language}
-                    onChange={handleLanguageChange}
-                    className="border rounded-lg p-2 flex-shrink-0 text-sm"
+            <div className="grid grid-cols-1 gap-4">
+              {sampleCases.map((tc, i) => {
+                const hasInput = Boolean(tc.input && tc.input.trim().length > 0);
+                return (
+                  <div
+                    key={i}
+                    className="bg-blue-50 shadow-md rounded-2xl p-5 border border-blue-200"
                   >
-                    <option value="python">Python</option>
-                    <option value="c">C</option>
-                    <option value="cpp">C++</option>
-                    <option value="java">Java</option>
-                  </select>
-
-                  {expectedLang && (
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        langMismatch
-                          ? "bg-red-100 text-red-700"
-                          : "bg-green-100 text-green-700"
-                      }`}
-                    >
-                      요구 언어: {expectedLang.toUpperCase()}
-                    </span>
-                  )}
-                </div>
-
-                {/* ✔ 남는 높이 꽉 채움 */}
-                <div className="bg-white rounded shadow flex-1 min-h-0 overflow-hidden max-w-full">
-                  <MonacoEditor
-                    key={`${solveId || "default"}-${language}`}
-                    height="100%" // ✔ vh 제거
-                    language={language}
-                    value={code ?? ""}
-                    onChange={(value) => setCode(value ?? "")}
-                    options={{
-                      minimap: { enabled: false },
-                      scrollBeyondLastLine: false,
-                      fontSize: 16,
-                      lineNumbers: "off",
-                      roundedSelection: false,
-                      contextmenu: false,
-                      automaticLayout: true, // ✔ 자동 레이아웃
-                      copyWithSyntaxHighlighting: false,
-                      scrollbar: { vertical: "visible", horizontal: "visible" },
-                      padding: { top: 10, bottom: 10 },
-                      wordWrap: "on",
-                      scrollBeyondLastColumn: 0,
-                    }}
-                    onMount={(ed, monacoNs) => {
-                      editorRef.current = ed;
-
-                      // Enter 로깅 (기존)
-                      ed.onKeyDown((event) => {
-                        if (event.keyCode === monacoNs.KeyCode.Enter) {
-                          const newCode = ed.getValue();
-                          setCodeLogs((prevLogs) => [...prevLogs, newCode]);
-                          setTimeStamps((prev) => [
-                            ...prev,
-                            new Date().toISOString(),
-                          ]);
-                        }
-                      });
-
-                      // Ctrl/Cmd + Enter → 현재 코드 즉시 실행
-                      ed.addCommand(
-                        monacoNs.KeyMod.CtrlCmd | monacoNs.KeyCode.Enter,
-                        () => {
-                          handleRunCurrentCode();
-                        }
-                      );
-                    }}
-                  />
-                </div>
-
-                {/* ✅ 실행 입력/결과 통합 카드 */}
-                <div className="bg-white rounded-xl shadow-lg border flex flex-col mt-4 mb-5 min-h-0">
-                  {/* 헤더 */}
-                  <div className="flex items-center h-12 px-3 border-b justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="font-bold text-sm">
-                        실행 (입력 → 출력)
-                      </div>
-                      {currentRun ? (
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded ${
-                            currentRun.success
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {currentRun.success ? "성공" : "실패"}
-                          {typeof currentRun.time_ms === "number"
-                            ? ` · ${currentRun.time_ms}ms`
-                            : ""}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-500">
-                          대기 중...
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {/* 단축키 안내 */}
-                      <span className="text-xs text-gray-400">
-                        (Ctrl/⌘+Enter)
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-gray-700">
+                        #{i + 1}
                       </span>
-                      <motion.button
-                        onClick={handleRunCurrentCode}
-                        disabled={isRunningCurrent}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`${
-                          isRunningCurrent
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-mygreen hover:bg-green-700"
-                        } text-white px-4 py-1.5 rounded-xl text-sm`}
-                      >
-                        {isRunningCurrent ? "실행중..." : "실행"}
-                      </motion.button>
-                    </div>
-                  </div>
-
-                  {/* 본문: 왼쪽 입력 / 오른쪽 출력 */}
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-3 overflow-y-auto">
-                    {/* 입력 영역 (2/5) */}
-                    <div className="md:col-span-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="text-xs font-semibold text-gray-700">
-                          입력
-                        </div>
-                        {/* 선택: 샘플 입력이 여러 개면 드롭다운으로 바꿔넣기 */}
-                      </div>
-
-                      <textarea
-                        rows={4}
-                        value={testCases[0]?.input ?? ""}
-                        onChange={(e) =>
-                          setTestCases([{ input: e.target.value, output: "" }])
-                        }
-                        onKeyDown={(e) => {
-                          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                            e.preventDefault();
-                            handleRunCurrentCode();
-                          }
-                        }}
-                        onInput={(e) => {
-                          const ta = e.currentTarget;
-                          ta.style.height = "auto";
-                          ta.style.height = `${ta.scrollHeight}px`;
-                        }}
-                        placeholder="표준 입력으로 전달할 값을 적어주세요"
-                        className="w-full px-2 py-2 border border-gray-300 rounded text-sm resize-none font-mono"
-                        style={{ minHeight: "120px" }}
-                      />
                     </div>
 
-                    {/* 출력 영역 (3/5) */}
-                    <div className="md:col-span-4 flex flex-col">
-                      <div className="text-xs font-semibold text-gray-700 mb-1">
-                        실행 결과
-                      </div>
-                      <div
-                        className="w-full px-2 py-2 border border-gray-200 rounded bg-gray-50 font-mono text-xs overflow-y-auto"
-                        style={{ minHeight: "120px", maxHeight: "240px" }}
-                      >
-                        <pre className="whitespace-pre-wrap break-all">
-                          {currentRun?.output || "(출력 없음)"}
-                        </pre>
-                      </div>
-
-                      {currentRun?.error && (
-                        <>
-                          <div className="text-xs font-semibold text-gray-700 mt-3 mb-1">
-                            에러 출력
+                    <div className="space-y-3">
+                      {hasInput && (
+                        <div className="w-full">
+                          <div className="text-xs font-semibold text-gray-600 mb-1">
+                            입력
                           </div>
-                          <div
-                            className="w-full px-2 py-2 border border-red-200 rounded bg-red-50 font-mono text-xs overflow-y-auto text-red-700"
-                            style={{ minHeight: "96px", maxHeight: "240px" }}
-                          >
+                          <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono text-sm overflow-auto">
                             <pre className="whitespace-pre-wrap break-all">
-                              {currentRun.error}
+                              {tc.input}
                             </pre>
                           </div>
-                        </>
+                        </div>
                       )}
+
+                      <div className="w-full">
+                        <div className="text-xs font-semibold text-gray-600 mb-1">
+                          예상 출력
+                        </div>
+                        <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 font-mono text-sm overflow-auto">
+                          <pre className="whitespace-pre-wrap break-all">
+                            {tc.output || "(빈 출력)"}
+                          </pre>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </div>
 
-            {/* 객관식 */}
-            {isMultiple && (
-              <div className="bg-white rounded-xl shadow-lg p-6 flex-1 min-h-0 overflow-y-auto mb-5">
-                {/* ... 기존 내용 그대로 ... */}
-                {/* 위쪽 로직/주석 유지 */}
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">객관식 답안 선택</h3>
-                  {allowMultiple ? (
-                    <span className="text-sm text-blue-600 font-medium">
-                      복수 선택 가능
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-500">단일 선택</span>
-                  )}
-                </div>
+      {/* 드래그 핸들 */}
+      <div
+        onMouseDown={onMouseDown}
+        className="w-2 cursor-col-resize bg-gray-300 hover:bg-gray-400 transition-colors flex-shrink-0 border-l border-r border-gray-200"
+      />
 
-                {choiceOptions.length === 0 ? (
-                  <p className="text-gray-500">선지가 없습니다.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {choiceOptions.map((text, index) => {
-                      const labelNumber =
-                        `①②③④⑤⑥⑦⑧⑨⑩`.charAt(index) || `${index + 1}.`;
-                      const id = `opt-${index}`;
+      {/* 오른쪽: 에디터 / 실행카드 / 객관식 UI */}
+      <div className="flex flex-col overflow-hidden flex-1 min-w-[400px]">
+        <div className="flex flex-col h-full w-full max-w-full overflow-hidden pl-2">
+          {/* 코딩/디버깅 */}
+          {isCodingOrDebugging && (
+            <>
+              <div className="flex items-center mb-2 max-w_full overflow-hidden shrink-0 gap-2">
+                <select
+                  value={language}
+                  onChange={handleLanguageChange}
+                  className="border rounded-lg p-2 flex-shrink-0 text-sm"
+                >
+                  <option value="python">Python</option>
+                  <option value="c">C</option>
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                </select>
 
-                      return (
-                        <label
-                          key={id}
-                          htmlFor={id}
-                          className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                            (
-                              allowMultiple
-                                ? selectedMultiple.includes(index)
-                                : selectedSingle === index
-                            )
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <input
-                            id={id}
-                            type={allowMultiple ? "checkbox" : "radio"}
-                            name="multipleChoice"
-                            value={index}
-                            checked={
-                              allowMultiple
-                                ? selectedMultiple.includes(index)
-                                : selectedSingle === index
-                            }
-                            onChange={(e) => {
-                              if (allowMultiple) {
-                                setSelectedMultiple((prev) =>
-                                  e.target.checked
-                                    ? [...prev, index]
-                                    : prev.filter((i) => i !== index)
-                                );
-                              } else {
-                                setSelectedSingle(index);
-                              }
-                            }}
-                            className="mr-3 w-4 h-4 text-blue-600"
-                          />
-
-                          <span className="font-medium mr-3">
-                            {labelNumber}
-                          </span>
-                          <span className="whitespace-pre-wrap">{text}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                {expectedLang && (
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      langMismatch
+                        ? "bg-red-100 text-red-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    요구 언어: {expectedLang.toUpperCase()}
+                  </span>
                 )}
               </div>
-            )}
 
-            {/* 주관식 */}
-            {isSubjective && (
-              <div className="bg-white rounded-xl shadow-lg p-6 flex-1 min-h-0 overflow-y-auto mb-5">
-                <h3 className="text-lg font-semibold mb-4">주관식 답안 작성</h3>
-                <textarea
-                  value={subjectiveAnswer}
-                  onChange={(e) => setSubjectiveAnswer(e.target.value)}
-                  placeholder="답안을 자유롭게 작성해주세요..."
-                  className="w-full h-full min-h-[300px] p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  style={{ fontSize: "14px", lineHeight: "1.5" }}
+              <div className="bg-white rounded shadow flex-1 min-h-0 overflow-hidden max-w-full">
+                <MonacoEditor
+                  key={`${solveId || "default"}-${language}`}
+                  height="100%"
+                  language={language}
+                  value={code ?? ""}
+                  onChange={(value) => setCode(value ?? "")}
+                  options={{
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    fontSize: 16,
+                    lineNumbers: "off",
+                    roundedSelection: false,
+                    contextmenu: false,
+                    automaticLayout: true,
+                    copyWithSyntaxHighlighting: false,
+                    scrollbar: { vertical: "visible", horizontal: "visible" },
+                    padding: { top: 10, bottom: 10 },
+                    wordWrap: "on",
+                    scrollBeyondLastColumn: 0,
+                  }}
+                  onMount={(ed, monacoNs) => {
+                    editorRef.current = ed;
+                    ed.onKeyDown((event) => {
+                      if (event.keyCode === monacoNs.KeyCode.Enter) {
+                        const newCode = ed.getValue();
+                        setCodeLogs((prevLogs) => [...prevLogs, newCode]);
+                        setTimeStamps((prev) => [
+                          ...prev,
+                          new Date().toISOString(),
+                        ]);
+                      }
+                    });
+                    ed.addCommand(
+                      monacoNs.KeyMod.CtrlCmd | monacoNs.KeyCode.Enter,
+                      () => {
+                        handleRunCurrentCode();
+                      }
+                    );
+                  }}
                 />
-                <div className="mt-2 text-sm text-gray-500 text-right">
-                  {subjectiveAnswer.length} 글자
-                </div>
               </div>
-            )}
 
-            {/* 단답형 */}
-            {isShort && (
-              <div className="bg-white rounded-xl shadow-lg p-6 flex-1 min-h-0 overflow-y-auto mb-5">
-                <h3 className="text-lg font-semibold mb-4">단답형 답안 입력</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      답안
-                    </label>
-                    <input
-                      type="text"
-                      value={shortAnswer}
-                      onChange={(e) => setShortAnswer(e.target.value)}
-                      placeholder="정답을 입력해주세요"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              {/* 실행 입력/결과 카드 */}
+              <div className="bg-white rounded-xl shadow-lg border flex flex-col mt-4 mb-5 min-h-0">
+                <div className="flex items-center h-12 px-3 border-b justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="font-bold text-sm">실행 (입력 → 출력)</div>
+                    {currentRun ? (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          currentRun.success
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {currentRun.success ? "성공" : "실패"}
+                        {typeof currentRun.time_ms === "number"
+                          ? ` · ${currentRun.time_ms}ms`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-500">대기 중...</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">(Ctrl/⌘+Enter)</span>
+                    <motion.button
+                      onClick={handleRunCurrentCode}
+                      disabled={isRunningCurrent}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`${
+                        isRunningCurrent
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-mygreen hover:bg-green-700"
+                      } text-white px-4 py-1.5 rounded-xl text-sm`}
+                    >
+                      {isRunningCurrent ? "실행중..." : "실행"}
+                    </motion.button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-3 overflow-y-auto">
+                  {/* 입력 영역 */}
+                  <div className="md:col-span-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs font-semibold text-gray-700">입력</div>
+                    </div>
+
+                    <textarea
+                      rows={4}
+                      value={testCases[0]?.input ?? ""}
+                      onChange={(e) =>
+                        setTestCases([{ input: e.target.value, output: "" }])
+                      }
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                          e.preventDefault();
+                          handleRunCurrentCode();
+                        }
+                      }}
+                      onInput={(e) => {
+                        const ta = e.currentTarget;
+                        ta.style.height = "auto";
+                        ta.style.height = `${ta.scrollHeight}px`;
+                      }}
+                      placeholder="표준 입력으로 전달할 값을 적어주세요"
+                      className="w-full px-2 py-2 border border-gray-300 rounded text-sm resize-none font-mono"
+                      style={{ minHeight: "120px" }}
                     />
                   </div>
-                  <div className="text-sm text-gray-500">
-                    간단명료하게 답안을 입력해주세요.
+
+                  {/* 출력 영역 */}
+                  <div className="md:col-span-4 flex flex-col">
+                    <div className="text-xs font-semibold text-gray-700 mb-1">
+                      실행 결과
+                    </div>
+                    <div
+                      className="w-full px-2 py-2 border border-gray-200 rounded bg-gray-50 font-mono text-xs overflow-y-auto"
+                      style={{ minHeight: "120px", maxHeight: "240px" }}
+                    >
+                      <pre className="whitespace-pre-wrap break-all">
+                        {currentRun?.output || "(출력 없음)"}
+                      </pre>
+                    </div>
+
+                    {currentRun?.error && (
+                      <>
+                        <div className="text-xs font-semibold text-gray-700 mt-3 mb-1">
+                          에러 출력
+                        </div>
+                        <div
+                          className="w-full px-2 py-2 border border-red-200 rounded bg-red-50 font-mono text-xs overflow-y-auto text-red-700"
+                          style={{ minHeight: "96px", maxHeight: "240px" }}
+                        >
+                          <pre className="whitespace-pre-wrap break-all">
+                            {currentRun.error}
+                          </pre>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </>
+          )}
+
+          {/* 객관식 */}
+          {isMultiple && (
+            <div className="bg-white rounded-xl shadow-lg p-6 flex-1 min-h-0 overflow-y-auto mb-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">객관식 답안 선택</h3>
+                {allowMultiple ? (
+                  <span className="text-sm text-blue-600 font-medium">
+                    복수 선택 가능
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-500">단일 선택</span>
+                )}
+              </div>
+
+              {choiceOptions.length === 0 ? (
+                <p className="text-gray-500">선지가 없습니다.</p>
+              ) : (
+                <div className="space-y-3">
+                  {choiceOptions.map((text, index) => {
+                    const labelNumber =
+                      `①②③④⑤⑥⑦⑧⑨⑩`.charAt(index) || `${index + 1}.`;
+                    const id = `opt-${index}`;
+
+                    return (
+                      <label
+                        key={id}
+                        htmlFor={id}
+                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          (
+                            allowMultiple
+                              ? selectedMultiple.includes(index)
+                              : selectedSingle === index
+                          )
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <input
+                          id={id}
+                          type={allowMultiple ? "checkbox" : "radio"}
+                          name="multipleChoice"
+                          value={index}
+                          checked={
+                            allowMultiple
+                              ? selectedMultiple.includes(index)
+                              : selectedSingle === index
+                          }
+                          onChange={(e) => {
+                            if (allowMultiple) {
+                              setSelectedMultiple((prev) =>
+                                e.target.checked
+                                  ? [...prev, index]
+                                  : prev.filter((i) => i !== index)
+                              );
+                            } else {
+                              setSelectedSingle(index);
+                            }
+                          }}
+                          className="mr-3 w-4 h-4 text-blue-600"
+                        />
+
+                        <span className="font-medium mr-3">{labelNumber}</span>
+                        <span className="whitespace-pre-wrap">{text}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  )}
+
+  {/* ========== 주관식 / 단답형 : 상하 레이아웃 ========== */}
+  {(isSubjective || isShort) && (
+    <div className="flex-1 min-h-0 overflow-y-auto px-2 space-y-6">
+      {/* 상단: 문제 설명 */}
+      {(() => {
+        const desc = normalizeMultiline(problem?.description ?? "");
+        return (
+          <div
+            className="editor-content prose prose-slate max-w-none
+                      prose-headings:font-bold prose-pre:bg-gray-50 prose-pre:border
+                      prose-pre:border-gray-200 prose-pre:rounded-xl prose-code:text-pink-700
+                      prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+                      prose-img:rounded-lg bg-white rounded-xl shadow-lg p-6"
+          >
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkBreaks]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {desc}
+            </ReactMarkdown>
+          </div>
+        );
+      })()}
+
+      {/* 하단: 답안 입력 */}
+      {isSubjective && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-5">
+          <h3 className="text-lg font-semibold mb-4">주관식 답안 작성</h3>
+          <textarea
+            value={subjectiveAnswer}
+            onChange={(e) => setSubjectiveAnswer(e.target.value)}
+            placeholder="답안을 자유롭게 작성해주세요..."
+            className="w-full min-h-[200px] p-4 border border-gray-300 rounded-lg resize-none
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ fontSize: "14px", lineHeight: "1.5" }}
+          />
+          <div className="mt-2 text-sm text-gray-500 text-right">
+            {subjectiveAnswer.length} 글자
           </div>
         </div>
-      </main>
+      )}
+
+      {isShort && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-5">
+          <h3 className="text-lg font-semibold mb-4">단답형 답안 입력</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                답안
+              </label>
+              <input
+                type="text"
+                value={shortAnswer}
+                onChange={(e) => setShortAnswer(e.target.value)}
+                placeholder="정답을 입력해주세요"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="text-sm text-gray-500">
+              간단명료하게 답안을 입력해주세요.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+</main>
+
     </div>
   );
 }

@@ -191,7 +191,7 @@ export default function NewRegisteredProblem() {
     switch (problemType) {
       case "코딩":
       case "디버깅":
-        setRatingMode("hard");
+        setRatingMode("regex");
         break;
       case "단답형":
         setRatingMode("exact");
@@ -301,7 +301,26 @@ export default function NewRegisteredProblem() {
       (condition) => condition.trim() !== ""
     );
     const refCodes = referenceCodes.length > 0 ? referenceCodes : [];
-    const testCasesPayload = testCases.length > 0 ? testCases : [];
+    const testCasesPayload =
+      testCases.length > 0
+        ? testCases.map((tc: any) => {
+            const noInput =
+              tc?.no_input === true ||
+              String(tc?.input ?? "")
+                .trim()
+                .toUpperCase() === "X" ||
+              String(tc?.input ?? "").trim() === "";
+
+            return {
+              ...tc,
+              input: noInput ? "X" : String(tc.input ?? ""),
+              expected_output: String(tc.expected_output ?? "").replace(
+                /\r?\n$/,
+                ""
+              ),
+            };
+          })
+        : [];
     // 문제 생성 Api 호출
     try {
       if (problemType === "코딩") {
@@ -793,69 +812,84 @@ export default function NewRegisteredProblem() {
         )}
       </div>
       {(problemType === "코딩" || problemType === "디버깅") && (
-  <div className="mt-4 bg-white shadow-md rounded-xl border border-gray-200">
-    <div className="px-4 py-2 border-b text-sm font-semibold text-gray-700 flex items-center justify-between">
-      <span>실행 결과</span>
-      {isRunning && <span className="text-xs text-gray-500">실행 중...</span>}
-    </div>
+        <div className="mt-4 bg-white shadow-md rounded-xl border border-gray-200">
+          <div className="px-4 py-2 border-b text-sm font-semibold text-gray-700 flex items-center justify-between">
+            <span>실행 결과</span>
+            {isRunning && (
+              <span className="text-xs text-gray-500">실행 중...</span>
+            )}
+          </div>
 
-    {/* 에러 메시지 */}
-    {runError ? (
-      <div className="p-4">
-        <div className="text-red-600 text-sm font-medium mb-1">오류</div>
-        <pre className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">
-          {runError}
-        </pre>
-      </div>
-    ) : (
-      <div className="p-4">
-        {runOutputs.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            아직 실행 결과가 없습니다. 상단의 <b>테스트 실행</b>을 눌러주세요.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {runOutputs.map((out, idx) => {
-              const passed = testResults[idx] ?? null
-              const hasInput = Array.isArray(testCases[idx]?.input)
-                ? (testCases[idx]?.input as string[]).length > 0
-                : String(testCases[idx]?.input ?? "").trim().length > 0
+          {/* 에러 메시지 */}
+          {runError ? (
+            <div className="p-4">
+              <div className="text-red-600 text-sm font-medium mb-1">오류</div>
+              <pre className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs overflow-x-auto whitespace-pre-wrap">
+                {runError}
+              </pre>
+            </div>
+          ) : (
+            <div className="p-4">
+              {runOutputs.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  아직 실행 결과가 없습니다. 상단의 <b>테스트 실행</b>을
+                  눌러주세요.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {runOutputs.map((out, idx) => {
+                    const passed = testResults[idx] ?? null;
+                    const hasInput = Array.isArray(testCases[idx]?.input)
+                      ? (testCases[idx]?.input as string[]).length > 0
+                      : String(testCases[idx]?.input ?? "").trim().length > 0;
 
-              return (
-                <li key={idx} className="border border-gray-200 rounded-lg">
-                  <div className="px-3 py-2 flex items-center justify-between">
-                    <div className="text-sm font-medium">케이스 {idx + 1}</div>
-                    <div className="text-sm">
-                      {passed === true && <span className="text-green-600">✅ 통과</span>}
-                      {passed === false && <span className="text-red-600">❌ 실패</span>}
-                      {passed === null && <span className="text-gray-500">-</span>}
-                    </div>
-                  </div>
-                  <div className="px-3 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">
-                        실제 출력
-                        {!hasInput && (
-                          <span className="ml-1 text-[10px] text-gray-400">(입력 없음)</span>
-                        )}
-                      </div>
-                      <pre className="bg-gray-50 border border-gray-200 rounded-md p-2 text-xs whitespace-pre-wrap break-all">
-                        {out}
-                      </pre>
-                    </div>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>
-    )}
-  </div>
-)}
-<div className="mb-10"></div>
+                    return (
+                      <li
+                        key={idx}
+                        className="border border-gray-200 rounded-lg"
+                      >
+                        <div className="px-3 py-2 flex items-center justify-between">
+                          <div className="text-sm font-medium">
+                            케이스 {idx + 1}
+                          </div>
+                          <div className="text-sm">
+                            {passed === true && (
+                              <span className="text-green-600">✅ 통과</span>
+                            )}
+                            {passed === false && (
+                              <span className="text-red-600">❌ 실패</span>
+                            )}
+                            {passed === null && (
+                              <span className="text-gray-500">-</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="px-3 pb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">
+                              실제 출력
+                              {!hasInput && (
+                                <span className="ml-1 text-[10px] text-gray-400">
+                                  (입력 없음)
+                                </span>
+                              )}
+                            </div>
+                            <pre className="bg-gray-50 border border-gray-200 rounded-md p-2 text-xs whitespace-pre-wrap break-all">
+                              {out}
+                            </pre>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="mb-10"></div>
 
-        
       {/* 문제 조건 섹션 */}
       {problemType !== "객관식" &&
         problemType !== "주관식" &&

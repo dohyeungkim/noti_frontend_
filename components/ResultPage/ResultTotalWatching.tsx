@@ -17,14 +17,18 @@ import {
 } from "@/lib/api";
 
 /** ================== 타입 ================== */
+type Role = "개발자" | "학생" | "결석";
+
 interface StudentStatus {
   studentName: string;
-  /** ★ 추가: 학번(문자/숫자 어떤 형태여도 수용) */
   studentNo?: string | number;
   correct: number;
   wrong: number;
   notSolved: number;
   score: number;
+
+  /** ★ 추가: 직책(더미) */
+  role?: Role;
 }
 
 /** ★ suspect 상태 추가 */
@@ -344,11 +348,12 @@ export default function ResultTotalWatching() {
 
         nextStudents.push({
           studentName: name,
-          studentNo, // ★ 추가 저장
+          studentNo,
           correct: c,
           wrong: w,
           notSolved: pCount,
           score: totalScore,
+          role: "학생", // ★ 기본 직책
         });
       }
 
@@ -449,6 +454,7 @@ export default function ResultTotalWatching() {
   }, [students, problems, cellMap]);
 
   /* ========= 화면폭 안에서만 보여주는 열 가상화(윈도우링) ========= */
+  const ROLE_COL_W = 110;
   const STUDENT_NAME_COL_W = 160;
   const STUDENT_NO_COL_W = 120;
   const TOTALS_W = 3 * 88; // px
@@ -465,7 +471,12 @@ export default function ResultTotalWatching() {
     const w = el.clientWidth;
     const avail = Math.max(
       0,
-      w - (STUDENT_NAME_COL_W + STUDENT_NO_COL_W + TOTALS_W + H_PADDING)
+      w -
+        (ROLE_COL_W +
+          STUDENT_NAME_COL_W +
+          STUDENT_NO_COL_W +
+          TOTALS_W +
+          H_PADDING)
     );
     const n = Math.max(1, Math.floor(avail / MIN_PROBLEM_COL_W));
     setVisibleCount(n);
@@ -629,6 +640,8 @@ export default function ResultTotalWatching() {
         <div className="overflow-hidden">
           <table className="w-full table-fixed text-sm">
             <colgroup>
+              {/* ★ 직책 */}
+              <col style={{ width: `${ROLE_COL_W}px` }} />
               <col style={{ width: `${STUDENT_NAME_COL_W}px` }} />
               <col style={{ width: `${STUDENT_NO_COL_W}px` }} />
               {windowProblems.map((_p, i) => (
@@ -645,11 +658,18 @@ export default function ResultTotalWatching() {
             <thead className="bg-gray-50">
               <tr className="border-b">
                 <th className="px-4 py-2 text-left sticky left-0 bg-gray-50 z-10">
-                  학생
+                  <span className="ml-7 inline-block">직책</span>
+                </th>
+
+                <th
+                  className="px-4 py-2 text-left sticky bg-gray-50 z-10"
+                  style={{ left: ROLE_COL_W }} // ★ 보정
+                >
+                  이름
                 </th>
                 <th
-                  className={`px-4 py-2 text-left sticky bg-gray-50 z-10`}
-                  style={{ left: STUDENT_NAME_COL_W }}
+                  className="px-4 py-2 text-left sticky bg-gray-50 z-10"
+                  style={{ left: ROLE_COL_W + STUDENT_NAME_COL_W }} // ★ 보정
                 >
                   학번
                 </th>
@@ -682,20 +702,48 @@ export default function ResultTotalWatching() {
             </thead>
 
             <tbody>
-              {students.map((s) => {
+              {students.map((s, idx) => {
                 const sum = studentTotals[s.studentName] ?? {
                   correct: 0,
                   wrong: 0,
                   pending: 0,
                 };
+
                 return (
                   <tr key={s.studentName} className="border-b">
-                    <td className="px-4 py-2 sticky left-0 bg-white z-10 font-medium whitespace-nowrap">
+                    {/* ★ 직책: 더미 상태 업데이트(로컬 상태만) */}
+                    <td className="px-4 py-2 sticky left-0 bg-white z-10">
+                      <select
+                        value={s.role ?? "학생"}
+                        onChange={(e) => {
+                          const v = e.target.value as Role;
+                          // 로컬 students 상태만 업데이트 (더미)
+                          setStudents((prev) =>
+                            prev.map((it) =>
+                              it.studentName === s.studentName
+                                ? { ...it, role: v }
+                                : it
+                            )
+                          );
+                        }}
+                        className="w-full border rounded-md px-2 py-1 text-sm bg-white"
+                      >
+                        <option value="개발자">개발자</option>
+                        <option value="학생">학생</option>
+                        <option value="결석자">결석자</option>
+                      </select>
+                    </td>
+
+                    <td
+                      className="px-4 py-2 sticky bg-white z-10 font-medium whitespace-nowrap"
+                      style={{ left: ROLE_COL_W }} // ★ 보정
+                    >
                       {s.studentName}
                     </td>
+
                     <td
                       className="px-4 py-2 sticky bg-white z-10 whitespace-nowrap text-gray-700"
-                      style={{ left: STUDENT_NAME_COL_W }}
+                      style={{ left: ROLE_COL_W + STUDENT_NAME_COL_W }} // ★ 보정
                     >
                       {s.studentNo ?? "-"}
                     </td>
@@ -736,7 +784,11 @@ export default function ResultTotalWatching() {
                 </td>
                 <td
                   className="px-4 py-2 sticky bg-gray-50 z-10"
-                  style={{ left: STUDENT_NAME_COL_W }}
+                  style={{ left: ROLE_COL_W }} // ★ 보정
+                />
+                <td
+                  className="px-4 py-2 sticky bg-gray-50 z-10"
+                  style={{ left: ROLE_COL_W + STUDENT_NAME_COL_W }} // ★ 보정
                 />
 
                 {windowProblems.map((p) => {
