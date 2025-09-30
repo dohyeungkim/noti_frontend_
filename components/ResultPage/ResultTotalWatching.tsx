@@ -14,6 +14,7 @@ import {
   auth_api,
   group_api,
   problem_ref_api,
+  submissions_trace_api,
 } from "@/lib/api";
 
 /** ================== 타입 ================== */
@@ -26,9 +27,10 @@ interface StudentStatus {
   wrong: number;
   notSolved: number;
   score: number;
-
-  /** ★ 추가: 직책(더미) */
   role?: Role;
+
+  /** ★ 추가: API 호출용 원본 user_id */
+  studentId?: string | number;
 }
 
 /** ★ suspect 상태 추가 */
@@ -178,6 +180,49 @@ export default function ResultTotalWatching() {
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
+  const [traceOpen, setTraceOpen] = useState(false); // 모달 on/off
+  const [traceLoading, setTraceLoading] = useState(false); // 로딩
+  const [traceError, setTraceError] = useState<string | null>(null);
+
+  const [traceData, setTraceData] = useState<any>(null); // 응답 payload
+  const [traceMeta, setTraceMeta] = useState<{
+    // 클릭 컨텍스트
+    studentName: string;
+    problemId: number;
+    problemTitle: string;
+  } | null>(null);
+  const openTrace = async (student: StudentStatus, prob: ProblemStatus) => {
+    if (!groupId || !workbookId) return;
+    setTraceOpen(true);
+    setTraceLoading(true);
+    setTraceError(null);
+    setTraceData(null);
+    setTraceMeta({
+      studentName: student.studentName,
+      problemId: prob.problemId,
+      problemTitle: prob.title,
+    });
+
+    try {
+      // user_id는 학번이 아니라 실제 user_id가 필요하면 studentId 사용,
+      // 없으면 studentNo라도 문자열로 던짐.
+      const userId = String(student.studentId ?? student.studentNo ?? "");
+      if (!userId)
+        throw new Error("학생 식별자(user_id/학번)를 찾을 수 없습니다.");
+
+      const data = await submissions_trace_api.get_trace_submission(
+        Number(groupId),
+        Number(workbookId),
+        prob.problemId,
+        userId
+      );
+      setTraceData(data);
+    } catch (e: any) {
+      setTraceError(e?.message || "제출 트레이스를 불러오지 못했습니다.");
+    } finally {
+      setTraceLoading(false);
+    }
+  };
   /** ============ 데이터 로드 ============ */
   const loadWatching = useCallback(async () => {
     if (!groupId || !workbookId) return;
@@ -353,7 +398,8 @@ export default function ResultTotalWatching() {
           wrong: w,
           notSolved: pCount,
           score: totalScore,
-          role: "학생", // ★ 기본 직책
+          role: "학생",
+          studentId: st.student_id, // ★ 추가
         });
       }
 
@@ -752,13 +798,14 @@ export default function ResultTotalWatching() {
                       const st = getCell(s.studentName, p.problemId);
                       return (
                         <td key={p.problemId} className="px-2 py-2">
-                          <div className="flex items-center justify-center">
-                            <StatusIcon
-                              status={st}
-                              size={18}
-                              title={`${s.studentName} • ${p.title} : ${badgeText[st]}`}
-                            />
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openTrace(s, p)} // ★ 클릭 시 모달 오픈+로드
+                            className="flex items-center justify-center w-full py-1 hover:bg-gray-50 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            title={`${s.studentName} • ${p.title} : ${badgeText[st]}`}
+                          >
+                            <StatusIcon status={st} size={18} />
+                          </button>
                         </td>
                       );
                     })}
@@ -828,6 +875,203 @@ export default function ResultTotalWatching() {
           </table>
         </div>
       </div>
+      {traceOpen && (
+        <div className="fixed inset-0 z-50">
+          {/* overlay */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setTraceOpen(false)}
+            aria-hidden
+          />
+          {/* dialog */}
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl border overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b bg-gray-50">
+                <div className="font-semibold">
+                  제출 트레이스
+                  {traceMeta ? (
+                    <span className="text-gray-500 font-normal">
+                      {" "}
+                      — {traceMeta.studentName} / {traceMeta.problemTitle}
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  onClick={() => setTraceOpen(false)}
+                  className="p-2 rounded-md hover:bg-gray-100"
+                  aria-label="닫기"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="p-5 max-h-[70vh] overflow-auto text-sm">
+                {traceLoading && (
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                    불러오는 중...
+                  </div>
+                )}
+
+                {traceError && (
+                  <div className="text-rose-600">{traceError}</div>
+                )}
+
+                {!traceLoading && !traceError && traceData && (
+                  <div className="space-y-4">
+                    {/* 공통 헤더 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-gray-500">문제명</span>
+                        <div className="font-medium">
+                          {traceData.problem_name}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">유형</span>
+                        <div className="font-medium">
+                          {traceData.problemType}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">결과</span>
+                        <div className="font-medium">
+                          {traceData.passed ? "통과" : "미통과"}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">상태</span>
+                        <div className="font-medium">
+                          {traceData.overall_status}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 유형별 본문 */}
+                    {(traceData.problemType === "코딩" ||
+                      traceData.problemType === "디버깅") && (
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-gray-500 mb-1">
+                            코드 ({traceData.code_language},{" "}
+                            {traceData.code_len}B)
+                          </div>
+                          <pre className="p-3 bg-gray-50 rounded border overflow-auto text-xs">
+                            {traceData.submitted_code}
+                          </pre>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-gray-500 mb-1">
+                              테스트케이스
+                            </div>
+                            <ul className="list-disc pl-5 space-y-1">
+                              {(traceData.test_cases ?? []).map(
+                                (t: any, i: number) => (
+                                  <li key={i}>
+                                    <span className="text-gray-500">in:</span>{" "}
+                                    <code>{t.input}</code>{" "}
+                                    <span className="text-gray-500 ml-2">
+                                      exp:
+                                    </span>{" "}
+                                    <code>{t.expected_output}</code>
+                                  </li>
+                                )
+                              )}
+                            </ul>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 mb-1">
+                              실행결과 (ms)
+                            </div>
+                            <ul className="list-disc pl-5 space-y-1">
+                              {(traceData.test_results ?? []).map(
+                                (t: any, i: number) => (
+                                  <li key={i}>
+                                    <code>{t.input}</code> →{" "}
+                                    <code>{t.actual_output}</code>{" "}
+                                    {t.passed ? "✅" : "❌"} ({t.time_ms})
+                                  </li>
+                                )
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {traceData.problemType === "객관식" && (
+                      <div>
+                        <div className="text-gray-500 mb-1">
+                          선택한 보기 인덱스
+                        </div>
+                        <div className="font-medium">
+                          {(traceData.selected_options ?? []).join(", ") || "-"}
+                        </div>
+                      </div>
+                    )}
+
+                    {(traceData.problemType === "단답형" ||
+                      traceData.problemType === "주관식") && (
+                      <div>
+                        <div className="text-gray-500 mb-1">제출 내용</div>
+                        <div className="p-3 bg-gray-50 rounded border whitespace-pre-wrap">
+                          {traceData.submitted_text || "-"}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 조건 검사 & AI 피드백 */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-gray-500 mb-1">조건 검사</div>
+                        <ul className="space-y-1">
+                          {(traceData.condition_check_results ?? []).map(
+                            (c: any, i: number) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span>{c.passed ? "✅" : "❌"}</span>
+                                <div>
+                                  <div className="font-medium">
+                                    {c.condition}{" "}
+                                    <span className="text-gray-500 text-xs">
+                                      ({c.check_type}
+                                      {c.is_required ? ", 필수" : ""})
+                                    </span>
+                                  </div>
+                                  {c.feedback ? (
+                                    <div className="text-gray-600 text-xs">
+                                      {c.feedback}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="text-gray-500 mb-1">AI 피드백</div>
+                        <div className="p-3 bg-gray-50 rounded border whitespace-pre-wrap">
+                          {traceData.ai_feedback || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-5 py-3 border-t bg-gray-50 flex justify-end">
+                <button
+                  onClick={() => setTraceOpen(false)}
+                  className="px-4 py-2 rounded-md border bg-white hover:bg-gray-100"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

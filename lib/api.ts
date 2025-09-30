@@ -241,6 +241,114 @@ async registerExtended(registerData: ExtendedUserRegisterRequest): Promise<{
 
 }
 
+// ====================== submissions trace 타입 ===========================
+export type ProblemTypeKOR = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식";
+
+export type TraceRequest = {
+  group_id: number;
+  workbook_id: number;
+  problem_id: number;
+  user_id: string;
+};
+
+export type ConditionCheck = {
+  condition: string;
+  is_required: boolean;
+  check_type: "static" | "rule" | "rubric";
+  description: string;
+  passed: boolean;
+  feedback: string;
+};
+
+export type TraceBase = {
+  solve_id: number;
+  problem_id: number;
+  problem_name: string;
+  problemType: ProblemTypeKOR;
+  passed: boolean;
+  overall_status: string;
+  condition_check_results: ConditionCheck[];
+  ai_feedback: string;
+};
+
+export type TraceCodingOrDebugging = TraceBase & {
+  // 코딩/디버깅
+  submitted_code: string;
+  code_language: string;
+  code_len: number;
+  test_cases: { input: string; expected_output: string }[];
+  test_results: { input: string; actual_output: string; passed: boolean; time_ms: number }[];
+  execution_time: number;
+};
+
+export type TraceMultipleChoice = TraceBase & {
+  // 객관식
+  selected_options: number[];
+};
+
+export type TraceShortAnswer = TraceBase & {
+  // 단답형
+  submitted_text: string;
+};
+
+export type TraceSubjective = TraceBase & {
+  // 주관식
+  submitted_text: string;
+};
+
+export type TraceResponse =
+  | TraceCodingOrDebugging
+  | TraceMultipleChoice
+  | TraceShortAnswer
+  | TraceSubjective;
+// ✨====================== submissions trace API ===========================
+export const submissions_trace_api = {
+  /**
+   * POST /api/proxy/submissions/trace
+   * 요청: { group_id, workbook_id, problem_id, user_id }
+   * 응답: 문제 유형별 TraceResponse (코딩/디버깅 | 객관식 | 단답형 | 주관식)
+   */
+  async get_trace_submission(
+    group_id: number,
+    workbook_id: number,
+    problem_id: number,
+    user_id: string
+  ): Promise<TraceResponse> {
+    const payload: TraceRequest = { group_id, workbook_id, problem_id, user_id };
+
+    const res = await fetchWithAuth("/api/proxy/solves/trace", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    // text → json 안전 파싱 (네 스타일에 맞춤)
+    let bodyText = "";
+    try { bodyText = await res.text(); } catch {}
+
+    let body: any = {};
+    try { body = bodyText ? JSON.parse(bodyText) : {}; } catch { body = {}; }
+
+    if (!res.ok) {
+      // detail 배열/문자열/기타 케이스를 보기 좋게 처리
+      const msg = Array.isArray(body?.detail)
+        ? body.detail.map((d: any) => {
+            const loc = Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc;
+            return `${loc}: ${d.msg}`;
+          }).join("\n")
+        : body?.detail?.msg || body?.detail || body?.message || `trace 조회 실패 (${res.status})`;
+      throw new Error(msg);
+    }
+
+    // 최소한의 형태 보정 (problemType 누락 방지 등) — 백엔드가 정확히 내려주면 불필요
+    if (!body?.problemType) {
+      throw new Error("서버 응답에 problemType이 없습니다.");
+    }
+
+    return body as TraceResponse;
+  },
+};
 // ====================== problem 관련 API ===========================
 export type ProblemType = "코딩" | "디버깅" | "객관식" | "단답형" | "주관식"
 export type RatingMode = "hard" | "space" | "regex" | "none" | "exact" | "partial" | "soft"
