@@ -369,7 +369,13 @@ export default function ResultTotalWatching() {
         pb.notSolved = pp;
       }
 
-      setStudents(nextStudents);
+      setStudents(
+        [...nextStudents].sort((a, b) =>
+          a.studentName.localeCompare(b.studentName, "ko-KR", {
+            sensitivity: "base",
+          })
+        )
+      );
       setProblems(problemsArr);
       setCellMap(nextCellMap);
     } catch (e: any) {
@@ -443,7 +449,8 @@ export default function ResultTotalWatching() {
   }, [students, problems, cellMap]);
 
   /* ========= 화면폭 안에서만 보여주는 열 가상화(윈도우링) ========= */
-  const STUDENT_COL_W = 160; // px
+  const STUDENT_NAME_COL_W = 160;
+  const STUDENT_NO_COL_W = 120;
   const TOTALS_W = 3 * 88; // px
   const H_PADDING = 32; // px
   const MIN_PROBLEM_COL_W = 120;
@@ -456,7 +463,10 @@ export default function ResultTotalWatching() {
     const el = frameRef.current;
     if (!el) return;
     const w = el.clientWidth;
-    const avail = Math.max(0, w - (STUDENT_COL_W + TOTALS_W + H_PADDING));
+    const avail = Math.max(
+      0,
+      w - (STUDENT_NAME_COL_W + STUDENT_NO_COL_W + TOTALS_W + H_PADDING)
+    );
     const n = Math.max(1, Math.floor(avail / MIN_PROBLEM_COL_W));
     setVisibleCount(n);
     if (startIdx > 0 && startIdx + n > problems.length) {
@@ -619,7 +629,8 @@ export default function ResultTotalWatching() {
         <div className="overflow-hidden">
           <table className="w-full table-fixed text-sm">
             <colgroup>
-              <col style={{ width: `160px` }} />
+              <col style={{ width: `${STUDENT_NAME_COL_W}px` }} />
+              <col style={{ width: `${STUDENT_NO_COL_W}px` }} />
               {windowProblems.map((_p, i) => (
                 <col
                   key={`pcol-${i}`}
@@ -634,7 +645,13 @@ export default function ResultTotalWatching() {
             <thead className="bg-gray-50">
               <tr className="border-b">
                 <th className="px-4 py-2 text-left sticky left-0 bg-gray-50 z-10">
-                  학생 / 학번
+                  학생
+                </th>
+                <th
+                  className={`px-4 py-2 text-left sticky bg-gray-50 z-10`}
+                  style={{ left: STUDENT_NAME_COL_W }}
+                >
+                  학번
                 </th>
 
                 {windowProblems.map((p) => (
@@ -674,9 +691,13 @@ export default function ResultTotalWatching() {
                 return (
                   <tr key={s.studentName} className="border-b">
                     <td className="px-4 py-2 sticky left-0 bg-white z-10 font-medium whitespace-nowrap">
-                      {/* 이름 / 학번 */}
                       {s.studentName}
-                      {s.studentNo ? ` / ${s.studentNo}` : ""}
+                    </td>
+                    <td
+                      className="px-4 py-2 sticky bg-white z-10 whitespace-nowrap text-gray-700"
+                      style={{ left: STUDENT_NAME_COL_W }}
+                    >
+                      {s.studentNo ?? "-"}
                     </td>
 
                     {windowProblems.map((p) => {
@@ -713,6 +734,10 @@ export default function ResultTotalWatching() {
                 <td className="px-4 py-2 sticky left-0 bg-gray-50 z-10 font-semibold">
                   문제별 합계
                 </td>
+                <td
+                  className="px-4 py-2 sticky bg-gray-50 z-10"
+                  style={{ left: STUDENT_NAME_COL_W }}
+                />
 
                 {windowProblems.map((p) => {
                   const t = problemTotals[p.problemId] ?? {

@@ -7,6 +7,13 @@
  * 객관식 - 선지 가져와야됨 + 답 인덱스 갯수 가져와서 답 여러개면 복수형 문제라고 알려주고 복수 선택 가능하게 하기 !!
  * 주관식 - 가져올 값 없음
  */
+//마크다운 관련
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import rehypeRaw from "rehype-raw"; // (HTML 허용해야 할 때만)
+import type { Components } from "react-markdown"; // 커스터마이징할 때만
+
 import { useMemo } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { useRef, useEffect, useState, useCallback } from "react";
@@ -28,7 +35,6 @@ import type { editor } from "monaco-editor";
 import { useLoadingStore } from "@/lib/loadingStore";
 // 🔥 CHANGE 1: 새로운 PresenceIndicator import 추가
 // import { PresenceIndicator } from "./PresenceIndicator";
-
 // ===================== (중요) 전역 템플릿 상수로 이동 =====================
 const DEFAULT_TEMPLATES: { [lang: string]: string } = {
   python: "",
@@ -993,20 +999,99 @@ export default function WriteCodePageClient({
           className="overflow-y-auto h-[calc(100%-72px)] p-2 pr-2 flex-none"
           style={{ width: leftWidth }} // ✅ 드래그 폭 적용
         >
-          {/* 문제 설명 */}
+          {/* 문제 설명 (Markdown 지원) */}
           {(() => {
             const desc = normalizeMultiline(problem?.description ?? "");
-            const hasHtmlTag = /<[^>]+>/.test(desc); // 아주 단순한 판별(충분)
+
+            type MarkdownCodeProps = React.HTMLAttributes<HTMLElement> & {
+              inline?: boolean;
+              className?: string;
+              children?: React.ReactNode;
+            };
+
+            // 2) 인라인/블록 분기 구현
+            const Code = ({
+              inline,
+              className,
+              children,
+              ...props
+            }: MarkdownCodeProps) => {
+              const lang = /language-(\w+)/.exec(className ?? "")?.[1];
+
+              if (inline) {
+                return (
+                  <code className="px-1 py-0.5 rounded bg-gray-100 font-mono text-sm">
+                    {children}
+                  </code>
+                );
+              }
+
+              return (
+                <pre className="p-4 overflow-x-auto bg-gray-50 border border-gray-200 rounded-lg">
+                  <code
+                    className={className ?? (lang ? `language-${lang}` : "")}
+                    {...props}
+                  >
+                    {children}
+                  </code>
+                </pre>
+              );
+            };
+
+            // 3) components에 타입 캐스팅해서 넣기
+            const components: Components = {
+              code: Code as unknown as Components["code"],
+
+              table({ children }) {
+                return (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="min-w-full">{children}</table>
+                  </div>
+                );
+              },
+
+              a({ children, href, title, rel, target }) {
+                return (
+                  <a
+                    href={href}
+                    title={title}
+                    rel={rel ?? "noopener noreferrer"}
+                    target={target ?? "_blank"}
+                    className="text-blue-600 underline hover:no-underline"
+                  >
+                    {children}
+                  </a>
+                );
+              },
+
+              img({ src, alt, title }) {
+                return (
+                  <img
+                    src={src || ""}
+                    alt={alt || ""}
+                    title={title}
+                    className="rounded-lg max-w-full h-auto"
+                  />
+                );
+              },
+            };
 
             return (
-              <div className="editor-content prose prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-4 prose-h1:mb-4 prose-h2:text-2xl prose-h2:mt-4 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-4 prose-h3:mb-4 prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6 prose-li:mb-2 mb-6">
-                {hasHtmlTag ? (
-                  // 백엔드가 진짜 HTML을 내려주는 경우: 그대로 렌더
-                  <div dangerouslySetInnerHTML={{ __html: desc }} />
-                ) : (
-                  // 순수 텍스트인 경우: 개행 유지
-                  <div className="whitespace-pre-wrap break-words">{desc}</div>
-                )}
+              <div
+                className="editor-content prose prose-slate max-w-none
+        prose-headings:font-bold prose-pre:bg-gray-50 prose-pre:border
+        prose-pre:border-gray-200 prose-pre:rounded-xl prose-code:text-pink-700
+        prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+        prose-img:rounded-lg mb-6"
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  // ⚠️ 신뢰 가능한 컨텐츠일 때만 사용
+                  rehypePlugins={[rehypeRaw /*, rehypeSanitize*/]}
+                  components={components}
+                >
+                  {desc}
+                </ReactMarkdown>
               </div>
             );
           })()}

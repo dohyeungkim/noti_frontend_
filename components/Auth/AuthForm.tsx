@@ -544,7 +544,7 @@ export default function AuthForm() {
   alt="NOTI Logo"
   width={120}
   height={30}
-  className="w-40 h-auto"   // width만 바꾸고 height는 auto로!
+  className="w-60 h-auto"   // width만 바꾸고 height는 auto로!
 />
       </header>
       {expiredMsg && (

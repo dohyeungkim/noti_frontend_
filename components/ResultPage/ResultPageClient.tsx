@@ -1,8 +1,8 @@
 "use client";
 // 채점 기능 관련, 현재 목데이터로 진행중.
 
-import { useEffect, useState, useCallback, useMemo } from "react";
-import { workbook_api } from "@/lib/api";
+import { useEffect, useState, useCallback } from "react";
+import { workbook_api, group_api } from "@/lib/api";
 import { motion } from "framer-motion";
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
 import {
@@ -10,22 +10,19 @@ import {
   problem_api,
   solve_api,
   ai_feedback_api,
-  comment_api,
   auth_api,
 } from "@/lib/api";
 import type { ProblemDetail } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
 // import { ProblemDetail } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
 import { useRouter } from "next/navigation";
-import { formatTimestamp } from "../util/dageUtils";
-import { UserIcon } from "lucide-react";
+
 // 시험 모드 isExamMode 로 시험모드 상태관리 가능
 // import { useExamMode } from "@/hooks/useExamMode"
 
 // ❌시험 모드 관련 임시 더미데이터 -> 총점, 조건 별 점수, 교수 피드백
 // import { feedbackDummy } from "@/data/examModeFeedbackDummy"
 import ReactMarkdown from "react-markdown";
-import ProblemDetailRenderer from "@/components/ResultPage/ProblemDetailRenderer";
 //import AnswerRenderer from "@/components/ResultPage/AnswerRenderer"
 import AnswerRenderer from "@/components/MyRegisteredProblemPage/View/AnswerRenderer";
 
@@ -77,17 +74,6 @@ interface ConditionResult {
   status: "pass" | "fail";
 }
 
-interface Comment {
-  user_id: string;
-  problem_id: number;
-  solve_id: number;
-  comment: string;
-  is_anonymous: boolean;
-  nickname: string;
-  is_problem_message: boolean;
-  timestamp?: string;
-}
-
 export default function FeedbackWithSubmissionPageClient({
   params,
 }: {
@@ -98,6 +84,9 @@ export default function FeedbackWithSubmissionPageClient({
     resultId: string;
   };
 }) {
+  const [groupLabel, setGroupLabel] = useState<string>("");
+  const [workbookLabel, setWorkbookLabel] = useState<string>("");
+  const [problemLabel, setProblemLabel] = useState<string>("");
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
   const [copySuspicion, setCopySuspicion] = useState(false);
@@ -113,13 +102,12 @@ export default function FeedbackWithSubmissionPageClient({
   const [conditionResults, setConditionResults] = useState<ConditionResult[]>(
     []
   );
+
   const [isConditionLoaded, setIsConditionLoaded] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [activeTab, setActiveTab] = useState<"problem" | "submission">(
-    "submission"
-  );
+  const [activeTab, setActiveTab] = useState<"ai" | "prof" | "dev">("ai");
+  // 추가: 탭 내 텍스트 입력 상태 (필요 최소만)
+  const [profMsg, setProfMsg] = useState("");
+  const [devMsg, setDevMsg] = useState("");
   const [userId, setUserId] = useState<string>("");
   const router = useRouter();
   // const { isExamMode } = useExamMode()
@@ -128,8 +116,6 @@ export default function FeedbackWithSubmissionPageClient({
   // const { totalScore, maxScore, professorFeedback: dummyProfessorFeedback } = feedbackDummy
   // const { conditionScores } = feedbackDummy
   const [isExamMode, setIsExamMode] = useState<boolean>(false);
-  const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai">("ai");
-
   useEffect(() => {
     let cancelled = false;
 
@@ -307,37 +293,6 @@ export default function FeedbackWithSubmissionPageClient({
     }
   }, [params.resultId]);
 
-  // 댓글 가져오기
-  const fetchComments = useCallback(async () => {
-    try {
-      console.log(
-        `댓글 조회 시작: ${activeTab}, problemId: ${params.problemId}, resultId: ${params.resultId}`
-      );
-
-      const data =
-        activeTab === "problem"
-          ? await comment_api.comments_get_by_problem_id(
-              Number(params.problemId)
-            )
-          : await comment_api.comments_get_by_solve_id(Number(params.resultId));
-
-      console.log("댓글 조회 결과:", data);
-      setComments(data || []);
-    } catch (error) {
-      console.error(`코멘트 불러오기 오류:`, error);
-      setComments([]);
-    }
-  }, [activeTab, params.problemId, params.resultId]);
-
-  const visibleComments = useMemo(() => {
-    const list = comments ?? [];
-    return list.filter(
-      (c) =>
-        activeTab === "problem"
-          ? c.is_problem_message === true // 문제별 탭: 문제용 코멘트만
-          : c.is_problem_message !== true // 제출별 탭: 문제용이 아닌 코멘트만
-    );
-  }, [comments, activeTab]);
   //이전문제가기
   const goToPrevProblemForSolve = useCallback(async () => {
     const prevId = Number(params.problemId) - 1;
@@ -420,21 +375,50 @@ export default function FeedbackWithSubmissionPageClient({
   }, [fetchUserId]);
 
   // 사용자 정보 로드 후 댓글 가져오기
-  useEffect(() => {
-    if (userId) {
-      console.log("사용자 ID 확인됨, 댓글 조회:", userId);
-      fetchComments();
-    }
-  }, [userId, fetchComments]);
 
   // activeTab 변경시에만 댓글 새로고침
   useEffect(() => {
-    if (userId) {
-      console.log("탭 변경됨, 댓글 새로고침:", activeTab);
-      fetchComments();
-    }
-  }, [activeTab]);
+  let cancelled = false;
 
+  (async () => {
+    // 1) 그룹명
+    const gName =
+      solveData?.group_name?.trim() ||
+      (await (async () => {
+        try {
+          const g = await group_api.group_get_by_id(Number(params.groupId));
+          return g?.group_name || "";
+        } catch { return ""; }
+      })()) ||
+      String(params.groupId);
+
+    // 2) 문제지명(워크북)
+    const wName =
+      solveData?.workbook_name?.trim() ||
+      (await (async () => {
+        try {
+          const wb = await workbook_api.workbook_get_by_id(Number(params.examId));
+          // 백엔드 스키마에 따라 workbook_name 또는 name 등으로 올 수 있음
+          return wb?.workbook_name || wb?.name || "";
+        } catch { return ""; }
+      })()) ||
+      String(params.examId);
+
+    // 3) 문제명
+    const pName =
+      solveData?.problem_name?.trim() ||
+      problemDetail?.title?.trim() ||
+      String(params.problemId);
+
+    if (!cancelled) {
+      setGroupLabel(gName);
+      setWorkbookLabel(wName);
+      setProblemLabel(pName);
+    }
+  })();
+
+  return () => { cancelled = true; };
+}, [solveData, problemDetail, params.groupId, params.examId, params.problemId]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -481,64 +465,8 @@ export default function FeedbackWithSubmissionPageClient({
     };
   }, [params.examId]);
   // 댓글 전송 핸들러
-  const handleAddComment = async () => {
-    if (!newComment.trim()) {
-      alert("댓글을 입력하세요.");
-      return;
-    }
-
-    if (!userId) {
-      alert("사용자 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-
-    try {
-      console.log("댓글 생성 시작:", {
-        userId,
-        problemId: params.problemId,
-        resultId: params.resultId,
-        comment: newComment,
-        // isAnonymous,
-
-        isProblemMessage: activeTab === "problem",
-      });
-
-      await comment_api.comment_create(
-        userId,
-        Number(params.problemId),
-        Number(params.resultId),
-        newComment,
-        // isAnonymous,
-        // "익명",
-        activeTab === "problem"
-      );
-
-      console.log("댓글 생성 완료, 목록 새로고침");
-      await fetchComments();
-      setNewComment("");
-    } catch (error) {
-      console.error("코멘트 생성 오류:", error);
-      alert("댓글 작성에 실패했습니다.");
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleAddComment();
-    }
-  };
 
   // 긴 문자열을 줄 바꿈하는 함수
-  const formatCommentWithLineBreaks = (
-    comment: string,
-    maxLength: number = 50
-  ) => {
-    return comment.split("").reduce((acc, char, idx) => {
-      if (idx > 0 && idx % maxLength === 0) acc += "\n";
-      return acc + char;
-    }, "");
-  };
 
   if (!isLoaded) {
     return (
@@ -607,9 +535,8 @@ export default function FeedbackWithSubmissionPageClient({
 
     return String(val);
   }
-
   const aiMd = toMarkdownText(
-    activeFeedbackTab === "ai" ? aiFeedback ?? solveData?.ai_feedback : null
+    activeTab === "ai" ? aiFeedback || solveData?.ai_feedback : ""
   );
   //AI피드백콘솔
   // console.log(
@@ -731,9 +658,9 @@ export default function FeedbackWithSubmissionPageClient({
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
-        <div className="flex-1 min-h-0 overflow-auto overflow-x-auto rounded-md">
-      <CodeLogReplay codeLogs={codeLogs} idx={0} />
-    </div>
+              <div className="flex-1 min-h-0 overflow-auto overflow-x-auto rounded-md">
+                <CodeLogReplay codeLogs={codeLogs} idx={0} />
+              </div>
             </motion.div>
           ) : (
             // 객관식, 주관식, 단답형 문제일 때
@@ -897,7 +824,7 @@ export default function FeedbackWithSubmissionPageClient({
             </motion.div>
           </div>
         </div>
-        {/* 하단: 문제별 | 제출별 탭과 코멘트 */}
+        {/* === 하단: AI 피드백/교수님/개발자 탭 === */}
         <motion.div
           className="mt-6 bg-white rounded-lg shadow-sm border"
           initial={{ opacity: 0, y: 20 }}
@@ -906,174 +833,191 @@ export default function FeedbackWithSubmissionPageClient({
         >
           {/* 탭 헤더 */}
           <div className="border-b">
-            <div className="flex">
+            <div className="flex items-center gap-0">
+              {/* 왼쪽 묶음: AI / 교수님 */}
+              <div className="flex">
+                <button
+                  className={`px-6 py-3 text-sm font-medium ${
+                    activeTab === "ai"
+                      ? "text-green-600 border-b-2 border-green-600 bg-green-50"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab("ai")}
+                >
+                  AI 피드백
+                </button>
+
+                <button
+                  className={`px-6 py-3 text-sm font-medium ${
+                    activeTab === "prof"
+                      ? "text-yellow-600 border-b-2 border-yellow-500 bg-yellow-50"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab("prof")}
+                >
+                  교수님께 질문하기
+                </button>
+              </div>
+
+              {/* 오른쪽 단독: 개발자에게 물어보기 */}
               <button
-                className={`px-6 py-3 text-sm font-medium ${
-                  activeTab === "submission"
-                    ? "text-green-600 border-b-2 border-green-600 bg-green-50"
+                className={`ml-auto px-6 py-3 text-sm font-medium inline-flex items-center gap-2 ${
+                  activeTab === "dev"
+                    ? "text-red-600 border-b-2 border-red-600 bg-red-50"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
-                onClick={() => {
-                  console.log("제출별 탭 클릭");
-                  setActiveTab("submission");
-                }}
+                onClick={() => setActiveTab("dev")}
+                title="개발자에게 물어보기"
               >
-                제출별
-              </button>
-              <button
-                className={`px-6 py-3 text-sm font-medium ${
-                  activeTab === "problem"
-                    ? "text-green-600 border-b-2 border-green-600 bg-green-50"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                onClick={() => {
-                  console.log("문제별 탭 클릭");
-                  setActiveTab("problem");
-                }}
-              >
-                문제별
+                오류 보고 <span aria-hidden>🔧</span>
               </button>
             </div>
           </div>
-          {/* === AI 피드백 (가로 전체) === */}
-          <motion.div
-            className="mt-8 mx-8 bg-white rounded-lg shadow-sm border"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-          >
-            {/* 탭 헤더 (필요하면 다른 탭 추가 가능) */}
-            <div className="p-2 flex space-x-2 border-b">
-              <button
-                className={`px-4 py-1 text-sm font-medium ${
-                  activeFeedbackTab === "ai"
-                    ? "bg-green-100 text-green-700 border-b-white"
-                    : "text-gray-600 "
-                }`}
-                onClick={() => setActiveFeedbackTab("ai")}
-              >
-                AI 피드백
-              </button>
-            </div>
 
-            {/* 본문: 높이 넉넉 + 스크롤 */}
-            <div className="p-4 max-h-[40vh] overflow-y-auto">
-              {!isAILoaded && activeFeedbackTab === "ai" ? (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span className="text-sm">AI 피드백을 불러오는 중...</span>
+          {/* 탭 본문 */}
+          <div className="p-4 max-h-[40vh] overflow-y-auto">
+            {/* 1) AI 피드백 */}
+            {activeTab === "ai" && (
+              <div className="rounded-xl border bg-white overflow-hidden">
+                {/* 헤더 */}
+                <div className="px-4 py-3 border-b bg-green-100">
+                  <h3 className="font-semibold text-green-800">AI 피드백</h3>
                 </div>
-              ) : (
-                <div className="prose prose-sm max-w-none text-gray-800">
-                  <ReactMarkdown>{aiMd}</ReactMarkdown>
-                </div>
-              )}
-            </div>
-          </motion.div>
-          {/* 코멘트 섹션 */}
-          <div className="p-8">
-            <h4 className="font-semibold text-gray-800 mb-4">
-              {activeTab === "problem"
-                ? `📝 문제 ${params.problemId}번의 댓글`
-                : `💬 제출별 댓글`}
-            </h4>
-
-            {/* 기존 코멘트 목록 */}
-            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-              {visibleComments.length === 0 ? (
-                <div className="bg-gray-50 rounded-lg p-6 text-center">
-                  <div className="flex items-center justify-center gap-2 text-gray-500">
-                    <p className="text-sm">댓글이 없습니다.</p>
-                  </div>
-                </div>
-              ) : (
-                visibleComments.map((comment, index) => (
-                  <motion.div
-                    key={`${comment.user_id}-${comment.timestamp}-${index}`}
-                    className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
-                    {/* 프로필 아이콘 */}
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                      <UserIcon className="w-6 h-6 text-gray-600" />
+                {/* 본문 */}
+                <div className="p-4">
+                  {!isAILoaded ? (
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <span className="text-sm">
+                        AI 피드백을 불러오는 중...
+                      </span>
                     </div>
-
-                    {/* 댓글 내용 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <strong className="text-gray-900 text-sm">
-                          {comment.is_anonymous
-                            ? comment.nickname
-                            : comment.user_id}
-                        </strong>
-                        {comment.is_anonymous && (
-                          <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">
-                            익명
-                          </span>
-                        )}
-                        <span className="text-xs text-gray-500">
-                          {comment.timestamp
-                            ? formatTimestamp(comment.timestamp)
-                            : "방금 전"}
-                        </span>
-                      </div>
-                      <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap break-words">
-                        {formatCommentWithLineBreaks(comment.comment, 50)}
-                      </p>
+                  ) : (
+                    <div className="prose prose-sm max-w-none text-gray-800 whitespace-pre-wrap break-words">
+                      <ReactMarkdown>{aiMd}</ReactMarkdown>
                     </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
-
-            {/* 새 코멘트 작성 */}
-            <div className="border-t pt-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-4 mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    새 댓글 작성
-                  </label>
-                  {/* 익명 체크박스
-									<label className="flex items-center space-x-2 cursor-pointer">
-										<input
-											type="checkbox"
-											className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-											checked={isAnonymous}
-											onChange={(e) => setIsAnonymous(e.target.checked)}
-										/>
-										<span className="text-sm text-gray-700">익명으로 작성</span>
-									</label> */}
-                </div>
-
-                <div className="flex items-end gap-3">
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="댓글을 입력하세요... (Shift+Enter로 줄바꿈, Enter로 등록)"
-                    className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={3}
-                  />
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="px-4 py-2 bg-mygreen text-white text-sm rounded-lg hover:bg-mydarkgreen disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    >
-                      등록
-                    </button>
-                    <button
-                      onClick={() => setNewComment("")}
-                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-                    >
-                      취소
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* 2) 교수님께 질문하기 */}
+            {activeTab === "prof" && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  아래에 질문을 작성하면 기본 메일 앱이 열려. (문제/제출 정보는
+                  본문에 자동 포함돼)
+                </p>
+                <textarea
+                  className="w-full h-40 resize-none rounded-md border p-3 text-sm focus:outline-none focus:ring-2 focus:ring-mygreen"
+                  placeholder="질문 내용을 자세히 적어줘. (문제 번호, 어떤 입력에서 에러인지, 기대/실제 결과 등)"
+                  value={profMsg}
+                  onChange={(e) => setProfMsg(e.target.value)}
+                />
+                <div className="flex justify-end">
+                  <button
+                    className="px-4 py-2 rounded-lg shadow text-white bg-mygreen hover:bg-mydarkgreen"
+                    onClick={() => {
+                      const profEmail = ""; // TODO: 교수님 이메일 있으면 채워넣기
+                      const subject = `질문: ${problemLabel} (#${params.problemId})`;
+const body = `${profMsg}
+
+---
+문맥정보
+- 그룹: ${groupLabel}
+- 시험지: ${workbookLabel}
+- 문제: ${problemLabel} (#${params.problemId})
+- 제출ID: ${params.resultId}
+- 사용자ID: ${userId}
+- 언어: ${solveData?.code_language ?? "-"}
+`;
+                      const mailto = `mailto:${profEmail}?subject=${encodeURIComponent(
+                        subject
+                      )}&body=${encodeURIComponent(body)}`;
+                      window.location.href = mailto;
+                    }}
+                  >
+                    메일 열기
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 3) 개발자에게 물어보기 */}
+            {activeTab === "dev" && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  아래 템플릿을 채우고 <b>복사</b>해서 이슈
+                  트래커/슬랙/디스코드에 붙여넣어줘.
+                </p>
+                <textarea
+                  className="w-full h-48 resize-none rounded-md border p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-mygreen"
+                  placeholder={`재현 단계:
+                      1) ...
+                      2) ...
+                      기대 결과:
+                      실제 결과:
+                      에러 메시지/스크린샷:`}
+                  value={devMsg}
+                  onChange={(e) => setDevMsg(e.target.value)}
+                />
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="leading-5">
+                    <div>
+                      문맥: 그룹 {solveData?.group_name ?? params.groupId} /
+                      시험지 {solveData?.workbook_name ?? params.examId}
+                    </div>
+                    <div>
+                      문제: {solveData?.problem_name ?? ""} #{params.problemId}{" "}
+                      / 제출ID {params.resultId} / 사용자 {userId}
+                    </div>
+                  </div>
+                  <button
+                    className="px-3 py-2 rounded-lg shadow text-white bg-mygreen hover:bg-mydarkgreen"
+                    onClick={async () => {
+                      const payload = `# 버그 리포트
+
+## 요약
+(한 줄 요약)
+
+## 재현 단계
+${devMsg || "(여기에 재현 단계를 적어줘)"}
+
+## 기대 결과
+(기대했던 동작)
+
+## 실제 결과
+(실제 관찰한 동작/에러)
+
+## 환경 정보
+- 그룹: ${groupLabel}
+- 시험지: ${workbookLabel}
+- 문제: ${problemLabel} (#${params.problemId})
+- 제출ID: ${params.resultId}
+- 사용자ID: ${userId}
+- 언어: ${solveData?.code_language ?? "-"}
+- 브라우저: ${navigator.userAgent}`;
+                      try {
+                        await navigator.clipboard.writeText(payload);
+                        alert(
+                          "버그 리포트 템플릿을 복사했어. 이슈/채팅에 붙여넣어줘!"
+                        );
+                      } catch {
+                        const ta = document.createElement("textarea");
+                        ta.value = payload;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand("copy");
+                        document.body.removeChild(ta);
+                        alert("복사 완료!");
+                      }
+                    }}
+                  >
+                    템플릿 복사
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
         <motion.div
@@ -1153,14 +1097,4 @@ export default function FeedbackWithSubmissionPageClient({
       </div>
     </div>
   );
-}
-{
-  /* <button
-									className={`px-4 py-1 text-sm font-medium ${
-										activeFeedbackTab === "professor" ? "bg-green-100 text-green-700 border-b-white" : "text-gray-600"
-									}`}
-									onClick={() => setActiveFeedbackTab("professor")}
-								>
-									교수 피드백
-								</button> */
 }
