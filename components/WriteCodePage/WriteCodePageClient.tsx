@@ -1171,7 +1171,7 @@ export default function WriteCodePageClient({
         {/* ========== 코딩 / 디버깅 / 객관식 : 좌우 분할 ========== */}
         {(isCodingOrDebugging || isMultiple) && (
           <>
-            {/* 내부 스크롤만 허용 (왼쪽: 설명/조건/입출력) */}+{" "}
+            
             <div
               className="min-h-0 overflow-y-auto p-2 pr-2 flex-none min-w-0"
               style={{ flexBasis: leftWidth, willChange: "flex-basis" }}
