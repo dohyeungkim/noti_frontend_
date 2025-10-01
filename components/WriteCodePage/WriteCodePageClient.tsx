@@ -991,17 +991,17 @@ export default function WriteCodePageClient({
 
       {/* 메인: 남은 높이 전부 차지, 배경 스크롤 금지 */}
       <main
-  ref={containerRef}
-  className="flex flex-1 min-h-0 w-full overflow-hidden mt-2"
->
+   ref={containerRef}
+   className="flex flex-1 min-h-0 w-full overflow-hidden mt-2 overscroll-x-contain"
+ >
   {/* ========== 코딩 / 디버깅 / 객관식 : 좌우 분할 ========== */}
   {(isCodingOrDebugging || isMultiple) && (
     <>
       {/* 내부 스크롤만 허용 (왼쪽: 설명/조건/입출력) */}
-      <div
-        className="overflow-y-auto h-[calc(100%-72px)] p-2 pr-2 flex-none"
-        style={{ width: leftWidth }} // ✅ 드래그 폭 적용
-      >
+      + <div
+   className="min-h-0 overflow-y-auto p-2 pr-2 flex-none min-w-0"
+   style={{ flexBasis: leftWidth, willChange: 'flex-basis' }}
+ >
         {/* 문제 설명 (Markdown 지원) */}
         {(() => {
           const desc = normalizeMultiline(problem?.description ?? "");
@@ -1220,7 +1220,8 @@ export default function WriteCodePageClient({
                 )}
               </div>
 
-              <div className="bg-white rounded shadow flex-1 min-h-0 overflow-hidden max-w-full">
+              <div className="relative bg-white rounded shadow h-[400px] overflow-hidden min-w-0">
++   <div className="absolute inset-0">
                 <MonacoEditor
                   key={`${solveId || "default"}-${language}`}
                   height="100%"
@@ -1238,8 +1239,8 @@ export default function WriteCodePageClient({
                     copyWithSyntaxHighlighting: false,
                     scrollbar: { vertical: "visible", horizontal: "visible" },
                     padding: { top: 10, bottom: 10 },
-                    wordWrap: "on",
-                    scrollBeyondLastColumn: 0,
+                    wordWrap: "off",
+                    scrollBeyondLastColumn: 3,
                   }}
                   onMount={(ed, monacoNs) => {
                     editorRef.current = ed;
@@ -1261,6 +1262,7 @@ export default function WriteCodePageClient({
                     );
                   }}
                 />
+              </div>
               </div>
 
               {/* 실행 입력/결과 카드 */}

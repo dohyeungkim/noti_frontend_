@@ -157,8 +157,8 @@ const ProblemList = ({
                         className="px-5 py-4 text-center truncate max-w-[200px] overflow-hidden whitespace-nowrap"
                         title={p.title}
                       >
-                        {p.title.length > 15
-                          ? `${p.title.slice(0, 15)}...`
+                        {p.title.length > 25
+                          ? `${p.title.slice(0, 25)}...`
                           : p.title}
                       </td>
 
