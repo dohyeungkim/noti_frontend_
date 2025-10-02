@@ -278,7 +278,7 @@ export default function EditRegisteredProblem() {
 						rating_mode: ratingMode as "hard" | "space" | "regex" | "none",
 						problemType,
 						reference_codes: referenceCodes,
-						base_code: referenceCodes.filter((c) => !c.is_main).map((c) => ({ language: c.language, code: c.code })),
+						base_code: base_code,
 						test_cases: testCases,
 					}
 					break;

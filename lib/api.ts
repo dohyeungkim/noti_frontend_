@@ -505,7 +505,7 @@ export type CodingProblemUpdateRequest = {
 	tags: string[]
 	problem_condition: string[]
 	reference_codes: ReferenceCodeRequest[]
-	base_code: BaseCodeRequest[]
+	base_code: string;
 	test_cases: TestCaseRequest[]
 	problemType: "코딩" | "디버깅"
 }
