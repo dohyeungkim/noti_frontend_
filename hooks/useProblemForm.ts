@@ -238,8 +238,11 @@ export function useProblemForm() {
 		tags,
 		setTags,
 		conditions,
+		setConditions,
 		referenceCodes,
+		setReferenceCodes,
 		testCases,
+		setTestCases,
 		activeCodeTab,
 		setActiveCodeTab,
 

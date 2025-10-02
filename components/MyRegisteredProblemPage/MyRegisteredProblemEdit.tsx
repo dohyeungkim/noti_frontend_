@@ -91,7 +91,8 @@ function MultipleChoiceEditor({
 
 export default function EditRegisteredProblem() {
 	const router = useRouter()
-	const { problemId } = useParams() as { problemId: string }
+	const { id } = useParams() as { id: string }
+  const problemId = id
 	const [baseCode, setBaseCode] = useState<string>("")
 	// 문제 유형 버튼 상수
 	const PROBLEM_TYPES: { value: ProblemType; label: string; color: string }[] = [
@@ -117,16 +118,19 @@ export default function EditRegisteredProblem() {
 		setTags,
 		removeTag,
 		conditions,
+		setConditions,
 		addCondition,
 		removeCondition,
 		updateCondition,
 		referenceCodes,
+		setReferenceCodes,
 		addReferenceCode,
 		removeReferenceCode,
 		updateReferenceCodeLanguage,
 		updateReferenceCode,
 		setMainReferenceCode,
 		testCases,
+		setTestCases,
 		addTestCase,
 		removeTestCase,
 		updateTestCase,
@@ -144,7 +148,7 @@ export default function EditRegisteredProblem() {
 	const [options, setOptions] = useState<string[]>([])
 	const [answerIndexes, setAnswerIndexes] = useState<number[]>([])
 	const [answerTexts, setAnswerTexts] = useState<string[]>([])
-	const [gradingCriteria, setGradingCriteria] = useState<string[]>([])
+	const [gradingCriteria, setGradingCriteria] = useState<string[]>([""])
 	const [subjectiveAnswer, setSubjectiveAnswer] = useState<string>("")
 	const [subjectiveCriteria, setSubjectiveCriteria] = useState<string[]>([""])
 
@@ -159,6 +163,22 @@ export default function EditRegisteredProblem() {
 				const data: ProblemDetail = await problem_api.problem_get_by_id(Number(problemId))
 				setInitialData(data)
 				setProblemType(data.problemType)
+
+        if ((data as any).rating_mode !== undefined) setRatingMode((data as any).rating_mode);
+        else if ((data as any).ratingMode !== undefined) setRatingMode((data as any).ratingMode);
+
+        if ((data as any).base_code && Array.isArray((data as any).base_code) && (data as any).base_code.length > 0) {
+        setReferenceCodes(
+          (data as any).base_code.map((bc: any, idx: number) => ({
+            language: bc.language,
+            code: bc.code,
+            is_main: idx === 0
+          }))
+        );
+      } else if (Array.isArray((data as any).reference_codes) && (data as any).reference_codes.length > 0) {
+        setReferenceCodes((data as any).reference_codes);
+      }
+
 				// 배점이 API에 있다면
 				if ((data as any).problemScore) setProblemScore((data as any).problemScore)
 				// 유형별 추가 필드 초기화
@@ -175,6 +195,13 @@ export default function EditRegisteredProblem() {
 					setSubjectiveAnswer((sb as any).answer_text || "")
 					setSubjectiveCriteria(sb.grading_criteria)
 				}
+        if (Array.isArray((data as any).problem_condition)) {
+        setConditions(data.problem_condition);
+        }
+        if (Array.isArray((data as any).test_cases)) {
+        setTestCases((data as any).test_cases);
+        }
+
 				setLoaded(true)
 			} catch (err) {
 				console.error("문제 불러오기 실패:", err)
@@ -240,7 +267,11 @@ export default function EditRegisteredProblem() {
 			let payload: ProblemUpdateRequest
 			switch (problemType) {
 				case "코딩":
-				case "디버깅":
+				case "디버깅": {
+          const base_code =
+          referenceCodes.find((c) => c.is_main)?.code ??
+          referenceCodes[0]?.code ??
+          "";
 					payload = {
 						...base,
 						problem_condition: conditions, // 코딩·디버깅만
@@ -250,7 +281,8 @@ export default function EditRegisteredProblem() {
 						base_code: referenceCodes.filter((c) => !c.is_main).map((c) => ({ language: c.language, code: c.code })),
 						test_cases: testCases,
 					}
-					break
+					break;
+				}
 
 				case "객관식":
 					payload = {
@@ -261,25 +293,34 @@ export default function EditRegisteredProblem() {
 					}
 					break
 
-				case "단답형":
+				case "단답형": {
+
+				const allowedShortAnswerModes = ["exact", "partial", "soft", "none"];
+        const safeRatingMode = allowedShortAnswerModes.includes(ratingMode) ? ratingMode : "exact";
+				const safeAnswerTexts = Array.isArray(answerTexts) && answerTexts.every(v => typeof v === "string" && v.trim() !== "") ? answerTexts : [""];
 					payload = {
 						...base,
 						problemType: "단답형",
-						rating_mode: ratingMode as "exact" | "partial" | "soft" | "none",
-						answer_texts: answerTexts,
+						rating_mode: safeRatingMode as "exact" | "partial" | "soft" | "none",
+						answer_texts: safeAnswerTexts,
 						grading_criteria: gradingCriteria,
 					}
 					break
+				}
 
-				case "주관식":
+				case "주관식": {
+					const allowedSubjectiveModes = ["active", "deactive"];
+					const safeRatingMode = allowedSubjectiveModes.includes(ratingMode) ? ratingMode : "active";
 					payload = {
 						...base,
 						problemType: "주관식",
-						rating_mode: ratingMode as "active" | "deactive",
+						rating_mode: safeRatingMode as "active" | "deactive",
 						grading_criteria: subjectiveCriteria,
+						answer_texts: subjectiveAnswer,
 					}
 					break
 			}
+		}
 
 			await problem_api.problem_update(problemId, payload)
 			alert("✅ 문제가 성공적으로 수정되었습니다.")
@@ -623,11 +664,11 @@ export default function EditRegisteredProblem() {
 							{/* AI 채점 기준 입력 */}
 							<div>
 								<label className="text-sm font-semibold text-gray-700 mb-1 block">AI채점기준</label>
-								{gradingCriteria.map((rubric, idx) => (
+								{gradingCriteria.map((criteria, idx) => (
 									<div key={idx} className="flex items-center gap-2 mb-2">
 										<input
 											type="text"
-											value={rubric}
+											value={criteria}
 											onChange={(e) => {
 												const updated = [...gradingCriteria]
 												updated[idx] = e.target.value

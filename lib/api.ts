@@ -539,6 +539,7 @@ export type SubjectiveProblemUpdateRequest = {
 	tags: string[]
 	problemType: "주관식"
 	grading_criteria: string[]
+	answer_texts: string
 }
 
 // 전체 리턴 타입 (discriminated union)
