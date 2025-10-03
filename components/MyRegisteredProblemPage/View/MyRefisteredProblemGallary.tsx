@@ -39,20 +39,20 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 						filteredData.map((item) => (
 							<motion.div
 								key={item.problem_id}
-								className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col h-[280px]"
+								className="bg-white p-4 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col h-[240px]"
 							>
-								<div className="p-1 rounded-lg flex flex-col flex-1">
+								<div className="flex flex-col flex-1">
 									{/* 제목 영역 - 고정 높이 */}
 									<h3 
-										className="m-3 text-xl font-semibold w-auto line-clamp-3 whitespace-pre-wrap break-words h-[84px]" 
+										className="text-lg font-semibold w-auto line-clamp-2 whitespace-pre-wrap break-words mb-3 h-[56px]" 
 										title={item.title}
 									>
 										✏️ {item.title}
 									</h3>
 
-									{/* 설명 영역 - 고정 높이 */}
+									{/* 설명 영역 - 고정 높이 줄임 */}
 									<p 
-										className="text-gray-500 text-sm m-3 break-words h-[72px]"
+										className="text-gray-500 text-sm break-words mb-2 h-[60px]"
 										style={{
 											display: '-webkit-box',
 											WebkitLineClamp: 3,
@@ -65,16 +65,16 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 									</p>
 
 									{/* 날짜 영역 */}
-									<p className="text-gray-400 text-sm mx-3 mb-3">{item.paper}</p>
+									<p className="text-gray-400 text-xs mb-3">{item.paper}</p>
 
 									{/* 버튼 영역 - 하단 고정 */}
-									<div className="flex justify-center mt-auto">
+									<div className="mt-auto">
 										<button
 											onClick={(e) => {
 												e.stopPropagation()
 												router.push(`/registered-problems/view/${item.problem_id}`)
 											}}
-											className="bg-mygreen text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full"
+											className="bg-mygreen text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full"
 										>
 											문제 보기
 										</button>
@@ -83,7 +83,6 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 							</motion.div>
 						))
 					) : (
-						// 데이터 없을 때 처리
 						<div className="col-span-full text-center text-gray-500">
 							문제가 없습니다.
 						</div>
