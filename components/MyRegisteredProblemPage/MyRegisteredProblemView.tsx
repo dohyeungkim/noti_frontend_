@@ -10,6 +10,7 @@ import { problem_api } from "@/lib/api"
 import dynamic from "next/dynamic"
 import { CheckCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
+
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
 import type { CodingProblem, MultipleChoiceProblem, ShortAnswerProblem, SubjectiveProblem } from "@/lib/api"
@@ -35,7 +36,6 @@ export default function ProblemView() {
 	const [targetProblemId, setTargetProblemId] = useState<number | null>(null)
 	const [activeCodeTab, setActiveCodeTab] = useState(0)
 
-	// 볼 문제 GET 해서 setData
 	useEffect(() => {
 		const fetchProblem = async () => {
 			setLoading(true)
@@ -78,7 +78,6 @@ export default function ProblemView() {
 		setIsConfirming(false)
 	}
 
-	// 백엔드는 값을 한글로 줌. 프론트는 한글로 받음. 매핑 시켜줘야됨
 	const rawToDisplay: Record<string, string> = {
 		multiple_choice: "객관식",
 		short_answer: "단답형",
@@ -105,6 +104,7 @@ export default function ProblemView() {
 				return "bg-gray-100 text-gray-700"
 		}
 	}
+
 	const getDifficultyColor = (difficulty: string) => {
 		switch (difficulty.toLowerCase()) {
 			case "easy":
@@ -117,6 +117,7 @@ export default function ProblemView() {
 				return "bg-gray-500"
 		}
 	}
+
 	const getRatingModeColor = (mode: string) => {
 		switch (mode) {
 			case "hard":
@@ -144,7 +145,6 @@ export default function ProblemView() {
 
 	return (
 		<>
-			{/* 수정 버튼 */}
 			<div className="flex items-center gap-2 justify-end mb-6">
 				<motion.button
 					onClick={() => router.push(`/registered-problems/edit/${id}`)}
@@ -155,7 +155,7 @@ export default function ProblemView() {
 					✏️ 문제 수정하기
 				</motion.button>
 			</div>
-			{/* 기본 정보 */}
+
 			<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 				<div className="flex justify-between items-start mb-4">
 					<div className="flex-1">
@@ -209,24 +209,24 @@ export default function ProblemView() {
 						</button>
 					</div>
 					<div
-						className={`transition-all duration-300 overflow-hidden ${
-							isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+						className={`prose prose-sm max-w-none break-words transition-all duration-300 ${
+							isExpanded ? "max-h-96 overflow-y-auto" : ""
 						}`}
+						style={
+							!isExpanded
+								? {
+										display: "-webkit-box",
+										WebkitLineClamp: 3,
+										WebkitBoxOrient: "vertical",
+										overflow: "hidden",
+								  }
+								: {}
+						}
 					>
-						<div 
-						className="prose max-w-none break-words" 
-						style={{
-								display: '-webkit-box',
-								WebkitLineClamp: 3,
-								WebkitBoxOrient: 'vertical',
-								overflow: 'hidden'
-						}}
-					>
-          <ReactMarkdown>{problem.description}</ReactMarkdown>
+						<ReactMarkdown>{problem.description}</ReactMarkdown>
 					</div>
 				</div>
 			</div>
-		</div>
 
 			{/* 문제 조건 */}
 			{problem.problem_condition?.length > 0 && (
@@ -243,31 +243,26 @@ export default function ProblemView() {
 				</div>
 			)}
 
-			{/* 문제 유형별로 다른 속성값들 랜더링 👻 */}
-			{/* 단답형/주관식 AI 채점 기준 및 정답 */}
+			{/* 단답형 */}
 			{displayType === "단답형" && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 					<h3 className="text-lg font-semibold mb-3">✏️ 정답 및 AI 채점 기준</h3>
 					<div className="mb-2">
 						<strong>정답:</strong> {(problem as ShortAnswerProblem).answer_text.join(", ")}
 					</div>
-
-					{/* 여기서도 타입 에러 남 1 */}
 					<div>
 						<strong>AI 채점 기준:</strong> {(problem as ShortAnswerProblem).grading_criteria.join(", ")}
 					</div>
 				</div>
 			)}
 
-			{/* ❌ 왜 안 됨 ㅠㅠㅠㅠ */}
+			{/* 주관식 */}
 			{displayType === "주관식" && (
 				<div className="bg-white shadow-md rounded-lg p-6 mb-6">
 					<h3 className="text-lg font-semibold mb-3">✏️ 정답 및 AI 채점 기준</h3>
 					<div className="mb-2">
 						<strong>정답:</strong> {(problem as SubjectiveProblem).answer_text}
 					</div>
-
-					{/* 여기서도 타입 에러 남 2 */}
 					{(problem as SubjectiveProblem).grading_criteria.length > 0 ? (
 						<div>
 							<strong>AI 채점 기준:</strong> {(problem as SubjectiveProblem).grading_criteria.join(", ")}
@@ -289,9 +284,11 @@ export default function ProblemView() {
 						{(problem as MultipleChoiceProblem).options.map((opt, idx) => (
 							<div key={idx} className="flex items-center gap-2">
 								<CheckCircle
-									className={`text-${
-										(problem as MultipleChoiceProblem).correct_answers.includes(idx) ? "green" : "gray"
-									}-500`}
+									className={
+										(problem as MultipleChoiceProblem).correct_answers.includes(idx)
+											? "text-green-500"
+											: "text-gray-500"
+									}
 								/>
 								<span className="text-sm">{opt}</span>
 							</div>
@@ -317,7 +314,7 @@ export default function ProblemView() {
 									onClick={() => setActiveCodeTab(idx)}
 								>
 									{languageDisplayNames[ref.language]}
-									{displayType != "디버깅" && (ref as any).is_main && (
+									{displayType !== "디버깅" && (ref as any).is_main && (
 										<span className="ml-1 text-xs bg-yellow-400 text-black px-1 rounded">메인</span>
 									)}
 								</button>
@@ -373,28 +370,6 @@ export default function ProblemView() {
 				</div>
 			)}
 
-			{/* 문제 통계 - v0 에서는 미완성 기능 👻 */}
-			{/* <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-				<div className="flex justify-between items-center mb-4">
-					<h3 className="text-lg font-semibold">📊 이 문제의 통계</h3>
-					<button
-						onClick={() => setIsExpandedStats(!isExpandedStats)}
-						className="text-gray-600 hover:text-gray-800 flex items-center text-sm"
-					>
-						{isExpandedStats ? (
-							<>
-								<FaChevronUp className="mr-1" /> 접기
-							</>
-						) : (
-							<>
-								<FaChevronDown className="mr-1" /> 펼치기
-							</>
-						)}
-					</button>
-				</div>
-				{isExpandedStats && <ProblemStatistics problem_id={problem.problem_id} />}
-			</div> */}
-
 			{/* 삭제 */}
 			<div className="flex justify-end mb-10">
 				<motion.button
@@ -416,15 +391,3 @@ export default function ProblemView() {
 		</>
 	)
 }
-
-;<style jsx>{`
-	.prose h1,
-	.prose h2,
-	.prose h3 {
-		font-weight: bold;
-	}
-	.prose ul,
-	.prose ol {
-		margin-left: 1.5rem;
-	}
-`}</style>
