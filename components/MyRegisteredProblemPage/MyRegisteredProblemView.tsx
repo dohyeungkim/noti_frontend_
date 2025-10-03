@@ -211,7 +211,7 @@ export default function ProblemView() {
 						</button>
 					</div>
 					<div
-						className={`prose prose-sm max-w-none break-words transition-all duration-300 ${
+						className={`max-w-none break-words transition-all duration-300 ${
 							isExpanded ? "max-h-96 overflow-y-auto" : ""
 						}`}
 						style={
