@@ -39,47 +39,44 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 						filteredData.map((item) => (
 							<motion.div
 								key={item.problem_id}
-								className="bg-white p-4 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col h-[240px]"
+								className="bg-white p-5 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col"
 							>
-								<div className="flex flex-col flex-1">
-									{/* 제목 영역 - 고정 높이 */}
-									<h3 
-										className="text-lg font-semibold w-auto line-clamp-2 whitespace-pre-wrap break-words mb-3 h-[56px]" 
-										title={item.title}
-									>
-										✏️ {item.title}
-									</h3>
+								{/* 제목 영역 */}
+								<h3 
+									className="text-xl font-semibold line-clamp-2 whitespace-pre-wrap break-words mb-4" 
+									title={item.title}
+								>
+									✏️ {item.title}
+								</h3>
 
-									{/* 설명 영역 - 고정 높이 줄임 */}
-									<p 
-										className="text-gray-500 text-sm break-words mb-2 h-[60px]"
-										style={{
-											display: '-webkit-box',
-											WebkitLineClamp: 3,
-											WebkitBoxOrient: 'vertical',
-											overflow: 'hidden',
-											whiteSpace: 'pre-wrap'
-										}}
-									>
-										<ReactMarkdown>{item.group}</ReactMarkdown>
-									</p>
+								{/* 설명 영역 - 정확히 3줄 */}
+								<p 
+									className="text-gray-600 text-base break-words mb-4 leading-relaxed"
+									style={{
+										display: '-webkit-box',
+										WebkitLineClamp: 3,
+										WebkitBoxOrient: 'vertical',
+										overflow: 'hidden',
+										whiteSpace: 'pre-wrap',
+										minHeight: '4.5rem' // 3줄 고정 높이
+									}}
+								>
+									<ReactMarkdown>{item.group}</ReactMarkdown>
+								</p>
 
-									{/* 날짜 영역 */}
-									<p className="text-gray-400 text-xs mb-3">{item.paper}</p>
+								{/* 날짜 영역 */}
+								<p className="text-gray-400 text-sm mb-4">{item.paper}</p>
 
-									{/* 버튼 영역 - 하단 고정 */}
-									<div className="mt-auto">
-										<button
-											onClick={(e) => {
-												e.stopPropagation()
-												router.push(`/registered-problems/view/${item.problem_id}`)
-											}}
-											className="bg-mygreen text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full"
-										>
-											문제 보기
-										</button>
-									</div>
-								</div>
+								{/* 버튼 영역 */}
+								<button
+									onClick={(e) => {
+										e.stopPropagation()
+										router.push(`/registered-problems/view/${item.problem_id}`)
+									}}
+									className="bg-mygreen text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full mt-auto"
+								>
+									문제 보기
+								</button>
 							</motion.div>
 						))
 					) : (
