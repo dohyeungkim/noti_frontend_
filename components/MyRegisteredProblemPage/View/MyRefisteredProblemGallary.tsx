@@ -39,7 +39,10 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 								className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
 							>
 								<div className="p-1 rounded-lg">
-									<h3 className="m-3 text-xl font-semibold w-auto truncate" title={item.title}>
+									<h3 
+										className="m-3 text-xl font-semibold w-auto line-clamp-3 whitespace-pre-wrap break-words" 
+										title={item.title}
+									>
 										✏️ {item.title}
 									</h3>
 
