@@ -210,21 +210,28 @@ export default function ProblemView() {
 							)}
 						</button>
 					</div>
-					<div
-						className={`max-w-none break-words transition-all duration-300 ${
+						<div
+						className={`transition-all duration-300 ${
 							isExpanded ? "max-h-96 overflow-y-auto" : ""
 						}`}
-						style={
-							!isExpanded
-								? {
-										display: "-webkit-box",
-										WebkitBoxOrient: "vertical",
-										overflow: "hidden",
-									}
-								: {}
-						}
 					>
-						<ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{problem.description}</ReactMarkdown>
+						<div
+							className="max-w-none break-words"
+							style={
+								!isExpanded
+									? {
+											display: "-webkit-box",
+											WebkitLineClamp: 3,
+											WebkitBoxOrient: "vertical",
+											overflow: "hidden",
+										}
+									: {}
+							}
+						>
+							<ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+								{problem.description}
+							</ReactMarkdown>
+						</div>
 					</div>
 				</div>
 			</div>
