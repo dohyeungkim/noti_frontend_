@@ -23,6 +23,8 @@ import TestCaseSection from "@/components/ProblemForm/TestCaseSection"
 import ReactMde from "react-mde"
 import "react-mde/lib/styles/css/react-mde-all.css"
 import ReactMarkdown from "react-markdown"
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 
 function MultipleChoiceEditor({
 	options,
@@ -553,7 +555,7 @@ export default function EditRegisteredProblem() {
 								selectedTab={selectedTab}
 								onTabChange={setSelectedTab}
 								generateMarkdownPreview={(markdown: string) =>
-									Promise.resolve(<ReactMarkdown>{markdown}</ReactMarkdown>)
+									Promise.resolve(<ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{markdown}</ReactMarkdown>)
 								}
 								childProps={{
 									writeButton: {
