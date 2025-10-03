@@ -225,7 +225,7 @@ export default function ProblemView() {
 								: {}
 						}
 					>
-						<ReactMarkdown remarkPlugins={[remarkBreaks]}>{problem.description}</ReactMarkdown>
+						<ReactMarkdown>{problem.description}</ReactMarkdown>
 					</div>
 				</div>
 			</div>
