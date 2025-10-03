@@ -221,7 +221,7 @@ export default function ProblemView() {
 								!isExpanded
 									? {
 											display: "-webkit-box",
-											WebkitLineClamp: 3,
+											WebkitLineClamp: 2,
 											WebkitBoxOrient: "vertical",
 											overflow: "hidden",
 										}
