@@ -226,6 +226,7 @@ export default function ProblemView() {
 					</div>
 				</div>
 			</div>
+		</div>
 
 			{/* 문제 조건 */}
 			{problem.problem_condition?.length > 0 && (
