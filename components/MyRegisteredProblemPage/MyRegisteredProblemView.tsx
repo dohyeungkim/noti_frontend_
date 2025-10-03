@@ -213,7 +213,17 @@ export default function ProblemView() {
 							isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
 						}`}
 					>
-						<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: problem.description }} />
+						<div 
+						className="prose max-w-none break-words" 
+						style={{
+								display: '-webkit-box',
+								WebkitLineClamp: 3,
+								WebkitBoxOrient: 'vertical',
+								overflow: 'hidden',
+								whiteSpace: 'pre-wrap'
+						}}
+            dangerouslySetInnerHTML={{ __html: problem.description }} 
+            />
 					</div>
 				</div>
 			</div>
