@@ -219,7 +219,8 @@ export default function ProblemView() {
 										WebkitLineClamp: 3,
 										WebkitBoxOrient: "vertical",
 										overflow: "hidden",
-								  }
+										whiteSpace: 'pre-wrap',
+									}
 								: {}
 						}
 					>
