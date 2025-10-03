@@ -885,185 +885,245 @@ export default function ResultTotalWatching() {
           />
           {/* dialog */}
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl border overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3 border-b bg-gray-50">
-                <div className="font-semibold">
-                  제출 트레이스
-                  {traceMeta ? (
-                    <span className="text-gray-500 font-normal">
-                      {" "}
-                      — {traceMeta.studentName} / {traceMeta.problemTitle}
-                    </span>
-                  ) : null}
+            <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border overflow-hidden">
+              {/* 헤더 */}
+              <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+                <div>
+                  <div className="text-lg font-bold">
+                    {traceMeta?.problemTitle || "제출 트레이스"}
+                  </div>
+                  {traceMeta && (
+                    <div className="text-sm text-gray-500 mt-1">
+                      제출자: {traceMeta.studentName}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => setTraceOpen(false)}
-                  className="p-2 rounded-md hover:bg-gray-100"
+                  className="p-2 rounded-lg hover:bg-gray-200 transition"
                   aria-label="닫기"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-5 max-h-[70vh] overflow-auto text-sm">
+              <div className="p-6 max-h-[75vh] overflow-auto">
                 {traceLoading && (
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                  <div className="flex items-center gap-3 text-gray-500">
+                    <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full" />
                     불러오는 중...
                   </div>
                 )}
 
                 {traceError && (
-                  <div className="text-rose-600">{traceError}</div>
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                    {traceError}
+                  </div>
                 )}
 
                 {!traceLoading && !traceError && traceData && (
-                  <div className="space-y-4">
-                    {/* 공통 헤더 */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-gray-500">문제명</span>
-                        <div className="font-medium">
-                          {traceData.problem_name}
-                        </div>
+                  <div className="space-y-6">
+                    {/* 결과 상태 배지 */}
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-lg ${
+                          traceData.passed
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {traceData.passed ? "✅ 통과" : "❌ 미통과"}
                       </div>
-                      <div>
-                        <span className="text-gray-500">유형</span>
-                        <div className="font-medium">
-                          {traceData.problemType}
-                        </div>
+                      <div className="px-4 py-2 bg-gray-100 rounded-lg">
+                        <span className="text-gray-600">유형:</span>{" "}
+                        <span className="font-semibold">{traceData.problemType}</span>
                       </div>
-                      <div>
-                        <span className="text-gray-500">결과</span>
-                        <div className="font-medium">
-                          {traceData.passed ? "통과" : "미통과"}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">상태</span>
-                        <div className="font-medium">
-                          {traceData.overall_status}
-                        </div>
+                      <div className="px-4 py-2 bg-gray-100 rounded-lg">
+                        <span className="text-gray-600">상태:</span>{" "}
+                        <span className="font-semibold">{traceData.overall_status}</span>
                       </div>
                     </div>
 
-                    {/* 유형별 본문 */}
+                    {/* 코딩/디버깅 문제 */}
                     {(traceData.problemType === "코딩" ||
                       traceData.problemType === "디버깅") && (
-                      <div className="space-y-3">
-                        <div>
-                          <div className="text-gray-500 mb-1">
-                            코드 ({traceData.code_language},{" "}
-                            {traceData.code_len}B)
+                      <div className="space-y-6">
+                        {/* 제출 코드 */}
+                        <div className="bg-gray-50 border rounded-lg p-5">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-semibold text-base">
+                              코드 ({traceData.code_language}, {traceData.code_len}B)
+                            </h3>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(traceData.submitted_code)
+                                alert("코드가 복사되었습니다!")
+                              }}
+                              className="px-3 py-1.5 text-sm bg-white border rounded-md hover:bg-gray-100 transition"
+                            >
+                              📋 복사
+                            </button>
                           </div>
-                          <pre className="p-3 bg-gray-50 rounded border overflow-auto text-xs">
+                          <pre className="p-4 bg-gray-900 text-gray-100 rounded-lg overflow-auto text-sm font-mono">
                             {traceData.submitted_code}
                           </pre>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <div className="text-gray-500 mb-1">
-                              테스트케이스
-                            </div>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {(traceData.test_cases ?? []).map(
-                                (t: any, i: number) => (
-                                  <li key={i}>
-                                    <span className="text-gray-500">in:</span>{" "}
-                                    <code>{t.input}</code>{" "}
-                                    <span className="text-gray-500 ml-2">
-                                      exp:
-                                    </span>{" "}
-                                    <code>{t.expected_output}</code>
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                          <div>
-                            <div className="text-gray-500 mb-1">
-                              실행결과 (ms)
-                            </div>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {(traceData.test_results ?? []).map(
-                                (t: any, i: number) => (
-                                  <li key={i}>
-                                    <code>{t.input}</code> →{" "}
-                                    <code>{t.actual_output}</code>{" "}
-                                    {t.passed ? "✅" : "❌"} ({t.time_ms})
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
+
+                        {/* 테스트케이스와 실행결과 */}
+                        <div className="space-y-4">
+                          <h3 className="font-semibold text-base">테스트 결과</h3>
+                          {(traceData.test_cases ?? []).map((testCase: any, i: number) => {
+                            const result = traceData.test_results?.[i]
+                            return (
+                              <div
+                                key={i}
+                                className={`p-4 border-2 rounded-lg ${
+                                  result?.passed
+                                    ? "bg-green-50 border-green-200"
+                                    : "bg-red-50 border-red-200"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="font-semibold text-base">
+                                    테스트케이스 #{i + 1}
+                                  </div>
+                                  <div
+                                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                      result?.passed
+                                        ? "bg-green-200 text-green-800"
+                                        : "bg-red-200 text-red-800"
+                                    }`}
+                                  >
+                                    {result?.passed ? "통과" : "실패"}
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-gray-600 font-medium min-w-[80px]">
+                                      입력:
+                                    </span>
+                                    <code className="flex-1 bg-white px-2 py-1 rounded border">
+                                      {testCase.input}
+                                    </code>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-gray-600 font-medium min-w-[80px]">
+                                      예상 출력:
+                                    </span>
+                                    <code className="flex-1 bg-white px-2 py-1 rounded border">
+                                      {testCase.expected_output}
+                                    </code>
+                                  </div>
+                                  {result && (
+                                    <>
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-gray-600 font-medium min-w-[80px]">
+                                          실제 출력:
+                                        </span>
+                                        <code className="flex-1 bg-white px-2 py-1 rounded border">
+                                          {result.actual_output}
+                                        </code>
+                                      </div>
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-gray-600 font-medium min-w-[80px]">
+                                          실행 시간:
+                                        </span>
+                                        <span className="font-mono">{result.time_ms}ms</span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
 
+                    {/* 객관식 */}
                     {traceData.problemType === "객관식" && (
-                      <div>
-                        <div className="text-gray-500 mb-1">
-                          선택한 보기 인덱스
-                        </div>
-                        <div className="font-medium">
+                      <div className="bg-gray-50 border rounded-lg p-5">
+                        <h3 className="font-semibold text-base mb-3">선택한 답</h3>
+                        <div className="text-lg font-mono">
                           {(traceData.selected_options ?? []).join(", ") || "-"}
                         </div>
                       </div>
                     )}
 
+                    {/* 단답형/주관식 */}
                     {(traceData.problemType === "단답형" ||
                       traceData.problemType === "주관식") && (
-                      <div>
-                        <div className="text-gray-500 mb-1">제출 내용</div>
-                        <div className="p-3 bg-gray-50 rounded border whitespace-pre-wrap">
+                      <div className="bg-gray-50 border rounded-lg p-5">
+                        <h3 className="font-semibold text-base mb-3">제출 내용</h3>
+                        <div className="p-4 bg-white rounded-lg border whitespace-pre-wrap">
                           {traceData.submitted_text || "-"}
                         </div>
                       </div>
                     )}
 
-                    {/* 조건 검사 & AI 피드백 */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-gray-500 mb-1">조건 검사</div>
-                        <ul className="space-y-1">
+                    {/* 조건 검사 */}
+                    {(traceData.condition_check_results ?? []).length > 0 && (
+                      <div className="bg-gray-50 border rounded-lg p-5">
+                        <h3 className="font-semibold text-base mb-4">조건 검사</h3>
+                        <div className="space-y-3">
                           {(traceData.condition_check_results ?? []).map(
                             (c: any, i: number) => (
-                              <li key={i} className="flex items-start gap-2">
-                                <span>{c.passed ? "✅" : "❌"}</span>
-                                <div>
-                                  <div className="font-medium">
-                                    {c.condition}{" "}
-                                    <span className="text-gray-500 text-xs">
-                                      ({c.check_type}
-                                      {c.is_required ? ", 필수" : ""})
-                                    </span>
-                                  </div>
-                                  {c.feedback ? (
-                                    <div className="text-gray-600 text-xs">
-                                      {c.feedback}
+                              <div
+                                key={i}
+                                className={`p-4 rounded-lg border-2 ${
+                                  c.passed
+                                    ? "bg-green-50 border-green-200"
+                                    : "bg-red-50 border-red-200"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <span className="text-2xl">
+                                    {c.passed ? "✅" : "❌"}
+                                  </span>
+                                  <div className="flex-1">
+                                    <div className="font-semibold mb-1">
+                                      {c.condition}
                                     </div>
-                                  ) : null}
+                                    <div className="text-sm text-gray-600 mb-2">
+                                      {c.check_type}
+                                      {c.is_required && " • 필수 조건"}
+                                    </div>
+                                    {c.feedback && (
+                                      <div className="text-sm text-gray-700 bg-white p-2 rounded border">
+                                        {c.feedback}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </li>
+                              </div>
                             )
                           )}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="text-gray-500 mb-1">AI 피드백</div>
-                        <div className="p-3 bg-gray-50 rounded border whitespace-pre-wrap">
-                          {traceData.ai_feedback || "-"}
                         </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* AI 피드백 */}
+                    {traceData.ai_feedback && (
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
+                        <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
+                          <span className="text-xl">🤖</span>
+                          AI 피드백
+                        </h3>
+                        <div className="p-4 bg-white rounded-lg border whitespace-pre-wrap text-sm leading-relaxed max-h-96 overflow-auto">
+                          {traceData.ai_feedback}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              <div className="px-5 py-3 border-t bg-gray-50 flex justify-end">
+              {/* 하단 버튼 */}
+              <div className="px-6 py-4 border-t bg-gray-50 flex justify-end">
                 <button
                   onClick={() => setTraceOpen(false)}
-                  className="px-4 py-2 rounded-md border bg-white hover:bg-gray-100"
+                  className="px-6 py-2.5 rounded-lg border-2 bg-white hover:bg-gray-100 transition font-semibold"
                 >
                   닫기
                 </button>
