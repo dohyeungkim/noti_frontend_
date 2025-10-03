@@ -46,7 +46,17 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 										✏️ {item.title}
 									</h3>
 
-									<p className="text-gray-500 text-sm m-3">{item.group}</p>
+									<p 
+									className="text-gray-500 text-sm m-3 break-words"
+									style={{
+											display: '-webkit-box',
+											WebkitLineClamp: 3,
+											WebkitBoxOrient: 'vertical',
+											overflow: 'hidden',
+											whiteSpace: 'pre-wrap'
+									}}>
+									{item.group}
+									</p>
 									<p className="text-gray-400 text-sm">{item.paper}</p>
 
 									{/* 문제 보기 버튼 (디자인 개선) */}
