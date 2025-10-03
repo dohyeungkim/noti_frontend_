@@ -9,7 +9,7 @@ import ConfirmationModal from "./View/MyRefisteredProblemDeleteModal"
 import { problem_api } from "@/lib/api"
 import dynamic from "next/dynamic"
 import { CheckCircle } from "lucide-react"
-
+import ReactMarkdown from "react-markdown"
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
 import type { CodingProblem, MultipleChoiceProblem, ShortAnswerProblem, SubjectiveProblem } from "@/lib/api"
@@ -222,8 +222,8 @@ export default function ProblemView() {
 								overflow: 'hidden',
 								whiteSpace: 'pre-wrap'
 						}}
-            dangerouslySetInnerHTML={{ __html: problem.description }} 
-            />
+					></div>
+            <ReactMarkdown>{problem.description}</ReactMarkdown>
 					</div>
 				</div>
 			</div>
