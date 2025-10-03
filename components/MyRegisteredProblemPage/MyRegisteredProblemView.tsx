@@ -219,11 +219,10 @@ export default function ProblemView() {
 								display: '-webkit-box',
 								WebkitLineClamp: 3,
 								WebkitBoxOrient: 'vertical',
-								overflow: 'hidden',
-								whiteSpace: 'pre-wrap'
+								overflow: 'hidden'
 						}}
-					></div>
-            <ReactMarkdown>{problem.description}</ReactMarkdown>
+					>
+          <ReactMarkdown>{problem.description}</ReactMarkdown>
 					</div>
 				</div>
 			</div>
