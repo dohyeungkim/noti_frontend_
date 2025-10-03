@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import ReactMarkdown from "react-markdown"
 
 interface Question {
 	problem_id: number
@@ -55,7 +56,7 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 											overflow: 'hidden',
 											whiteSpace: 'pre-wrap'
 									}}>
-									{item.group}
+									<ReactMarkdown>{item.group}</ReactMarkdown>
 									</p>
 									<p className="text-gray-400 text-sm">{item.paper}</p>
 

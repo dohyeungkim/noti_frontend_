@@ -94,8 +94,7 @@ export default function ProblemGallery({
 				return (
 					<div
 						key={p.problem_id}
-						className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md
-                       transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+						className="relative bg-white border border-gray-200 p-6 rounded-2xl shadow-md transition-transform overflow-hidden duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
 					>
 						{/* X 삭제 버튼: 그룹장만 표시 */}
 						{isGroupOwner && (
