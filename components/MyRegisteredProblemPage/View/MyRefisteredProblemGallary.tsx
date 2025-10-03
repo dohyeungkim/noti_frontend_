@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import ReactMarkdown from "react-markdown"
+import remarkBreaks from "remark-breaks"
+import remarkGfm from 'remark-gfm'
 
 interface Question {
 	problem_id: number
@@ -51,7 +53,7 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 									className="text-gray-500 text-sm m-3 break-words"
 									style={{
 											display: '-webkit-box',
-											WebkitLineClamp: 3,
+											WebkitLineClamp: 2,
 											WebkitBoxOrient: 'vertical',
 											overflow: 'hidden',
 											whiteSpace: 'pre-wrap'
