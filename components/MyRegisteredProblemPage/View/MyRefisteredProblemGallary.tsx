@@ -53,7 +53,7 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 									className="text-gray-500 text-sm m-3 break-words"
 									style={{
 											display: '-webkit-box',
-											WebkitLineClamp: 2,
+											WebkitLineClamp: 3,
 											WebkitBoxOrient: 'vertical',
 											overflow: 'hidden',
 											whiteSpace: 'pre-wrap'
