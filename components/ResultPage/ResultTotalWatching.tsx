@@ -16,6 +16,7 @@ import {
   problem_ref_api,
   submissions_trace_api,
 } from "@/lib/api";
+import { X } from "lucide-react"
 
 /** ================== 타입 ================== */
 type Role = "개발자" | "학생" | "결석";
