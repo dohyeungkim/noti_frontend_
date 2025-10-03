@@ -10,6 +10,7 @@ import { problem_api } from "@/lib/api"
 import dynamic from "next/dynamic"
 import { CheckCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
+import remarkBreaks from 'remark-breaks'
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
@@ -224,7 +225,7 @@ export default function ProblemView() {
 								: {}
 						}
 					>
-						<ReactMarkdown>{problem.description}</ReactMarkdown>
+						<ReactMarkdown remarkPlugins={[remarkBreaks]}>{problem.description}</ReactMarkdown>
 					</div>
 				</div>
 			</div>
