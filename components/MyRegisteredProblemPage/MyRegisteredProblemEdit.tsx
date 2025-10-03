@@ -325,6 +325,7 @@ export default function EditRegisteredProblem() {
 			await problem_api.problem_update(problemId, payload)
 			alert("✅ 문제가 성공적으로 수정되었습니다.")
 			router.push("/registered-problems")
+			console.log("description:", payload.description)
 		} catch (err) {
 			console.error(err)
 			alert("❌ 문제 수정 중 오류가 발생했습니다.")
