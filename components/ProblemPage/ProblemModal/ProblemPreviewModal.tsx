@@ -181,31 +181,33 @@ export default function ProblemPreviewModal({ problem, isOpen, onClose }: Proble
 		// 코딩/디버깅
 		if (problemType === "코딩" || problemType === "디버깅") {
 			const coding = problem as CodingProblem
+      
+      const codesToDisplay = problemType === "코딩" ? coding.reference_codes : coding.base_code
 			return (
 				<div className="mb-6">
-					<label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-						<Code className="w-4 h-4 text-gray-600" />
-						기본 코드
-					</label>
-					<div className="space-y-3">
-						{coding.reference_codes.map((code, index) => (
-							<div key={index} className="border border-gray-300 rounded-lg overflow-hidden">
-								<div className="bg-gray-700 px-4 py-2 flex items-center justify-between">
-									<span className="text-white text-sm font-semibold">
-										{code.language}
-									</span>
-									<span className="text-gray-300 text-xs">
-										code
-									</span>
-								</div>
-								<div className="bg-gray-50 p-4 overflow-x-auto">
-									<pre className="text-sm text-gray-800 font-mono">
-										<code>{code.code}</code>
-									</pre>
-								</div>
-							</div>
-						))}
-					</div>
+            <label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <Code className="w-4 h-4 text-gray-600" />
+              코드
+            </label>
+                <div className="space-y-3">
+                  {codesToDisplay.map((code, index) => (
+                    <div key={index} className="border border-gray-300 rounded-lg overflow-hidden">
+                      <div className="bg-gray-700 px-4 py-2 flex items-center justify-between">
+                        <span className="text-white text-sm font-semibold">
+                          {code.language}
+                        </span>
+                        <span className="text-gray-300 text-xs">
+                          {problemType === "코딩" ? "Reference Code" : "Base Code"}
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 p-4 overflow-x-auto">
+                        <pre className="text-sm text-gray-800 font-mono">
+                          <code>{code.code}</code>
+                        </pre>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
 					{/* 테스트 케이스 */}
 					{coding.test_cases && coding.test_cases.length > 0 && (
