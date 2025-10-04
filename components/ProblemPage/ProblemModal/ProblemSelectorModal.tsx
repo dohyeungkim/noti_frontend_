@@ -183,43 +183,43 @@ export default function ProblemSelector({
 		<>
 			{isModalOpen && (
 				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-					<div className="bg-white p-8 rounded-lg w-full max-w-5xl shadow-lg relative">
+					<div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] shadow-2xl relative flex flex-col">
 						<button
-							className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+							className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 z-10"
 							onClick={() => setIsModalOpen(false)}
 						>
 							<X className="w-6 h-6" />
 						</button>
 
-						<div className="p-8">
-							<div className="mb-8">
+						<div className="p-8 flex flex-col h-full overflow-hidden">
+							<div className="mb-6">
 								<SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 							</div>
-							<div className="flex gap-x-8">
+							<div className="flex gap-x-6 flex-1 min-h-0">
 								{/* 🔹 문제 리스트 */}
-								<div className="flex-1 flex flex-col">
-									<h2 className="text-2xl font-bold mb-3">문제 목록</h2>
-									<ul className="border p-5 rounded-md shadow-md bg-white h-96 overflow-y-auto">
+								<div className="flex-1 flex flex-col min-w-0">
+									<h2 className="text-2xl font-bold mb-4">문제 목록</h2>
+									<ul className="border border-gray-200 p-5 rounded-lg shadow-sm bg-white flex-1 overflow-y-auto">
 										{filteredProblems.map((problem) => {
 											const isDisabled = isAlreadySelected.some((p) => p.problem_id === problem.problem_id)
 											return (
 												<li
 													key={`list-${problem.problem_id}`}
 													onClick={() => !isDisabled && handleSelect(problem)}
-													className={`cursor-pointer rounded-md p-3 border-b transition flex items-center justify-between ${
+													className={`cursor-pointer rounded-md p-3 mb-2 border transition flex items-center justify-between ${
 														isDisabled
-															? "bg-gray-300 text-gray-500 cursor-not-allowed"
+															? "bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300"
 															: tempSelectedIds.has(problem.problem_id)
-															? "bg-mygreen text-white"
-															: "bg-gray-100 hover:bg-gray-200"
+															? "bg-mygreen text-white border-mygreen"
+															: "bg-gray-50 hover:bg-gray-100 border-gray-200"
 													}`}
 												>
-													<span>
-														📌 {problem.title.length > 18 ? `${problem.title.slice(0, 18)}...` : problem.title}
+													<span className="truncate flex-1">
+														📌 {problem.title}
 													</span>
 													<button
 														onClick={(e) => handlePreview(problem, e)}
-														className={`ml-2 p-1.5 rounded hover:bg-opacity-80 transition ${
+														className={`ml-2 p-1.5 rounded hover:bg-opacity-80 transition flex-shrink-0 ${
 															isDisabled 
 																? "opacity-50" 
 																: tempSelectedIds.has(problem.problem_id)
@@ -237,23 +237,23 @@ export default function ProblemSelector({
 								</div>
 
 								{/* 🔹 선택한 문제 리스트 */}
-								<div className="flex-1">
-									<h2 className="text-2xl font-bold mb-3">선택한 문제</h2>
-									<ul className="border p-5 rounded-md shadow-md bg-white h-96 overflow-y-auto">
+								<div className="flex-1 flex flex-col min-w-0">
+									<h2 className="text-2xl font-bold mb-4">선택한 문제</h2>
+									<ul className="border border-gray-200 p-5 rounded-lg shadow-sm bg-white flex-1 overflow-y-auto">
 										{modalSelected.length > 0 ? (
 											modalSelected.map((p) => {
 												return (
 													<li
 														key={`selected-${p.problem_id}`}
 														onClick={() => handleSelect(p)}
-														className="p-3 border-b rounded-md cursor-pointer hover:bg-red-200 flex items-center justify-between"
+														className="p-3 mb-2 border border-gray-200 rounded-md cursor-pointer hover:bg-red-100 hover:border-red-300 transition flex items-center justify-between"
 													>
-														<span>
-															📌{p.title.length > 18 ? `${p.title.slice(0, 18)}...` : p.title}
+														<span className="truncate flex-1">
+															📌 {p.title}
 														</span>
 														<button
 															onClick={(e) => handlePreview(p, e)}
-															className="ml-2 p-1.5 rounded hover:bg-red-300 transition"
+															className="ml-2 p-1.5 rounded hover:bg-red-200 transition flex-shrink-0"
 															title="미리보기"
 														>
 															<Eye className="w-4 h-4" />
@@ -262,18 +262,18 @@ export default function ProblemSelector({
 												)
 											})
 										) : (
-											<li className="text-gray-500">선택한 문제가 없습니다.</li>
+											<li className="text-gray-400 text-center py-8">선택한 문제가 없습니다.</li>
 										)}
 									</ul>
 								</div>
 							</div>
 
 							{/* 🔹 Submit 버튼 */}
-							<div className="mt-6 flex justify-end">
+							<div className="mt-6 flex justify-end pt-4 border-t border-gray-200">
 								<button
 									onClick={handleAddProblemButton}
 									disabled={isSubmitting}
-									className="bg-mygreen text-white px-6 py-3 rounded hover:bg-opacity-80 transition"
+									className="bg-mygreen text-white px-8 py-3 rounded-lg hover:bg-opacity-90 transition font-medium disabled:opacity-50"
 								>
 									문제 추가하기
 								</button>
