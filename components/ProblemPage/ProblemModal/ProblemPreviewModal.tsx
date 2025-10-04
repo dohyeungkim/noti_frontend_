@@ -1,8 +1,8 @@
 // ProblemPreviewModal.tsx
 // 문제 미리보기 모달 컴포넌트
 
-import { X, Hash, User, Calendar, Tag, FileText, AlertCircle } from "lucide-react"
-import type { ProblemBase } from "@/lib/api"
+import { X, Hash, User, Calendar, Tag, FileText, AlertCircle, CheckCircle, Code } from "lucide-react"
+import type { ProblemBase, MultipleChoiceProblem, ShortAnswerProblem, SubjectiveProblem, CodingProblem } from "@/lib/api"
 
 interface ProblemPreviewModalProps {
 	problem: ProblemBase | null
@@ -37,8 +37,212 @@ export default function ProblemPreviewModal({ problem, isOpen, onClose }: Proble
 			"short_answer": "단답형",
 			"essay": "서술형",
 			"coding": "코딩",
+			"객관식": "객관식",
+			"단답형": "단답형",
+			"주관식": "주관식",
+			"코딩": "코딩",
+			"디버깅": "디버깅",
 		}
 		return typeMap[type] || type
+	}
+
+	// 답안 렌더링 함수
+	const renderAnswer = () => {
+		const problemType = problem.problemType
+
+		// 객관식
+		if (problemType === "객관식") {
+			const multipleChoice = problem as MultipleChoiceProblem
+			return (
+				<div className="mb-6">
+					<label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+						<CheckCircle className="w-4 h-4 text-gray-600" />
+						답안
+					</label>
+					
+					{/* 선택지 목록 */}
+					<div className="space-y-2 mb-4">
+						{multipleChoice.options.map((option, index) => {
+							const isCorrect = multipleChoice.correct_answers.includes(index + 1)
+							return (
+								<div
+									key={index}
+									className={`border rounded-lg p-3 ${
+										isCorrect
+											? "bg-green-50 border-green-300"
+											: "bg-gray-50 border-gray-200"
+									}`}
+								>
+									<div className="flex items-start gap-3">
+										<span className={`font-bold ${isCorrect ? "text-green-700" : "text-gray-600"}`}>
+											{index + 1}.
+										</span>
+										<span className={`flex-1 ${isCorrect ? "text-green-900 font-medium" : "text-gray-700"}`}>
+											{option}
+										</span>
+										{isCorrect && (
+											<CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+										)}
+									</div>
+								</div>
+							)
+						})}
+					</div>
+
+					{/* 정답 표시 */}
+					<div className="bg-green-100 border border-green-300 rounded-lg p-4">
+						<p className="text-green-800 font-semibold">
+							정답: {multipleChoice.correct_answers.join(", ")}번
+						</p>
+					</div>
+				</div>
+			)
+		}
+
+		// 단답형
+		if (problemType === "단답형") {
+			const shortAnswer = problem as ShortAnswerProblem
+			return (
+				<div className="mb-6">
+					<label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+						<CheckCircle className="w-4 h-4 text-gray-600" />
+						답안
+					</label>
+					<div className="bg-green-50 border border-green-300 rounded-lg p-4">
+						<div className="space-y-2">
+							{shortAnswer.answer_text.map((answer, index) => (
+								<div key={index} className="flex items-start gap-2">
+									<CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+									<span className="text-green-900 font-medium">{answer}</span>
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* 채점 기준 */}
+					{shortAnswer.grading_criteria && shortAnswer.grading_criteria.length > 0 && (
+						<div className="mt-4">
+							<label className="text-xs font-semibold text-gray-600 mb-2 block">
+								채점 기준
+							</label>
+							<div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+								<ul className="space-y-1">
+									{shortAnswer.grading_criteria.map((criteria, index) => (
+										<li key={index} className="flex items-start gap-2 text-sm text-blue-900">
+											<span className="text-blue-600 font-bold">•</span>
+											<span>{criteria}</span>
+										</li>
+									))}
+								</ul>
+							</div>
+						</div>
+					)}
+				</div>
+			)
+		}
+
+		// 주관식
+		if (problemType === "주관식") {
+			const subjective = problem as SubjectiveProblem
+			return (
+				<div className="mb-6">
+					<label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+						<CheckCircle className="w-4 h-4 text-gray-600" />
+						모범 답안
+					</label>
+					<div className="bg-green-50 border border-green-300 rounded-lg p-4">
+						<p className="text-green-900 whitespace-pre-wrap leading-relaxed">
+							{subjective.answer_text}
+						</p>
+					</div>
+
+					{/* 채점 기준 */}
+					{subjective.grading_criteria && subjective.grading_criteria.length > 0 && (
+						<div className="mt-4">
+							<label className="text-xs font-semibold text-gray-600 mb-2 block">
+								채점 기준
+							</label>
+							<div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+								<ul className="space-y-1">
+									{subjective.grading_criteria.map((criteria, index) => (
+										<li key={index} className="flex items-start gap-2 text-sm text-blue-900">
+											<span className="text-blue-600 font-bold">•</span>
+											<span>{criteria}</span>
+										</li>
+									))}
+								</ul>
+							</div>
+						</div>
+					)}
+				</div>
+			)
+		}
+
+		// 코딩/디버깅
+		if (problemType === "코딩" || problemType === "디버깅") {
+			const coding = problem as CodingProblem
+			return (
+				<div className="mb-6">
+					<label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+						<Code className="w-4 h-4 text-gray-600" />
+						기본 코드
+					</label>
+					<div className="space-y-3">
+						{coding.base_code.map((code, index) => (
+							<div key={index} className="border border-gray-300 rounded-lg overflow-hidden">
+								<div className="bg-gray-700 px-4 py-2 flex items-center justify-between">
+									<span className="text-white text-sm font-semibold">
+										{code.language}
+									</span>
+									<span className="text-gray-300 text-xs">
+										Base Code
+									</span>
+								</div>
+								<div className="bg-gray-50 p-4 overflow-x-auto">
+									<pre className="text-sm text-gray-800 font-mono">
+										<code>{code.code}</code>
+									</pre>
+								</div>
+							</div>
+						))}
+					</div>
+
+					{/* 테스트 케이스 */}
+					{coding.test_cases && coding.test_cases.length > 0 && (
+						<div className="mt-4">
+							<label className="text-xs font-semibold text-gray-600 mb-2 block">
+								테스트 케이스
+							</label>
+							<div className="space-y-2">
+								{coding.test_cases.map((testCase, index) => (
+									<div key={index} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+										<div className="text-xs font-semibold text-purple-700 mb-2">
+											Test Case {index + 1}
+										</div>
+										<div className="grid grid-cols-2 gap-3 text-sm">
+											<div>
+												<span className="text-gray-600 font-medium">Input:</span>
+												<pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded">
+													{testCase.input}
+												</pre>
+											</div>
+											<div>
+												<span className="text-gray-600 font-medium">Output:</span>
+												<pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded">
+													{testCase.expected_output}
+												</pre>
+											</div>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+				</div>
+			)
+		}
+
+		return null
 	}
 
 	return (
@@ -165,6 +369,9 @@ export default function ProblemPreviewModal({ problem, isOpen, onClose }: Proble
 							</div>
 						</div>
 					)}
+
+					{/* 답안 섹션 (문제 타입별) */}
+					{renderAnswer()}
 
 					{/* 생성일 */}
 					<div className="flex items-center gap-2 text-sm text-gray-500 pt-4 border-t border-gray-200">
