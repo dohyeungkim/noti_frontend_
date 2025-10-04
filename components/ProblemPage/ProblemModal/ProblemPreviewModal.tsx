@@ -188,14 +188,14 @@ export default function ProblemPreviewModal({ problem, isOpen, onClose }: Proble
 						기본 코드
 					</label>
 					<div className="space-y-3">
-						{coding.base_code.map((code, index) => (
+						{coding.reference_codes.map((code, index) => (
 							<div key={index} className="border border-gray-300 rounded-lg overflow-hidden">
 								<div className="bg-gray-700 px-4 py-2 flex items-center justify-between">
 									<span className="text-white text-sm font-semibold">
 										{code.language}
 									</span>
 									<span className="text-gray-300 text-xs">
-										Base Code
+										code
 									</span>
 								</div>
 								<div className="bg-gray-50 p-4 overflow-x-auto">
