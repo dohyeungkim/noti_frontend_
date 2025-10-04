@@ -185,14 +185,14 @@ export default function ProblemSelector({
 				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
 					<div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] shadow-2xl relative flex flex-col">
 						<button
-							className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 z-10"
+							className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
 							onClick={() => setIsModalOpen(false)}
 						>
 							<X className="w-6 h-6" />
 						</button>
 
-						<div className="p-8 flex flex-col h-full overflow-hidden">
-							<div className="mb-6">
+						<div className="p-8 pt-6 flex flex-col h-full overflow-hidden">
+							<div className="mb-6 pr-8">
 								<SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 							</div>
 							<div className="flex gap-x-6 flex-1 min-h-0">
