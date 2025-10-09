@@ -68,16 +68,23 @@ export default function GradingListPage() {
 
   // 제출 목록 및 점수 조회
   const fetchSubmissions = useCallback(async () => {
-    if (problemRefs.length === 0) return;
+    if (problemRefs.length === 0) {
+      console.log("❌ 문제 목록이 비어있어 제출 목록을 불러올 수 없습니다.");
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log("🔄 제출 목록 로딩 시작...");
+      console.log("📋 그룹 ID:", groupId, "시험 ID:", examId);
 
       // 1. 전체 제출 목록 조회
       const submissions = await grading_api.get_all_submissions(
         Number(groupId),
         Number(examId)
       );
+      console.log("✅ API에서 받아온 전체 제출 목록:", submissions);
+      console.log("📊 총 제출 건수:", submissions.length);
 
       // 2. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
@@ -96,8 +103,10 @@ export default function GradingListPage() {
           grp?.ownerId ??
           grp?.leader_id ??
           grp?.owner?.user_id;
-      } catch {
-        /* 소유자/내 계정 못 가져와도 계속 진행 */
+        console.log("👤 본인 ID:", meId);
+        console.log("👑 그룹장 ID:", ownerId);
+      } catch (err) {
+        console.warn("⚠️ 그룹장/본인 정보 조회 실패:", err);
       }
 
       // 3. 학생별로 그룹화 (그룹장/본인 제외)
@@ -106,11 +115,13 @@ export default function GradingListPage() {
         { name: string; studentNo?: string | number; items: SubmissionSummary[] }
       >();
 
+      console.log("🔍 학생별 그룹화 시작...");
       for (const sub of submissions) {
         const userId = String(sub.user_id);
         
         // 그룹장과 본인 제외
         if (userId === String(ownerId ?? "") || userId === String(meId ?? "")) {
+          console.log(`⏭️ 제외: ${sub.user_name} (ID: ${userId}) - 그룹장 또는 본인`);
           continue;
         }
 
@@ -126,21 +137,34 @@ export default function GradingListPage() {
           (sub as any).username;
 
         if (!byUser.has(userId)) {
+          console.log(`➕ 새 학생 추가: ${userName} (ID: ${userId}, 학번: ${studentNo})`);
           byUser.set(userId, { name: userName, studentNo, items: [] });
         }
         byUser.get(userId)!.items.push(sub);
       }
 
+      console.log("✅ 학생별 그룹화 완료");
+      console.log("👥 총 학생 수:", byUser.size);
+      console.log("📝 학생 목록:", Array.from(byUser.entries()).map(([id, info]) => ({
+        userId: id,
+        name: info.name,
+        studentNo: info.studentNo,
+        제출수: info.items.length
+      })));
+
       // 4. 각 학생의 문제별 점수 조회
       const rows: GradingStudentSummary[] = [];
+      console.log("🔄 각 학생의 점수 상세 조회 시작...");
 
       for (const [userId, userInfo] of Array.from(byUser.entries())) {
         const { name, studentNo, items } = userInfo;
+        console.log(`\n👤 학생 처리 중: ${name} (ID: ${userId})`);
         
         const subMap = new Map<number, SubmissionSummary>();
         for (const item of items) {
           subMap.set(item.problem_id, item);
         }
+        console.log(`  📝 제출한 문제: ${Array.from(subMap.keys()).join(", ")}`);
 
         const problemScores: ProblemScoreData[] = [];
 
@@ -150,6 +174,7 @@ export default function GradingListPage() {
           const maxPoints = prob.points ?? 10;
 
           if (!sub) {
+            console.log(`  ⚪ 문제 ${pid}: 미제출`);
             problemScores.push({
               aiScore: null,
               profScore: null,
@@ -163,6 +188,7 @@ export default function GradingListPage() {
 
           // AI 점수는 submission의 score 사용
           const aiScore = sub.score;
+          console.log(`  🤖 문제 ${pid} AI 점수: ${aiScore}`);
 
           // 교수 점수 조회
           let profScore = null;
@@ -178,8 +204,9 @@ export default function GradingListPage() {
                   )[0]
                 : null;
             profScore = profScoreRecord?.score ?? null;
+            console.log(`  👨‍🏫 문제 ${pid} 교수 점수: ${profScore ?? "미채점"}`);
           } catch (err) {
-            console.error(`submission_id ${sub.submission_id} 점수 조회 실패`, err);
+            console.error(`  ❌ 문제 ${pid} 점수 조회 실패:`, err);
           }
 
           problemScores.push({
@@ -198,6 +225,7 @@ export default function GradingListPage() {
           studentNo,
           problemScores,
         });
+        console.log(`  ✅ ${name} 처리 완료`);
       }
 
       // 이름 순으로 정렬
@@ -205,12 +233,21 @@ export default function GradingListPage() {
         a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
       );
 
+      console.log("\n🎉 최종 학생 목록 생성 완료!");
+      console.log("📊 최종 학생 수:", rows.length);
+      console.log("📋 최종 학생 목록:", rows.map(s => ({
+        이름: s.studentName,
+        학번: s.studentNo,
+        문제수: s.problemScores.length
+      })));
+
       setStudents(rows);
     } catch (err) {
-      console.error("제출 목록 로드 실패", err);
+      console.error("❌ 제출 목록 로드 실패:", err);
       setStudents([]);
     } finally {
       setLoading(false);
+      console.log("✅ 로딩 완료");
     }
   }, [groupId, examId, problemRefs]);
 
