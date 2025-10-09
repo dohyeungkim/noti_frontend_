@@ -47,8 +47,8 @@ export default function GradingListPage() {
   // 그룹장 정보 조회
   const fetchOwner = useCallback(async () => {
     try {
-      const groups = await group_api.my_group_get();
-      const group = groups.find((g) => g.group_id === Number(groupId));
+      const groups: any = await group_api.my_group_get();
+      const group = groups.find((g: any) => g.group_id === Number(groupId));
       setGroupOwner(group?.group_owner ?? null);
     } catch (err) {
       console.error("그룹장 정보 로드 실패", err);
@@ -81,23 +81,33 @@ export default function GradingListPage() {
         Number(examId)
       );
 
+      console.log("전체 제출 목록:", submissions);
+
       // 2. 학생별로 그룹화
       const byUser = new Map<string, { name: string; items: SubmissionSummary[] }>();
       for (const sub of submissions) {
-        if (!byUser.has(sub.user_id)) {
-          byUser.set(sub.user_id, { name: sub.user_name, items: [] });
+        const userId = sub.user_id;
+        const userName = sub.user_name;
+        
+        if (!byUser.has(userId)) {
+          byUser.set(userId, { name: userName, items: [] });
         }
-        byUser.get(sub.user_id)!.items.push(sub);
+        byUser.get(userId)!.items.push(sub);
       }
+
+      console.log("학생별 그룹화:", Array.from(byUser.entries()));
 
       // 3. 각 제출의 상세 점수 조회 (AI/교수 구분)
       const rows: GradingStudentSummary[] = [];
       
-      for (const [userId, { name, items }] of byUser.entries()) {
+      for (const [userId, userInfo] of Array.from(byUser.entries())) {
+        const { name, items } = userInfo;
         const subMap = new Map<number, SubmissionSummary>();
         for (const item of items) {
           subMap.set(item.problem_id, item);
         }
+
+        console.log(`학생 ${name} (${userId})의 제출:`, items);
 
         const problemScores: ProblemScoreData[] = [];
 
@@ -179,7 +189,7 @@ export default function GradingListPage() {
     if (problemIds.length > 0) {
       fetchSubmissions();
     }
-  }, [problemIds.length]);
+  }, [fetchSubmissions, problemIds.length]);
 
   const selectStudent = (studentId: string) => {
     router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`);
