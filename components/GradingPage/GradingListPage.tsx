@@ -4,19 +4,23 @@
  * - AI 점수와 교수 점수를 각각 표시
  * - 문제 제목 표시
  * - 학생 이름과 학번 표시
+ * - 좌우 스크롤 버튼으로 문제 이동 (한 번에 최대 6개)
+ * - 교수 점수 1~10점 채점 기능
  */
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/stores/auth";
 import { group_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
 import type { SubmissionSummary, ProblemRef } from "@/lib/api";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 interface ProblemScoreData {
   aiScore: number | null;
   profScore: number | null;
   maxPoints: number;
   solveId: number | null;
+  submissionId: number | null;
   reviewed: boolean;
 }
 
@@ -35,6 +39,17 @@ export default function GradingListPage() {
   const [students, setStudents] = useState<GradingStudentSummary[]>([]);
   const [problemRefs, setProblemRefs] = useState<ProblemRef[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 좌우 스크롤 상태 - 최대 6개로 고정
+  const [startIdx, setStartIdx] = useState(0);
+  const MAX_VISIBLE = 6;
+
+  // 점수 수정 모달 상태
+  const [editingCell, setEditingCell] = useState<{
+    studentId: string;
+    problemIdx: number;
+  } | null>(null);
+  const [editScore, setEditScore] = useState<number>(1);
 
   // 문제 목록 조회
   const fetchProblemRefs = useCallback(async () => {
@@ -63,8 +78,6 @@ export default function GradingListPage() {
         Number(groupId),
         Number(examId)
       );
-
-      console.log("전체 제출 목록:", submissions);
 
       // 2. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
@@ -103,7 +116,7 @@ export default function GradingListPage() {
 
         const userName = sub.user_name;
         
-        // 학번 추출 (여러 가능성 체크)
+        // 학번 추출
         const studentNo =
           (sub as any).student_no ??
           (sub as any).student_number ??
@@ -118,15 +131,12 @@ export default function GradingListPage() {
         byUser.get(userId)!.items.push(sub);
       }
 
-      console.log("학생별 그룹화:", Array.from(byUser.entries()));
-
       // 4. 각 학생의 문제별 점수 조회
       const rows: GradingStudentSummary[] = [];
 
       for (const [userId, userInfo] of Array.from(byUser.entries())) {
         const { name, studentNo, items } = userInfo;
         
-        // 제출물을 problem_id로 매핑
         const subMap = new Map<number, SubmissionSummary>();
         for (const item of items) {
           subMap.set(item.problem_id, item);
@@ -134,32 +144,30 @@ export default function GradingListPage() {
 
         const problemScores: ProblemScoreData[] = [];
 
-        // 문제지의 모든 문제에 대해 순회
         for (const prob of problemRefs) {
           const pid = prob.problem_id;
           const sub = subMap.get(pid);
-          const maxPoints = prob.points ?? 0;
+          const maxPoints = prob.points ?? 10;
 
           if (!sub) {
-            // 제출하지 않은 문제
             problemScores.push({
               aiScore: null,
               profScore: null,
               maxPoints,
               solveId: null,
+              submissionId: null,
               reviewed: false,
             });
             continue;
           }
 
-          // 해당 제출의 채점 기록 조회
+          // AI 점수는 submission의 score 사용
+          const aiScore = sub.score;
+
+          // 교수 점수 조회
+          let profScore = null;
           try {
             const scores = await grading_api.get_submission_scores(sub.submission_id);
-
-            // AI 점수: graded_by === null
-            const aiScoreRecord = scores.find((s) => s.graded_by === null);
-            
-            // 교수 점수: graded_by !== null (가장 최근 것)
             const profScoreRecords = scores.filter((s) => s.graded_by !== null);
             const profScoreRecord =
               profScoreRecords.length > 0
@@ -169,25 +177,19 @@ export default function GradingListPage() {
                       new Date(a.created_at).getTime()
                   )[0]
                 : null;
-
-            problemScores.push({
-              aiScore: aiScoreRecord?.score ?? null,
-              profScore: profScoreRecord?.score ?? null,
-              maxPoints,
-              solveId: sub.submission_id,
-              reviewed: sub.reviewed,
-            });
+            profScore = profScoreRecord?.score ?? null;
           } catch (err) {
-            console.error(`solve_id ${sub.submission_id} 점수 조회 실패`, err);
-            // 에러 시 기본 점수만 표시
-            problemScores.push({
-              aiScore: null,
-              profScore: sub.score,
-              maxPoints,
-              solveId: sub.submission_id,
-              reviewed: sub.reviewed,
-            });
+            console.error(`submission_id ${sub.submission_id} 점수 조회 실패`, err);
           }
+
+          problemScores.push({
+            aiScore,
+            profScore,
+            maxPoints,
+            solveId: (sub as any).solve_id ?? sub.submission_id,
+            submissionId: sub.submission_id,
+            reviewed: sub.reviewed,
+          });
         }
 
         rows.push({
@@ -226,6 +228,76 @@ export default function GradingListPage() {
     router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`);
   };
 
+  // 좌우 스크롤 - 최대 6개씩 보이도록 제한
+  const totalProblems = problemRefs.length;
+  const visibleCount = Math.min(MAX_VISIBLE, totalProblems);
+  const endIdx = Math.min(totalProblems, startIdx + visibleCount);
+  const visibleProblems = problemRefs.slice(startIdx, endIdx);
+  
+  const canLeft = startIdx > 0;
+  const canRight = endIdx < totalProblems;
+
+  const goLeft = () => {
+    if (canLeft) {
+      setStartIdx(Math.max(0, startIdx - 1));
+    }
+  };
+
+  const goRight = () => {
+    if (canRight) {
+      setStartIdx(Math.min(totalProblems - visibleCount, startIdx + 1));
+    }
+  };
+
+  // 교수 점수 저장
+  const handleSaveScore = async () => {
+    if (!editingCell) return;
+
+    const student = students.find((s) => s.studentId === editingCell.studentId);
+    if (!student) return;
+
+    const problemData = student.problemScores[editingCell.problemIdx];
+    if (!problemData || !problemData.solveId) return;
+
+    try {
+      await fetchWithAuth(
+        `/api/proxy/solves/grading/${problemData.solveId}/score`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            score: editScore,
+            graded_by: userName ?? null,
+            reviewed: true,
+            prof_feedback: "",
+          }),
+        }
+      );
+
+      // 로컬 상태 업데이트
+      setStudents((prev) =>
+        prev.map((s) => {
+          if (s.studentId === editingCell.studentId) {
+            const newScores = [...s.problemScores];
+            newScores[editingCell.problemIdx] = {
+              ...newScores[editingCell.problemIdx],
+              profScore: editScore,
+            };
+            return { ...s, problemScores: newScores };
+          }
+          return s;
+        })
+      );
+
+      setEditingCell(null);
+      alert("점수가 저장되었습니다.");
+    } catch (err) {
+      console.error("점수 저장 실패", err);
+      alert("점수 저장에 실패했습니다.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -234,12 +306,53 @@ export default function GradingListPage() {
     );
   }
 
+  // 문제가 6개를 초과하는 경우에만 스크롤 버튼 표시
+  const showScrollButtons = totalProblems > MAX_VISIBLE;
+
   return (
     <div className="pb-10 px-4">
       {/* 헤더 */}
-      <div className="flex items-center mb-6">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
+        
+        {/* 좌우 스크롤 버튼 - 6개 초과 시에만 표시 */}
+        {showScrollButtons && (
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border shadow-sm">
+            <button
+              onClick={goLeft}
+              disabled={!canLeft}
+              className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+                canLeft
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              ← 이전
+            </button>
+            <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
+              {startIdx + 1}-{endIdx} / {totalProblems}
+            </span>
+            <button
+              onClick={goRight}
+              disabled={!canRight}
+              className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+                canRight
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              다음 →
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* 안내 메시지 */}
+      {showScrollButtons && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          💡 문제가 {totalProblems}개 있습니다. 위의 버튼으로 나머지 문제를 확인하세요. (현재 {startIdx + 1}-{endIdx}번 문제 표시 중)
+        </div>
+      )}
 
       {/* 테이블 */}
       <div className="overflow-x-auto border-2 border-blue-600 rounded-lg shadow-lg">
@@ -250,14 +363,14 @@ export default function GradingListPage() {
               <th className="border-r-2 border-blue-600 px-6 py-4 text-left font-bold text-gray-700 min-w-[200px]">
                 이름 학번
               </th>
-              {problemRefs.map((prob, idx) => (
+              {visibleProblems.map((prob, idx) => (
                 <th
                   key={prob.problem_id}
                   className="border-r-2 border-blue-600 px-4 py-4 text-center min-w-[140px]"
                 >
                   <div className="flex flex-col items-center space-y-2">
                     <div className="text-sm font-bold text-gray-800">
-                      문제{idx + 1}
+                      문제{startIdx + idx + 1}
                     </div>
                     <div className="text-xs text-gray-600 font-medium max-w-[120px] truncate" title={prob.title}>
                       {prob.title}
@@ -284,29 +397,32 @@ export default function GradingListPage() {
           {/* 바디 */}
           <tbody>
             {students.map((stu, stuIdx) => {
-              // 전체 상태 계산
-              const allScores = stu.problemScores.map((data) => {
+              // 전체 상태 계산 (보이는 문제들만)
+              const visibleScores = stu.problemScores.slice(startIdx, endIdx);
+              const allCorrect = visibleScores.every((data) => {
                 const finalScore = data.profScore ?? data.aiScore ?? null;
-                if (finalScore === null) return "pending";
-                return finalScore >= data.maxPoints ? "correct" : "wrong";
+                return finalScore !== null && finalScore >= data.maxPoints;
               });
-
-              const allCorrect = allScores.every((s) => s === "correct");
-              const anyWrong = allScores.some((s) => s === "wrong");
+              const anyWrong = visibleScores.some((data) => {
+                const finalScore = data.profScore ?? data.aiScore ?? null;
+                return finalScore !== null && finalScore < data.maxPoints;
+              });
               
               return (
                 <tr
                   key={stu.studentId}
-                  onClick={() => selectStudent(stu.studentId)}
                   className={`
                     border-t-2 border-blue-600 
-                    hover:bg-blue-50 cursor-pointer 
+                    hover:bg-blue-50
                     transition-all duration-200
                     ${stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   `}
                 >
                   {/* 학생 이름/학번 */}
-                  <td className="border-r-2 border-blue-600 px-6 py-4">
+                  <td 
+                    className="border-r-2 border-blue-600 px-6 py-4 cursor-pointer"
+                    onClick={() => selectStudent(stu.studentId)}
+                  >
                     <div className="flex flex-col">
                       <span className="text-base font-medium text-gray-800">
                         {stu.studentName}
@@ -318,44 +434,59 @@ export default function GradingListPage() {
                   </td>
 
                   {/* 각 문제별 점수 */}
-                  {stu.problemScores.map((data, idx) => (
-                    <td
-                      key={`${stu.studentId}-${idx}`}
-                      className="border-r-2 border-blue-600 px-4 py-4"
-                    >
-                      <div className="flex items-center justify-center space-x-6">
-                        {/* AI 점수 */}
-                        <div className="flex flex-col items-center min-w-[40px]">
-                          <span
-                            className={`text-base font-bold ${
-                              data.aiScore === null
-                                ? "text-gray-300"
-                                : data.aiScore >= data.maxPoints
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {data.aiScore ?? "-"}
-                          </span>
-                        </div>
+                  {visibleScores.map((data, localIdx) => {
+                    const globalIdx = startIdx + localIdx;
+                    return (
+                      <td
+                        key={`${stu.studentId}-${globalIdx}`}
+                        className="border-r-2 border-blue-600 px-4 py-4"
+                      >
+                        <div className="flex items-center justify-center space-x-6">
+                          {/* AI 점수 */}
+                          <div className="flex flex-col items-center min-w-[40px]">
+                            <span
+                              className={`text-base font-bold ${
+                                data.aiScore === null
+                                  ? "text-gray-300"
+                                  : data.aiScore >= data.maxPoints
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {data.aiScore ?? "-"}
+                            </span>
+                          </div>
 
-                        {/* 교수 점수 */}
-                        <div className="flex flex-col items-center min-w-[40px]">
-                          <span
-                            className={`text-base font-bold ${
-                              data.profScore === null
-                                ? "text-gray-300"
-                                : data.profScore >= data.maxPoints
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
+                          {/* 교수 점수 (클릭하여 수정) */}
+                          <div 
+                            className="flex flex-col items-center min-w-[40px] cursor-pointer hover:bg-blue-100 rounded px-2 py-1 transition-colors"
+                            onClick={() => {
+                              if (data.solveId) {
+                                setEditingCell({
+                                  studentId: stu.studentId,
+                                  problemIdx: globalIdx,
+                                });
+                                setEditScore(data.profScore ?? 1);
+                              }
+                            }}
+                            title="클릭하여 점수 입력"
                           >
-                            {data.profScore ?? "-"}
-                          </span>
+                            <span
+                              className={`text-base font-bold ${
+                                data.profScore === null
+                                  ? "text-gray-300"
+                                  : data.profScore >= data.maxPoints
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {data.profScore ?? "-"}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                  ))}
+                      </td>
+                    );
+                  })}
 
                   {/* 상태 표시 */}
                   <td className="px-4 py-4">
@@ -397,6 +528,47 @@ export default function GradingListPage() {
       {students.length === 0 && !loading && (
         <div className="text-center py-16">
           <div className="text-gray-400 text-lg">제출한 학생이 없습니다.</div>
+        </div>
+      )}
+
+      {/* 점수 수정 모달 */}
+      {editingCell && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
+            <h3 className="text-lg font-bold mb-4">교수 점수 입력</h3>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-600 mb-2">
+                점수 (1-10점)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={editScore}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val)) {
+                    setEditScore(Math.max(1, Math.min(10, val)));
+                  }
+                }}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveScore}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                저장
+              </button>
+              <button
+                onClick={() => setEditingCell(null)}
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+              >
+                취소
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
