@@ -84,6 +84,19 @@ export default function GradingListPage() {
       );
       console.log("✅ API에서 받아온 전체 제출 목록:", submissions);
       console.log("📊 총 제출 건수:", submissions.length);
+      
+      // 🔍 API 응답 상세 확인
+      if (submissions.length > 0) {
+        console.log("🔎 첫 번째 제출 데이터 상세:");
+        console.log("  - submission_id:", submissions[0].submission_id);
+        console.log("  - user_id:", submissions[0].user_id);
+        console.log("  - problem_id:", submissions[0].problem_id);
+        console.log("  - score:", submissions[0].score);
+        console.log("  - reviewed:", submissions[0].reviewed);
+        console.log("  - created_at:", submissions[0].created_at);
+        console.log("  - updated_at:", submissions[0].updated_at);
+        console.log("  - 전체 객체:", JSON.stringify(submissions[0], null, 2));
+      }
 
       // 2. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
@@ -104,6 +117,7 @@ export default function GradingListPage() {
           grp?.owner?.user_id;
         console.log("👤 본인 ID:", meId);
         console.log("👑 그룹장 ID:", ownerId);
+        console.log("🔎 그룹 전체 데이터:", JSON.stringify(grp, null, 2));
       } catch (err) {
         console.warn("⚠️ 그룹장/본인 정보 조회 실패:", err);
       }
@@ -117,6 +131,14 @@ export default function GradingListPage() {
       console.log("🔍 학생별 그룹화 시작...");
       for (const sub of submissions) {
         const userId = String(sub.user_id);
+        
+        console.log(`\n📝 제출 처리 중:`, {
+          user_id: userId,
+          본인ID: String(meId ?? ""),
+          그룹장ID: String(ownerId ?? ""),
+          본인과일치: userId === String(meId ?? ""),
+          그룹장과일치: userId === String(ownerId ?? ""),
+        });
         
         // 그룹장과 본인 제외
         if (userId === String(ownerId ?? "") || userId === String(meId ?? "")) {
