@@ -78,12 +78,23 @@ export default function GradingListPage() {
       console.log("📋 그룹 ID:", groupId, "시험 ID:", examId);
 
       // 1. 전체 제출 목록 조회
+      console.log("🔍 API 호출 정보:");
+      console.log("  - 그룹 ID:", Number(groupId));
+      console.log("  - 시험 ID:", Number(examId));
+      console.log("  - 호출 URL:", `/api/proxy/solves/groups/${Number(groupId)}/workbooks/${Number(examId)}/submissions`);
+      
       const submissions = await grading_api.get_all_submissions(
         Number(groupId),
         Number(examId)
       );
       console.log("✅ API에서 받아온 전체 제출 목록:", submissions);
       console.log("📊 총 제출 건수:", submissions.length);
+      
+      // 🔍 모든 제출 데이터의 user_id 확인
+      const allUserIds = submissions.map(s => String(s.user_id));
+      const uniqueUserIds = Array.from(new Set(allUserIds));
+      console.log("👥 제출한 모든 user_id 목록:", uniqueUserIds);
+      console.log("👥 고유 사용자 수:", uniqueUserIds.length);
       
       // 🔍 API 응답 상세 확인
       if (submissions.length > 0) {
@@ -96,6 +107,10 @@ export default function GradingListPage() {
         console.log("  - created_at:", submissions[0].created_at);
         console.log("  - updated_at:", submissions[0].updated_at);
         console.log("  - 전체 객체:", JSON.stringify(submissions[0], null, 2));
+        
+        if (submissions.length > 1) {
+          console.log("🔎 두 번째 제출 데이터:", JSON.stringify(submissions[1], null, 2));
+        }
       }
 
       // 2. 그룹장과 본인 제외를 위한 ID 조회
@@ -109,6 +124,7 @@ export default function GradingListPage() {
           ]);
         meId = me?.user_id;
         ownerId =
+          grp?.group_owner ??
           grp?.owner_id ??
           grp?.group_owner_id ??
           grp?.owner_user_id ??
