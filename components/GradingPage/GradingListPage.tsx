@@ -156,11 +156,16 @@ export default function GradingListPage() {
           그룹장과일치: userId === String(ownerId ?? ""),
         });
         
-        // 그룹장과 본인 제외
+        // 🔧 임시: 그룹장 제외 로직 비활성화 (테스트용)
+        // TODO: 실제 학생 제출이 있으면 주석 해제
+        /*
         if (userId === String(ownerId ?? "") || userId === String(meId ?? "")) {
           console.log(`⏭️ 제외: ${userId} - 그룹장 또는 본인`);
           continue;
         }
+        */
+        
+        console.log(`✅ 포함: ${userId} - 제출 처리`);
 
         // user_name이 없으므로 user_id를 표시명으로 사용
         const userName = userId;
