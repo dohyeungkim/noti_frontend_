@@ -1500,88 +1500,60 @@ export const grading_api = {
 	 * @param student_id
 	 * @returns
 	 */
-	async get_all_submissions(group_id: number, workbook_id: number, student_id?: string): Promise<SubmissionSummary[]> {
-		// MOCK 환경일 때: gradingDummy (GradingStudent[]) -> SubmissionSummary[]
-		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
-			const subs: SubmissionSummary[] = []
-			gradingDummy.forEach((stu, stuIdx) => {
-				// problemScores -> 문제 별 점수 배열 (UI로 치면 oxoox 형태)
-				stu.problemScores.forEach((score, problemId) => {
-					subs.push({
-						submission_id: stuIdx * 100 + problemId,
-						user_id: stu.studentId,
-						user_name: stu.studentName,
-						problem_id: problemId,
-						score: score,
-						reviewed: stu.problemStatus[problemId],
-						created_at: stu.submittedAt,
-						updated_at: stu.submittedAt,
-					})
-				})
-			})
-			return subs
-		}
+async get_all_submissions(group_id: number, workbook_id: number, student_id?: string): Promise<SubmissionSummary[]> {
+	const base = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
+	const url = student_id 
+		? `${base}?user_id=${encodeURIComponent(student_id)}` 
+		: base
 
-		// 실제 API 호출
-		const params = new URLSearchParams({
-			group_id: String(group_id),
-			workbook_id: String(workbook_id),
-		})
-		if (student_id) params.set("user_id", student_id)
+	const res = await fetchWithAuth(url, {
+		method: "GET",
+		credentials: "include",
+	})
+	if (!res.ok) throw new Error("제출 목록 가져오기 실패")
+	return res.json()
+},
 
-		// /api/proxy/submissions/${group_id}/${workbook_id}
-		const base = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
-		const url =
-  			student_id ? `${base}?user_id=${encodeURIComponent(student_id)}` : base
+async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
+	const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}/scores`, {
+		method: "GET",
+		credentials: "include",
+	})
+	if (!res.ok) throw new Error("채점 기록 조회 실패")
+	return res.json()
+},
 
-		const res = await fetchWithAuth(url, {
-  			method: "GET",
-  			credentials: "include",
-		})
-		if (!res.ok) throw new Error("제출 목록 가져오기 실패")
-		return res.json()
-	},
-
-	async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
-		if (process.env.NEXT_PUBLIC_USE_MOCK === "true") {
-			return mockSubmissionScores.filter((s) => s.solve_id === solve_id)
-		}
-		const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}/scores`)
-		if (!res.ok) throw new Error("채점 기록 조회 실패")
-		return res.json()
-	},
-
-	async post_submission_score(
-  		solve_id: number,
-  		score: number,
-  		opts?: { graded_by?: string; reviewed?: boolean }
-	) {
-  	const payload = {
-    	score,
-    	graded_by: opts?.graded_by ?? null, // 필요 시 userId/username 중 백엔드 스키마에 맞춰 넣기
-    	reviewed: opts?.reviewed ?? true,   // 채점 저장과 동시에 검토완료로 표시할 거면 true
-  	};
-
-  	const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
-    	method: "POST",
-    	credentials: "include",
-    	headers: { "Content-Type": "application/json" },
-    	body: JSON.stringify(payload),
-  	});
-
-  	let body: any = {};
-  	try { body = await res.json(); } catch {}
-
-  	if (!res.ok) {
-    	// ✅ detail 배열을 사람이 보게 가공
-    	const msg = Array.isArray(body?.detail)
-      	? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
-      	: body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패";
-    	throw new Error(msg);
-  	}
-  	return body;
+async post_submission_score(
+	solve_id: number,
+	score: number,
+	opts?: { graded_by?: string; reviewed?: boolean }
+) {
+	const payload = {
+		score,
+		graded_by: opts?.graded_by ?? null,
+		reviewed: opts?.reviewed ?? true,
 	}
-,
+
+	const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
+		method: "POST",
+		credentials: "include",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	})
+
+	let body: any = {}
+	try { 
+		body = await res.json() 
+	} catch {}
+
+	if (!res.ok) {
+		const msg = Array.isArray(body?.detail)
+			? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
+			: body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패"
+		throw new Error(msg)
+	}
+	return body
+  }
 }
 // ====================== user(profile) 관련 타입/API ===========================
 export interface UserProfile {

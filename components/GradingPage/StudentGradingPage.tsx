@@ -1,560 +1,496 @@
-"use client";
-/**
- * 학생 제출물 채점 리스트 (테이블 형식)
- * - AI 점수와 교수 점수를 각각 표시
- * - 문제 제목 표시
- * - 학생 이름과 학번 표시
- * - 좌우 스크롤 버튼으로 문제 이동
- * - 교수 점수 1~10점 채점 기능
- */
+"use client"
+// 교수자가 피드백 쓸 수 있어야됨!!
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/stores/auth";
-import { group_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
-import type { SubmissionSummary, ProblemRef } from "@/lib/api";
-import { fetchWithAuth } from "@/lib/fetchWithAuth";
+import { useEffect, useState, useCallback, useMemo } from "react"
+import dynamic from "next/dynamic"
+import { useParams, useRouter } from "next/navigation"
+import { useAuth } from "@/stores/auth"
+import {
+  group_api,
+  grading_api, // 유지 (기타 함수 사용 가능성 대비)
+  ai_feedback_api,
+  code_log_api,
+  problem_ref_api,
+  type SubmissionSummary,
+} from "@/lib/api"
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import { feedbackDummy } from "@/data/examModeFeedbackDummy"
+import { motion } from "framer-motion"
+import { fetchWithAuth } from "@/lib/fetchWithAuth" // ✅ 최소 추가: 직접 POST에 사용
 
-interface ProblemScoreData {
-  aiScore: number | null;
-  profScore: number | null;
-  maxPoints: number;
-  solveId: number | null;
-  submissionId: number | null;
-  reviewed: boolean;
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
+
+interface Submission {
+  submissionId: number        // 백엔드의 submission_id
+  solveId: number             // ★ 백엔드의 solve_id (없으면 submission_id로 폴백)
+  problemId: number
+  answerType: string
+  answer: string
+  score: number
 }
 
-interface GradingStudentSummary {
-  studentId: string;
-  studentName: string;
-  studentNo?: string | number;
-  problemScores: ProblemScoreData[];
-}
+export default function StudentGradingPage() {
+  const { groupId, examId, studentId } = useParams() as {
+    groupId: string
+    examId: string
+    studentId: string
+  }
+  const router = useRouter()
+  const { userName } = useAuth()
 
-export default function GradingListPage() {
-  const router = useRouter();
-  const { userName } = useAuth();
-  const { groupId, examId } = useParams<{ groupId: string; examId: string }>();
+  const [groupOwner, setGroupOwner] = useState<string | null>(null)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [studentName, setStudentName] = useState<string>("")
+  const [currentIdx, setCurrentIdx] = useState(0)
 
-  const [students, setStudents] = useState<GradingStudentSummary[]>([]);
-  const [problemRefs, setProblemRefs] = useState<ProblemRef[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 최신 코드 로그 캐시: solve_id → { code, timestamp }
+  const [latestLogCache, setLatestLogCache] = useState<Record<number, { code: string; timestamp: string }>>({})
 
-  // 좌우 스크롤 상태
-  const [startIdx, setStartIdx] = useState(0);
-  const [visibleCount, setVisibleCount] = useState(6); // 한 번에 보이는 문제 수
+  // 문제별 배점(points) 맵: problemId → points
+  const [pointsByProblem, setPointsByProblem] = useState<Record<number, number>>({})
 
-  // 점수 수정 모달 상태
-  const [editingCell, setEditingCell] = useState<{
-    studentId: string;
-    problemIdx: number;
-  } | null>(null);
-  const [editScore, setEditScore] = useState<number>(1);
-
-  // 문제 목록 조회
-  const fetchProblemRefs = useCallback(async () => {
-    try {
-      const refs = await problem_ref_api.problem_ref_get(
-        Number(groupId),
-        Number(examId)
-      );
-      refs.sort((a, b) => a.problem_id - b.problem_id);
-      setProblemRefs(refs);
-    } catch (err) {
-      console.error("문제 참조 로드 실패", err);
-      setProblemRefs([]);
+  // 가장 마지막 코드 로그 뽑기
+  function pickLatestLog(data: any): { code: string; timestamp: string } | null {
+    // A) 평행 배열 형태
+    if (Array.isArray(data?.code_logs) && Array.isArray(data?.timestamp)) {
+      const zipped = data.code_logs
+        .map((code: string, i: number) => ({ code, timestamp: data.timestamp[i] }))
+        .filter((x: any) => !!x?.timestamp)
+        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      return zipped.at(-1) ?? null
     }
-  }, [groupId, examId]);
-
-  // 제출 목록 및 점수 조회
-  const fetchSubmissions = useCallback(async () => {
-    if (problemRefs.length === 0) return;
-
-    try {
-      setLoading(true);
-
-      // 1. 전체 제출 목록 조회
-      const submissions = await grading_api.get_all_submissions(
-        Number(groupId),
-        Number(examId)
-      );
-
-      console.log("전체 제출 목록:", submissions);
-
-      // 2. 그룹장과 본인 제외를 위한 ID 조회
-      let ownerId: string | number | undefined;
-      let meId: string | number | undefined;
-      try {
-        const [me, grp]: [{ user_id: string | number }, any] =
-          await Promise.all([
-            auth_api.getUser(),
-            group_api.group_get_by_id(Number(groupId)),
-          ]);
-        meId = me?.user_id;
-        ownerId =
-          grp?.owner_id ??
-          grp?.group_owner_id ??
-          grp?.owner_user_id ??
-          grp?.ownerId ??
-          grp?.leader_id ??
-          grp?.owner?.user_id;
-      } catch {
-        /* 소유자/내 계정 못 가져와도 계속 진행 */
-      }
-
-      // 3. 학생별로 그룹화 (그룹장/본인 제외)
-      const byUser = new Map<
-        string,
-        { name: string; studentNo?: string | number; items: SubmissionSummary[] }
-      >();
-
-      for (const sub of submissions) {
-        const userId = String(sub.user_id);
-        
-        // 그룹장과 본인 제외
-        if (userId === String(ownerId ?? "") || userId === String(meId ?? "")) {
-          continue;
-        }
-
-        const userName = sub.user_name;
-        
-        // 학번 추출
-        const studentNo =
-          (sub as any).student_no ??
-          (sub as any).student_number ??
-          (sub as any).studentCode ??
-          (sub as any).student_code ??
-          (sub as any).studentId ??
-          (sub as any).username;
-
-        if (!byUser.has(userId)) {
-          byUser.set(userId, { name: userName, studentNo, items: [] });
-        }
-        byUser.get(userId)!.items.push(sub);
-      }
-
-      console.log("학생별 그룹화:", Array.from(byUser.entries()));
-
-      // 4. 각 학생의 문제별 점수 조회
-      const rows: GradingStudentSummary[] = [];
-
-      for (const [userId, userInfo] of Array.from(byUser.entries())) {
-        const { name, studentNo, items } = userInfo;
-        
-        const subMap = new Map<number, SubmissionSummary>();
-        for (const item of items) {
-          subMap.set(item.problem_id, item);
-        }
-
-        const problemScores: ProblemScoreData[] = [];
-
-        for (const prob of problemRefs) {
-          const pid = prob.problem_id;
-          const sub = subMap.get(pid);
-          const maxPoints = prob.points ?? 10;
-
-          if (!sub) {
-            problemScores.push({
-              aiScore: null,
-              profScore: null,
-              maxPoints,
-              solveId: null,
-              submissionId: null,
-              reviewed: false,
-            });
-            continue;
-          }
-
-          // AI 점수는 submission의 score 사용
-          const aiScore = sub.score;
-
-          // 교수 점수 조회
-          let profScore = null;
-          try {
-            const scores = await grading_api.get_submission_scores(sub.submission_id);
-            const profScoreRecords = scores.filter((s) => s.graded_by !== null);
-            const profScoreRecord =
-              profScoreRecords.length > 0
-                ? profScoreRecords.sort(
-                    (a, b) =>
-                      new Date(b.created_at).getTime() -
-                      new Date(a.created_at).getTime()
-                  )[0]
-                : null;
-            profScore = profScoreRecord?.score ?? null;
-          } catch (err) {
-            console.error(`submission_id ${sub.submission_id} 점수 조회 실패`, err);
-          }
-
-          problemScores.push({
-            aiScore,
-            profScore,
-            maxPoints,
-            solveId: (sub as any).solve_id ?? sub.submission_id,
-            submissionId: sub.submission_id,
-            reviewed: sub.reviewed,
-          });
-        }
-
-        rows.push({
-          studentId: userId,
-          studentName: name,
-          studentNo,
-          problemScores,
-        });
-      }
-
-      // 이름 순으로 정렬
-      rows.sort((a, b) =>
-        a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
-      );
-
-      setStudents(rows);
-    } catch (err) {
-      console.error("제출 목록 로드 실패", err);
-      setStudents([]);
-    } finally {
-      setLoading(false);
+    // B) 객체 배열 형태
+    if (Array.isArray(data) && data.length) {
+      const arr = data
+        .filter((x) => typeof x?.timestamp === "string" && typeof x?.code === "string")
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      return arr.at(-1) ?? null
     }
-  }, [groupId, examId, problemRefs]);
-
-  useEffect(() => {
-    fetchProblemRefs();
-  }, [fetchProblemRefs]);
-
-  useEffect(() => {
-    if (problemRefs.length > 0) {
-      fetchSubmissions();
-    }
-  }, [fetchSubmissions, problemRefs.length]);
-
-  const selectStudent = (studentId: string) => {
-    router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`);
-  };
-
-  // 좌우 스크롤
-  const endIdx = Math.min(problemRefs.length, startIdx + visibleCount);
-  const visibleProblems = problemRefs.slice(startIdx, endIdx);
-  
-  const canLeft = startIdx > 0;
-  const canRight = endIdx < problemRefs.length;
-
-  const goLeft = () => {
-    if (canLeft) setStartIdx(Math.max(0, startIdx - 1));
-  };
-
-  const goRight = () => {
-    if (canRight) setStartIdx(Math.min(problemRefs.length - visibleCount, startIdx + 1));
-  };
-
-  // 교수 점수 저장
-  const handleSaveScore = async () => {
-    if (!editingCell) return;
-
-    const student = students.find((s) => s.studentId === editingCell.studentId);
-    if (!student) return;
-
-    const problemData = student.problemScores[editingCell.problemIdx];
-    if (!problemData || !problemData.solveId) return;
-
-    try {
-      await fetchWithAuth(
-        `/api/proxy/solves/grading/${problemData.solveId}/score`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            score: editScore,
-            graded_by: userName ?? null,
-            reviewed: true,
-            prof_feedback: "",
-          }),
-        }
-      );
-
-      // 로컬 상태 업데이트
-      setStudents((prev) =>
-        prev.map((s) => {
-          if (s.studentId === editingCell.studentId) {
-            const newScores = [...s.problemScores];
-            newScores[editingCell.problemIdx] = {
-              ...newScores[editingCell.problemIdx],
-              profScore: editScore,
-            };
-            return { ...s, problemScores: newScores };
-          }
-          return s;
-        })
-      );
-
-      setEditingCell(null);
-    } catch (err) {
-      console.error("점수 저장 실패", err);
-      alert("점수 저장에 실패했습니다.");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">로딩 중...</div>
-      </div>
-    );
+    return null
   }
 
+  // 제출 목록 로드
+  const fetchSubmissions = useCallback(async () => {
+    try {
+      const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
+        Number(groupId),
+        Number(examId),
+        studentId
+      )
+
+      // solve_id가 응답에 있으면 사용, 없으면 submission_id로 폴백
+      const grouped: Submission[] = allSubs.map((s: any) => ({
+        submissionId: s.submission_id,
+        solveId: typeof s.solve_id === "number" ? s.solve_id : s.submission_id,
+        problemId: s.problem_id,
+        answerType: "code",   // 필요 시 백엔드 값으로 대체
+        answer: "",           // 최신 코드 로그를 표시하므로 기본값은 빈 문자열
+        score: s.score ?? 0,
+      }))
+
+      setSubmissions(grouped)
+      setStudentName(allSubs[0]?.user_name || "")
+    } catch (err) {
+      console.error("학생 제출물 불러오기 실패", err)
+    }
+  }, [groupId, examId, studentId])
+
+  // 문제지 배점 로드
+  const fetchProblemPoints = useCallback(async () => {
+    try {
+      const list = await problem_ref_api.problem_ref_get(Number(groupId), Number(examId))
+      const map: Record<number, number> = {}
+      for (const item of list as any[]) {
+        if (item?.problem_id != null && typeof item?.points === "number") {
+          map[item.problem_id] = item.points
+        }
+      }
+      setPointsByProblem(map)
+    } catch (e) {
+      console.error("배점(points) 불러오기 실패:", e)
+      setPointsByProblem({})
+    }
+  }, [groupId, examId])
+
+  // 최초 로딩: 그룹장 확인 + 제출/배점 로드
+  useEffect(() => {
+    group_api
+      .my_group_get()
+      .then((data) => {
+        const grp = data.find((g: any) => g.group_id === Number(groupId))
+        setGroupOwner(grp?.group_owner ?? null)
+      })
+      .catch(console.error)
+
+    fetchSubmissions()
+    fetchProblemPoints()
+  }, [groupId, fetchSubmissions, fetchProblemPoints])
+
+  const isGroupOwner = userName === groupOwner
+  const lastIdx = submissions.length - 1
+  const current = submissions[currentIdx]
+
+  // 현재 제출의 코드 로그 로드 & 캐시
+  useEffect(() => {
+    const solveId = current?.solveId
+    if (!solveId) return
+    if (latestLogCache[solveId]) return
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const data = await code_log_api.code_logs_get_by_solve_id(solveId)
+        if (cancelled) return
+        const last = pickLatestLog(data)
+        setLatestLogCache((prev) => ({
+          ...prev,
+          [solveId]: last ?? { code: "", timestamp: "" },
+        }))
+      } catch (e) {
+        console.error("코드 로그 로드 실패:", e)
+        setLatestLogCache((prev) => ({ ...prev, [solveId]: { code: "", timestamp: "" } }))
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.solveId]) // 캐시 객체를 deps에 넣지 않아 불필요 재호출 방지
+
+  // 네비게이션
+  const goPrev = useCallback(() => {
+    if (currentIdx > 0) setCurrentIdx((i) => i - 1)
+    else router.back()
+  }, [currentIdx, router])
+
+  const goNext = useCallback(() => {
+    if (currentIdx < lastIdx) setCurrentIdx((i) => i + 1)
+  }, [currentIdx, lastIdx])
+
+  // 총점(배점)
+  const maxScore = useMemo(() => {
+    if (!current) return 0
+    return pointsByProblem[current.problemId] ?? 0
+  }, [pointsByProblem, current])
+
+  // 점수 수정
+  const [isEditingScore, setIsEditingScore] = useState(false)
+  const [editedScore, setEditedScore] = useState(current?.score ?? 0)
+
+  useEffect(() => {
+    if (current) setEditedScore(current.score)
+  }, [current])
+
+  const [isEditingProfessor, setIsEditingProfessor] = useState(false)
+  const { professorFeedback: dummyProfessorFeedback } = feedbackDummy
+  const [newProfessorFeedback, setNewProfessorFeedback] = useState(dummyProfessorFeedback)
+
+  const saveEditedScore = useCallback(async () => {
+    if (!current) return
+    try {
+      // 점수 값 방어적 처리 (NaN 및 범위)
+      const num = Number(editedScore)
+      const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+
+      // ✅ 최소 변경: 필요한 필드 함께 전송 (graded_by, reviewed, prof_feedback)
+      const res = await fetchWithAuth(`/api/proxy/solves/grading/${current.solveId ?? current.submissionId}/score`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          score: clamped,
+          graded_by: userName ?? null,                 // 백엔드 기대값에 따라 userId/username 중 선택
+          reviewed: true,                              // 저장=검토완료라면 true
+          prof_feedback: (newProfessorFeedback ?? "").toString(), // ✅ 필수 필드
+        }),
+      })
+
+      let payload: any = {}
+      try { payload = await res.json() } catch {}
+
+      if (!res.ok) {
+        const msg = Array.isArray(payload?.detail)
+          ? payload.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
+          : payload?.detail?.msg || payload?.detail || payload?.message || "채점 저장 실패"
+        throw new Error(msg)
+      }
+
+      setSubmissions((prev) => {
+        const next = [...prev]
+        next[currentIdx] = { ...next[currentIdx], score: clamped }
+        return next
+      })
+      setIsEditingScore(false)
+    } catch (e: any) {
+      alert(e?.message || "점수 저장 실패")
+    }
+  }, [currentIdx, current, editedScore, maxScore, userName, newProfessorFeedback]) // ✅ 의존성 보강
+
+  const handleCompleteReview = useCallback(() => {
+    if (!isGroupOwner) {
+      alert("접근 권한이 없습니다")
+      return
+    }
+    router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
+  }, [groupId, examId, isGroupOwner, router])
+
+  // 피드백 탭 상태
+  const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
+
+  // AI 피드백 상태
+  const [aiFeedback, setAiFeedback] = useState<string>("")
+  const [isAILoaded, setIsAILoaded] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  const fetchAiFeedback = useCallback(async (solveId: number) => {
+    setIsAILoaded(false)
+    setAiError(null)
+    try {
+      const data: any = await ai_feedback_api.get_ai_feedback(solveId)
+      const text =
+        (typeof data === "string" && data) ||
+        data?.feedback ||
+        data?.ai_feedback ||
+        data?.message ||
+        (Array.isArray(data) ? data.join("\n") : JSON.stringify(data, null, 2))
+      setAiFeedback(text || "내용이 없습니다.")
+    } catch (e: any) {
+      setAiFeedback("")
+      setAiError(e?.message || "AI 피드백 로드 실패")
+    } finally {
+      setIsAILoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!current?.solveId) return
+    let cancelled = false
+    ;(async () => {
+      await fetchAiFeedback(current.solveId)
+      if (cancelled) return
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [current?.solveId, fetchAiFeedback])
+
+  // 조건 검사: 총점 기준
+  const passedCondition = (current?.score ?? 0) >= (maxScore ?? 0)
+
+  if (submissions.length === 0) {
+    return (
+      <motion.div
+        className="w-full min-h-screen flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <p>제출물을 불러오는 중...</p>
+      </motion.div>
+    )
+  }
+
+  // 에디터 표시용 파생값
+  const latestLog = current?.solveId ? latestLogCache[current.solveId] : undefined
+  const effectiveAnswerType = current?.answerType === "code" ? "code" : "text"
+  const effectiveLanguage = effectiveAnswerType === "code" ? "javascript" : "plaintext"
+  const fallbackAnswer =
+    typeof current?.answer === "string" ? current.answer : JSON.stringify(current?.answer ?? "", null, 2)
+  const effectiveAnswer = latestLog?.code ?? fallbackAnswer
+
   return (
-    <div className="pb-10 px-4">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
-        
-        {/* 좌우 스크롤 버튼 */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goLeft}
-            disabled={!canLeft}
-            className={`px-3 py-1 rounded border ${
-              canLeft
-                ? "bg-white hover:bg-gray-100 text-gray-700"
-                : "bg-gray-100 text-gray-300 cursor-not-allowed"
-            }`}
-          >
-            ← 이전
+    <div className="flex min-h-screen bg-gray-50">
+      <div className="flex-1 max-w-7xl mx-auto p-6 space-y-6">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between">
+          <button onClick={goPrev} className="flex items-center gap-1 text-gray-600 hover:text-gray-800">
+            {currentIdx > 0 ? <ChevronLeft /> : <ArrowLeft />} {currentIdx > 0 ? "이전 문제" : "목록으로"}
           </button>
-          <span className="text-sm text-gray-600">
-            {startIdx + 1}-{endIdx} / {problemRefs.length}
-          </span>
+          <h2 className="text-lg font-bold">
+            {studentName} – 문제 {current?.problemId} ({current?.score}점)
+          </h2>
           <button
-            onClick={goRight}
-            disabled={!canRight}
-            className={`px-3 py-1 rounded border ${
-              canRight
-                ? "bg-white hover:bg-gray-100 text-gray-700"
-                : "bg-gray-100 text-gray-300 cursor-not-allowed"
-            }`}
+            onClick={goNext}
+            disabled={currentIdx === lastIdx}
+            className="flex items-center gap-1 text-gray-600 hover:text-gray-800 disabled:opacity-40"
           >
-            다음 →
+            다음 문제 <ChevronRight />
           </button>
         </div>
-      </div>
 
-      {/* 테이블 */}
-      <div className="overflow-x-auto border-2 border-blue-600 rounded-lg shadow-lg">
-        <table className="w-full border-collapse bg-white">
-          {/* 헤더 */}
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="border-r-2 border-blue-600 px-6 py-4 text-left font-bold text-gray-700 min-w-[200px]">
-                이름 학번
-              </th>
-              {visibleProblems.map((prob, idx) => (
-                <th
-                  key={prob.problem_id}
-                  className="border-r-2 border-blue-600 px-4 py-4 text-center min-w-[140px]"
-                >
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="text-sm font-bold text-gray-800">
-                      문제{startIdx + idx + 1}
-                    </div>
-                    <div className="text-xs text-gray-600 font-medium max-w-[120px] truncate" title={prob.title}>
-                      {prob.title}
-                    </div>
-                    <div className="flex items-center justify-center space-x-4 w-full">
-                      <div className="text-xs text-gray-500">AI점수</div>
-                      <div className="text-xs text-gray-500">교수점수</div>
-                    </div>
-                    <div className="text-xs text-gray-500">(배점: {prob.points}점)</div>
+        {/* 본문: 좌 코드/답안, 우 피드백 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 좌: 답안 뷰어 */}
+          <motion.div
+            className="bg-white rounded-lg shadow border p-4 h-[600px]"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            key={`${current?.solveId ?? "no-solve"}-${effectiveAnswerType}`}
+          >
+            {effectiveAnswer == null ? (
+              <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                답안 불러오는 중…
+              </div>
+            ) : (
+              <MonacoEditor
+                height="100%"
+                language={effectiveLanguage}
+                value={effectiveAnswer}
+                options={{ readOnly: true, minimap: { enabled: false }, wordWrap: "on", fontSize: 14 }}
+              />
+            )}
+          </motion.div>
+
+          {/* 우: 피드백 */}
+          <motion.div
+            className="bg-white rounded-lg shadow border flex flex-col"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <div className="flex border-b items-center">
+              <button
+                className={`flex-1 py-2 text-center ${activeFeedbackTab === "ai" ? "bg-blue-50 text-blue-600" : "text-gray-600"}`}
+                onClick={() => setActiveFeedbackTab("ai")}
+              >
+                AI 피드백
+              </button>
+              <button
+                className={`flex-1 py-2 text-center ${activeFeedbackTab === "professor" ? "bg-blue-50 text-blue-600" : "text-gray-600"}`}
+                onClick={() => setActiveFeedbackTab("professor")}
+              >
+                교수 피드백
+              </button>
+            </div>
+
+            <div className="p-4 flex-1 overflow-y-auto">
+              {activeFeedbackTab === "ai" ? (
+                !isAILoaded ? (
+                  <p className="text-sm text-gray-500">AI 피드백 로딩 중...</p>
+                ) : aiError ? (
+                  <div className="text-sm text-red-600 space-y-2">
+                    <div>{aiError}</div>
+                    <button
+                      className="underline"
+                      onClick={() => current?.solveId && fetchAiFeedback(current.solveId)}
+                    >
+                      다시 시도
+                    </button>
                   </div>
-                </th>
-              ))}
-              <th className="px-4 py-4 text-center font-bold min-w-[120px]">
-                <div className="flex flex-col items-center space-y-1">
-                  <div className="w-12 h-12 rounded-full border-2 border-gray-400 flex items-center justify-center">
-                    <span className="text-2xl">⚡</span>
+                ) : (
+                  <div className="prose prose-sm">
+                    <ReactMarkdown>{aiFeedback}</ReactMarkdown>
                   </div>
-                  <div className="text-xs text-gray-600">상태</div>
-                </div>
-              </th>
-            </tr>
-          </thead>
-
-          {/* 바디 */}
-          <tbody>
-            {students.map((stu, stuIdx) => {
-              // 전체 상태 계산 (보이는 문제들만)
-              const visibleScores = stu.problemScores.slice(startIdx, endIdx);
-              const allCorrect = visibleScores.every((data) => {
-                const finalScore = data.profScore ?? data.aiScore ?? null;
-                return finalScore !== null && finalScore >= data.maxPoints;
-              });
-              const anyWrong = visibleScores.some((data) => {
-                const finalScore = data.profScore ?? data.aiScore ?? null;
-                return finalScore !== null && finalScore < data.maxPoints;
-              });
-              
-              return (
-                <tr
-                  key={stu.studentId}
-                  className={`
-                    border-t-2 border-blue-600 
-                    hover:bg-blue-50
-                    transition-all duration-200
-                    ${stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                  `}
-                >
-                  {/* 학생 이름/학번 */}
-                  <td 
-                    className="border-r-2 border-blue-600 px-6 py-4 cursor-pointer"
-                    onClick={() => selectStudent(stu.studentId)}
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-base font-medium text-gray-800">
-                        {stu.studentName}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {stu.studentNo ?? "-"}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* 각 문제별 점수 */}
-                  {visibleScores.map((data, localIdx) => {
-                    const globalIdx = startIdx + localIdx;
-                    return (
-                      <td
-                        key={`${stu.studentId}-${globalIdx}`}
-                        className="border-r-2 border-blue-600 px-4 py-4"
-                      >
-                        <div className="flex items-center justify-center space-x-6">
-                          {/* AI 점수 */}
-                          <div className="flex flex-col items-center min-w-[40px]">
-                            <span
-                              className={`text-base font-bold ${
-                                data.aiScore === null
-                                  ? "text-gray-300"
-                                  : data.aiScore >= data.maxPoints
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {data.aiScore ?? "-"}
-                            </span>
-                          </div>
-
-                          {/* 교수 점수 (클릭하여 수정) */}
-                          <div 
-                            className="flex flex-col items-center min-w-[40px] cursor-pointer hover:bg-blue-50 rounded px-2 py-1"
-                            onClick={() => {
-                              if (data.solveId) {
-                                setEditingCell({
-                                  studentId: stu.studentId,
-                                  problemIdx: globalIdx,
-                                });
-                                setEditScore(data.profScore ?? 1);
-                              }
-                            }}
-                          >
-                            <span
-                              className={`text-base font-bold ${
-                                data.profScore === null
-                                  ? "text-gray-300"
-                                  : data.profScore >= data.maxPoints
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {data.profScore ?? "-"}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                    );
-                  })}
-
-                  {/* 상태 표시 */}
-                  <td className="px-4 py-4">
-                    <div className="flex flex-col items-center space-y-1">
-                      <div
-                        className={`
-                          w-12 h-12 rounded-full border-2 
-                          flex items-center justify-center
-                          transition-all duration-200
-                          ${
-                            allCorrect
-                              ? "bg-green-500 border-green-600"
-                              : anyWrong
-                              ? "bg-yellow-500 border-yellow-600"
-                              : "bg-gray-300 border-gray-400"
-                          }
-                        `}
-                      >
-                        {allCorrect && (
-                          <span className="text-white text-xl font-bold">✓</span>
-                        )}
-                        {anyWrong && !allCorrect && (
-                          <span className="text-white text-xl font-bold">!</span>
-                        )}
+                )
+              ) : (
+                <div className="prose prose-sm">
+                  {!isEditingProfessor ? (
+                    <>
+                      <ReactMarkdown>{newProfessorFeedback}</ReactMarkdown>
+                      <div className="mt-3">
+                        <button
+                          onClick={() => setIsEditingProfessor(true)}
+                          className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                        >
+                          ✏️ 편집
+                        </button>
                       </div>
-                      <span className="text-xs text-gray-600 font-medium">
-                        {allCorrect ? "완료" : anyWrong ? "검토중" : "대기"}
-                      </span>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <textarea
+                        className="w-full h-56 border rounded p-2 text-sm"
+                        value={newProfessorFeedback}
+                        onChange={(e) => setNewProfessorFeedback(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setIsEditingProfessor(false)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        >
+                          저장
+                        </button>
+                        <button
+                          onClick={() => setIsEditingProfessor(false)}
+                          className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                        >
+                          취소
+                        </button>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 학생이 없을 때 */}
-      {students.length === 0 && !loading && (
-        <div className="text-center py-16">
-          <div className="text-gray-400 text-lg">제출한 학생이 없습니다.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
-      )}
 
-      {/* 점수 수정 모달 */}
-      {editingCell && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
-            <h3 className="text-lg font-bold mb-4">교수 점수 입력</h3>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-2">
-                점수 (1-10점)
-              </label>
+        {/* 조건 검사 결과 */}
+        <div className="bg-white rounded-lg border shadow-sm p-4">
+          <h3 className="font-semibold text-gray-800 mb-2">조건 검사 결과</h3>
+          <div
+            className={`p-3 rounded-lg border-l-4 ${
+              passedCondition ? "bg-green-50 border-green-500" : "bg-red-50 border-red-500"
+            }`}
+          >
+            <div className="flex justify-between mb-1">
+              <span className="font-medium">요구사항</span>
+              <span className="text-sm font-medium">{passedCondition ? "✔️ 통과" : "❌ 미통과"}</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {passedCondition ? "조건을 충족했습니다." : "다시 확인해주세요."}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              총점: <b>{maxScore}</b>점
+            </p>
+          </div>
+        </div>
+
+        {/* 점수/검토 */}
+        <div className="mt-4 flex items-center justify-end space-x-4">
+          {!isEditingScore ? (
+            <div className="flex items-baseline space-x-2">
+              <span className="text-gray-600">총점:</span>
+              <span className="font-semibold">{maxScore}점</span>
+              <span className="text-gray-600">받은 점수:</span>
+              <span className="font-semibold">{current?.score}점</span>
+              <button onClick={() => setIsEditingScore(true)} className="text-blue-500 hover:text-blue-700">
+                ✏️ 점수 수정
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
               <input
                 type="number"
-                min={1}
-                max={10}
-                value={editScore}
+                min={0}
+                max={maxScore || undefined}
+                value={editedScore}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (!isNaN(val)) {
-                    setEditScore(Math.max(1, Math.min(10, val)));
-                  }
+                  const v = Number(e.target.value)
+                  const clamped = Number.isNaN(v) ? 0 : Math.max(0, Math.min(v, maxScore || v))
+                  setEditedScore(clamped)
                 }}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-16 p-1 border rounded"
               />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveScore}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
+              <button onClick={saveEditedScore} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
                 저장
               </button>
               <button
-                onClick={() => setEditingCell(null)}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                onClick={() => {
+                  setEditedScore(current?.score ?? 0)
+                  setIsEditingScore(false)
+                }}
+                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
               >
                 취소
               </button>
             </div>
-          </div>
+          )}
+          <button onClick={handleCompleteReview} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            검토 완료
+          </button>
         </div>
-      )}
+      </div>
     </div>
-  );
+  )
 }
