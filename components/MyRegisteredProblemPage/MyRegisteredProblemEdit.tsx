@@ -271,82 +271,117 @@ export default function EditRegisteredProblem() {
 
 	// 저장 핸들러
 	const handleSave = async () => {
-		try {
-			// 모든 타입에 공통으로 들어가는 최소 필드만 정의
-			const base = {
-				title,
-				description,
-				difficulty,
-				tags,
-			}
+    try {
+        // 모든 타입에 공통으로 들어가는 최소 필드만 정의
+        const base = {
+            title,
+            description,
+            difficulty,
+            tags,
+        }
 
-			let payload: ProblemUpdateRequest
-			switch (problemType) {
-				case "코딩":
-				case "디버깅": {
-          const base_code =
-          referenceCodes.find((c) => c.is_main)?.code ??
-          referenceCodes[0]?.code ??
-          "";
-					payload = {
-						...base,
-						problem_condition: conditions, // 코딩·디버깅만
-						rating_mode: ratingMode as "hard" | "space" | "regex" | "none",
-						problemType,
-						reference_codes: referenceCodes,
-						base_code: base_code,
-						test_cases: testCases,
-					}
-					break;
-				}
+        let payload: ProblemUpdateRequest
+        switch (problemType) {
+            case "코딩":
+            case "디버깅": {
+                const base_code =
+                    referenceCodes.find((c) => c.is_main)?.code ??
+                    referenceCodes[0]?.code ??
+                    "";
+                
+                // ===== 코딩/디버깅 rating_mode 로깅 =====
+                console.log("🔧 [코딩/디버깅] 현재 ratingMode 값:", ratingMode)
+                console.log("🔧 [코딩/디버깅] ratingMode 타입:", typeof ratingMode)
+                
+                payload = {
+                    ...base,
+                    problem_condition: conditions,
+                    rating_mode: ratingMode as "hard" | "space" | "regex" | "none",
+                    problemType,
+                    reference_codes: referenceCodes,
+                    base_code: base_code,
+                    test_cases: testCases,
+                }
+                
+                console.log("📤 [코딩/디버깅] payload.rating_mode:", payload.rating_mode)
+                break;
+            }
 
-				case "객관식":
-					payload = {
-						...base,
-						problemType: "객관식",
-						options,
-						correct_answers: answerIndexes,
-					}
-					break
+            case "객관식":
+                // ===== 객관식 rating_mode 로깅 =====
+                console.log("🔧 [객관식] 현재 ratingMode 값:", ratingMode)
+                
+                payload = {
+                    ...base,
+                    problemType: "객관식",
+                    options,
+                    correct_answers: answerIndexes,
+                }
+                
+                console.log("📤 [객관식] payload (rating_mode 없음):", payload)
+                break
 
-				case "단답형": {
+            case "단답형": {
+                const allowedShortAnswerModes = ["exact", "partial", "soft", "none"];
+                const safeRatingMode = allowedShortAnswerModes.includes(ratingMode) ? ratingMode : "exact";
+                const safeAnswerTexts = Array.isArray(answerTexts) && answerTexts.every(v => typeof v === "string" && v.trim() !== "") ? answerTexts : [""];
+                
+                // ===== 단답형 rating_mode 로깅 =====
+                console.log("🔧 [단답형] 현재 ratingMode 값:", ratingMode)
+                console.log("🔧 [단답형] safeRatingMode 값:", safeRatingMode)
+                console.log("🔧 [단답형] allowedShortAnswerModes:", allowedShortAnswerModes)
+                console.log("🔧 [단답형] includes 체크:", allowedShortAnswerModes.includes(ratingMode))
+                
+                payload = {
+                    ...base,
+                    problemType: "단답형",
+                    rating_mode: safeRatingMode as "exact" | "partial" | "soft" | "none",
+                    answer_texts: safeAnswerTexts,
+                    grading_criteria: gradingCriteria,
+                }
+                
+                console.log("📤 [단답형] payload.rating_mode:", payload.rating_mode)
+                break
+            }
 
-				const allowedShortAnswerModes = ["exact", "partial", "soft", "none"];
-        const safeRatingMode = allowedShortAnswerModes.includes(ratingMode) ? ratingMode : "exact";
-				const safeAnswerTexts = Array.isArray(answerTexts) && answerTexts.every(v => typeof v === "string" && v.trim() !== "") ? answerTexts : [""];
-					payload = {
-						...base,
-						problemType: "단답형",
-						rating_mode: safeRatingMode as "exact" | "partial" | "soft" | "none",
-						answer_texts: safeAnswerTexts,
-						grading_criteria: gradingCriteria,
-					}
-					break
-				}
+            case "주관식": {
+                const allowedSubjectiveModes = ["active", "deactive"];
+                const safeRatingMode = allowedSubjectiveModes.includes(ratingMode) ? ratingMode : "active";
+                
+                // ===== 주관식 rating_mode 로깅 =====
+                console.log("🔧 [주관식] 현재 ratingMode 값:", ratingMode)
+                console.log("🔧 [주관식] safeRatingMode 값:", safeRatingMode)
+                console.log("🔧 [주관식] allowedSubjectiveModes:", allowedSubjectiveModes)
+                console.log("🔧 [주관식] includes 체크:", allowedSubjectiveModes.includes(ratingMode))
+                
+                payload = {
+                    ...base,
+                    problemType: "주관식",
+                    rating_mode: safeRatingMode as "active" | "deactive",
+                    grading_criteria: subjectiveCriteria,
+                    answer_texts: subjectiveAnswer,
+                }
+                
+                console.log("📤 [주관식] payload.rating_mode:", payload.rating_mode)
+                break
+            }
+        }
 
-				case "주관식": {
-					const allowedSubjectiveModes = ["active", "deactive"];
-					const safeRatingMode = allowedSubjectiveModes.includes(ratingMode) ? ratingMode : "active";
-					payload = {
-						...base,
-						problemType: "주관식",
-						rating_mode: safeRatingMode as "active" | "deactive",
-						grading_criteria: subjectiveCriteria,
-						answer_texts: subjectiveAnswer,
-					}
-					break
-			}
-		}
-
-			await problem_api.problem_update(problemId, payload)
-			alert("✅ 문제가 성공적으로 수정되었습니다.")
-			router.push("/registered-problems")
-			console.log("description:", payload.description)
-		} catch (err) {
-			console.error(err)
-			alert("❌ 문제 수정 중 오류가 발생했습니다.")
-		}
-	}
+        // ===== 최종 payload 로깅 =====
+        console.log("📦 최종 payload 전체:", payload)
+        console.log("🚀 problem_update 호출 전 - problemId:", problemId)
+        
+        await problem_api.problem_update(problemId, payload)
+        
+        console.log("✅ problem_update 성공!")
+        alert("✅ 문제가 성공적으로 수정되었습니다.")
+        router.push("/registered-problems")
+        console.log("description:", payload.description)
+    } catch (err) {
+        console.error("❌ problem_update 실패:", err)
+        alert("❌ 문제 수정 중 오류가 발생했습니다.")
+    }
+}
 
 	return (
 		<div>
