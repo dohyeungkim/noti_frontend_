@@ -1467,12 +1467,10 @@ export const solve_api = {
  * 그리고 모든 문제에서 채점 완료 버튼 누르기 전까지는 검토 완료 버튼 막아놨다가 모든 문제 다 채점 완료 버튼이 눌리면
  * 그때 검토 완료 버튼 풀리고 그냥 별 기능 없이 이전 학생 리스트 페이지로 넘어가게
  */
-import { gradingDummy, GradingStudent } from "@/data/gradingDummy"
 
 export interface SubmissionSummary {
 	submission_id: number
 	user_id: string
-	user_name: string
 	problem_id: number
 	score: number | null // AI 또는 교수 최종 점수
 	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
@@ -1482,13 +1480,12 @@ export interface SubmissionSummary {
 
 type SubmissionScore = {
 	submission_score_id: number // 점수 레코드 PK
-	solve_id: number
+	submission_id: number
 	score: number
+	prof_feedback: string
 	graded_by: string | null // null=AI, string=교수ID
 	created_at: string // 채점 시각
 }
-
-let mockSubmissionScores: SubmissionScore[] = []
 
 export const grading_api = {
 	/**
@@ -1526,12 +1523,11 @@ async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
 async post_submission_score(
 	solve_id: number,
 	score: number,
-	opts?: { graded_by?: string; reviewed?: boolean }
+	prof_feedback: string,
 ) {
 	const payload = {
 		score,
-		graded_by: opts?.graded_by ?? null,
-		reviewed: opts?.reviewed ?? true,
+		prof_feedback
 	}
 
 	const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
