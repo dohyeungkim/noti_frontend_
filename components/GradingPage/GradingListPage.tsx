@@ -8,18 +8,16 @@
  * - 교수 점수 1~10점 채점 기능
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/stores/auth";
 import { group_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
 import type { SubmissionSummary, ProblemRef } from "@/lib/api";
-import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 interface ProblemScoreData {
   aiScore: number | null;
   profScore: number | null;
   maxPoints: number;
-  solveId: number | null;
   submissionId: number | null;
   reviewed: boolean;
 }
@@ -50,6 +48,7 @@ export default function GradingListPage() {
     problemIdx: number;
   } | null>(null);
   const [editScore, setEditScore] = useState<number>(1);
+  const [editFeedback, setEditFeedback] = useState<string>("");
 
   // 문제 목록 조회
   const fetchProblemRefs = useCallback(async () => {
@@ -121,11 +120,12 @@ export default function GradingListPage() {
         
         // 그룹장과 본인 제외
         if (userId === String(ownerId ?? "") || userId === String(meId ?? "")) {
-          console.log(`⏭️ 제외: ${sub.user_name} (ID: ${userId}) - 그룹장 또는 본인`);
+          console.log(`⏭️ 제외: ${userId} - 그룹장 또는 본인`);
           continue;
         }
 
-        const userName = sub.user_name;
+        // user_name이 없으므로 user_id를 표시명으로 사용
+        const userName = userId;
         
         // 학번 추출
         const studentNo =
@@ -179,7 +179,6 @@ export default function GradingListPage() {
               aiScore: null,
               profScore: null,
               maxPoints,
-              solveId: null,
               submissionId: null,
               reviewed: false,
             });
@@ -190,20 +189,21 @@ export default function GradingListPage() {
           const aiScore = sub.score;
           console.log(`  🤖 문제 ${pid} AI 점수: ${aiScore}`);
 
-          // 교수 점수 조회
+          // 교수 점수 조회 - submission_id로 조회
           let profScore = null;
           try {
             const scores = await grading_api.get_submission_scores(sub.submission_id);
+            // graded_by가 null이 아닌 것만 교수 점수로 간주
             const profScoreRecords = scores.filter((s) => s.graded_by !== null);
-            const profScoreRecord =
-              profScoreRecords.length > 0
-                ? profScoreRecords.sort(
-                    (a, b) =>
-                      new Date(b.created_at).getTime() -
-                      new Date(a.created_at).getTime()
-                  )[0]
-                : null;
-            profScore = profScoreRecord?.score ?? null;
+            if (profScoreRecords.length > 0) {
+              // 가장 최근 교수 점수 사용
+              const latestProfScore = profScoreRecords.sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime()
+              )[0];
+              profScore = latestProfScore.score;
+            }
             console.log(`  👨‍🏫 문제 ${pid} 교수 점수: ${profScore ?? "미채점"}`);
           } catch (err) {
             console.error(`  ❌ 문제 ${pid} 점수 조회 실패:`, err);
@@ -213,7 +213,6 @@ export default function GradingListPage() {
             aiScore,
             profScore,
             maxPoints,
-            solveId: (sub as any).solve_id ?? sub.submission_id,
             submissionId: sub.submission_id,
             reviewed: sub.reviewed,
           });
@@ -294,22 +293,13 @@ export default function GradingListPage() {
     if (!student) return;
 
     const problemData = student.problemScores[editingCell.problemIdx];
-    if (!problemData || !problemData.solveId) return;
+    if (!problemData || !problemData.submissionId) return;
 
     try {
-      await fetchWithAuth(
-        `/api/proxy/solves/grading/${problemData.solveId}/score`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            score: editScore,
-            graded_by: userName ?? null,
-            reviewed: true,
-            prof_feedback: "",
-          }),
-        }
+      await grading_api.post_submission_score(
+        problemData.submissionId,
+        editScore,
+        editFeedback
       );
 
       // 로컬 상태 업데이트
@@ -328,10 +318,11 @@ export default function GradingListPage() {
       );
 
       setEditingCell(null);
+      setEditFeedback("");
       alert("점수가 저장되었습니다.");
     } catch (err) {
       console.error("점수 저장 실패", err);
-      alert("점수 저장에 실패했습니다.");
+      alert(`점수 저장에 실패했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
     }
   };
 
@@ -498,12 +489,13 @@ export default function GradingListPage() {
                           <div 
                             className="flex flex-col items-center min-w-[40px] cursor-pointer hover:bg-blue-100 rounded px-2 py-1 transition-colors"
                             onClick={() => {
-                              if (data.solveId) {
+                              if (data.submissionId) {
                                 setEditingCell({
                                   studentId: stu.studentId,
                                   problemIdx: globalIdx,
                                 });
                                 setEditScore(data.profScore ?? 1);
+                                setEditFeedback("");
                               }
                             }}
                             title="클릭하여 점수 입력"
@@ -591,6 +583,17 @@ export default function GradingListPage() {
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-600 mb-2">
+                피드백 (선택사항)
+              </label>
+              <textarea
+                value={editFeedback}
+                onChange={(e) => setEditFeedback(e.target.value)}
+                placeholder="학생에게 전달할 피드백을 입력하세요"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
+              />
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={handleSaveScore}
@@ -599,7 +602,10 @@ export default function GradingListPage() {
                 저장
               </button>
               <button
-                onClick={() => setEditingCell(null)}
+                onClick={() => {
+                  setEditingCell(null);
+                  setEditFeedback("");
+                }}
                 className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
               >
                 취소
