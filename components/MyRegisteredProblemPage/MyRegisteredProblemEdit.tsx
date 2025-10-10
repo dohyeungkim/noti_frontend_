@@ -163,6 +163,26 @@ export default function EditRegisteredProblem() {
 		;(async () => {
 			try {
 				const data: ProblemDetail = await problem_api.problem_get_by_id(Number(problemId))
+        console.log("📥 백엔드에서 받은 전체 데이터:", data)
+            console.log("📊 rating_mode 값 (snake_case):", (data as any).rating_mode)
+            console.log("📊 ratingMode 값 (camelCase):", (data as any).ratingMode)
+            console.log("🔍 rating_mode 타입:", typeof (data as any).rating_mode)
+            console.log("🔍 ratingMode 타입:", typeof (data as any).ratingMode)
+            // ================================
+            
+            setInitialData(data)
+            setProblemType(data.problemType)
+
+            if ((data as any).rating_mode !== undefined) {
+                console.log("✅ rating_mode (snake_case) 사용:", (data as any).rating_mode)
+                setRatingMode((data as any).rating_mode)
+            } else if ((data as any).ratingMode !== undefined) {
+                console.log("✅ ratingMode (camelCase) 사용:", (data as any).ratingMode)
+                setRatingMode((data as any).ratingMode)
+            } else {
+                console.log("⚠️ rating_mode 값이 없음 - 기본값 유지")
+            }
+
 				setInitialData(data)
 				setProblemType(data.problemType)
 
