@@ -183,12 +183,6 @@ export default function EditRegisteredProblem() {
                 console.log("⚠️ rating_mode 값이 없음 - 기본값 유지")
             }
 
-				setInitialData(data)
-				setProblemType(data.problemType)
-
-        if ((data as any).rating_mode !== undefined) setRatingMode((data as any).rating_mode);
-        else if ((data as any).ratingMode !== undefined) setRatingMode((data as any).ratingMode);
-
         if ((data as any).base_code && Array.isArray((data as any).base_code) && (data as any).base_code.length > 0) {
         setReferenceCodes(
           (data as any).base_code.map((bc: any, idx: number) => ({
@@ -544,7 +538,7 @@ export default function EditRegisteredProblem() {
 												<option value="none">None</option>
 											</>
 										)}
-									</select>
+									</select> 
 								</div>
 
 								{/* 배점 설정 (텍스트 입력 방식으로 변경) */}
