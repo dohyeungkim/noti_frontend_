@@ -523,7 +523,7 @@ export default function EditRegisteredProblem() {
 										className="w-full px-3 py-1.5 border rounded-md text-sm"
 									>
 										{problemType === "객관식" ? (
-											<option value="None">None</option>
+											<option value="none">None</option>
 										) : problemType === "단답형" ? (
 											<>
 												<option value="exact">exact</option>
