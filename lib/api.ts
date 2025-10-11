@@ -1476,6 +1476,7 @@ export interface SubmissionSummary {
 	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
 	created_at: string
 	updated_at: string
+	passed : boolean
 }
 
 type SubmissionScore = {
@@ -1494,14 +1495,11 @@ export const grading_api = {
 	 * - .env 파일에 MOCK 모드면 gradingDummy -> SubmissionSummary[] 로 변환
 	 * @param group_id
 	 * @param workbook_id
-	 * @param student_id
 	 * @returns
 	 */
-async get_all_submissions(group_id: number, workbook_id: number, student_id?: string): Promise<SubmissionSummary[]> {
-	const base = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
-	const url = student_id 
-		? `${base}?user_id=${encodeURIComponent(student_id)}` 
-		: base
+async get_all_submissions(group_id: number, workbook_id: number): Promise<SubmissionSummary[]> {
+	const url = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
+	
 
 	const res = await fetchWithAuth(url, {
 		method: "GET",
