@@ -119,11 +119,11 @@ export default function GradingListPage() {
       for (const sub of submissions) {
         const userId = String(sub.user_id);
         
-        // 🔧 그룹장 제외 (필요시 주석 해제)
-        // if (userId === String(ownerId ?? "") || userId === String(meId ?? "")) {
-        //   console.log(`⏭️ 제외: ${userId} - 그룹장 또는 본인`);
-        //   continue;
-        // }
+        // 그룹장 제외 (필요시 주석 해제)
+        if (userId === String(ownerId ?? "") || userId === String(meId ?? "")) {
+        console.log(`⏭️ 제외: ${userId} - 그룹장 또는 본인`);
+        continue;
+        }
 
         const userName = userId; // user_name이 없으므로 user_id 사용
         const studentNo =
