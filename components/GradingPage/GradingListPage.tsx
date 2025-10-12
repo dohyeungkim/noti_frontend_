@@ -9,7 +9,7 @@ import type { SubmissionSummary, ProblemRef } from "@/lib/api";
 interface SubmissionRecord {
   submissionId: number;
   aiScore: number | null;
-  profScore: number | null;
+  profScore: number | null; // 교수 점수는 별도 페이지에서 책정 예정
   submittedAt: string;
   reviewed: boolean;
 }
@@ -22,7 +22,7 @@ interface ProblemScoreData {
 interface GradingStudentSummary {
   studentId: string;
   studentName: string;
-  studentNo?: string | number;
+  studentNo: string;
   problemScores: ProblemScoreData[];
 }
 
@@ -42,15 +42,6 @@ export default function GradingListPage() {
   // 제출 기록 확장 상태
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
 
-  // 점수 수정 모달 상태
-  const [editingCell, setEditingCell] = useState<{
-    studentId: string;
-    problemIdx: number;
-    submissionId: number;
-  } | null>(null);
-  const [editScore, setEditScore] = useState<number>(1);
-  const [editFeedback, setEditFeedback] = useState<string>("");
-
   // 문제 목록 조회
   const fetchProblemRefs = useCallback(async () => {
     try {
@@ -66,206 +57,171 @@ export default function GradingListPage() {
     }
   }, [groupId, examId]);
 
-  // 제출 목록 및 점수 조회
+  // 제출 목록 조회
   const fetchSubmissions = useCallback(async () => {
-  if (problemRefs.length === 0) {
-    console.log("❌ 문제 목록이 비어있어 제출 목록을 불러올 수 없습니다.");
-    return;
-  }
+    if (problemRefs.length === 0) {
+      console.log("❌ 문제 목록이 비어있어 제출 목록을 불러올 수 없습니다.");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    console.log("🔄 제출 목록 로딩 시작...");
-
-    // 1. 전체 제출 목록 조회
-    const submissions = await grading_api.get_all_submissions(
-      Number(groupId),
-      Number(examId)
-    );
-    console.log("✅ 전체 제출 목록:", submissions);
-    console.log("📊 총 제출 건수:", submissions.length);
-
-    // 2. 그룹장과 본인 제외를 위한 ID 조회
-    let ownerId: string | number | undefined;
-    let meId: string | number | undefined;
     try {
-      const [me, grp]: [{ user_id: string | number }, any] =
-        await Promise.all([
-          auth_api.getUser(),
-          group_api.group_get_by_id(Number(groupId)),
-        ]);
-      meId = me?.user_id;
-      ownerId =
-        grp?.group_owner ??
-        grp?.owner_id ??
-        grp?.group_owner_id ??
-        grp?.owner_user_id ??
-        grp?.ownerId ??
-        grp?.leader_id ??
-        grp?.owner?.user_id;
-      console.log("👤 본인 ID:", meId);
-      console.log("👑 그룹장 ID:", ownerId);
-    } catch (err) {
-      console.warn("⚠️ 그룹장/본인 정보 조회 실패:", err);
-    }
+      setLoading(true);
+      console.log("🔄 제출 목록 로딩 시작...");
 
-    // 3. 학생별로 그룹화
-    const byUser = new Map<
-      string,
-      { name: string; studentNo?: string | number; items: SubmissionSummary[] }
-    >();
-
-    console.log("🔍 학생별 그룹화 시작...");
-    for (const sub of submissions) {
-      const userId = String(sub.user_id);
-      
-      // 그룹장 및 본인 제외
-      if (
-        (ownerId && userId === String(ownerId)) || 
-        (meId && userId === String(meId))
-      ) {
-        console.log(`⏭️ 제외: ${userId} - 그룹장 또는 본인`);
-        continue;
-      }
-
-      const userName = userId; // user_name이 없으므로 user_id 사용
-      const studentNo =
-        (sub as any).student_no ??
-        (sub as any).student_number ??
-        (sub as any).studentCode ??
-        (sub as any).student_code ??
-        (sub as any).studentId ??
-        (sub as any).username;
-
-      if (!byUser.has(userId)) {
-        console.log(`➕ 새 학생 추가: ${userName} (ID: ${userId})`);
-        byUser.set(userId, { name: userName, studentNo, items: [] });
-      }
-      byUser.get(userId)!.items.push(sub);
-    }
-
-    console.log("✅ 학생별 그룹화 완료");
-    console.log("👥 총 학생 수:", byUser.size);
-
-    // 🔧 제출 데이터를 problem_id 기준으로 매핑 생성
-    console.log("🗺️ 제출 데이터 매핑 생성 중...");
-    console.log("📋 문제 참조 목록:", problemRefs.map(p => `문제ID: ${p.problem_id}`).join(", "));
-
-    // 4. 각 학생의 문제별 점수 조회
-    const rows: GradingStudentSummary[] = [];
-
-    for (const [userId, userInfo] of Array.from(byUser.entries())) {
-      const { name, studentNo, items } = userInfo;
-      console.log(`\n👤 학생 처리 중: ${name} (ID: ${userId})`);
-
-      // 🔧 문제별로 모든 제출을 배열로 저장 (problem_id 기준)
-      const subMapByProblem = new Map<number, SubmissionSummary[]>();
-      
-      for (const item of items) {
-        if (!subMapByProblem.has(item.problem_id)) {
-          subMapByProblem.set(item.problem_id, []);
-        }
-        subMapByProblem.get(item.problem_id)!.push(item);
-      }
-
-      // 각 문제의 제출들을 시간순 정렬 (최신순)
-      for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
-        subs.sort((a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-      }
-
-      console.log(`  📝 제출 현황 (실제 problem_id):`,
-        Array.from(subMapByProblem.entries()).map(([pid, subs]) =>
-          `문제${pid}: ${subs.length}회`
-        ).join(", ")
+      // 1. 전체 제출 목록 조회
+      const submissions = await grading_api.get_all_submissions(
+        Number(groupId),
+        Number(examId)
       );
+      console.log("✅ 전체 제출 목록:", submissions);
+      console.log("📊 총 제출 건수:", submissions.length);
 
-      const problemScores: ProblemScoreData[] = [];
+      // 2. 그룹장과 본인 제외를 위한 ID 조회
+      let ownerId: string | number | undefined;
+      let meId: string | number | undefined;
+      try {
+        const [me, grp]: [{ user_id: string | number }, any] =
+          await Promise.all([
+            auth_api.getUser(),
+            group_api.group_get_by_id(Number(groupId)),
+          ]);
+        meId = me?.user_id;
+        ownerId =
+          grp?.group_owner ??
+          grp?.owner_id ??
+          grp?.group_owner_id ??
+          grp?.owner_user_id ??
+          grp?.ownerId ??
+          grp?.leader_id ??
+          grp?.owner?.user_id;
+        console.log("👤 본인 ID:", meId);
+        console.log("👑 그룹장 ID:", ownerId);
+      } catch (err) {
+        console.warn("⚠️ 그룹장/본인 정보 조회 실패:", err);
+      }
 
-      // 🔧 problemRefs의 순서대로 처리 (problem_id로 매칭)
-      for (const prob of problemRefs) {
-        const pid = prob.problem_id;
-        const subs = subMapByProblem.get(pid) || [];
-        const maxPoints = prob.points ?? 10;
+      // 3. 학생별로 그룹화
+      const byUser = new Map<
+        string,
+        { name: string; studentNo: string; items: SubmissionSummary[] }
+      >();
 
-        console.log(`  🔍 문제 ${pid} 처리 중... 제출 건수: ${subs.length}`);
-
-        if (subs.length === 0) {
-          console.log(`  ⚪ 문제 ${pid}: 미제출`);
-          problemScores.push({
-            maxPoints,
-            submissions: [],
-          });
+      console.log("🔍 학생별 그룹화 시작...");
+      for (const sub of submissions) {
+        const userId = String(sub.user_id);
+        
+        // 그룹장 및 본인 제외
+        if (
+          (ownerId && userId === String(ownerId)) || 
+          (meId && userId === String(meId))
+        ) {
+          console.log(`⏭️ 제외: ${userId} - 그룹장 또는 본인`);
           continue;
         }
 
-        // 모든 제출에 대해 교수 점수 조회
-        const submissionRecords: SubmissionRecord[] = [];
+        // user_name을 이름으로, user_id를 학번으로 사용
+        const userName = sub.user_name || "이름 없음";
+        const studentNo = sub.user_id;
 
-        for (const sub of subs) {
-          const aiScore = sub.score;
+        if (!byUser.has(userId)) {
+          console.log(`➕ 새 학생 추가: ${userName} (학번: ${studentNo})`);
+          byUser.set(userId, { name: userName, studentNo, items: [] });
+        }
+        byUser.get(userId)!.items.push(sub);
+      }
 
-          // 교수 점수 조회
-          let profScore = null;
-          try {
-            const scores = await grading_api.get_submission_scores(sub.submission_id);
-            const profScoreRecords = scores.filter((s) => s.graded_by !== null);
-            if (profScoreRecords.length > 0) {
-              const latestProfScore = profScoreRecords.sort(
-                (a, b) =>
-                  new Date(b.created_at).getTime() -
-                  new Date(a.created_at).getTime()
-              )[0];
-              profScore = latestProfScore.score;
-            }
-          } catch (err) {
-            console.error(`  ❌ 문제 ${pid} 제출 ${sub.submission_id} 점수 조회 실패:`, err);
+      console.log("✅ 학생별 그룹화 완료");
+      console.log("👥 총 학생 수:", byUser.size);
+
+      // 4. 각 학생의 문제별 점수 구조화
+      const rows: GradingStudentSummary[] = [];
+
+      for (const [userId, userInfo] of Array.from(byUser.entries())) {
+        const { name, studentNo, items } = userInfo;
+        console.log(`\n👤 학생 처리 중: ${name} (학번: ${studentNo})`);
+
+        // 문제별로 제출 그룹화 (problem_id 기준)
+        const subMapByProblem = new Map<number, SubmissionSummary[]>();
+        
+        for (const item of items) {
+          if (!subMapByProblem.has(item.problem_id)) {
+            subMapByProblem.set(item.problem_id, []);
+          }
+          subMapByProblem.get(item.problem_id)!.push(item);
+        }
+
+        // 각 문제의 제출들을 시간순 정렬 (최신순)
+        for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
+          subs.sort((a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          );
+        }
+
+        console.log(`  📝 제출 현황:`,
+          Array.from(subMapByProblem.entries()).map(([pid, subs]) =>
+            `문제${pid}: ${subs.length}회`
+          ).join(", ")
+        );
+
+        const problemScores: ProblemScoreData[] = [];
+
+        // problemRefs의 순서대로 처리
+        for (const prob of problemRefs) {
+          const pid = prob.problem_id;
+          const subs = subMapByProblem.get(pid) || [];
+          const maxPoints = prob.points ?? 10;
+
+          if (subs.length === 0) {
+            problemScores.push({
+              maxPoints,
+              submissions: [],
+            });
+            continue;
           }
 
-          submissionRecords.push({
+          // 제출 기록 생성
+          const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
             submissionId: sub.submission_id,
-            aiScore,
-            profScore,
+            aiScore: sub.score,
+            profScore: null, // 교수 점수는 별도 페이지에서 책정 예정
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
+          }));
+
+          console.log(`  ✅ 문제 ${pid}: 총 ${submissionRecords.length}개 제출 처리 완료`);
+
+          problemScores.push({
+            maxPoints,
+            submissions: submissionRecords,
           });
         }
 
-        console.log(`  ✅ 문제 ${pid}: 총 ${submissionRecords.length}개 제출 처리 완료`);
-
-        problemScores.push({
-          maxPoints,
-          submissions: submissionRecords,
+        rows.push({
+          studentId: userId,
+          studentName: name,
+          studentNo: studentNo,
+          problemScores,
         });
+        console.log(`  ✅ ${name} 처리 완료`);
       }
 
-      rows.push({
-        studentId: userId,
-        studentName: name,
-        studentNo,
-        problemScores,
-      });
-      console.log(`  ✅ ${name} 처리 완료`);
+      // 이름 순으로 정렬
+      rows.sort((a, b) =>
+        a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
+      );
+
+      console.log("\n🎉 최종 학생 목록 생성 완료!");
+      console.log("📊 최종 학생 수:", rows.length);
+
+      setStudents(rows);
+    } catch (err) {
+      console.error("❌ 제출 목록 로드 실패:", err);
+      setStudents([]);
+    } finally {
+      setLoading(false);
+      console.log("✅ 로딩 완료");
     }
-
-    // 이름 순으로 정렬
-    rows.sort((a, b) =>
-      a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
-    );
-
-    console.log("\n🎉 최종 학생 목록 생성 완료!");
-    console.log("📊 최종 학생 수:", rows.length);
-
-    setStudents(rows);
-  } catch (err) {
-    console.error("❌ 제출 목록 로드 실패:", err);
-    setStudents([]);
-  } finally {
-    setLoading(false);
-    console.log("✅ 로딩 완료");
-  }
-}, [groupId, examId, problemRefs]);
+  }, [groupId, examId, problemRefs]);
 
   useEffect(() => {
     fetchProblemRefs();
@@ -312,51 +268,6 @@ export default function GradingListPage() {
   const goRight = () => {
     if (canRight) {
       setStartIdx(Math.min(totalProblems - visibleCount, startIdx + 1));
-    }
-  };
-
-  // 교수 점수 저장
-  const handleSaveScore = async () => {
-    if (!editingCell) return;
-
-    try {
-      await grading_api.post_submission_score(
-        editingCell.submissionId,
-        editScore,
-        editFeedback
-      );
-
-      // 로컬 상태 업데이트
-      setStudents((prev) =>
-        prev.map((s) => {
-          if (s.studentId === editingCell.studentId) {
-            const newScores = [...s.problemScores];
-            const submissions = newScores[editingCell.problemIdx].submissions.map(
-              (sub) =>
-                sub.submissionId === editingCell.submissionId
-                  ? { ...sub, profScore: editScore }
-                  : sub
-            );
-            newScores[editingCell.problemIdx] = {
-              ...newScores[editingCell.problemIdx],
-              submissions,
-            };
-            return { ...s, problemScores: newScores };
-          }
-          return s;
-        })
-      );
-
-      setEditingCell(null);
-      setEditFeedback("");
-      alert("점수가 저장되었습니다.");
-    } catch (err) {
-      console.error("점수 저장 실패", err);
-      alert(
-        `점수 저장에 실패했습니다: ${
-          err instanceof Error ? err.message : "알 수 없는 오류"
-        }`
-      );
     }
   };
 
@@ -462,17 +373,17 @@ export default function GradingListPage() {
           <tbody>
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
+              
+              // AI 점수 기준으로 상태 판단
               const allCorrect = visibleScores.every((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                const finalScore = latestSub.profScore ?? latestSub.aiScore ?? null;
-                return finalScore !== null && finalScore >= data.maxPoints;
+                return latestSub.aiScore !== null && latestSub.aiScore >= data.maxPoints;
               });
               const anyWrong = visibleScores.some((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                const finalScore = latestSub.profScore ?? latestSub.aiScore ?? null;
-                return finalScore !== null && finalScore < data.maxPoints;
+                return latestSub.aiScore !== null && latestSub.aiScore < data.maxPoints;
               });
 
               return (
@@ -495,7 +406,7 @@ export default function GradingListPage() {
                         {stu.studentName}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {stu.studentNo ?? "-"}
+                        {stu.studentNo}
                       </span>
                     </div>
                   </td>
@@ -534,30 +445,10 @@ export default function GradingListPage() {
                                 </span>
                               </div>
 
-                              {/* 교수 점수 */}
-                              <div
-                                className="flex flex-col items-center min-w-[40px] cursor-pointer hover:bg-blue-100 rounded px-2 py-1 transition-colors"
-                                onClick={() => {
-                                  setEditingCell({
-                                    studentId: stu.studentId,
-                                    problemIdx: globalIdx,
-                                    submissionId: latestSubmission.submissionId,
-                                  });
-                                  setEditScore(latestSubmission.profScore ?? 1);
-                                  setEditFeedback("");
-                                }}
-                                title="클릭하여 점수 입력"
-                              >
-                                <span
-                                  className={`text-base font-bold ${
-                                    latestSubmission.profScore === null
-                                      ? "text-gray-300"
-                                      : latestSubmission.profScore >= data.maxPoints
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }`}
-                                >
-                                  {latestSubmission.profScore ?? "-"}
+                              {/* 교수 점수 (빈 공란) */}
+                              <div className="flex flex-col items-center min-w-[40px]">
+                                <span className="text-base font-bold text-gray-300">
+                                  -
                                 </span>
                               </div>
                             </div>
@@ -601,24 +492,8 @@ export default function GradingListPage() {
                                           >
                                             AI: {sub.aiScore ?? "-"}
                                           </span>
-                                          <span
-                                            className={`cursor-pointer hover:underline ${
-                                              sub.profScore && sub.profScore >= data.maxPoints
-                                                ? "text-green-600"
-                                                : "text-red-600"
-                                            }`}
-                                            onClick={() => {
-                                              setEditingCell({
-                                                studentId: stu.studentId,
-                                                problemIdx: globalIdx,
-                                                submissionId: sub.submissionId,
-                                              });
-                                              setEditScore(sub.profScore ?? 1);
-                                              setEditFeedback("");
-                                            }}
-                                            title="클릭하여 점수 입력"
-                                          >
-                                            교수: {sub.profScore ?? "-"}
+                                          <span className="text-gray-300">
+                                            교수: -
                                           </span>
                                         </div>
                                       </div>
@@ -673,59 +548,6 @@ export default function GradingListPage() {
       {students.length === 0 && !loading && (
         <div className="text-center py-16">
           <div className="text-gray-400 text-lg">제출한 학생이 없습니다.</div>
-        </div>
-      )}
-
-      {/* 점수 수정 모달 */}
-      {editingCell && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
-            <h3 className="text-lg font-bold mb-4">교수 점수 입력</h3>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-2">점수 (1-10점)</label>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={editScore}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (!isNaN(val)) {
-                    setEditScore(Math.max(1, Math.min(10, val)));
-                  }
-                }}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-2">
-                피드백 (선택사항)
-              </label>
-              <textarea
-                value={editFeedback}
-                onChange={(e) => setEditFeedback(e.target.value)}
-                placeholder="학생에게 전달할 피드백을 입력하세요"
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveScore}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                저장
-              </button>
-              <button
-                onClick={() => {
-                  setEditingCell(null);
-                  setEditFeedback("");
-                }}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-              >
-                취소
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

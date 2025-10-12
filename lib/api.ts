@@ -1471,6 +1471,7 @@ export const solve_api = {
 export interface SubmissionSummary {
 	submission_id: number
 	user_id: string
+	
 	problem_id: number
 	score: number | null // AI 또는 교수 최종 점수
 	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
