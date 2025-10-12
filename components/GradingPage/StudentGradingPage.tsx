@@ -26,8 +26,8 @@ interface Submission {
   problemType: string
   answerType: string
   answer: string
-  aiScore: number | null
-  profScore: number | null
+  aiScore: number | null  // AI 점수 (읽기 전용)
+  profScore: number | null  // 교수 점수 (편집 가능)
   profFeedback: string
   reviewed: boolean
   userName: string
@@ -103,6 +103,8 @@ export default function StudentGradingPage() {
               profScore = profScoreRecord.score
               profFeedback = profScoreRecord.prof_feedback || ""
               console.log(`✅ 교수 점수: ${profScore}, 피드백: ${profFeedback}`)
+            } else {
+              console.log(`⚠️ 제출물 ${s.submission_id}: 교수 점수 없음`)
             }
           } catch (err) {
             console.error(`❌ 교수 점수 조회 실패 (submission_id: ${s.submission_id}):`, err)
@@ -115,8 +117,8 @@ export default function StudentGradingPage() {
             problemType: s.problme_type || "code",
             answerType: s.problme_type || "code",
             answer: "",
-            aiScore: s.score,
-            profScore: profScore,
+            aiScore: s.score,  // AI 점수 (원본 그대로)
+            profScore: profScore,  // 교수 점수 (있으면 표시, 없으면 null)
             profFeedback: profFeedback,
             reviewed: s.reviewed,
             userName: s.user_name,
@@ -256,6 +258,7 @@ export default function StudentGradingPage() {
   // 현재 제출물이 바뀔 때 편집 상태 초기화
   useEffect(() => {
     if (current) {
+      // 교수 점수가 없으면 0으로 시작 (AI 점수를 복사하지 않음)
       setEditedProfScore(current.profScore ?? 0)
       setEditedProfFeedback(current.profFeedback || "")
       setIsEditingScore(false)
@@ -278,21 +281,22 @@ export default function StudentGradingPage() {
       console.log("💾 교수 점수 저장 중:", {
         submissionId: current.submissionId,
         score: clamped,
-        feedback: editedProfFeedback // 현재 피드백 값도 함께 전송
+        feedback: editedProfFeedback
       })
 
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
-        editedProfFeedback // 현재 피드백과 함께 저장
+        editedProfFeedback
       )
 
-      // 로컬 상태 업데이트
+      // 로컬 상태 업데이트 (AI 점수는 절대 변경하지 않음)
       setSubmissions((prev) => {
         const next = [...prev]
         next[currentIdx] = { 
           ...next[currentIdx], 
-          profScore: clamped,
+          profScore: clamped,  // 교수 점수만 업데이트
+          // aiScore는 그대로 유지
         }
         return next
       })
@@ -314,15 +318,18 @@ export default function StudentGradingPage() {
     }
 
     try {
+      // 교수 점수가 없으면 0으로 저장
+      const scoreToSave = editedProfScore || 0
+
       console.log("💾 교수 피드백 저장 중:", {
         submissionId: current.submissionId,
-        score: editedProfScore, // 현재 점수 값도 함께 전송
+        score: scoreToSave,
         feedback: editedProfFeedback
       })
 
       await grading_api.post_submission_score(
         current.submissionId,
-        editedProfScore, // 현재 점수와 함께 저장
+        scoreToSave,
         editedProfFeedback
       )
 
@@ -331,6 +338,7 @@ export default function StudentGradingPage() {
         const next = [...prev]
         next[currentIdx] = { 
           ...next[currentIdx], 
+          profScore: scoreToSave,
           profFeedback: editedProfFeedback,
         }
         return next
@@ -607,7 +615,7 @@ export default function StudentGradingPage() {
                 AI 점수: <b>{current?.aiScore ?? 0}</b>점
               </p>
               <p>
-                교수 점수: <b>{current?.profScore ?? "-"}</b>점
+                교수 점수: <b>{current?.profScore !== null ? current.profScore : "-"}</b>점
               </p>
               <p>
                 최종 점수: <b>{finalScore}</b>점 / 총점: <b>{maxScore}</b>점
@@ -628,7 +636,9 @@ export default function StudentGradingPage() {
                 <span className="font-semibold">{current?.aiScore ?? 0}점</span>
                 <span className="mx-2">|</span>
                 <span className="text-gray-600">교수 점수:</span>
-                <span className="font-semibold text-lg">{current?.profScore ?? "-"}점</span>
+                <span className="font-semibold text-lg">
+                  {current?.profScore !== null ? `${current.profScore}점` : "-"}
+                </span>
                 <span className="text-gray-400">/ {maxScore}점</span>
                 {isGroupOwner && (
                   <button onClick={() => setIsEditingScore(true)} className="text-blue-500 hover:text-blue-700 ml-2">
