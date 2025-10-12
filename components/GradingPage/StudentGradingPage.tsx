@@ -16,7 +16,6 @@ import {
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { motion } from "framer-motion"
-import { fetchWithAuth } from "@/lib/fetchWithAuth"
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
@@ -27,7 +26,8 @@ interface Submission {
   problemType: string
   answerType: string
   answer: string
-  score: number | null
+  aiScore: number | null  // AI 점수
+  profScore: number | null  // 교수 점수
   reviewed: boolean
   userName: string
   createdAt: string
@@ -85,20 +85,38 @@ export default function StudentGradingPage() {
       // 현재 학생의 제출물만 필터링
       const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
 
-      const mapped: Submission[] = studentSubs.map((s) => ({
-        submissionId: s.submission_id,
-        problemId: s.problem_id,
-        problemTitle: s.problem_title,
-        problemType: s.problme_type || "code", // 오타 수정 필요시 problem_type
-        answerType: s.problme_type || "code",
-        answer: "",
-        score: s.score,
-        reviewed: s.reviewed,
-        userName: s.user_name,
-        createdAt: s.created_at,
-        updatedAt: s.updated_at,
-        passed: s.passed,
-      }))
+      // 교수 점수 조회를 위한 병렬 처리
+      const mapped: Submission[] = await Promise.all(
+        studentSubs.map(async (s) => {
+          let profScore = null
+          try {
+            const scores = await grading_api.get_submission_scores(s.submission_id)
+            // 교수가 매긴 점수 찾기 (graded_by가 있는 것)
+            const profScoreRecord = scores.find((score: any) => score.graded_by != null)
+            if (profScoreRecord) {
+              profScore = profScoreRecord.score
+            }
+          } catch (err) {
+            console.error(`교수 점수 조회 실패 (submission_id: ${s.submission_id}):`, err)
+          }
+
+          return {
+            submissionId: s.submission_id,
+            problemId: s.problem_id,
+            problemTitle: s.problem_title,
+            problemType: s.problme_type || "code",
+            answerType: s.problme_type || "code",
+            answer: "",
+            aiScore: s.score,  // AI 점수
+            profScore: profScore,  // 교수 점수
+            reviewed: s.reviewed,
+            userName: s.user_name,
+            createdAt: s.created_at,
+            updatedAt: s.updated_at,
+            passed: s.passed,
+          }
+        })
+      )
 
       // problem_id 순으로 정렬
       mapped.sort((a, b) => a.problemId - b.problemId)
@@ -218,17 +236,39 @@ export default function StudentGradingPage() {
 
   // 점수 수정
   const [isEditingScore, setIsEditingScore] = useState(false)
-  const [editedScore, setEditedScore] = useState(current?.score ?? 0)
+  const [editedScore, setEditedScore] = useState(0)
 
   useEffect(() => {
-    if (current) setEditedScore(current.score ?? 0)
+    if (current) setEditedScore(current.profScore ?? 0)
   }, [current])
 
-  // 교수 피드백 수정
+  // 교수 피드백
+  const [professorFeedback, setProfessorFeedback] = useState("")
   const [isEditingProfessor, setIsEditingProfessor] = useState(false)
-  const [newProfessorFeedback, setNewProfessorFeedback] = useState("")
 
-  const saveEditedScore = useCallback(async () => {
+  // 교수 피드백 로드
+  useEffect(() => {
+    const loadProfFeedback = async () => {
+      if (!current?.submissionId) return
+      
+      try {
+        const scores = await grading_api.get_submission_scores(current.submissionId)
+        const profScoreRecord = scores.find((score: any) => score.graded_by != null)
+        if (profScoreRecord && profScoreRecord.prof_feedback) {
+          setProfessorFeedback(profScoreRecord.prof_feedback)
+        } else {
+          setProfessorFeedback("")
+        }
+      } catch (err) {
+        console.error("교수 피드백 조회 실패:", err)
+        setProfessorFeedback("")
+      }
+    }
+
+    loadProfFeedback()
+  }, [current?.submissionId])
+
+  const saveScoreAndFeedback = useCallback(async () => {
     if (!current) return
     if (!isGroupOwner) {
       alert("그룹장만 점수를 수정할 수 있습니다.")
@@ -239,39 +279,29 @@ export default function StudentGradingPage() {
       const num = Number(editedScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      const res = await fetchWithAuth(`/api/proxy/solves/grading/${current.submissionId}/score`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          score: clamped,
-          graded_by: myUserId,
-          reviewed: true,
-          prof_feedback: newProfessorFeedback || "",
-        }),
-      })
+      await grading_api.post_submission_score(
+        current.submissionId,
+        clamped,
+        professorFeedback
+      )
 
-      let payload: any = {}
-      try { payload = await res.json() } catch {}
-
-      if (!res.ok) {
-        const msg = Array.isArray(payload?.detail)
-          ? payload.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
-          : payload?.detail?.msg || payload?.detail || payload?.message || "채점 저장 실패"
-        throw new Error(msg)
-      }
-
+      // 로컬 상태 업데이트
       setSubmissions((prev) => {
         const next = [...prev]
-        next[currentIdx] = { ...next[currentIdx], score: clamped, reviewed: true }
+        next[currentIdx] = { 
+          ...next[currentIdx], 
+          profScore: clamped, 
+          reviewed: true 
+        }
         return next
       })
+      
       setIsEditingScore(false)
-      alert("점수가 저장되었습니다.")
+      alert("점수와 피드백이 저장되었습니다.")
     } catch (e: any) {
       alert(e?.message || "점수 저장 실패")
     }
-  }, [currentIdx, current, editedScore, maxScore, myUserId, newProfessorFeedback, isGroupOwner])
+  }, [currentIdx, current, editedScore, professorFeedback, maxScore, isGroupOwner])
 
   const handleCompleteReview = useCallback(() => {
     if (!isGroupOwner) {
@@ -321,8 +351,9 @@ export default function StudentGradingPage() {
     }
   }, [current?.submissionId, fetchAiFeedback])
 
-  // 통과 조건
-  const passedCondition = (current?.score ?? 0) >= (maxScore ?? 0)
+  // 통과 조건 (교수 점수 우선, 없으면 AI 점수)
+  const finalScore = current?.profScore ?? current?.aiScore ?? 0
+  const passedCondition = finalScore >= (maxScore ?? 0)
 
   if (submissions.length === 0) {
     return (
@@ -432,8 +463,8 @@ export default function StudentGradingPage() {
                 <div className="prose prose-sm max-w-none">
                   {!isEditingProfessor ? (
                     <>
-                      {newProfessorFeedback ? (
-                        <ReactMarkdown>{newProfessorFeedback}</ReactMarkdown>
+                      {professorFeedback ? (
+                        <ReactMarkdown>{professorFeedback}</ReactMarkdown>
                       ) : (
                         <p className="text-gray-500">교수 피드백이 없습니다.</p>
                       )}
@@ -451,14 +482,17 @@ export default function StudentGradingPage() {
                   ) : (
                     <div className="space-y-2">
                       <textarea
-                        className="w-full h-56 border rounded p-2 text-sm"
-                        value={newProfessorFeedback}
-                        onChange={(e) => setNewProfessorFeedback(e.target.value)}
+                        className="w-full h-56 border rounded p-2 text-sm font-sans"
+                        value={professorFeedback}
+                        onChange={(e) => setProfessorFeedback(e.target.value)}
                         placeholder="교수 피드백을 입력하세요..."
                       />
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setIsEditingProfessor(false)}
+                          onClick={() => {
+                            setIsEditingProfessor(false)
+                            saveScoreAndFeedback()
+                          }}
                           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                         >
                           저장
@@ -490,9 +524,17 @@ export default function StudentGradingPage() {
               <span className="font-medium">통과 여부</span>
               <span className="text-sm font-medium">{passedCondition ? "✔️ 통과" : "❌ 미통과"}</span>
             </div>
-            <p className="text-sm text-gray-600">
-              현재 점수: <b>{current?.score ?? 0}</b>점 / 총점: <b>{maxScore}</b>점
-            </p>
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>
+                AI 점수: <b>{current?.aiScore ?? 0}</b>점
+              </p>
+              <p>
+                교수 점수: <b>{current?.profScore ?? "-"}</b>점
+              </p>
+              <p>
+                최종 점수: <b>{finalScore}</b>점 / 총점: <b>{maxScore}</b>점
+              </p>
+            </div>
           </div>
         </div>
 
@@ -504,8 +546,11 @@ export default function StudentGradingPage() {
           <div className="flex items-center space-x-4">
             {!isEditingScore ? (
               <div className="flex items-baseline space-x-2">
-                <span className="text-gray-600">받은 점수:</span>
-                <span className="font-semibold text-lg">{current?.score ?? 0}점</span>
+                <span className="text-gray-600">AI 점수:</span>
+                <span className="font-semibold">{current?.aiScore ?? 0}점</span>
+                <span className="mx-2">|</span>
+                <span className="text-gray-600">교수 점수:</span>
+                <span className="font-semibold text-lg">{current?.profScore ?? "-"}점</span>
                 <span className="text-gray-400">/ {maxScore}점</span>
                 {isGroupOwner && (
                   <button onClick={() => setIsEditingScore(true)} className="text-blue-500 hover:text-blue-700">
@@ -515,6 +560,7 @@ export default function StudentGradingPage() {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">교수 점수:</span>
                 <input
                   type="number"
                   min={0}
@@ -528,12 +574,12 @@ export default function StudentGradingPage() {
                   className="w-20 p-2 border rounded"
                 />
                 <span>/ {maxScore}점</span>
-                <button onClick={saveEditedScore} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                <button onClick={saveScoreAndFeedback} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
                   저장
                 </button>
                 <button
                   onClick={() => {
-                    setEditedScore(current?.score ?? 0)
+                    setEditedScore(current?.profScore ?? 0)
                     setIsEditingScore(false)
                   }}
                   className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
