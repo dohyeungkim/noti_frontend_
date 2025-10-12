@@ -26,8 +26,9 @@ interface Submission {
   problemType: string
   answerType: string
   answer: string
-  aiScore: number | null  // AI 점수
-  profScore: number | null  // 교수 점수
+  aiScore: number | null
+  profScore: number | null
+  profFeedback: string
   reviewed: boolean
   userName: string
   createdAt: string
@@ -85,19 +86,26 @@ export default function StudentGradingPage() {
       // 현재 학생의 제출물만 필터링
       const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
 
-      // 교수 점수 조회를 위한 병렬 처리
+      // 교수 점수 및 피드백 조회를 위한 병렬 처리
       const mapped: Submission[] = await Promise.all(
         studentSubs.map(async (s) => {
           let profScore = null
+          let profFeedback = ""
+          
           try {
             const scores = await grading_api.get_submission_scores(s.submission_id)
+            console.log(`📊 제출물 ${s.submission_id} 점수 목록:`, scores)
+            
             // 교수가 매긴 점수 찾기 (graded_by가 있는 것)
             const profScoreRecord = scores.find((score: any) => score.graded_by != null)
+            
             if (profScoreRecord) {
               profScore = profScoreRecord.score
+              profFeedback = profScoreRecord.prof_feedback || ""
+              console.log(`✅ 교수 점수: ${profScore}, 피드백: ${profFeedback}`)
             }
           } catch (err) {
-            console.error(`교수 점수 조회 실패 (submission_id: ${s.submission_id}):`, err)
+            console.error(`❌ 교수 점수 조회 실패 (submission_id: ${s.submission_id}):`, err)
           }
 
           return {
@@ -107,8 +115,9 @@ export default function StudentGradingPage() {
             problemType: s.problme_type || "code",
             answerType: s.problme_type || "code",
             answer: "",
-            aiScore: s.score,  // AI 점수
-            profScore: profScore,  // 교수 점수
+            aiScore: s.score,
+            profScore: profScore,
+            profFeedback: profFeedback,
             reviewed: s.reviewed,
             userName: s.user_name,
             createdAt: s.created_at,
@@ -121,7 +130,9 @@ export default function StudentGradingPage() {
       // problem_id 순으로 정렬
       mapped.sort((a, b) => a.problemId - b.problemId)
 
+      console.log("📋 최종 제출물 목록:", mapped)
       setSubmissions(mapped)
+      
       if (mapped.length > 0) {
         setStudentName(mapped[0].userName || "")
       }
@@ -234,41 +245,26 @@ export default function StudentGradingPage() {
     return pointsByProblem[current.problemId] ?? 10
   }, [pointsByProblem, current])
 
-  // 점수 수정
+  // 점수 수정 상태 (독립적)
   const [isEditingScore, setIsEditingScore] = useState(false)
-  const [editedScore, setEditedScore] = useState(0)
+  const [editedProfScore, setEditedProfScore] = useState(0)
 
+  // 피드백 수정 상태 (독립적)
+  const [isEditingProfessor, setIsEditingProfessor] = useState(false)
+  const [editedProfFeedback, setEditedProfFeedback] = useState("")
+
+  // 현재 제출물이 바뀔 때 편집 상태 초기화
   useEffect(() => {
-    if (current) setEditedScore(current.profScore ?? 0)
+    if (current) {
+      setEditedProfScore(current.profScore ?? 0)
+      setEditedProfFeedback(current.profFeedback || "")
+      setIsEditingScore(false)
+      setIsEditingProfessor(false)
+    }
   }, [current])
 
-  // 교수 피드백
-  const [professorFeedback, setProfessorFeedback] = useState("")
-  const [isEditingProfessor, setIsEditingProfessor] = useState(false)
-
-  // 교수 피드백 로드
-  useEffect(() => {
-    const loadProfFeedback = async () => {
-      if (!current?.submissionId) return
-      
-      try {
-        const scores = await grading_api.get_submission_scores(current.submissionId)
-        const profScoreRecord = scores.find((score: any) => score.graded_by != null)
-        if (profScoreRecord && profScoreRecord.prof_feedback) {
-          setProfessorFeedback(profScoreRecord.prof_feedback)
-        } else {
-          setProfessorFeedback("")
-        }
-      } catch (err) {
-        console.error("교수 피드백 조회 실패:", err)
-        setProfessorFeedback("")
-      }
-    }
-
-    loadProfFeedback()
-  }, [current?.submissionId])
-
-  const saveScoreAndFeedback = useCallback(async () => {
+  // 점수만 저장
+  const saveProfScore = useCallback(async () => {
     if (!current) return
     if (!isGroupOwner) {
       alert("그룹장만 점수를 수정할 수 있습니다.")
@@ -276,13 +272,19 @@ export default function StudentGradingPage() {
     }
 
     try {
-      const num = Number(editedScore)
+      const num = Number(editedProfScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+
+      console.log("💾 교수 점수 저장 중:", {
+        submissionId: current.submissionId,
+        score: clamped,
+        feedback: editedProfFeedback // 현재 피드백 값도 함께 전송
+      })
 
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
-        professorFeedback
+        editedProfFeedback // 현재 피드백과 함께 저장
       )
 
       // 로컬 상태 업데이트
@@ -290,26 +292,102 @@ export default function StudentGradingPage() {
         const next = [...prev]
         next[currentIdx] = { 
           ...next[currentIdx], 
-          profScore: clamped, 
-          reviewed: true 
+          profScore: clamped,
         }
         return next
       })
       
       setIsEditingScore(false)
-      alert("점수와 피드백이 저장되었습니다.")
+      alert("교수 점수가 저장되었습니다.")
     } catch (e: any) {
+      console.error("점수 저장 실패:", e)
       alert(e?.message || "점수 저장 실패")
     }
-  }, [currentIdx, current, editedScore, professorFeedback, maxScore, isGroupOwner])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner])
 
-  const handleCompleteReview = useCallback(() => {
+  // 피드백만 저장
+  const saveProfFeedback = useCallback(async () => {
+    if (!current) return
+    if (!isGroupOwner) {
+      alert("그룹장만 피드백을 수정할 수 있습니다.")
+      return
+    }
+
+    try {
+      console.log("💾 교수 피드백 저장 중:", {
+        submissionId: current.submissionId,
+        score: editedProfScore, // 현재 점수 값도 함께 전송
+        feedback: editedProfFeedback
+      })
+
+      await grading_api.post_submission_score(
+        current.submissionId,
+        editedProfScore, // 현재 점수와 함께 저장
+        editedProfFeedback
+      )
+
+      // 로컬 상태 업데이트
+      setSubmissions((prev) => {
+        const next = [...prev]
+        next[currentIdx] = { 
+          ...next[currentIdx], 
+          profFeedback: editedProfFeedback,
+        }
+        return next
+      })
+      
+      setIsEditingProfessor(false)
+      alert("교수 피드백이 저장되었습니다.")
+    } catch (e: any) {
+      console.error("피드백 저장 실패:", e)
+      alert(e?.message || "피드백 저장 실패")
+    }
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner])
+
+  // 검토 완료 (점수와 피드백 모두 저장)
+  const handleCompleteReview = useCallback(async () => {
     if (!isGroupOwner) {
       alert("그룹장만 검토를 완료할 수 있습니다.")
       return
     }
-    router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
-  }, [groupId, examId, isGroupOwner, router])
+
+    if (!current) return
+
+    try {
+      const num = Number(editedProfScore)
+      const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+
+      console.log("💾 검토 완료 - 점수와 피드백 저장 중:", {
+        submissionId: current.submissionId,
+        score: clamped,
+        feedback: editedProfFeedback
+      })
+
+      await grading_api.post_submission_score(
+        current.submissionId,
+        clamped,
+        editedProfFeedback
+      )
+
+      // 로컬 상태 업데이트
+      setSubmissions((prev) => {
+        const next = [...prev]
+        next[currentIdx] = { 
+          ...next[currentIdx], 
+          profScore: clamped,
+          profFeedback: editedProfFeedback,
+          reviewed: true 
+        }
+        return next
+      })
+
+      alert("검토가 완료되었습니다.")
+      router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
+    } catch (e: any) {
+      console.error("검토 완료 실패:", e)
+      alert(e?.message || "검토 완료 실패")
+    }
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router])
 
   // 피드백 탭
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
@@ -463,8 +541,8 @@ export default function StudentGradingPage() {
                 <div className="prose prose-sm max-w-none">
                   {!isEditingProfessor ? (
                     <>
-                      {professorFeedback ? (
-                        <ReactMarkdown>{professorFeedback}</ReactMarkdown>
+                      {editedProfFeedback ? (
+                        <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>
                       ) : (
                         <p className="text-gray-500">교수 피드백이 없습니다.</p>
                       )}
@@ -483,22 +561,22 @@ export default function StudentGradingPage() {
                     <div className="space-y-2">
                       <textarea
                         className="w-full h-56 border rounded p-2 text-sm font-sans"
-                        value={professorFeedback}
-                        onChange={(e) => setProfessorFeedback(e.target.value)}
+                        value={editedProfFeedback}
+                        onChange={(e) => setEditedProfFeedback(e.target.value)}
                         placeholder="교수 피드백을 입력하세요..."
                       />
                       <div className="flex gap-2">
                         <button
-                          onClick={() => {
-                            setIsEditingProfessor(false)
-                            saveScoreAndFeedback()
-                          }}
+                          onClick={saveProfFeedback}
                           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                         >
                           저장
                         </button>
                         <button
-                          onClick={() => setIsEditingProfessor(false)}
+                          onClick={() => {
+                            setEditedProfFeedback(current.profFeedback || "")
+                            setIsEditingProfessor(false)
+                          }}
                           className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
                         >
                           취소
@@ -553,7 +631,7 @@ export default function StudentGradingPage() {
                 <span className="font-semibold text-lg">{current?.profScore ?? "-"}점</span>
                 <span className="text-gray-400">/ {maxScore}점</span>
                 {isGroupOwner && (
-                  <button onClick={() => setIsEditingScore(true)} className="text-blue-500 hover:text-blue-700">
+                  <button onClick={() => setIsEditingScore(true)} className="text-blue-500 hover:text-blue-700 ml-2">
                     ✏️ 점수 수정
                   </button>
                 )}
@@ -565,21 +643,21 @@ export default function StudentGradingPage() {
                   type="number"
                   min={0}
                   max={maxScore || undefined}
-                  value={editedScore}
+                  value={editedProfScore}
                   onChange={(e) => {
                     const v = Number(e.target.value)
                     const clamped = Number.isNaN(v) ? 0 : Math.max(0, Math.min(v, maxScore || v))
-                    setEditedScore(clamped)
+                    setEditedProfScore(clamped)
                   }}
                   className="w-20 p-2 border rounded"
                 />
                 <span>/ {maxScore}점</span>
-                <button onClick={saveScoreAndFeedback} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                <button onClick={saveProfScore} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
                   저장
                 </button>
                 <button
                   onClick={() => {
-                    setEditedScore(current?.profScore ?? 0)
+                    setEditedProfScore(current?.profScore ?? 0)
                     setIsEditingScore(false)
                   }}
                   className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
