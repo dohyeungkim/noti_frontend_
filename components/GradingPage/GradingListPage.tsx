@@ -78,25 +78,39 @@ export default function GradingListPage() {
 
       // 2. 교수 점수 일괄 조회 (병렬 처리)
       console.log("🔄 교수 점수 일괄 조회 시작...");
-      const profScoresMap = new Map<number, number>();
-      
-      await Promise.all(
-        submissions.map(async (sub) => {
-          try {
-            const scores = await grading_api.get_submission_scores(sub.submission_id);
-            // 교수가 매긴 점수 찾기 (graded_by가 있는 것)
-            const profScoreRecord = scores.find((score: any) => score.graded_by != null);
-            if (profScoreRecord) {
-              profScoresMap.set(sub.submission_id, profScoreRecord.score);
-              console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${profScoreRecord.score}`);
-            }
-          } catch (err) {
-            console.error(`❌ 제출 ${sub.submission_id} 교수 점수 조회 실패:`, err);
-          }
-        })
-      );
+const profScoresMap = new Map<number, number>();
+const aiScoresMap = new Map<number, number>();
 
-      console.log(`✅ 교수 점수 조회 완료: ${profScoresMap.size}개`);
+await Promise.all(
+  submissions.map(async (sub) => {
+    try {
+      const scores = await grading_api.get_submission_scores(sub.submission_id);
+      
+      // 시간순으로 정렬 (최신순)
+      scores.sort((a: any, b: any) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      
+      // 교수가 매긴 최신 점수 찾기 (graded_by가 있는 것)
+      const profScoreRecord = scores.find((score: any) => score.graded_by != null);
+      if (profScoreRecord) {
+        profScoresMap.set(sub.submission_id, profScoreRecord.score);
+        console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${profScoreRecord.score}`);
+      }
+      
+      // AI가 매긴 최신 점수 찾기 (graded_by가 null인 것)
+      const aiScoreRecord = scores.find((score: any) => score.graded_by == null);
+      if (aiScoreRecord) {
+        aiScoresMap.set(sub.submission_id, aiScoreRecord.score);
+        console.log(`✅ 제출 ${sub.submission_id} AI 점수: ${aiScoreRecord.score}`);
+      }
+    } catch (err) {
+      console.error(`❌ 제출 ${sub.submission_id} 점수 조회 실패:`, err);
+    }
+  })
+);
+
+console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profScoresMap.size}개`);
 
       // 3. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
@@ -201,7 +215,7 @@ export default function GradingListPage() {
           // 제출 기록 생성 (교수 점수는 미리 조회한 맵에서 가져오기)
           const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
             submissionId: sub.submission_id,
-            aiScore: sub.score,
+            aiScore: aiScoresMap.get(sub.submission_id) ?? null,
             profScore: profScoresMap.get(sub.submission_id) ?? null,
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
