@@ -123,10 +123,7 @@ export default function GradingListPage() {
       }
 
       // 4. 학생별로 그룹화
-      const byUser = new Map
-        string,
-        { name: string; studentNo: string; items: SubmissionSummary[] }
-      >();
+      const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
       console.log("🔍 학생별 그룹화 시작...");
       for (const sub of submissions) {
