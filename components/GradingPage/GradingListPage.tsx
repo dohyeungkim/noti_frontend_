@@ -9,7 +9,7 @@ import type { SubmissionSummary, ProblemRef } from "@/lib/api";
 interface SubmissionRecord {
   submissionId: number;
   aiScore: number | null;
-  profScore: number | null; // 교수 점수는 별도 페이지에서 책정 예정
+  profScore: number | null;
   submittedAt: string;
   reviewed: boolean;
 }
@@ -76,7 +76,29 @@ export default function GradingListPage() {
       console.log("✅ 전체 제출 목록:", submissions);
       console.log("📊 총 제출 건수:", submissions.length);
 
-      // 2. 그룹장과 본인 제외를 위한 ID 조회
+      // 2. 교수 점수 일괄 조회 (병렬 처리)
+      console.log("🔄 교수 점수 일괄 조회 시작...");
+      const profScoresMap = new Map<number, number>();
+      
+      await Promise.all(
+        submissions.map(async (sub) => {
+          try {
+            const scores = await grading_api.get_submission_scores(sub.submission_id);
+            // 교수가 매긴 점수 찾기 (graded_by가 있는 것)
+            const profScoreRecord = scores.find((score: any) => score.graded_by != null);
+            if (profScoreRecord) {
+              profScoresMap.set(sub.submission_id, profScoreRecord.score);
+              console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${profScoreRecord.score}`);
+            }
+          } catch (err) {
+            console.error(`❌ 제출 ${sub.submission_id} 교수 점수 조회 실패:`, err);
+          }
+        })
+      );
+
+      console.log(`✅ 교수 점수 조회 완료: ${profScoresMap.size}개`);
+
+      // 3. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
       let meId: string | number | undefined;
       try {
@@ -100,8 +122,8 @@ export default function GradingListPage() {
         console.warn("⚠️ 그룹장/본인 정보 조회 실패:", err);
       }
 
-      // 3. 학생별로 그룹화
-      const byUser = new Map<
+      // 4. 학생별로 그룹화
+      const byUser = new Map
         string,
         { name: string; studentNo: string; items: SubmissionSummary[] }
       >();
@@ -133,7 +155,7 @@ export default function GradingListPage() {
       console.log("✅ 학생별 그룹화 완료");
       console.log("👥 총 학생 수:", byUser.size);
 
-      // 4. 각 학생의 문제별 점수 구조화
+      // 5. 각 학생의 문제별 점수 구조화
       const rows: GradingStudentSummary[] = [];
 
       for (const [userId, userInfo] of Array.from(byUser.entries())) {
@@ -179,11 +201,11 @@ export default function GradingListPage() {
             continue;
           }
 
-          // 제출 기록 생성
+          // 제출 기록 생성 (교수 점수는 미리 조회한 맵에서 가져오기)
           const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
             submissionId: sub.submission_id,
             aiScore: sub.score,
-            profScore: null, // 교수 점수는 별도 페이지에서 책정 예정
+            profScore: profScoresMap.get(sub.submission_id) ?? null,
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
           }));
@@ -374,16 +396,18 @@ export default function GradingListPage() {
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
               
-              // AI 점수 기준으로 상태 판단
+              // 최종 점수 기준으로 상태 판단 (교수 점수 우선, 없으면 AI 점수)
               const allCorrect = visibleScores.every((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                return latestSub.aiScore !== null && latestSub.aiScore >= data.maxPoints;
+                const finalScore = latestSub.profScore ?? latestSub.aiScore;
+                return finalScore !== null && finalScore >= data.maxPoints;
               });
               const anyWrong = visibleScores.some((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                return latestSub.aiScore !== null && latestSub.aiScore < data.maxPoints;
+                const finalScore = latestSub.profScore ?? latestSub.aiScore;
+                return finalScore !== null && finalScore < data.maxPoints;
               });
 
               return (
@@ -445,10 +469,18 @@ export default function GradingListPage() {
                                 </span>
                               </div>
 
-                              {/* 교수 점수 (빈 공란) */}
+                              {/* 교수 점수 */}
                               <div className="flex flex-col items-center min-w-[40px]">
-                                <span className="text-base font-bold text-gray-300">
-                                  -
+                                <span
+                                  className={`text-base font-bold ${
+                                    latestSubmission.profScore === null
+                                      ? "text-gray-300"
+                                      : latestSubmission.profScore >= data.maxPoints
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {latestSubmission.profScore ?? "-"}
                                 </span>
                               </div>
                             </div>
@@ -492,8 +524,16 @@ export default function GradingListPage() {
                                           >
                                             AI: {sub.aiScore ?? "-"}
                                           </span>
-                                          <span className="text-gray-300">
-                                            교수: -
+                                          <span
+                                            className={
+                                              sub.profScore
+                                                ? sub.profScore >= data.maxPoints
+                                                  ? "text-green-600"
+                                                  : "text-red-600"
+                                                : "text-gray-300"
+                                            }
+                                          >
+                                            교수: {sub.profScore ?? "-"}
                                           </span>
                                         </div>
                                       </div>
