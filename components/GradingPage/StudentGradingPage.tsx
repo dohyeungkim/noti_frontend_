@@ -97,7 +97,14 @@ export default function StudentGradingPage() {
             console.log(`📊 제출물 ${s.submission_id} 점수 목록:`, scores)
             
             // 교수가 매긴 점수 찾기 (graded_by가 있는 것)
-            const profScoreRecord = scores.find((score: any) => score.graded_by != null)
+            const profScoreRecord = scores.find((score: any) => {
+            const gradedBy = score.graded_by
+            // graded_by가 null이거나 "auto:"로 시작하면 AI 자동 채점
+            if (gradedBy == null) return false
+            if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) return false
+            // 그 외는 교수가 직접 수정한 점수
+            return true
+})
             
             if (profScoreRecord) {
               profScore = profScoreRecord.score
