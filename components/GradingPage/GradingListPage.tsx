@@ -86,13 +86,8 @@ export default function GradingListPage() {
             const scores = await grading_api.get_submission_scores(sub.submission_id);
             
             if (scores.length > 0) {
-              // 시간순으로 정렬 (최신순)
-              scores.sort((a: any, b: any) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              );
-              
-              // 교수가 직접 수정한 점수만 찾기 (graded_by가 "auto:"로 시작하지 않는 것)
-              const profScore = scores.find((score: any) => {
+              // 🔧 먼저 교수가 직접 수정한 점수만 필터링 (AI 자동 채점 제외)
+              const profScores = scores.filter((score: any) => {
                 const gradedBy = score.graded_by;
                 // graded_by가 null이거나 "auto:"로 시작하면 AI 자동 채점
                 if (gradedBy == null) return false;
@@ -101,9 +96,15 @@ export default function GradingListPage() {
                 return true;
               });
               
-              if (profScore) {
-                profScoresMap.set(sub.submission_id, profScore.score);
-                console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${profScore.score}점 (graded_by: ${profScore.graded_by})`);
+              if (profScores.length > 0) {
+                // 교수 점수가 있으면 시간순으로 정렬 (최신순)
+                profScores.sort((a: any, b: any) => 
+                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+                
+                const latestProfScore = profScores[0];
+                profScoresMap.set(sub.submission_id, latestProfScore.score);
+                console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${latestProfScore.score}점 (graded_by: ${latestProfScore.graded_by})`);
               } else {
                 profScoresMap.set(sub.submission_id, null);
                 console.log(`ℹ️ 제출 ${sub.submission_id}: 교수가 수정한 점수 없음 (AI 자동 채점만 있음)`);
