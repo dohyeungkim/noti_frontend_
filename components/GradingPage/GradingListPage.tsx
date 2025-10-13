@@ -78,7 +78,7 @@ export default function GradingListPage() {
 
       // 2. 교수 점수만 일괄 조회 (병렬 처리)
       console.log("🔄 교수 점수 일괄 조회 시작...");
-      const profScoresMap = new Map<number, number>();
+      const profScoresMap = new Map<number, number | null>();
 
       await Promise.all(
         submissions.map(async (sub) => {
@@ -95,9 +95,14 @@ export default function GradingListPage() {
               const latestProfScore = scores[0];
               profScoresMap.set(sub.submission_id, latestProfScore.score);
               console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${latestProfScore.score}`);
+            } else {
+              // 교수 점수가 없으면 null로 설정
+              profScoresMap.set(sub.submission_id, null);
+              console.log(`ℹ️ 제출 ${sub.submission_id} 교수 점수 없음`);
             }
           } catch (err) {
             console.error(`❌ 제출 ${sub.submission_id} 교수 점수 조회 실패:`, err);
+            profScoresMap.set(sub.submission_id, null);
           }
         })
       );
