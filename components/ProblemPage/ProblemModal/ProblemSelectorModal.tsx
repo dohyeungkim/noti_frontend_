@@ -4,18 +4,9 @@ import { useRouter } from "next/navigation"
 import { problem_api, problem_ref_api } from "@/lib/api"
 import type { ProblemDetail, ProblemRef } from "@/lib/api"
 import { Dispatch, SetStateAction, useEffect, useState, useCallback, useRef, useMemo } from "react"
-import { PoundSterling, X } from "lucide-react"
+import { PoundSterling, X, Eye } from "lucide-react"
 import SearchBar from "components/ui/SearchBar"
-
-// export interface Problem {
-// 	problem_id: number
-// 	title: string
-// 	description: string
-// 	points: number
-// 	// attempt_count: number
-// 	// pass_count: number
-// 	// is_like: boolean
-// }
+import ProblemPreviewModal from "./ProblemPreviewModal"
 
 export type Problem = ProblemRef
 
@@ -53,6 +44,10 @@ export default function ProblemSelector({
 	const isFetched = useRef(false)
 	const [points, setPoints] = useState<number>(10)
 
+	// 미리보기 모달 상태
+	const [previewProblem, setPreviewProblem] = useState<ProblemDetail | null>(null)
+	const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+
 	// tempSelectedIds 는 '모달이 열려있는 동안'만 쓸 로컬셋
 
 	const handleSelect = (problem: ProblemDetail) => {
@@ -64,6 +59,18 @@ export default function ProblemSelector({
 			else next.add(problem.problem_id)
 			return next
 		})
+	}
+
+	// 미리보기 핸들러
+	const handlePreview = (problem: ProblemDetail, e: React.MouseEvent) => {
+		e.stopPropagation()
+		setPreviewProblem(problem)
+		setIsPreviewOpen(true)
+	}
+
+	const handleClosePreview = () => {
+		setIsPreviewOpen(false)
+		setPreviewProblem(null)
 	}
 
 	// 문제 가져오기 함수 (useCallback 적용)
@@ -173,94 +180,115 @@ export default function ProblemSelector({
 	// }, [searchQuery, problems, refresh])
 
 	return (
-		isModalOpen && (
-			<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-				<div className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-lg relative">
-					<button
-						className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-						onClick={() => setIsModalOpen(false)}
-					>
-						<X className="w-6 h-6" />
-					</button>
+		<>
+			{isModalOpen && (
+				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+					<div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] shadow-2xl relative flex flex-col">
+						<button
+							className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+							onClick={() => setIsModalOpen(false)}
+						>
+							<X className="w-6 h-6" />
+						</button>
 
-					<div className="p-6">
-						<div className="mb-6">
-							<SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-						</div>
-						<div className="flex gap-x-6">
-							{/* 🔹 문제 리스트 */}
-							<div className="flex-1 flex flex-col">
-								<h2 className="text-xl font-bold mb-2">문제 목록</h2>
-								<ul className="border p-4 rounded-md shadow-md bg-white h-64 overflow-y-auto">
-									{filteredProblems.map((problem) => {
-										const isDisabled = isAlreadySelected.some((p) => p.problem_id === problem.problem_id)
-										return (
-											<li
-												key={`list-${problem.problem_id}`}
-												onClick={() => !isDisabled && handleSelect(problem)}
-												className={`cursor-pointer rounded-md p-2 border-b transition ${
-													isDisabled
-														? "bg-gray-300 text-gray-500 cursor-not-allowed"
-														: tempSelectedIds.has(problem.problem_id)
-														? "bg-mygreen text-white"
-														: "bg-gray-100 hover:bg-gray-200"
-												}`}
-											>
-												📌 {problem.title.length > 18 ? `${problem.title.slice(0, 18)}...` : problem.title}
-											</li>
-										)
-									})}
-								</ul>
+						<div className="p-8 pt-6 flex flex-col h-full overflow-hidden">
+							<div className="mb-6 pr-8">
+								<SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 							</div>
-
-							{/* 🔹 선택한 문제 리스트 */}
-							<div className="flex-1">
-								<h2 className="text-xl font-bold mb-2">선택한 문제</h2>
-								<ul className="border p-4 rounded-md shadow-md bg-white h-64 overflow-y-auto">
-									{modalSelected.length > 0 ? (
-										modalSelected.map((p) => {
-											// const newProblem = problems.find((p) => p.problem_id === selected.problem_id)
+							<div className="flex gap-x-6 flex-1 min-h-0">
+								{/* 🔹 문제 리스트 */}
+								<div className="flex-1 flex flex-col min-w-0">
+									<h2 className="text-2xl font-bold mb-4">문제 목록</h2>
+									<ul className="border border-gray-200 p-5 rounded-lg shadow-sm bg-white flex-1 overflow-y-auto">
+										{filteredProblems.map((problem) => {
+											const isDisabled = isAlreadySelected.some((p) => p.problem_id === problem.problem_id)
 											return (
 												<li
-													key={`selected-${p.problem_id}`}
-													onClick={() => handleSelect(p)}
-													className="p-2 border-b rounded-md cursor-pointer hover:bg-red-200"
+													key={`list-${problem.problem_id}`}
+													onClick={() => !isDisabled && handleSelect(problem)}
+													className={`cursor-pointer rounded-md p-3 mb-2 border transition flex items-center justify-between ${
+														isDisabled
+															? "bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300"
+															: tempSelectedIds.has(problem.problem_id)
+															? "bg-mygreen text-white border-mygreen"
+															: "bg-gray-50 hover:bg-gray-100 border-gray-200"
+													}`}
 												>
-													📌{p.title.length > 18 ? `${p.title.slice(0, 18)}...` : p.title}
-													{/* {newProblem
-														? newProblem.title.length > 18
-															? `${newProblem.title.slice(0, 18)}...`
-															: newProblem.title
-														: "알 수 없는 문제"} */}
+													<span className="truncate flex-1">
+														📌 {problem.title}
+													</span>
+													<button
+														onClick={(e) => handlePreview(problem, e)}
+														className={`ml-2 p-1.5 rounded hover:bg-opacity-80 transition flex-shrink-0 ${
+															isDisabled 
+																? "opacity-50" 
+																: tempSelectedIds.has(problem.problem_id)
+																? "hover:bg-green-600"
+																: "hover:bg-gray-300"
+														}`}
+														title="미리보기"
+													>
+														<Eye className="w-4 h-4" />
+													</button>
 												</li>
 											)
-										})
-									) : (
-										<li className="text-gray-500">선택한 문제가 없습니다.</li>
-									)}
-								</ul>
-							</div>
-						</div>
+										})}
+									</ul>
+								</div>
 
-						{/* 🔹 Submit 버튼 */}
-						<div className="mt-4 flex justify-end">
-							{/* <button
-								onClick={MakeProblemClick}
-								className="bg-mydarkgreen text-white px-4 py-2 mr-2 rounded hover:bg-opacity-80 transition"
-							>
-								문제 만들기
-							</button> */}
-							<button
-								onClick={handleAddProblemButton}
-								disabled={isSubmitting}
-								className="bg-mygreen text-white px-4 py-2 rounded hover:bg-opacity-80 transition"
-							>
-								문제 추가하기
-							</button>
+								{/* 🔹 선택한 문제 리스트 */}
+								<div className="flex-1 flex flex-col min-w-0">
+									<h2 className="text-2xl font-bold mb-4">선택한 문제</h2>
+									<ul className="border border-gray-200 p-5 rounded-lg shadow-sm bg-white flex-1 overflow-y-auto">
+										{modalSelected.length > 0 ? (
+											modalSelected.map((p) => {
+												return (
+													<li
+														key={`selected-${p.problem_id}`}
+														onClick={() => handleSelect(p)}
+														className="p-3 mb-2 border border-gray-200 rounded-md cursor-pointer hover:bg-red-100 hover:border-red-300 transition flex items-center justify-between"
+													>
+														<span className="truncate flex-1">
+															📌 {p.title}
+														</span>
+														<button
+															onClick={(e) => handlePreview(p, e)}
+															className="ml-2 p-1.5 rounded hover:bg-red-200 transition flex-shrink-0"
+															title="미리보기"
+														>
+															<Eye className="w-4 h-4" />
+														</button>
+													</li>
+												)
+											})
+										) : (
+											<li className="text-gray-400 text-center py-8">선택한 문제가 없습니다.</li>
+										)}
+									</ul>
+								</div>
+							</div>
+
+							{/* 🔹 Submit 버튼 */}
+							<div className="mt-6 flex justify-end pt-4 border-t border-gray-200">
+								<button
+									onClick={handleAddProblemButton}
+									disabled={isSubmitting}
+									className="bg-mygreen text-white px-8 py-3 rounded-lg hover:bg-opacity-90 transition font-medium disabled:opacity-50"
+								>
+									문제 추가하기
+								</button>
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-		)
+			)}
+
+			{/* 미리보기 모달 */}
+			<ProblemPreviewModal 
+				problem={previewProblem} 
+				isOpen={isPreviewOpen} 
+				onClose={handleClosePreview} 
+			/>
+		</>
 	)
 }

@@ -2,6 +2,9 @@
 
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import ReactMarkdown from "react-markdown"
+import remarkBreaks from "remark-breaks"
+import remarkGfm from 'remark-gfm'
 
 interface Question {
 	problem_id: number
@@ -36,33 +39,50 @@ export default function GalleryView({ filteredData, selectedProblem }: GalleryVi
 						filteredData.map((item) => (
 							<motion.div
 								key={item.problem_id}
-								className="bg-white p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+								className="bg-white p-5 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer flex flex-col"
 							>
-								<div className="p-1 rounded-lg">
-									<h3 className="m-3 text-xl font-semibold w-auto truncate" title={item.title}>
-										✏️ {item.title}
-									</h3>
+								{/* 제목 영역 */}
+								<h3 
+									className="text-xl font-semibold line-clamp-2 whitespace-pre-wrap break-words mb-4" 
+									title={item.title}
+								>
+									✏️ {item.title}
+								</h3>
 
-									<p className="text-gray-500 text-sm m-3">{item.group}</p>
-									<p className="text-gray-400 text-sm">{item.paper}</p>
+								{/* 설명 영역 - 정확히 3줄 */}
+								<p 
+									className="text-gray-600 text-base break-words mb-4 leading-relaxed"
+									style={{
+										display: '-webkit-box',
+										WebkitLineClamp: 3,
+										WebkitBoxOrient: 'vertical',
+										overflow: 'hidden',
+										whiteSpace: 'pre-wrap',
+										minHeight: '4.5rem' // 3줄 고정 높이
+									}}
+								>
+									<ReactMarkdown>{item.group}</ReactMarkdown>
+								</p>
 
-									{/* 문제 보기 버튼 (디자인 개선) */}
-									<div className="flex justify-center mt-3">
-										<button
-											onClick={(e) => {
-												e.stopPropagation() // ✅ 부모 div의 클릭 이벤트 방지
-												router.push(`/registered-problems/view/${item.problem_id}`)
-											}}
-											className="bg-mygreen text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full"
-										>
-											문제 보기
-										</button>
-									</div>
-								</div>
+								{/* 날짜 영역 */}
+								<p className="text-gray-400 text-sm mb-4">{item.paper}</p>
+
+								{/* 버튼 영역 */}
+								<button
+									onClick={(e) => {
+										e.stopPropagation()
+										router.push(`/registered-problems/view/${item.problem_id}`)
+									}}
+									className="bg-mygreen text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:bg-opacity-80 transition-all w-full mt-auto"
+								>
+									문제 보기
+								</button>
 							</motion.div>
 						))
 					) : (
-						<p className="text-center text-gray-500 col-span-3">등록된 문제가 없습니다.</p>
+						<div className="col-span-full text-center text-gray-500">
+							문제가 없습니다.
+						</div>
 					)}
 				</motion.div>
 			</motion.div>

@@ -105,7 +105,7 @@ export default function MyRegisteredProblemView() {
 
   return (
     <div className="space-y-2">
-      {/* 🔹 문제 만들기 버튼 */}
+      {/* 🔹  버튼 */}
       <motion.div
         className="flex justify-end mb-2"
         initial={{ opacity: 0, y: 6 }}
@@ -119,7 +119,7 @@ export default function MyRegisteredProblemView() {
           active:scale-95"
         >
           <FontAwesomeIcon icon={faPlus} className="mr-1.5 text-xs" />
-          문제 만들기
+          
         </button>
       </motion.div>
 
