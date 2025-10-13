@@ -84,7 +84,7 @@ export default function GradingListPage() {
         submissions.map(async (sub) => {
           try {
             console.log(`\n📋 제출 ID ${sub.submission_id} 분석 시작`);
-            console.log(`  - AI 점수 (get_all_submissions): ${sub.score}`);
+            console.log(`  📊 AI 점수 (get_all_submissions의 sub.score): ${sub.score}`);
             
             const scores = await grading_api.get_submission_scores(sub.submission_id);
             console.log(`  - get_submission_scores 응답 개수: ${scores.length}`);
