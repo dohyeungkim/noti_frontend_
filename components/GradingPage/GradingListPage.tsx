@@ -76,41 +76,33 @@ export default function GradingListPage() {
       console.log("✅ 전체 제출 목록:", submissions);
       console.log("📊 총 제출 건수:", submissions.length);
 
-      // 2. 교수 점수 일괄 조회 (병렬 처리)
+      // 2. 교수 점수만 일괄 조회 (병렬 처리)
       console.log("🔄 교수 점수 일괄 조회 시작...");
-const profScoresMap = new Map<number, number>();
-const aiScoresMap = new Map<number, number>();
+      const profScoresMap = new Map<number, number>();
 
-await Promise.all(
-  submissions.map(async (sub) => {
-    try {
-      const scores = await grading_api.get_submission_scores(sub.submission_id);
-      
-      // 시간순으로 정렬 (최신순)
-      scores.sort((a: any, b: any) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      await Promise.all(
+        submissions.map(async (sub) => {
+          try {
+            const scores = await grading_api.get_submission_scores(sub.submission_id);
+            
+            if (scores.length > 0) {
+              // 시간순으로 정렬 (최신순)
+              scores.sort((a: any, b: any) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              
+              // 가장 최신 교수 점수 가져오기
+              const latestProfScore = scores[0];
+              profScoresMap.set(sub.submission_id, latestProfScore.score);
+              console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${latestProfScore.score}`);
+            }
+          } catch (err) {
+            console.error(`❌ 제출 ${sub.submission_id} 교수 점수 조회 실패:`, err);
+          }
+        })
       );
-      
-      // 교수가 매긴 최신 점수 찾기 (graded_by가 있는 것)
-      const profScoreRecord = scores.find((score: any) => score.graded_by != null);
-      if (profScoreRecord) {
-        profScoresMap.set(sub.submission_id, profScoreRecord.score);
-        console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${profScoreRecord.score}`);
-      }
-      
-      // AI가 매긴 최신 점수 찾기 (graded_by가 null인 것)
-      const aiScoreRecord = scores.find((score: any) => score.graded_by == null);
-      if (aiScoreRecord) {
-        aiScoresMap.set(sub.submission_id, aiScoreRecord.score);
-        console.log(`✅ 제출 ${sub.submission_id} AI 점수: ${aiScoreRecord.score}`);
-      }
-    } catch (err) {
-      console.error(`❌ 제출 ${sub.submission_id} 점수 조회 실패:`, err);
-    }
-  })
-);
 
-console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profScoresMap.size}개`);
+      console.log(`✅ 교수 점수 조회 완료: ${profScoresMap.size}개`);
 
       // 3. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
@@ -212,11 +204,11 @@ console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profS
             continue;
           }
 
-          // 제출 기록 생성 (교수 점수는 미리 조회한 맵에서 가져오기)
+          // 제출 기록 생성
           const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
             submissionId: sub.submission_id,
-            aiScore: aiScoresMap.get(sub.submission_id) ?? null,
-            profScore: profScoresMap.get(sub.submission_id) ?? null,
+            aiScore: sub.score, // get_all_submissions에서 받은 AI 점수 그대로 사용
+            profScore: profScoresMap.get(sub.submission_id) ?? null, // 교수 점수만 조회
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
           }));
@@ -384,8 +376,8 @@ console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profS
                       {prob.title}
                     </div>
                     <div className="flex items-center justify-center space-x-4 w-full">
-                      <div className="text-xs text-gray-500">AI점수</div>
                       <div className="text-xs text-gray-500">교수점수</div>
+                      <div className="text-xs text-gray-500">AI점수</div>
                     </div>
                     <div className="text-xs text-gray-500">(배점: {prob.points}점)</div>
                   </div>
@@ -465,21 +457,6 @@ console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profS
                           <div className="flex flex-col gap-2">
                             {/* 최신 제출 */}
                             <div className="flex items-center justify-center space-x-6">
-                              {/* AI 점수 */}
-                              <div className="flex flex-col items-center min-w-[40px]">
-                                <span
-                                  className={`text-base font-bold ${
-                                    latestSubmission.aiScore === null
-                                      ? "text-gray-300"
-                                      : latestSubmission.aiScore >= data.maxPoints
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }`}
-                                >
-                                  {latestSubmission.aiScore ?? "-"}
-                                </span>
-                              </div>
-
                               {/* 교수 점수 */}
                               <div className="flex flex-col items-center min-w-[40px]">
                                 <span
@@ -492,6 +469,21 @@ console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profS
                                   }`}
                                 >
                                   {latestSubmission.profScore ?? "-"}
+                                </span>
+                              </div>
+
+                              {/* AI 점수 */}
+                              <div className="flex flex-col items-center min-w-[40px]">
+                                <span
+                                  className={`text-base font-bold ${
+                                    latestSubmission.aiScore === null
+                                      ? "text-gray-300"
+                                      : latestSubmission.aiScore >= data.maxPoints
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {latestSubmission.aiScore ?? "-"}
                                 </span>
                               </div>
                             </div>
@@ -528,15 +520,6 @@ console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profS
                                         <div className="flex gap-3">
                                           <span
                                             className={
-                                              sub.aiScore && sub.aiScore >= data.maxPoints
-                                                ? "text-green-600"
-                                                : "text-red-600"
-                                            }
-                                          >
-                                            AI: {sub.aiScore ?? "-"}
-                                          </span>
-                                          <span
-                                            className={
                                               sub.profScore
                                                 ? sub.profScore >= data.maxPoints
                                                   ? "text-green-600"
@@ -545,6 +528,15 @@ console.log(`✅ 점수 조회 완료: AI ${aiScoresMap.size}개, 교수 ${profS
                                             }
                                           >
                                             교수: {sub.profScore ?? "-"}
+                                          </span>
+                                          <span
+                                            className={
+                                              sub.aiScore && sub.aiScore >= data.maxPoints
+                                                ? "text-green-600"
+                                                : "text-red-600"
+                                            }
+                                          >
+                                            AI: {sub.aiScore ?? "-"}
                                           </span>
                                         </div>
                                       </div>
