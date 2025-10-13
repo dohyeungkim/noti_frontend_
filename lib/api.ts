@@ -1523,35 +1523,37 @@ async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
 },
 
 async post_submission_score(
-	solve_id: number,
-	score: number,
-	prof_feedback: string,
+  solve_id: number,
+  score: number,
+  prof_feedback: string,
+  graded_by?: string | number  // 추가
 ) {
-	const payload = {
-		score,
-		prof_feedback
-	}
-
-	const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
-		method: "POST",
-		credentials: "include",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(payload),
-	})
-
-	let body: any = {}
-	try { 
-		body = await res.json() 
-	} catch {}
-
-	if (!res.ok) {
-		const msg = Array.isArray(body?.detail)
-			? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
-			: body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패"
-		throw new Error(msg)
-	}
-	return body
+  const payload = {
+    score,
+    prof_feedback,
+    ...(graded_by !== undefined && { graded_by })  // graded_by가 있으면 포함
   }
+
+  const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+  let body: any = {}
+  try { 
+    body = await res.json() 
+  } catch {}
+
+  if (!res.ok) {
+    const msg = Array.isArray(body?.detail)
+      ? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
+      : body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패"
+    throw new Error(msg)
+  }
+  return body
+}
 }
 // ====================== user(profile) 관련 타입/API ===========================
 export interface UserProfile {
