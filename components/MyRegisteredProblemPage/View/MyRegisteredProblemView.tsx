@@ -119,7 +119,7 @@ export default function MyRegisteredProblemView() {
           active:scale-95"
         >
           <FontAwesomeIcon icon={faPlus} className="mr-1.5 text-xs" />
-          
+          문제 만들기
         </button>
       </motion.div>
 

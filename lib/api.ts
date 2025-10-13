@@ -505,7 +505,7 @@ export type CodingProblemUpdateRequest = {
 	tags: string[]
 	problem_condition: string[]
 	reference_codes: ReferenceCodeRequest[]
-	base_code: BaseCodeRequest[]
+	base_code: string;
 	test_cases: TestCaseRequest[]
 	problemType: "코딩" | "디버깅"
 }
@@ -539,6 +539,7 @@ export type SubjectiveProblemUpdateRequest = {
 	tags: string[]
 	problemType: "주관식"
 	grading_criteria: string[]
+	answer_texts: string
 }
 
 // 전체 리턴 타입 (discriminated union)
@@ -1622,181 +1623,94 @@ export const solve_api = {
  * 그리고 모든 문제에서 채점 완료 버튼 누르기 전까지는 검토 완료 버튼 막아놨다가 모든 문제 다 채점 완료 버튼이 눌리면
  * 그때 검토 완료 버튼 풀리고 그냥 별 기능 없이 이전 학생 리스트 페이지로 넘어가게
  */
-// ====================== 시험 채점(Grading) 타입/API — 전체 교체 ===========================
 
-// ====================== 타입 정의 ===========================
 export interface SubmissionSummary {
-  submission_id: number
-  user_id: string
-  user_name?: string        // 백엔드에서 주면 표시, 없으면 생략
-  problem_id: number
-  score: number | null
-  reviewed: boolean
-  created_at: string
-  updated_at: string
+	submission_id: number
+	user_id: string
+  problem_ref_id: number
+	problem_id: number
+	problem_title: string
+	problme_type: string
+	user_name: string
+	ai_score: number | null // AI 또는 교수 최종 점수
+	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
+	created_at: string
+	updated_at: string
+	passed : boolean
 }
 
-/** 점수 이력(교수/AI) */
-export type SubmissionScore = {
-  submission_score_id: number
-  submission_id: number
-  score: number
-  prof_feedback: string | null
-  graded_by: string | null  // null = AI 채점
-  created_at: string
+type SubmissionScore = {
+	submission_score_id: number // 점수 레코드 PK
+	submission_id: number
+	prof_score: number
+	prof_feedback: string
+	graded_by: string | null // null=AI, string=교수ID
+	created_at: string // 채점 시각
 }
 
-/** 점수 저장 요청 */
-export type PostSubmissionScoreReq = {
-  score: number
-  prof_feedback?: string
-}
-
-/** 점수 저장 응답 */
-export type PostSubmissionScoreRes = {
-  submission_score_id: number
-  submission_id: number
-  score: number
-  prof_feedback: string | null
-  graded_by: string | null
-  created_at: string
-}
-
-// ====================== 엔드포인트 ===========================
-const GRADING_ENDPOINTS = {
-  // 그룹·워크북 제출 목록
-  // GET /api/proxy/solves/groups/{group_id}/workbooks/{workbook_id}/submissions(?user_id=..)
-  listSubmissions: (group_id: number, workbook_id: number, user_id?: string) => {
-    const base = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
-    return user_id ? `${base}?user_id=${encodeURIComponent(user_id)}` : base
-  },
-
-  // 특정 제출의 점수 이력
-  // GET /api/proxy/solves/{solve_id}/scores
-  getScores: (solve_id: number) =>
-    `/api/proxy/solves/${encodeURIComponent(String(solve_id))}/scores`,
-
-  // 특정 제출 점수 추가
-  // POST /api/proxy/solves/grading/{solve_id}/score
-  postScore: (solve_id: number) =>
-    `/api/proxy/solves/grading/${encodeURIComponent(String(solve_id))}/score`,
-}
-
-// ====================== API ===========================
 export const grading_api = {
-  /** 제출 목록 조회 */
-  async get_all_submissions(
-    group_id: number,
-    workbook_id: number,
-    student_id?: string
-  ): Promise<SubmissionSummary[]> {
-    const url = GRADING_ENDPOINTS.listSubmissions(group_id, workbook_id, student_id)
+	/**
+	 * 목데이터임 지금...!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+	 * 한 그룹·시험(workbook)의 모든 제출 조회
+	 * - .env 파일에 MOCK 모드면 gradingDummy -> SubmissionSummary[] 로 변환
+	 * @param group_id
+	 * @param workbook_id
+	 * @returns
+	 */
+async get_all_submissions(group_id: number, workbook_id: number): Promise<SubmissionSummary[]> {
+	const url = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
+	
 
-    const res = await fetchWithAuth(url, {
-      method: "GET",
-      credentials: "include",
-    })
+	const res = await fetchWithAuth(url, {
+		method: "GET",
+		credentials: "include",
+	})
+	if (!res.ok) throw new Error("제출 목록 가져오기 실패")
+	return res.json()
+},
 
-    let text = ""
-    try { text = await res.text() } catch {}
+async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
+	const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}/scores`, {
+		method: "GET",
+		credentials: "include",
+	})
+	if (!res.ok) throw new Error("채점 기록 조회 실패")
+	return res.json()
+},
 
-    if (!res.ok) {
-      let body: any = {}
-      try { body = text ? JSON.parse(text) : {} } catch {}
-      const msg = Array.isArray(body?.detail)
-        ? body.detail.map((d: any) => `${(Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc) || "detail"}: ${d.msg}`).join("\n")
-        : body?.detail?.msg || body?.message || `제출 목록 가져오기 실패 (${res.status})`
-      throw new Error(msg)
-    }
+async post_submission_score(
+  solve_id: number,
+  prof_score: number,
+  prof_feedback: string,
+  graded_by?: string | number  // 추가
+) {
+  const payload = {
+    prof_score,
+    prof_feedback,
+    ...(graded_by !== undefined && { graded_by })  // graded_by가 있으면 포함
+  }
 
-    let data: any = []
-    try { data = text ? JSON.parse(text) : [] } catch { data = [] }
-    if (!Array.isArray(data)) throw new Error("제출 목록 응답이 배열이 아닙니다.")
+  const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
 
-    return data.map((row: any) => ({
-      submission_id: Number(row?.submission_id),
-      user_id: String(row?.user_id ?? ""),
-      user_name: typeof row?.user_name === "string" ? row.user_name : undefined,
-      problem_id: Number(row?.problem_id),
-      score: row?.score == null ? null : Number(row?.score),
-      reviewed: !!row?.reviewed,
-      created_at: String(row?.created_at ?? ""),
-      updated_at: String(row?.updated_at ?? ""),
-    })) as SubmissionSummary[]
-  },
+  let body: any = {}
+  try { 
+    body = await res.json() 
+  } catch {}
 
-  /** 특정 제출 점수 이력 조회 */
-  async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
-    const url = GRADING_ENDPOINTS.getScores(solve_id)
-    const res = await fetchWithAuth(url, {
-      method: "GET",
-      credentials: "include",
-    })
-
-    let text = ""
-    try { text = await res.text() } catch {}
-
-    if (!res.ok) {
-      let body: any = {}
-      try { body = text ? JSON.parse(text) : {} } catch {}
-      const msg = Array.isArray(body?.detail)
-        ? body.detail.map((d: any) => `${(Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc) || "detail"}: ${d.msg}`).join("\n")
-        : body?.detail?.msg || body?.message || `채점 기록 조회 실패 (${res.status})`
-      throw new Error(msg)
-    }
-
-    let data: any = []
-    try { data = text ? JSON.parse(text) : [] } catch { data = [] }
-    if (!Array.isArray(data)) throw new Error("채점 기록 응답이 배열이 아닙니다.")
-
-    return data.map((row: any) => ({
-      submission_score_id: Number(row?.submission_score_id),
-      submission_id: Number(row?.submission_id),
-      score: Number(row?.score),
-      prof_feedback: row?.prof_feedback ?? null,
-      graded_by: row?.graded_by ?? null,
-      created_at: String(row?.created_at ?? ""),
-    })) as SubmissionScore[]
-  },
-
-  /** 특정 제출 점수 추가 */
-  async post_submission_score(
-    solve_id: number,
-    payload: PostSubmissionScoreReq
-  ): Promise<PostSubmissionScoreRes> {
-    const url = GRADING_ENDPOINTS.postScore(solve_id)
-
-    const res = await fetchWithAuth(url, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-
-    let text = ""
-    try { text = await res.text() } catch {}
-
-    let body: any = {}
-    try { body = text ? JSON.parse(text) : {} } catch {}
-
-    if (!res.ok) {
-      const msg = Array.isArray(body?.detail)
-        ? body.detail.map((d: any) => `${(Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc) || "detail"}: ${d.msg}`).join("\n")
-        : body?.detail?.msg || body?.message || "채점 저장 실패"
-      throw new Error(msg)
-    }
-
-    return {
-      submission_score_id: Number(body?.submission_score_id),
-      submission_id: Number(body?.submission_id ?? solve_id),
-      score: Number(body?.score),
-      prof_feedback: body?.prof_feedback ?? null,
-      graded_by: body?.graded_by ?? null,
-      created_at: String(body?.created_at ?? ""),
-    }
-  },
+  if (!res.ok) {
+    const msg = Array.isArray(body?.detail)
+      ? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
+      : body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패"
+    throw new Error(msg)
+  }
+  return body
 }
-
+}
 // ====================== user(profile) 관련 타입/API ===========================
 export interface UserProfile {
   user_id: string
