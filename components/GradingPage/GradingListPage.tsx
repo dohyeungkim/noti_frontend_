@@ -76,7 +76,75 @@ export default function GradingListPage() {
       console.log("✅ 전체 제출 목록:", submissions);
       console.log("📊 총 제출 건수:", submissions.length);
 
-      // 2. 그룹장과 본인 제외를 위한 ID 조회
+      // 2. 교수 점수 일괄 조회 및 로그 출력
+      console.log("\n" + "=".repeat(80));
+      console.log("🔍 get_submission_scores API 응답 분석 시작");
+      console.log("=".repeat(80));
+      
+      const profScoresMap = new Map<number, number | null>();
+
+      await Promise.all(
+        submissions.map(async (sub) => {
+          try {
+            console.log(`\n📋 제출 ID: ${sub.submission_id} 조회 중...`);
+            const scores = await grading_api.get_submission_scores(sub.submission_id);
+            
+            // 🔍 API 응답 전체 출력
+            console.log(`📦 API 응답 (제출 ${sub.submission_id}):`, JSON.stringify(scores, null, 2));
+            console.log(`📊 응답 타입: ${Array.isArray(scores) ? '배열' : typeof scores}`);
+            console.log(`📏 응답 길이: ${Array.isArray(scores) ? scores.length : 'N/A'}`);
+            
+            if (scores.length > 0) {
+              // 각 점수 레코드 상세 분석
+              console.log(`\n🔎 점수 레코드 상세 분석 (총 ${scores.length}개):`);
+              scores.forEach((score: any, idx: number) => {
+                console.log(`  [${idx}]:`);
+                console.log(`    - score: ${score.score}`);
+                console.log(`    - graded_by: ${score.graded_by} ${score.graded_by == null ? '⚠️ (null = AI 점수?)' : '✅ (교수 점수?)'}`);
+                console.log(`    - created_at: ${score.created_at}`);
+                console.log(`    - 기타 필드:`, Object.keys(score).filter(k => !['score', 'graded_by', 'created_at'].includes(k)));
+              });
+              
+              // 시간순으로 정렬 (최신순)
+              scores.sort((a: any, b: any) => 
+                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              );
+              
+              const latestScore = scores[0];
+              console.log(`\n⭐ 최신 점수 선택:`);
+              console.log(`    - score: ${latestScore.score}`);
+              console.log(`    - graded_by: ${latestScore.graded_by}`);
+              console.log(`    - created_at: ${latestScore.created_at}`);
+              
+              // graded_by 존재 여부로 판단
+              if (latestScore.graded_by != null) {
+                console.log(`  ✅ 교수 점수로 인식: ${latestScore.score}점`);
+                profScoresMap.set(sub.submission_id, latestScore.score);
+              } else {
+                console.log(`  ⚠️ AI 점수로 감지됨 (graded_by가 null) - 교수 점수로 사용하지 않음`);
+                profScoresMap.set(sub.submission_id, null);
+              }
+            } else {
+              console.log(`  ℹ️ 빈 배열 반환 - 교수 점수 없음`);
+              profScoresMap.set(sub.submission_id, null);
+            }
+            
+            console.log("-".repeat(80));
+          } catch (err) {
+            console.error(`❌ 제출 ${sub.submission_id} 점수 조회 실패:`, err);
+            profScoresMap.set(sub.submission_id, null);
+          }
+        })
+      );
+
+      console.log("\n" + "=".repeat(80));
+      console.log("✅ get_submission_scores 분석 완료");
+      console.log("=".repeat(80));
+      console.log(`📊 총 ${profScoresMap.size}개 제출물 분석 완료`);
+      console.log(`📋 교수 점수 맵:`, Array.from(profScoresMap.entries()));
+      console.log("=".repeat(80) + "\n");
+
+      // 3. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
       let meId: string | number | undefined;
       try {
@@ -100,7 +168,7 @@ export default function GradingListPage() {
         console.warn("⚠️ 그룹장/본인 정보 조회 실패:", err);
       }
 
-      // 3. 학생별로 그룹화
+      // 4. 학생별로 그룹화
       const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
       console.log("🔍 학생별 그룹화 시작...");
@@ -130,7 +198,7 @@ export default function GradingListPage() {
       console.log("✅ 학생별 그룹화 완료");
       console.log("👥 총 학생 수:", byUser.size);
 
-      // 4. 각 학생의 문제별 점수 구조화
+      // 5. 각 학생의 문제별 점수 구조화
       const rows: GradingStudentSummary[] = [];
 
       for (const [userId, userInfo] of Array.from(byUser.entries())) {
@@ -176,11 +244,11 @@ export default function GradingListPage() {
             continue;
           }
 
-          // 제출 기록 생성 (교수 점수는 무조건 null)
+          // 제출 기록 생성
           const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
             submissionId: sub.submission_id,
             aiScore: sub.score, // get_all_submissions에서 받은 AI 점수 그대로 사용
-            profScore: null, // 교수 점수는 무조건 null (화면에서 "-"로 표시됨)
+            profScore: profScoresMap.get(sub.submission_id) ?? null, // 교수 점수 (없으면 null)
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
           }));
@@ -371,16 +439,18 @@ export default function GradingListPage() {
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
               
-              // 최종 점수 기준으로 상태 판단 (AI 점수만 사용)
+              // 최종 점수 기준으로 상태 판단 (교수 점수 우선, 없으면 AI 점수)
               const allCorrect = visibleScores.every((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                return latestSub.aiScore !== null && latestSub.aiScore >= data.maxPoints;
+                const finalScore = latestSub.profScore ?? latestSub.aiScore;
+                return finalScore !== null && finalScore >= data.maxPoints;
               });
               const anyWrong = visibleScores.some((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                return latestSub.aiScore !== null && latestSub.aiScore < data.maxPoints;
+                const finalScore = latestSub.profScore ?? latestSub.aiScore;
+                return finalScore !== null && finalScore < data.maxPoints;
               });
 
               return (
@@ -427,10 +497,18 @@ export default function GradingListPage() {
                           <div className="flex flex-col gap-2">
                             {/* 최신 제출 */}
                             <div className="flex items-center justify-center space-x-6">
-                              {/* 교수 점수 - 무조건 "-" */}
+                              {/* 교수 점수 */}
                               <div className="flex flex-col items-center min-w-[40px]">
-                                <span className="text-base font-bold text-gray-300">
-                                  -
+                                <span
+                                  className={`text-base font-bold ${
+                                    latestSubmission.profScore === null
+                                      ? "text-gray-300"
+                                      : latestSubmission.profScore >= data.maxPoints
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {latestSubmission.profScore ?? "-"}
                                 </span>
                               </div>
 
@@ -480,8 +558,16 @@ export default function GradingListPage() {
                                           })}
                                         </span>
                                         <div className="flex gap-3">
-                                          <span className="text-gray-300">
-                                            교수: -
+                                          <span
+                                            className={
+                                              sub.profScore
+                                                ? sub.profScore >= data.maxPoints
+                                                  ? "text-green-600"
+                                                  : "text-red-600"
+                                                : "text-gray-300"
+                                            }
+                                          >
+                                            교수: {sub.profScore ?? "-"}
                                           </span>
                                           <span
                                             className={
