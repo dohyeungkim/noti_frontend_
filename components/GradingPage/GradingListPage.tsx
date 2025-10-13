@@ -76,40 +76,7 @@ export default function GradingListPage() {
       console.log("✅ 전체 제출 목록:", submissions);
       console.log("📊 총 제출 건수:", submissions.length);
 
-      // 2. 교수 점수만 일괄 조회 (병렬 처리)
-      console.log("🔄 교수 점수 일괄 조회 시작...");
-      const profScoresMap = new Map<number, number | null>();
-
-      await Promise.all(
-        submissions.map(async (sub) => {
-          try {
-            const scores = await grading_api.get_submission_scores(sub.submission_id);
-            
-            if (scores.length > 0) {
-              // 시간순으로 정렬 (최신순)
-              scores.sort((a: any, b: any) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              );
-              
-              // 가장 최신 교수 점수 가져오기
-              const latestProfScore = scores[0];
-              profScoresMap.set(sub.submission_id, latestProfScore.score);
-              console.log(`✅ 제출 ${sub.submission_id} 교수 점수: ${latestProfScore.score}`);
-            } else {
-              // 교수 점수가 없으면 null로 설정
-              profScoresMap.set(sub.submission_id, null);
-              console.log(`ℹ️ 제출 ${sub.submission_id} 교수 점수 없음`);
-            }
-          } catch (err) {
-            console.error(`❌ 제출 ${sub.submission_id} 교수 점수 조회 실패:`, err);
-            profScoresMap.set(sub.submission_id, null);
-          }
-        })
-      );
-
-      console.log(`✅ 교수 점수 조회 완료: ${profScoresMap.size}개`);
-
-      // 3. 그룹장과 본인 제외를 위한 ID 조회
+      // 2. 그룹장과 본인 제외를 위한 ID 조회
       let ownerId: string | number | undefined;
       let meId: string | number | undefined;
       try {
@@ -133,7 +100,7 @@ export default function GradingListPage() {
         console.warn("⚠️ 그룹장/본인 정보 조회 실패:", err);
       }
 
-      // 4. 학생별로 그룹화
+      // 3. 학생별로 그룹화
       const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
       console.log("🔍 학생별 그룹화 시작...");
@@ -163,7 +130,7 @@ export default function GradingListPage() {
       console.log("✅ 학생별 그룹화 완료");
       console.log("👥 총 학생 수:", byUser.size);
 
-      // 5. 각 학생의 문제별 점수 구조화
+      // 4. 각 학생의 문제별 점수 구조화
       const rows: GradingStudentSummary[] = [];
 
       for (const [userId, userInfo] of Array.from(byUser.entries())) {
@@ -209,11 +176,11 @@ export default function GradingListPage() {
             continue;
           }
 
-          // 제출 기록 생성
+          // 제출 기록 생성 (교수 점수는 무조건 null)
           const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
             submissionId: sub.submission_id,
             aiScore: sub.score, // get_all_submissions에서 받은 AI 점수 그대로 사용
-            profScore: profScoresMap.get(sub.submission_id) ?? null, // 교수 점수만 조회
+            profScore: null, // 교수 점수는 무조건 null (화면에서 "-"로 표시됨)
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
           }));
@@ -404,18 +371,16 @@ export default function GradingListPage() {
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
               
-              // 최종 점수 기준으로 상태 판단 (교수 점수 우선, 없으면 AI 점수)
+              // 최종 점수 기준으로 상태 판단 (AI 점수만 사용)
               const allCorrect = visibleScores.every((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                const finalScore = latestSub.profScore ?? latestSub.aiScore;
-                return finalScore !== null && finalScore >= data.maxPoints;
+                return latestSub.aiScore !== null && latestSub.aiScore >= data.maxPoints;
               });
               const anyWrong = visibleScores.some((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                const finalScore = latestSub.profScore ?? latestSub.aiScore;
-                return finalScore !== null && finalScore < data.maxPoints;
+                return latestSub.aiScore !== null && latestSub.aiScore < data.maxPoints;
               });
 
               return (
@@ -462,18 +427,10 @@ export default function GradingListPage() {
                           <div className="flex flex-col gap-2">
                             {/* 최신 제출 */}
                             <div className="flex items-center justify-center space-x-6">
-                              {/* 교수 점수 */}
+                              {/* 교수 점수 - 무조건 "-" */}
                               <div className="flex flex-col items-center min-w-[40px]">
-                                <span
-                                  className={`text-base font-bold ${
-                                    latestSubmission.profScore === null
-                                      ? "text-gray-300"
-                                      : latestSubmission.profScore >= data.maxPoints
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }`}
-                                >
-                                  {latestSubmission.profScore ?? "-"}
+                                <span className="text-base font-bold text-gray-300">
+                                  -
                                 </span>
                               </div>
 
@@ -523,16 +480,8 @@ export default function GradingListPage() {
                                           })}
                                         </span>
                                         <div className="flex gap-3">
-                                          <span
-                                            className={
-                                              sub.profScore
-                                                ? sub.profScore >= data.maxPoints
-                                                  ? "text-green-600"
-                                                  : "text-red-600"
-                                                : "text-gray-300"
-                                            }
-                                          >
-                                            교수: {sub.profScore ?? "-"}
+                                          <span className="text-gray-300">
+                                            교수: -
                                           </span>
                                           <span
                                             className={
