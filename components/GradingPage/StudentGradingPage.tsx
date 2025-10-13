@@ -98,13 +98,13 @@ export default function StudentGradingPage() {
             
             // 교수가 매긴 점수 찾기 (graded_by가 있는 것)
             const profScoreRecord = scores.find((score: any) => {
-              const gradedBy = score.graded_by
-              // graded_by가 null이거나 "auto:"로 시작하면 AI 자동 채점
-              if (gradedBy == null) return false
-              if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) return false
-              // 그 외는 교수가 직접 수정한 점수
-              return true
-            })
+            const gradedBy = score.graded_by
+            // graded_by가 null이거나 "auto:"로 시작하면 AI 자동 채점
+            if (gradedBy == null) return false
+            if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) return false
+            // 그 외는 교수가 직접 수정한 점수
+            return true
+})
             
             if (profScoreRecord) {
               profScore = profScoreRecord.score
@@ -273,52 +273,6 @@ export default function StudentGradingPage() {
     }
   }, [current])
 
-  // 현재 제출물의 점수만 다시 로드하는 함수
-  const refreshCurrentSubmissionScore = useCallback(async () => {
-    if (!current) return
-    
-    try {
-      // 현재 제출물의 점수만 다시 조회
-      const scores = await grading_api.get_submission_scores(current.submissionId)
-      console.log(`🔄 점수 재조회 결과 (submission_id: ${current.submissionId}):`, scores)
-      
-      // 교수 점수 찾기
-      const profScoreRecord = scores.find((score: any) => {
-        const gradedBy = score.graded_by
-        if (gradedBy == null) return false
-        if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) return false
-        return true
-      })
-      
-      // submissions 배열에서 현재 항목만 업데이트
-      setSubmissions(prev => {
-        const updated = [...prev]
-        if (updated[currentIdx]) {
-          updated[currentIdx] = {
-            ...updated[currentIdx],
-            profScore: profScoreRecord ? profScoreRecord.score : null,
-            profFeedback: profScoreRecord ? (profScoreRecord.prof_feedback || "") : ""
-          }
-          
-          console.log(`✅ 제출물 ${current.submissionId} 점수 업데이트 완료:`, {
-            profScore: profScoreRecord?.score,
-            profFeedback: profScoreRecord?.prof_feedback
-          })
-        }
-        return updated
-      })
-      
-      // 편집 상태값도 업데이트
-      if (profScoreRecord) {
-        setEditedProfScore(profScoreRecord.score)
-        setEditedProfFeedback(profScoreRecord.prof_feedback || "")
-      }
-      
-    } catch (err) {
-      console.error(`❌ 점수 재조회 실패 (submission_id: ${current.submissionId}):`, err)
-    }
-  }, [current, currentIdx])
-
   // 점수만 저장
   const saveProfScore = useCallback(async () => {
     if (!current) return
@@ -334,20 +288,26 @@ export default function StudentGradingPage() {
       console.log("💾 교수 점수 저장 중:", {
         submissionId: current.submissionId,
         score: clamped,
-        feedback: editedProfFeedback,
-        gradedBy: myUserId
+        feedback: editedProfFeedback
       })
 
-      // 서버에 저장
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
         editedProfFeedback,
-        myUserId ?? undefined
+        myUserId?? undefined
       )
 
-      // 현재 제출물의 점수만 재조회 (전체 제출물 로드하지 않음)
-      await refreshCurrentSubmissionScore()
+      // 로컬 상태 업데이트 (AI 점수는 절대 변경하지 않음)
+      setSubmissions((prev) => {
+        const next = [...prev]
+        next[currentIdx] = { 
+          ...next[currentIdx], 
+          profScore: clamped,  // 교수 점수만 업데이트
+          // aiScore는 그대로 유지
+        }
+        return next
+      })
       
       setIsEditingScore(false)
       alert("교수 점수가 저장되었습니다.")
@@ -355,7 +315,7 @@ export default function StudentGradingPage() {
       console.error("점수 저장 실패:", e)
       alert(e?.message || "점수 저장 실패")
     }
-  }, [current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId, refreshCurrentSubmissionScore])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner])
 
   // 피드백만 저장
   const saveProfFeedback = useCallback(async () => {
@@ -366,17 +326,15 @@ export default function StudentGradingPage() {
     }
 
     try {
-      // 현재 교수 점수가 있으면 그대로 사용, 없으면 편집 중인 값 사용
-      const scoreToSave = current.profScore !== null ? current.profScore : editedProfScore
+      // 교수 점수가 없으면 0으로 저장
+      const scoreToSave = editedProfScore || 0
 
       console.log("💾 교수 피드백 저장 중:", {
         submissionId: current.submissionId,
         score: scoreToSave,
-        feedback: editedProfFeedback,
-        gradedBy: myUserId
+        feedback: editedProfFeedback
       })
 
-      // 서버에 저장
       await grading_api.post_submission_score(
         current.submissionId,
         scoreToSave,
@@ -384,8 +342,16 @@ export default function StudentGradingPage() {
         myUserId ?? undefined
       )
 
-      // 현재 제출물의 점수만 재조회 (전체 제출물 로드하지 않음)
-      await refreshCurrentSubmissionScore()
+      // 로컬 상태 업데이트
+      setSubmissions((prev) => {
+        const next = [...prev]
+        next[currentIdx] = { 
+          ...next[currentIdx], 
+          profScore: scoreToSave,
+          profFeedback: editedProfFeedback,
+        }
+        return next
+      })
       
       setIsEditingProfessor(false)
       alert("교수 피드백이 저장되었습니다.")
@@ -393,9 +359,9 @@ export default function StudentGradingPage() {
       console.error("피드백 저장 실패:", e)
       alert(e?.message || "피드백 저장 실패")
     }
-  }, [current, editedProfScore, editedProfFeedback, isGroupOwner, myUserId, refreshCurrentSubmissionScore])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner])
 
-  // 검토 완료
+  // 검토 완료 (점수와 피드백 모두 저장)
   const handleCompleteReview = useCallback(async () => {
     if (!isGroupOwner) {
       alert("그룹장만 검토를 완료할 수 있습니다.")
@@ -411,44 +377,35 @@ export default function StudentGradingPage() {
       console.log("💾 검토 완료 - 점수와 피드백 저장 중:", {
         submissionId: current.submissionId,
         score: clamped,
-        feedback: editedProfFeedback,
-        gradedBy: myUserId
+        feedback: editedProfFeedback
       })
 
-      // 서버에 저장
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
         editedProfFeedback,
-        myUserId ?? undefined
+        myUserId?? undefined
       )
 
-      // 현재 제출물의 점수만 재조회 (전체 제출물 로드하지 않음)
-      await refreshCurrentSubmissionScore()
-      
-      // reviewed 상태도 로컬에서 업데이트
-      setSubmissions(prev => {
-        const updated = [...prev]
-        if (updated[currentIdx]) {
-          updated[currentIdx] = {
-            ...updated[currentIdx],
-            reviewed: true
-          }
+      // 로컬 상태 업데이트
+      setSubmissions((prev) => {
+        const next = [...prev]
+        next[currentIdx] = { 
+          ...next[currentIdx], 
+          profScore: clamped,
+          profFeedback: editedProfFeedback,
+          reviewed: true 
         }
-        return updated
+        return next
       })
-      
+
       alert("검토가 완료되었습니다.")
-      
-      // 잠시 대기 후 페이지 이동
-      setTimeout(() => {
-        router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
-      }, 500)
+      router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
     } catch (e: any) {
       console.error("검토 완료 실패:", e)
       alert(e?.message || "검토 완료 실패")
     }
-  }, [current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router, myUserId, refreshCurrentSubmissionScore, currentIdx])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router])
 
   // 피드백 탭
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
