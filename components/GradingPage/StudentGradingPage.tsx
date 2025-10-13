@@ -273,142 +273,122 @@ export default function StudentGradingPage() {
     }
   }, [current])
 
-  // 점수만 저장
   const saveProfScore = useCallback(async () => {
-    if (!current) return
-    if (!isGroupOwner) {
-      alert("그룹장만 점수를 수정할 수 있습니다.")
-      return
-    }
+  if (!current) return
+  if (!isGroupOwner) {
+    alert("그룹장만 점수를 수정할 수 있습니다.")
+    return
+  }
 
-    try {
-      const num = Number(editedProfScore)
-      const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+  try {
+    const num = Number(editedProfScore)
+    const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      console.log("💾 교수 점수 저장 중:", {
-        submissionId: current.submissionId,
-        score: clamped,
-        feedback: editedProfFeedback,
-        gradedBy: myUserId
-      })
+    console.log("💾 교수 점수 저장 중:", {
+      submissionId: current.submissionId,
+      score: clamped,
+      feedback: editedProfFeedback,
+      gradedBy: myUserId
+    })
 
-      await grading_api.post_submission_score(
-        current.submissionId,
-        clamped,
-        editedProfFeedback,
-        myUserId ?? undefined
-      )
+    // 서버에 저장
+    await grading_api.post_submission_score(
+      current.submissionId,
+      clamped,
+      editedProfFeedback,
+      myUserId ?? undefined
+    )
 
-      // 로컬 상태 업데이트 (AI 점수는 절대 변경하지 않음)
-      setSubmissions((prev) => {
-        const next = [...prev]
-        next[currentIdx] = { 
-          ...next[currentIdx], 
-          profScore: clamped,  // 교수 점수만 업데이트
-          // aiScore는 그대로 유지
-        }
-        return next
-      })
-      
-      setIsEditingScore(false)
-      alert("교수 점수가 저장되었습니다.")
-    } catch (e: any) {
-      console.error("점수 저장 실패:", e)
-      alert(e?.message || "점수 저장 실패")
-    }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
+    // ✅ 중요: 저장 후 데이터 재조회
+    await fetchSubmissions()
+    
+    setIsEditingScore(false)
+    alert("교수 점수가 저장되었습니다.")
+  } catch (e: any) {
+    console.error("점수 저장 실패:", e)
+    alert(e?.message || "점수 저장 실패")
+  }
+}, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId, fetchSubmissions])
 
-  // 피드백만 저장
-  const saveProfFeedback = useCallback(async () => {
-    if (!current) return
-    if (!isGroupOwner) {
-      alert("그룹장만 피드백을 수정할 수 있습니다.")
-      return
-    }
+// 피드백만 저장 - 수정된 버전
+const saveProfFeedback = useCallback(async () => {
+  if (!current) return
+  if (!isGroupOwner) {
+    alert("그룹장만 피드백을 수정할 수 있습니다.")
+    return
+  }
 
-    try {
-      // 교수 점수가 없으면 0으로 저장
-      const scoreToSave = editedProfScore || 0
+  try {
+    const scoreToSave = editedProfScore || 0
 
-      console.log("💾 교수 피드백 저장 중:", {
-        submissionId: current.submissionId,
-        score: scoreToSave,
-        feedback: editedProfFeedback,
-        gradedBy: myUserId
-      })
+    console.log("💾 교수 피드백 저장 중:", {
+      submissionId: current.submissionId,
+      score: scoreToSave,
+      feedback: editedProfFeedback,
+      gradedBy: myUserId
+    })
 
-      await grading_api.post_submission_score(
-        current.submissionId,
-        scoreToSave,
-        editedProfFeedback,
-        myUserId ?? undefined
-      )
+    // 서버에 저장
+    await grading_api.post_submission_score(
+      current.submissionId,
+      scoreToSave,
+      editedProfFeedback,
+      myUserId ?? undefined
+    )
 
-      // 로컬 상태 업데이트
-      setSubmissions((prev) => {
-        const next = [...prev]
-        next[currentIdx] = { 
-          ...next[currentIdx], 
-          profScore: scoreToSave,
-          profFeedback: editedProfFeedback,
-        }
-        return next
-      })
-      
-      setIsEditingProfessor(false)
-      alert("교수 피드백이 저장되었습니다.")
-    } catch (e: any) {
-      console.error("피드백 저장 실패:", e)
-      alert(e?.message || "피드백 저장 실패")
-    }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner,myUserId])
+    // ✅ 중요: 저장 후 데이터 재조회
+    await fetchSubmissions()
+    
+    setIsEditingProfessor(false)
+    alert("교수 피드백이 저장되었습니다.")
+  } catch (e: any) {
+    console.error("피드백 저장 실패:", e)
+    alert(e?.message || "피드백 저장 실패")
+  }
+}, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner, myUserId, fetchSubmissions])
 
-  // 검토 완료 (점수와 피드백 모두 저장)
-  const handleCompleteReview = useCallback(async () => {
-    if (!isGroupOwner) {
-      alert("그룹장만 검토를 완료할 수 있습니다.")
-      return
-    }
+// 검토 완료 - 수정된 버전
+const handleCompleteReview = useCallback(async () => {
+  if (!isGroupOwner) {
+    alert("그룹장만 검토를 완료할 수 있습니다.")
+    return
+  }
 
-    if (!current) return
+  if (!current) return
 
-    try {
-      const num = Number(editedProfScore)
-      const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+  try {
+    const num = Number(editedProfScore)
+    const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      console.log("💾 검토 완료 - 점수와 피드백 저장 중:", {
-        submissionId: current.submissionId,
-        score: clamped,
-        feedback: editedProfFeedback,
-        gradedBy: myUserId
-      })
+    console.log("💾 검토 완료 - 점수와 피드백 저장 중:", {
+      submissionId: current.submissionId,
+      score: clamped,
+      feedback: editedProfFeedback,
+      gradedBy: myUserId
+    })
 
-      await grading_api.post_submission_score(
-        current.submissionId,
-        clamped,
-        editedProfFeedback,
-        myUserId ?? undefined
-      )
+    // 서버에 저장
+    await grading_api.post_submission_score(
+      current.submissionId,
+      clamped,
+      editedProfFeedback,
+      myUserId ?? undefined
+    )
 
-      // 로컬 상태 업데이트
-      setSubmissions((prev) => {
-        const next = [...prev]
-        next[currentIdx] = { 
-          ...next[currentIdx], 
-          profScore: clamped,
-          profFeedback: editedProfFeedback,
-          reviewed: true 
-        }
-        return next
-      })
-
-      alert("검토가 완료되었습니다.")
+    // ✅ 중요: 저장 후 데이터 재조회
+    await fetchSubmissions()
+    
+    alert("검토가 완료되었습니다.")
+    
+    // 잠시 대기 후 페이지 이동 (저장 확인을 위해)
+    setTimeout(() => {
       router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
-    } catch (e: any) {
-      console.error("검토 완료 실패:", e)
-      alert(e?.message || "검토 완료 실패")
-    }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router, myUserId])
+    }, 500)
+  } catch (e: any) {
+    console.error("검토 완료 실패:", e)
+    alert(e?.message || "검토 완료 실패")
+  }
+}, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router, myUserId, fetchSubmissions])
 
   // 피드백 탭
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
