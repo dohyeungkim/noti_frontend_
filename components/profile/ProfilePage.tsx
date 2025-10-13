@@ -348,7 +348,6 @@ export default function ProfilePage() {
 
   // 단건 열기(상세 조회) → 읽음 처리 가정 + 모달 오픈
   async function openMessageDetail(idMaybeNumber: number | string) {
-    
     const id = toIntStrict(idMaybeNumber);
     if (id === null) {
       alert("메시지 ID가 올바르지 않습니다.");
@@ -611,7 +610,7 @@ export default function ProfilePage() {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-3xl md:text-4xl font-extrabold">
-                {user.username || "닉네임 미설정"}
+                {user.username || "이름 미설정"}
               </h1>
               <button
                 className="text-sm text-emerald-700 hover:underline"
@@ -620,7 +619,7 @@ export default function ProfilePage() {
                   setOpenUsername(true);
                 }}
               >
-                닉네임 편집
+                이름 편집
               </button>
             </div>
 
@@ -817,127 +816,12 @@ export default function ProfilePage() {
 
           {/* 오른쪽: 활동 요약 */}
           <div className="space-y-4">
+            {/* ✅ 내 활동 요약 (메시지 제거, 통계만 유지) */}
             <div className="rounded-2xl border bg-gray-50 p-4">
               <h3 className="font-bold text-sm flex items-center gap-2">
-                <FontAwesomeIcon icon={faChartLine} />내 활동 요약
+                <FontAwesomeIcon icon={faChartLine} />
+                내 활동 요약
               </h3>
-              {/* ===== 메시지 섹션 ===== */}
-              <section className="mt-8 rounded-2xl bg-white shadow-sm border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold">내 메시지</h2>
-                  <div className="text-sm text-gray-600">
-                    {msgLoading ? "불러오는 중…" : ""}
-                    {msgError ? (
-                      <span className="text-red-600 ml-2">{msgError}</span>
-                    ) : null}
-                    {!msgLoading && !msgError ? (
-                      <button
-                        className="ml-3 text-emerald-700 hover:underline"
-                        onClick={loadAllMessages}
-                        title="새로고침"
-                      >
-                        새로고침
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* 안 읽음 */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-semibold">안 읽은 메시지</span>
-                    <span className="text-xs rounded-full bg-red-100 text-red-700 px-2 py-[2px]">
-                      {unreadMessages.length}
-                    </span>
-                  </div>
-
-                  {unreadMessages.length === 0 ? (
-                    <div className="text-sm text-gray-500">
-                      안 읽은 메시지가 없어요.
-                    </div>
-                  ) : (
-                    <ul className="divide-y border rounded-xl">
-                      {unreadMessages.map((m) => (
-                        <li
-                          key={m.message_id}
-                          className="p-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
-                          onClick={() => openMessageDetail(m.message_id)}
-                          title="메시지 열기"
-                        >
-                          <div className="flex flex-col">
-                            <div className="text-sm font-semibold">
-                              [{String(m.group_name)}] {String(m.workbook_name)}{" "}
-                              — {String(m.title)}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              From {m.from_user_id} → To {m.to_user_id}
-                            </div>
-                            <div className="text-sm text-gray-800 line-clamp-1">
-                              {m.context_msg}
-                            </div>
-                          </div>
-                          <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
-                            NEW
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* 읽음 */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-semibold">읽은 메시지</span>
-                    <span className="text-xs rounded-full bg-gray-100 text-gray-700 px-2 py-[2px]">
-                      {readMessages.length}
-                    </span>
-                  </div>
-
-                  {readMessages.length === 0 ? (
-                    <div className="text-sm text-gray-500">
-                      읽은 메시지가 없어요.
-                    </div>
-                  ) : (
-                    <ul className="divide-y border rounded-xl">
-                      {readMessages.map((m) => (
-                        <li
-                          key={m.message_id}
-                          className="p-3 hover:bg-gray-50 cursor-pointer"
-                          onClick={() => openMessageDetail(m.message_id)}
-                          title="메시지 열기"
-                        >
-                          <div className="text-sm font-semibold">
-                            [{String(m.group_name)}] {String(m.workbook_name)} —{" "}
-                            {String(m.title)}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            From {m.from_user_id} → To {m.to_user_id}
-                          </div>
-                          <div className="text-sm text-gray-800 line-clamp-1">
-                            {m.context_msg}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </section>
-
-              {/* 메시지 상세 모달 (수정된 부분) */}
-              {openMsgModal && selectedMsg && (
-                <MessageDetailModal
-                  msg={selectedMsg}
-                  onClose={() => {
-                    setOpenMsgModal(false);
-                    loadAllMessages(); // 닫을 때 목록 새로고침 (읽음 처리 반영)
-                  }}
-                  onSave={() => {
-                    setOpenMsgModal(false);
-                    loadAllMessages(); // 확인 버튼 누를 때도 목록 새로고침
-                  }}
-                />
-              )}
 
               <div className="mt-3 space-y-3">
                 <StatRow
@@ -972,6 +856,109 @@ export default function ProfilePage() {
                 />
               </div>
             </div>
+
+            {/* ✅ 분리된 “내 메시지” 카드 */}
+            <section className="rounded-2xl bg-white shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold">내 메시지</h2>
+                <div className="text-sm text-gray-600">
+                  {msgLoading ? "불러오는 중…" : ""}
+                  {msgError ? (
+                    <span className="text-red-600 ml-2">{msgError}</span>
+                  ) : null}
+                  {!msgLoading && !msgError ? (
+                    <button
+                      className="ml-3 text-emerald-700 hover:underline"
+                      onClick={loadAllMessages}
+                      title="새로고침"
+                    >
+                      새로고침
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* 안 읽음 */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-semibold">안 읽은 메시지</span>
+                  <span className="text-xs rounded-full bg-red-100 text-red-700 px-2 py-[2px]">
+                    {unreadMessages.length}
+                  </span>
+                </div>
+
+                {unreadMessages.length === 0 ? (
+                  <div className="text-sm text-gray-500">
+                    안 읽은 메시지가 없어요.
+                  </div>
+                ) : (
+                  <ul className="divide-y border rounded-xl">
+                    {unreadMessages.map((m) => (
+                      <li
+                        key={m.message_id}
+                        className="p-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
+                        onClick={() => openMessageDetail(m.message_id)}
+                        title="메시지 열기"
+                      >
+                        <div className="flex flex-col">
+                          <div className="text-sm font-semibold">
+                            [{String(m.group_name)}] {String(m.workbook_name)}{" "}
+                            — {String(m.title)}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            From {m.from_user_id} → To {m.to_user_id}
+                          </div>
+                          <div className="text-sm text-gray-800 line-clamp-1">
+                            {m.context_msg}
+                          </div>
+                        </div>
+                        <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
+                          NEW
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* 읽음 */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-semibold">읽은 메시지</span>
+                  <span className="text-xs rounded-full bg-gray-100 text-gray-700 px-2 py-[2px]">
+                    {readMessages.length}
+                  </span>
+                </div>
+
+                {readMessages.length === 0 ? (
+                  <div className="text-sm text-gray-500">
+                    읽은 메시지가 없어요.
+                  </div>
+                ) : (
+                  <ul className="divide-y border rounded-xl">
+                    {readMessages.map((m) => (
+                      <li
+                        key={m.message_id}
+                        className="p-3 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => openMessageDetail(m.message_id)}
+                        title="메시지 열기"
+                      >
+                        <div className="text-sm font-semibold">
+                          [{String(m.group_name)}] {String(m.workbook_name)} —{" "}
+                          {String(m.title)}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          From {m.from_user_id} → To {m.to_user_id}
+                        </div>
+                        <div className="text-sm text-gray-800 line-clamp-1">
+                          {m.context_msg}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
           </div>
         </div>
       </section>
@@ -1216,6 +1203,21 @@ export default function ProfilePage() {
           />
         </Modal>
       )}
+
+      {/* ✅ 메시지 상세 모달은 페이지 최하단에서 공통으로 렌더링 */}
+      {openMsgModal && selectedMsg && (
+        <MessageDetailModal
+          msg={selectedMsg}
+          onClose={() => {
+            setOpenMsgModal(false);
+            loadAllMessages(); // 닫을 때 목록 새로고침 (읽음 처리 반영)
+          }}
+          onSave={() => {
+            setOpenMsgModal(false);
+            loadAllMessages(); // 확인 버튼 누를 때도 목록 새로고침
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1418,15 +1420,15 @@ export function MessageDetailModal({ msg, onClose, onSave }: MessageDetailModalP
           {/* Left: 메타 정보 */}
           <aside className="border-r p-6 overflow-y-auto">
             <Section title="문제/그룹 정보">
-  {/* 문맥정보가 있으면 우선 사용, 없으면 기존 서버 필드로 폴백 */}
-  <MetaRow label="그룹명" value={ctx["그룹"] ?? String(msg.group_name)} />
-  <MetaRow label="시험지" value={ctx["시험지"] ?? "-"} />
-  {/* '문제'가 제목/문제지명과 다를 수 있어 별도로 표기 */}
-  <MetaRow label="문제" value={ctx["문제"] ?? String(msg.workbook_name)} />
-  <MetaRow label="제출 ID" value={ctx["제출ID"] ?? String(msg.submission_id)} />
-  <MetaRow label="언어" value={ctx["언어"] ?? "-"} />
-  {/* 필요하면 더: 브라우저, 신고자(로그인), 제품ID 등 */}
-</Section>
+              {/* 문맥정보가 있으면 우선 사용, 없으면 기존 서버 필드로 폴백 */}
+              <MetaRow label="그룹명" value={ctx["그룹"] ?? String(msg.group_name)} />
+              <MetaRow label="시험지" value={ctx["시험지"] ?? "-"} />
+              {/* '문제'가 제목/문제지명과 다를 수 있어 별도로 표기 */}
+              <MetaRow label="문제" value={ctx["문제"] ?? String(msg.workbook_name)} />
+              <MetaRow label="제출 ID" value={ctx["제출ID"] ?? String(msg.submission_id)} />
+              <MetaRow label="언어" value={ctx["언어"] ?? "-"} />
+              {/* 필요하면 더: 브라우저, 신고자(로그인), 제품ID 등 */}
+            </Section>
 
             <div className="h-5" />
 
