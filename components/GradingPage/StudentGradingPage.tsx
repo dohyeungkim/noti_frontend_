@@ -332,7 +332,8 @@ export default function StudentGradingPage() {
       console.log("💾 교수 피드백 저장 중:", {
         submissionId: current.submissionId,
         score: scoreToSave,
-        feedback: editedProfFeedback
+        feedback: editedProfFeedback,
+        gradedBy: myUserId
       })
 
       await grading_api.post_submission_score(
@@ -359,7 +360,7 @@ export default function StudentGradingPage() {
       console.error("피드백 저장 실패:", e)
       alert(e?.message || "피드백 저장 실패")
     }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner,myUserId])
 
   // 검토 완료 (점수와 피드백 모두 저장)
   const handleCompleteReview = useCallback(async () => {
