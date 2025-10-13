@@ -202,7 +202,7 @@ export default function ProfilePage() {
   const [memo, setMemo] = useState<string>("");
   const [tmpMemo, setTmpMemo] = useState<string>("");
   const [memoSavedAt, setMemoSavedAt] = useState<string | null>(null);
-
+  
   // 최초 로드
   useEffect(() => {
     let mounted = true;
@@ -348,6 +348,7 @@ export default function ProfilePage() {
 
   // 단건 열기(상세 조회) → 읽음 처리 가정 + 모달 오픈
   async function openMessageDetail(idMaybeNumber: number | string) {
+    
     const id = toIntStrict(idMaybeNumber);
     if (id === null) {
       alert("메시지 ID가 올바르지 않습니다.");
@@ -356,7 +357,7 @@ export default function ProfilePage() {
     console.log("➡️ GET /chat/messages/", id, typeof id);
     try {
       const d = await chatting_message_api.message_get(id); // ✅ 확실히 number 전달
-
+      
       const detail: ChatMsgDetail = {
         message_id: toIntStrict(d?.message_id) ?? id, // 서버가 문자열로 줘도 보정
         from_user_id: String(d?.from_user_id ?? ""),
@@ -383,6 +384,7 @@ export default function ProfilePage() {
       alert(e?.message || "메시지 상세를 불러오지 못했어요.");
     }
   }
+  
   useEffect(() => {
     loadAllMessages();
   }, []);
@@ -922,46 +924,19 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              {/* 메시지 상세 모달 */}
+              {/* 메시지 상세 모달 (수정된 부분) */}
               {openMsgModal && selectedMsg && (
-                <Modal
-                  title={`메시지 #${selectedMsg.message_id}`}
+                <MessageDetailModal
+                  msg={selectedMsg}
                   onClose={() => {
                     setOpenMsgModal(false);
-                    loadAllMessages();
+                    loadAllMessages(); // 닫을 때 목록 새로고침 (읽음 처리 반영)
                   }}
                   onSave={() => {
                     setOpenMsgModal(false);
-                    loadAllMessages();
+                    loadAllMessages(); // 확인 버튼 누를 때도 목록 새로고침
                   }}
-                >
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-semibold">그룹/문제지/제목: </span>[
-                      {String(selectedMsg.group_name)}]{" "}
-                      {String(selectedMsg.workbook_name)} —{" "}
-                      {String(selectedMsg.title)}
-                    </div>
-                    <div>
-                      <span className="font-semibold">보낸사람: </span>
-                      {selectedMsg.from_user_id}
-                    </div>
-                    <div>
-                      <span className="font-semibold">받는사람: </span>
-                      {selectedMsg.to_user_id}
-                    </div>
-                    <div>
-                      <span className="font-semibold">제출ID: </span>
-                      {selectedMsg.submission_id}
-                    </div>
-                    <div className="mt-3 whitespace-pre-wrap rounded-md border p-3">
-                      {selectedMsg.context_msg}
-                    </div>
-                    <div className="mt-2 text-xs text-gray-500">
-                      읽음 상태: {selectedMsg.is_read ? "읽음" : "안 읽음"}
-                    </div>
-                  </div>
-                </Modal>
+                />
               )}
 
               <div className="mt-3 space-y-3">
@@ -1001,7 +976,7 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* ===== 모달들 ===== */}
+      {/* ===== 모달들 (생략하지 않음) ===== */}
       {openEmail && (
         <Modal
           title="이메일 변경"
@@ -1371,6 +1346,183 @@ function Modal({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ===================== 메시지 상세 모달 (2열 레이아웃) ===================== */
+type MessageDetailModalProps = {
+  msg: {
+    message_id: number;
+    from_user_id: string;
+    to_user_id: string;
+    context_msg: string;
+    title: string | number;
+    workbook_name: string | number;
+    submission_id: number;
+    group_name: string | number;
+    is_read: boolean;
+  };
+  onClose: () => void;
+  onSave: () => void;
+};
+
+export function MessageDetailModal({ msg, onClose, onSave }: MessageDetailModalProps) {
+  const ctx = useMemo(() => parseContextInfo(msg.context_msg), [msg.context_msg]);
+  const bodyWithoutContext = useMemo(() => {
+    const raw = msg.context_msg || "";
+    const start = raw.indexOf("[문맥정보]");
+    if (start === -1) return raw;
+    // [문맥정보]부터 문서 끝까지 잘라내기
+    return raw.slice(0, start).trimEnd();
+  }, [msg.context_msg]);
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Dim */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="relative z-[1001] w-[96%] max-w-5xl h-[85vh] rounded-2xl bg-white shadow-2xl border flex flex-col">
+        {/* Header */}
+        <div className="sticky top-0 z-[1] flex items-center justify-between px-6 py-4 border-b bg-white/90 backdrop-blur shrink-0">
+          <div className="min-w-0">
+            <h3 className="text-xl md:text-2xl font-extrabold truncate">
+              메시지 #{msg.message_id}
+            </h3>
+            <p className="mt-1 text-xs md:text-sm text-gray-500 truncate">
+              [{String(msg.group_name)}] {String(msg.workbook_name)} — {String(msg.title)}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={onClose}
+              className="rounded-xl bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
+            >
+              닫기
+            </button>
+            <button
+              onClick={onSave}
+              className="rounded-xl bg-gray-900 text-white px-4 py-2 text-sm hover:opacity-90"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="grid grid-cols-1 md:grid-cols-[360px,1fr] grow overflow-hidden">
+          {/* Left: 메타 정보 */}
+          <aside className="border-r p-6 overflow-y-auto">
+            <Section title="문제/그룹 정보">
+  {/* 문맥정보가 있으면 우선 사용, 없으면 기존 서버 필드로 폴백 */}
+  <MetaRow label="그룹명" value={ctx["그룹"] ?? String(msg.group_name)} />
+  <MetaRow label="시험지" value={ctx["시험지"] ?? "-"} />
+  {/* '문제'가 제목/문제지명과 다를 수 있어 별도로 표기 */}
+  <MetaRow label="문제" value={ctx["문제"] ?? String(msg.workbook_name)} />
+  <MetaRow label="제출 ID" value={ctx["제출ID"] ?? String(msg.submission_id)} />
+  <MetaRow label="언어" value={ctx["언어"] ?? "-"} />
+  {/* 필요하면 더: 브라우저, 신고자(로그인), 제품ID 등 */}
+</Section>
+
+            <div className="h-5" />
+
+            <Section title="보낸/받는 사람">
+              <MetaRow label="보낸 사람" value={msg.from_user_id} />
+              <MetaRow label="받는 사람" value={msg.to_user_id} />
+              <MetaBadge
+                label="읽음 상태"
+                value={msg.is_read ? "읽음" : "안 읽음"}
+                variant={msg.is_read ? "green" : "red"}
+              />
+            </Section>
+          </aside>
+
+          {/* Right: 메시지 본문 */}
+          <main className="p-6 overflow-y-auto">
+            <h4 className="text-sm font-semibold mb-2">메시지 내용</h4>
+            <div className="rounded-xl border bg-gray-50 p-4 min-h-[200px]">
+              <div className="whitespace-pre-wrap leading-relaxed text-sm md:text-base text-gray-800">
+                {bodyWithoutContext || "(내용 없음)"}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/** [문맥정보] 블록에서 "- 키: 값" 라인들을 파싱해 객체로 반환 */
+function parseContextInfo(context: string) {
+  const info: Record<string, string> = {};
+  if (!context) return info;
+
+  const lines = context.split("\n").map((l) => l.trim());
+
+  // [문맥정보] 이후의 "- "로 시작하는 라인만 수집
+  let inBlock = false;
+  for (const line of lines) {
+    if (line.startsWith("[문맥정보]")) {
+      inBlock = true;
+      continue;
+    }
+    if (!inBlock) continue;
+
+    // 블록 종료(빈 줄/구분선 등) 조건은 필요 시 더 추가 가능
+    if (!line || line.startsWith("[") || line.startsWith("---")) break;
+
+    const m = line.match(/^-+\s*([^:]+):\s*(.*)$/);
+    if (!m) continue;
+    const key = m[1].trim();
+    const value = m[2].trim();
+    if (key) info[key] = value;
+  }
+  return info;
+}
+
+/* =============== 서브 컴포넌트 (모달 내부 전용) =============== */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h5 className="text-sm font-bold mb-3">{title}</h5>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function MetaRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2 bg-white">
+      <span className="shrink-0 text-xs text-gray-500">{label}</span>
+      <span className="min-w-0 text-sm font-medium text-gray-800 break-all">{String(value)}</span>
+    </div>
+  );
+}
+
+function MetaBadge({
+  label,
+  value,
+  variant = "gray",
+}: {
+  label: string;
+  value: string;
+  variant?: "green" | "red" | "gray";
+}) {
+  const cls =
+    variant === "green"
+      ? "bg-emerald-100 text-emerald-700"
+      : variant === "red"
+      ? "bg-red-100 text-red-700"
+      : "bg-gray-100 text-gray-700";
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 bg-white">
+      <span className="shrink-0 text-xs text-gray-500">{label}</span>
+      <span className={`text-xs px-2 py-1 rounded ${cls}`}>{value}</span>
     </div>
   );
 }
