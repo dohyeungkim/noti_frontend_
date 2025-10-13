@@ -94,10 +94,7 @@ export default function StudentGradingPage() {
           const scores = await grading_api.get_submission_scores(s.submission_id)
           console.log(`📊 제출물 ${s.submission_id} 점수 목록:`, scores)
           
-          // AI 점수는 이미 s.score에 있음
-          const aiScore = s.score  // get_all_submissions에서 가져온 AI 점수
-          
-          // 교수 점수만 별도로 찾기 (가장 최신 것)
+          // 모든 교수 점수 찾기
           const profScores = scores.filter((score: any) => {
             const gradedBy = score.graded_by
             if (gradedBy == null) return false
@@ -105,18 +102,20 @@ export default function StudentGradingPage() {
             return true
           })
           
+          // 가장 최신 점수 선택 (submission_score_id가 가장 큰 것)
           if (profScores.length > 0) {
-            // 가장 최신 교수 점수 선택
             const latestScore = profScores.reduce((latest: any, current: any) => {
               return current.submission_score_id > latest.submission_score_id ? current : latest
             })
             
             profScore = latestScore.score
             profFeedback = latestScore.prof_feedback || ""
-            console.log(`✅ 최신 교수 점수: ${profScore}, 피드백: ${profFeedback}`)
+            console.log(`✅ 최신 교수 점수: ${profScore}, 피드백: ${profFeedback}, ID: ${latestScore.submission_score_id}`)
+          } else {
+            console.log(`⚠️ 제출물 ${s.submission_id}: 교수 점수 없음`)
           }
         } catch (err) {
-          console.error(`❌ 교수 점수 조회 실패:`, err)
+          console.error(`❌ 교수 점수 조회 실패 (submission_id: ${s.submission_id}):`, err)
         }
 
         return {
@@ -126,9 +125,9 @@ export default function StudentGradingPage() {
           problemType: s.problme_type || "code",
           answerType: s.problme_type || "code",
           answer: "",
-          aiScore: s.score,  // AI 점수는 원본 그대로 유지
-          profScore: profScore,  // 최신 교수 점수
-          profFeedback: profFeedback,  // 최신 교수 피드백
+          aiScore: s.score,
+          profScore: profScore,
+          profFeedback: profFeedback,
           reviewed: s.reviewed,
           userName: s.user_name,
           createdAt: s.created_at,
@@ -139,6 +138,8 @@ export default function StudentGradingPage() {
     )
 
     mapped.sort((a, b) => a.problemId - b.problemId)
+    
+    console.log("📋 최종 제출물 목록:", mapped)
     setSubmissions(mapped)
     
     if (mapped.length > 0) {
