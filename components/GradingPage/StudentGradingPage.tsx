@@ -288,7 +288,8 @@ export default function StudentGradingPage() {
       console.log("💾 교수 점수 저장 중:", {
         submissionId: current.submissionId,
         score: clamped,
-        feedback: editedProfFeedback
+        feedback: editedProfFeedback,
+        gradedBy: myUserId
       })
 
       await grading_api.post_submission_score(
@@ -315,7 +316,7 @@ export default function StudentGradingPage() {
       console.error("점수 저장 실패:", e)
       alert(e?.message || "점수 저장 실패")
     }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
 
   // 피드백만 저장
   const saveProfFeedback = useCallback(async () => {
@@ -378,7 +379,8 @@ export default function StudentGradingPage() {
       console.log("💾 검토 완료 - 점수와 피드백 저장 중:", {
         submissionId: current.submissionId,
         score: clamped,
-        feedback: editedProfFeedback
+        feedback: editedProfFeedback,
+        gradedBy: myUserId
       })
 
       await grading_api.post_submission_score(
@@ -406,7 +408,7 @@ export default function StudentGradingPage() {
       console.error("검토 완료 실패:", e)
       alert(e?.message || "검토 완료 실패")
     }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router, myUserId])
 
   // 피드백 탭
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
