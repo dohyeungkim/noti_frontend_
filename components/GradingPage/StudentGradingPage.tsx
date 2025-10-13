@@ -273,6 +273,20 @@ export default function StudentGradingPage() {
     }
   }, [current])
 
+  // ====== 디버깅 로그 추가 부분 시작 ======
+  useEffect(() => {
+    if (current) {
+      console.log("🔄 [페이지로드/네비게이션] 현재 제출물 상태:", {
+        submissionId: current.submissionId,
+        aiScore: current.aiScore,
+        profScore: current.profScore,
+        profFeedback: current.profFeedback,
+        reviewed: current.reviewed
+      })
+    }
+  }, [current])
+  // ====== 디버깅 로그 추가 부분 끝 ======
+
   // 점수만 저장
   const saveProfScore = useCallback(async () => {
     if (!current) return
@@ -285,18 +299,53 @@ export default function StudentGradingPage() {
       const num = Number(editedProfScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      console.log("💾 교수 점수 저장 중:", {
+      // ====== 디버깅 로그 추가 부분 시작 ======
+      console.log("💾 [점수저장-1] 저장 시작:", {
         submissionId: current.submissionId,
-        score: clamped,
-        feedback: editedProfFeedback
+        이전_교수점수: current.profScore,
+        새로운_교수점수: clamped,
+        피드백: editedProfFeedback,
+        myUserId: myUserId
       })
+      // ====== 디버깅 로그 추가 부분 끝 ======
 
-      await grading_api.post_submission_score(
+      const saveResponse = await grading_api.post_submission_score(
         current.submissionId,
         clamped,
         editedProfFeedback,
         myUserId?? undefined
       )
+
+      // ====== 디버깅 로그 추가 부분 시작 ======
+      console.log("💾 [점수저장-2] 서버 응답:", saveResponse)
+      
+      // 저장 직후 서버에서 데이터 확인
+      try {
+        const verifyScores = await grading_api.get_submission_scores(current.submissionId)
+        console.log("💾 [점수저장-3] 저장 확인 - 서버에서 조회한 점수들:", verifyScores)
+        
+        // 방금 저장한 점수가 있는지 확인
+        const savedScore = verifyScores.find((score: any) => {
+          const gradedBy = score.graded_by
+          console.log(`   체크 중: score=${score.score}, graded_by=${gradedBy}, prof_feedback=${score.prof_feedback}`)
+          if (gradedBy == null) return false
+          if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) return false
+          return true
+        })
+        
+        if (savedScore) {
+          console.log("✅ [점수저장-4] 서버에 저장 확인됨:", {
+            점수: savedScore.score,
+            피드백: savedScore.prof_feedback,
+            채점자: savedScore.graded_by
+          })
+        } else {
+          console.log("⚠️ [점수저장-4] 서버에서 교수 점수를 찾을 수 없음")
+        }
+      } catch (verifyErr) {
+        console.error("❌ [점수저장] 저장 확인 중 오류:", verifyErr)
+      }
+      // ====== 디버깅 로그 추가 부분 끝 ======
 
       // 로컬 상태 업데이트 (AI 점수는 절대 변경하지 않음)
       setSubmissions((prev) => {
@@ -304,18 +353,24 @@ export default function StudentGradingPage() {
         next[currentIdx] = { 
           ...next[currentIdx], 
           profScore: clamped,  // 교수 점수만 업데이트
-          // aiScore는 그대로 유지
+          profFeedback: editedProfFeedback  // 피드백도 함께 업데이트
         }
+        console.log("💾 [점수저장-5] 로컬 상태 업데이트 완료")
         return next
       })
       
       setIsEditingScore(false)
       alert("교수 점수가 저장되었습니다.")
     } catch (e: any) {
-      console.error("점수 저장 실패:", e)
+      console.error("❌ [점수저장] 점수 저장 실패:", e)
+      console.error("오류 상세:", {
+        message: e?.message,
+        response: e?.response,
+        data: e?.response?.data
+      })
       alert(e?.message || "점수 저장 실패")
     }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
 
   // 피드백만 저장
   const saveProfFeedback = useCallback(async () => {
@@ -327,20 +382,54 @@ export default function StudentGradingPage() {
 
     try {
       // 교수 점수가 없으면 0으로 저장
-      const scoreToSave = editedProfScore || 0
+      const scoreToSave = current.profScore !== null ? current.profScore : editedProfScore
 
-      console.log("💾 교수 피드백 저장 중:", {
+      // ====== 디버깅 로그 추가 부분 시작 ======
+      console.log("💬 [피드백저장-1] 피드백 저장 시작:", {
         submissionId: current.submissionId,
-        score: scoreToSave,
-        feedback: editedProfFeedback
+        기존_교수점수: current.profScore,
+        저장할_점수: scoreToSave,
+        이전_피드백: current.profFeedback,
+        새_피드백: editedProfFeedback,
+        myUserId: myUserId
       })
+      // ====== 디버깅 로그 추가 부분 끝 ======
 
-      await grading_api.post_submission_score(
+      const saveResponse = await grading_api.post_submission_score(
         current.submissionId,
         scoreToSave,
         editedProfFeedback,
         myUserId ?? undefined
       )
+
+      // ====== 디버깅 로그 추가 부분 시작 ======
+      console.log("💬 [피드백저장-2] 서버 응답:", saveResponse)
+
+      // 저장 확인
+      try {
+        const verifyScores = await grading_api.get_submission_scores(current.submissionId)
+        console.log("💬 [피드백저장-3] 저장 확인 - 서버 점수들:", verifyScores)
+        
+        const savedScore = verifyScores.find((score: any) => {
+          const gradedBy = score.graded_by
+          if (gradedBy == null) return false
+          if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) return false
+          return true
+        })
+        
+        if (savedScore) {
+          console.log("✅ [피드백저장-4] 피드백 저장 확인:", {
+            피드백: savedScore.prof_feedback,
+            점수: savedScore.score,
+            채점자: savedScore.graded_by
+          })
+        } else {
+          console.log("⚠️ [피드백저장-4] 서버에서 교수 피드백을 찾을 수 없음")
+        }
+      } catch (verifyErr) {
+        console.error("❌ [피드백저장] 저장 확인 오류:", verifyErr)
+      }
+      // ====== 디버깅 로그 추가 부분 끝 ======
 
       // 로컬 상태 업데이트
       setSubmissions((prev) => {
@@ -350,16 +439,22 @@ export default function StudentGradingPage() {
           profScore: scoreToSave,
           profFeedback: editedProfFeedback,
         }
+        console.log("💬 [피드백저장-5] 로컬 업데이트 완료")
         return next
       })
       
       setIsEditingProfessor(false)
       alert("교수 피드백이 저장되었습니다.")
     } catch (e: any) {
-      console.error("피드백 저장 실패:", e)
+      console.error("❌ [피드백저장] 피드백 저장 실패:", e)
+      console.error("오류 상세:", {
+        message: e?.message,
+        response: e?.response,
+        data: e?.response?.data
+      })
       alert(e?.message || "피드백 저장 실패")
     }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner, myUserId])
 
   // 검토 완료 (점수와 피드백 모두 저장)
   const handleCompleteReview = useCallback(async () => {
@@ -374,18 +469,33 @@ export default function StudentGradingPage() {
       const num = Number(editedProfScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      console.log("💾 검토 완료 - 점수와 피드백 저장 중:", {
+      // ====== 디버깅 로그 추가 부분 시작 ======
+      console.log("🎯 [검토완료-1] 검토 완료 시작:", {
         submissionId: current.submissionId,
-        score: clamped,
-        feedback: editedProfFeedback
+        점수: clamped,
+        피드백: editedProfFeedback,
+        myUserId: myUserId
       })
+      // ====== 디버깅 로그 추가 부분 끝 ======
 
-      await grading_api.post_submission_score(
+      const saveResponse = await grading_api.post_submission_score(
         current.submissionId,
         clamped,
         editedProfFeedback,
         myUserId?? undefined
       )
+
+      // ====== 디버깅 로그 추가 부분 시작 ======
+      console.log("🎯 [검토완료-2] 서버 응답:", saveResponse)
+
+      // 저장 확인
+      try {
+        const verifyScores = await grading_api.get_submission_scores(current.submissionId)
+        console.log("🎯 [검토완료-3] 최종 확인:", verifyScores)
+      } catch (verifyErr) {
+        console.error("❌ [검토완료] 확인 오류:", verifyErr)
+      }
+      // ====== 디버깅 로그 추가 부분 끝 ======
 
       // 로컬 상태 업데이트
       setSubmissions((prev) => {
@@ -402,10 +512,10 @@ export default function StudentGradingPage() {
       alert("검토가 완료되었습니다.")
       router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
     } catch (e: any) {
-      console.error("검토 완료 실패:", e)
+      console.error("❌ [검토완료] 검토 완료 실패:", e)
       alert(e?.message || "검토 완료 실패")
     }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router])
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router, myUserId])
 
   // 피드백 탭
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
