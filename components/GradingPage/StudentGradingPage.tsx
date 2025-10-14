@@ -52,15 +52,12 @@ export default function StudentGradingPage() {
   const [studentName, setStudentName] = useState<string>("")
   const [currentIdx, setCurrentIdx] = useState(0)
 
-  // 문제별 배점 맵
   const [pointsByProblem, setPointsByProblem] = useState<Record<number, number>>({})
 
-  // ⭐ 모범답안 상태 추가
   const [currentProblem, setCurrentProblem] = useState<any | null>(null)
   const [problemLoading, setProblemLoading] = useState(false)
-  const [allProblems, setAllProblems] = useState<any[]>([]) // ⭐ 전체 문제 캐시
+  const [allProblems, setAllProblems] = useState<any[]>([])
 
-  // 제출 목록 로드
   const fetchSubmissions = useCallback(async () => {
     try {
       console.log("===== 학생 제출물 로딩 시작 =====");
@@ -84,7 +81,6 @@ export default function StudentGradingPage() {
           try {
             const scores = await grading_api.get_submission_scores(s.submission_id)
             
-            // 교수 점수 필터링
             const profScores = scores.filter((score: any) => {
               const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
               const hasProfScore = score.prof_score !== undefined && score.prof_score !== null;
@@ -139,7 +135,6 @@ export default function StudentGradingPage() {
     }
   }, [groupId, examId, studentId])
 
-  // ⭐ 문제 배점 및 상세 정보 로드 (수정됨)
   const fetchProblemPoints = useCallback(async () => {
     try {
       const list = await problem_ref_api.problem_ref_get(Number(groupId), Number(examId))
@@ -150,7 +145,7 @@ export default function StudentGradingPage() {
         }
       }
       setPointsByProblem(map)
-      setAllProblems(list as any[]) // ⭐ 전체 문제 목록 저장
+      setAllProblems(list as any[])
       console.log("📚 문제 목록 로드 완료:", list)
     } catch (e) {
       console.error("배점 불러오기 실패:", e)
@@ -159,7 +154,6 @@ export default function StudentGradingPage() {
     }
   }, [groupId, examId])
 
-  // 그룹장 및 본인 ID 조회
   const fetchUserInfo = useCallback(async () => {
     try {
       const [me, grp]: [{ user_id: string | number }, any] = await Promise.all([
@@ -187,14 +181,12 @@ export default function StudentGradingPage() {
     }
   }, [groupId])
 
-  // 초기 로드
   useEffect(() => {
     fetchUserInfo()
     fetchSubmissions()
     fetchProblemPoints()
   }, [fetchUserInfo, fetchSubmissions, fetchProblemPoints])
 
-  // 그룹장 여부 확인
   const isGroupOwner = useMemo(() => {
     if (myUserId == null || groupOwnerId == null) return false
     return String(myUserId) === String(groupOwnerId)
@@ -203,7 +195,6 @@ export default function StudentGradingPage() {
   const lastIdx = submissions.length - 1
   const current = submissions[currentIdx]
 
-  // ⭐ current 변경 시 캐시된 문제에서 찾기 (수정됨)
   useEffect(() => {
     if (!current?.problemId || allProblems.length === 0) {
       setCurrentProblem(null)
@@ -213,7 +204,6 @@ export default function StudentGradingPage() {
     
     setProblemLoading(true)
     
-    // 캐시된 문제 목록에서 찾기
     const foundProblem = allProblems.find(
       (prob: any) => prob.problem_id === current.problemId
     )
@@ -229,7 +219,6 @@ export default function StudentGradingPage() {
     setProblemLoading(false)
   }, [current?.problemId, allProblems])
 
-  // 네비게이션
   const goPrev = useCallback(() => {
     if (currentIdx > 0) setCurrentIdx((i) => i - 1)
     else router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
@@ -239,31 +228,26 @@ export default function StudentGradingPage() {
     if (currentIdx < lastIdx) setCurrentIdx((i) => i + 1)
   }, [currentIdx, lastIdx])
 
-  // 총점
   const maxScore = useMemo(() => {
     if (!current) return 0
     return pointsByProblem[current.problemId] ?? 10
   }, [pointsByProblem, current])
 
-  // 점수 수정 상태 (독립적)
   const [isEditingScore, setIsEditingScore] = useState(false)
-  const [editedProfScore, setEditedProfScore] = useState(0)
+  const [editedProfScore, setEditedProfScore] = useState("")
 
-  // 피드백 수정 상태 (독립적)
   const [isEditingProfessor, setIsEditingProfessor] = useState(false)
   const [editedProfFeedback, setEditedProfFeedback] = useState("")
 
-  // 현재 제출물이 바뀔 때 편집 상태 초기화
   useEffect(() => {
     if (current) {
-      setEditedProfScore(current.profScore ?? 0)
+      setEditedProfScore(current.profScore !== null ? String(current.profScore) : "")
       setEditedProfFeedback(current.profFeedback || "")
       setIsEditingScore(false)
       setIsEditingProfessor(false)
     }
   }, [current])
 
-  // 점수만 저장
   const saveProfScore = useCallback(async () => {
     if (!current) return
     if (!isGroupOwner) {
@@ -290,7 +274,6 @@ export default function StudentGradingPage() {
 
       console.log(`✅ 저장 API 호출 완료`);
       
-      // 저장 후 다시 조회해서 확인
       const updatedScores = await grading_api.get_submission_scores(current.submissionId);
       console.log(`\n📊 저장 후 점수 확인:`, updatedScores);
       
@@ -299,7 +282,6 @@ export default function StudentGradingPage() {
       });
       console.log(`  교수 점수 목록:`, profScores);
 
-      // 로컬 상태 업데이트
       setSubmissions((prev) => {
         const next = [...prev]
         const originalAiScore = next[currentIdx].aiScore
@@ -326,7 +308,6 @@ export default function StudentGradingPage() {
     }
   }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
 
-  // 피드백만 저장
   const saveProfFeedback = useCallback(async () => {
     if (!current) return
     if (!isGroupOwner) {
@@ -335,7 +316,7 @@ export default function StudentGradingPage() {
     }
 
     try {
-      const scoreToSave = current.profScore !== null ? current.profScore : editedProfScore
+      const scoreToSave = current.profScore !== null ? current.profScore : (Number(editedProfScore) || 0)
 
       await grading_api.post_submission_score(
         current.submissionId,
@@ -362,7 +343,6 @@ export default function StudentGradingPage() {
     }
   }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner, myUserId])
 
-  // 검토 완료
   const handleCompleteReview = useCallback(async () => {
     if (!isGroupOwner) {
       alert("그룹장만 검토를 완료할 수 있습니다.")
@@ -401,10 +381,8 @@ export default function StudentGradingPage() {
     }
   }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router, myUserId])
 
-  // 피드백 탭
   const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
 
-  // AI 피드백
   const [aiFeedback, setAiFeedback] = useState<string>("")
   const [isAILoaded, setIsAILoaded] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -441,7 +419,6 @@ export default function StudentGradingPage() {
     }
   }, [current?.submissionId, fetchAiFeedback])
 
-  // 통과 조건
   const finalScore = current?.profScore ?? current?.aiScore ?? 0
   const passedCondition = finalScore >= (maxScore ?? 0)
 
@@ -457,13 +434,11 @@ export default function StudentGradingPage() {
     )
   }
 
-  // 답안 렌더링 함수
   const renderAnswer = () => {
     if (!current) return null
 
     const problemType = current.problemType
 
-    // 코딩 또는 디버깅 문제
     if (problemType === "Coding" || problemType === "코딩" || problemType === "디버깅") {
       return (
         <MonacoEditor
@@ -475,7 +450,6 @@ export default function StudentGradingPage() {
       )
     }
 
-    // 객관식
     if (problemType === "객관식") {
       return (
         <div className="p-4">
@@ -495,7 +469,6 @@ export default function StudentGradingPage() {
       )
     }
 
-    // 주관식
     if (problemType === "주관식") {
       return (
         <div className="p-4">
@@ -507,7 +480,6 @@ export default function StudentGradingPage() {
       )
     }
 
-    // 단답형
     if (problemType === "단답형") {
       return (
         <div className="p-4">
@@ -527,7 +499,6 @@ export default function StudentGradingPage() {
       )
     }
 
-    // 기본값
     return (
       <div className="h-full flex items-center justify-center text-gray-500 text-sm">
         답안이 없습니다
@@ -535,7 +506,6 @@ export default function StudentGradingPage() {
     )
   }
 
-  // ⭐ 문제 설명 렌더링 함수 (간단하게 수정)
   const renderProblemDescription = () => {
     if (problemLoading) {
       return <p className="text-gray-500 text-sm">문제 정보를 불러오는 중...</p>
@@ -547,7 +517,6 @@ export default function StudentGradingPage() {
 
     return (
       <div className="space-y-4">
-        {/* 문제 제목 */}
         <div>
           <h4 className="font-semibold text-base text-gray-800 mb-2">
             {currentProblem.title || "제목 없음"}
@@ -567,7 +536,6 @@ export default function StudentGradingPage() {
           </div>
         </div>
 
-        {/* 문제 설명 */}
         {currentProblem.description && (
           <div>
             <h5 className="font-semibold text-sm text-gray-700 mb-2">문제 설명</h5>
@@ -579,7 +547,6 @@ export default function StudentGradingPage() {
           </div>
         )}
 
-        {/* 추가 정보가 있다면 표시 */}
         {currentProblem.tags && currentProblem.tags.length > 0 && (
           <div>
             <h5 className="font-semibold text-sm text-gray-700 mb-2">태그</h5>
@@ -593,7 +560,6 @@ export default function StudentGradingPage() {
           </div>
         )}
 
-        {/* JSON 전체 구조 확인용 (개발 중에만 사용) */}
         <details className="mt-4">
           <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
             전체 문제 데이터 보기 (개발용)
@@ -609,7 +575,6 @@ export default function StudentGradingPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="flex-1 max-w-7xl mx-auto p-6 space-y-6">
-        {/* 헤더 */}
         <div className="flex items-center justify-between">
           <button onClick={goPrev} className="flex items-center gap-1 text-gray-600 hover:text-gray-800">
             {currentIdx > 0 ? <ChevronLeft /> : <ArrowLeft />} {currentIdx > 0 ? "이전 문제" : "목록으로"}
@@ -626,9 +591,7 @@ export default function StudentGradingPage() {
           </button>
         </div>
 
-        {/* ⭐ 본문 - 3단 그리드 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 좌: 학생 답안 */}
           <motion.div
             className="bg-white rounded-lg shadow border p-4 h-[600px] overflow-y-auto"
             initial={{ opacity: 0, x: -20 }}
@@ -642,7 +605,6 @@ export default function StudentGradingPage() {
             {renderAnswer()}
           </motion.div>
 
-          {/* ⭐ 중앙: 문제 설명 (수정됨) */}
           <motion.div
             className="bg-white rounded-lg shadow border p-4 h-[600px] overflow-y-auto"
             initial={{ opacity: 0, y: 20 }}
@@ -653,7 +615,6 @@ export default function StudentGradingPage() {
             {renderProblemDescription()}
           </motion.div>
 
-          {/* 우: 피드백 */}
           <motion.div
             className="bg-white rounded-lg shadow border flex flex-col h-[600px]"
             initial={{ opacity: 0, x: 20 }}
@@ -694,16 +655,18 @@ export default function StudentGradingPage() {
                   </div>
                 )
               ) : (
-                <div className="prose prose-sm max-w-none">
+                <div className="h-full flex flex-col">
                   {!isEditingProfessor ? (
                     <>
-                      {editedProfFeedback ? (
-                        <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>
-                      ) : (
-                        <p className="text-gray-500">교수 피드백이 없습니다.</p>
-                      )}
+                      <div className="prose prose-sm max-w-none flex-1 overflow-y-auto">
+                        {editedProfFeedback ? (
+                          <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>
+                        ) : (
+                          <p className="text-gray-500">교수 피드백이 없습니다.</p>
+                        )}
+                      </div>
                       {isGroupOwner && (
-                        <div className="mt-3">
+                        <div className="mt-3 pt-3 border-t">
                           <button
                             onClick={() => setIsEditingProfessor(true)}
                             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
@@ -714,9 +677,9 @@ export default function StudentGradingPage() {
                       )}
                     </>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="flex flex-col h-full space-y-2">
                       <textarea
-                        className="w-full h-56 border rounded p-2 text-sm font-sans"
+                        className="flex-1 w-full border rounded p-2 text-sm font-sans resize-none"
                         value={editedProfFeedback}
                         onChange={(e) => setEditedProfFeedback(e.target.value)}
                         placeholder="교수 피드백을 입력하세요..."
@@ -746,7 +709,6 @@ export default function StudentGradingPage() {
           </motion.div>
         </div>
 
-        {/* 조건 검사 */}
         <div className="bg-white rounded-lg border shadow-sm p-4">
           <h3 className="font-semibold text-gray-800 mb-2">조건 검사 결과</h3>
           <div
@@ -772,7 +734,6 @@ export default function StudentGradingPage() {
           </div>
         </div>
 
-        {/* 점수 수정 */}
         <div className="mt-4 flex items-center justify-between">
           <div className="text-sm text-gray-600">
             제출 시간: {new Date(current?.updatedAt || "").toLocaleString("ko-KR")}
@@ -803,9 +764,16 @@ export default function StudentGradingPage() {
                   max={maxScore || undefined}
                   value={editedProfScore}
                   onChange={(e) => {
-                    const v = Number(e.target.value)
-                    const clamped = Number.isNaN(v) ? 0 : Math.max(0, Math.min(v, maxScore || v))
-                    setEditedProfScore(clamped)
+                    const val = e.target.value
+                    if (val === "" || val === "-") {
+                      setEditedProfScore(val)
+                      return
+                    }
+                    const num = Number(val)
+                    if (!Number.isNaN(num)) {
+                      const clamped = Math.max(0, Math.min(num, maxScore || num))
+                      setEditedProfScore(String(clamped))
+                    }
                   }}
                   className="w-20 p-2 border rounded"
                 />
@@ -815,7 +783,7 @@ export default function StudentGradingPage() {
                 </button>
                 <button
                   onClick={() => {
-                    setEditedProfScore(current?.profScore ?? 0)
+                    setEditedProfScore(current?.profScore !== null ? String(current.profScore) : "")
                     setIsEditingScore(false)
                   }}
                   className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
