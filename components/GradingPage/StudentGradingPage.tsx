@@ -117,7 +117,7 @@ export default function StudentGradingPage() {
           problemType: s.problme_type || "code",
           answerType: s.problme_type || "code",
           answer: "",
-          aiScore: s.score,  // AI 점수는 get_all_submissions에서 직접 가져옴
+          aiScore: s.ai_score,  // AI 점수는 get_all_submissions에서 직접 가져옴
           profScore: profScore,  // 교수 점수 (최신)
           profFeedback: profFeedback,  // 교수 피드백 (최신)
           reviewed: s.reviewed,

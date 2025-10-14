@@ -84,7 +84,7 @@ export default function GradingListPage() {
         submissions.map(async (sub) => {
           try {
             console.log(`\n📋 제출 ID ${sub.submission_id} 분석 시작`);
-            console.log(`  📊 AI 점수 (get_all_submissions의 sub.score): ${sub.score}`);
+            console.log(`  📊 AI 점수 (get_all_submissions의 sub.score): ${sub.ai_score}`);
             
             const scores = await grading_api.get_submission_scores(sub.submission_id);
             console.log(`  - get_submission_scores 응답 개수: ${scores.length}`);
@@ -129,7 +129,7 @@ export default function GradingListPage() {
                 const latestProfScore = profScores[0];
                 profScoresMap.set(sub.submission_id, latestProfScore.prof_score);
                 console.log(`  ✅ 최종 교수 점수: ${latestProfScore.prof_score}점 (graded_by: ${latestProfScore.graded_by})`);
-                console.log(`  ✅ AI 점수: ${sub.score}점 (변경 없음)`);
+                console.log(`  ✅ AI 점수: ${sub.ai_score}점 (변경 없음)`);
               } else {
                 profScoresMap.set(sub.submission_id, null);
                 console.log(`  ℹ️ 교수가 수정한 점수 없음 (AI 자동 채점만 있음)`);
@@ -251,7 +251,7 @@ export default function GradingListPage() {
           // 제출 기록 생성
           const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
             submissionId: sub.submission_id,
-            aiScore: sub.score, // get_all_submissions에서 받은 AI 점수 그대로 사용
+            aiScore: sub.ai_score, // get_all_submissions에서 받은 AI 점수 그대로 사용
             profScore: profScoresMap.get(sub.submission_id) ?? null, // 교수가 직접 수정한 점수만
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
