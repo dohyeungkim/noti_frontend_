@@ -8,7 +8,6 @@ import {
   group_api,
   grading_api,
   ai_feedback_api,
-  code_log_api,
   problem_ref_api,
   auth_api,
   type SubmissionSummary,
@@ -24,10 +23,12 @@ interface Submission {
   problemId: number
   problemTitle: string
   problemType: string
-  answerType: string
-  answer: string
-  aiScore: number | null  // AI 점수 (읽기 전용)
-  profScore: number | null  // 교수 점수 (편집 가능)
+  codes?: string
+  selectedOptions?: number[]
+  writtenText?: string
+  writtenAnswers?: string[]
+  aiScore: number | null
+  profScore: number | null
   profFeedback: string
   reviewed: boolean
   userName: string
@@ -51,29 +52,8 @@ export default function StudentGradingPage() {
   const [studentName, setStudentName] = useState<string>("")
   const [currentIdx, setCurrentIdx] = useState(0)
 
-  // 최신 코드 로그 캐시
-  const [latestLogCache, setLatestLogCache] = useState<Record<number, { code: string; timestamp: string }>>({})
-
   // 문제별 배점 맵
   const [pointsByProblem, setPointsByProblem] = useState<Record<number, number>>({})
-
-  // 가장 마지막 코드 로그 추출
-  function pickLatestLog(data: any): { code: string; timestamp: string } | null {
-    if (Array.isArray(data?.code_logs) && Array.isArray(data?.timestamp)) {
-      const zipped = data.code_logs
-        .map((code: string, i: number) => ({ code, timestamp: data.timestamp[i] }))
-        .filter((x: any) => !!x?.timestamp)
-        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-      return zipped.at(-1) ?? null
-    }
-    if (Array.isArray(data) && data.length) {
-      const arr = data
-        .filter((x) => typeof x?.timestamp === "string" && typeof x?.code === "string")
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-      return arr.at(-1) ?? null
-    }
-    return null
-  }
 
   // 제출 목록 로드
   const fetchSubmissions = useCallback(async () => {
@@ -85,59 +65,34 @@ export default function StudentGradingPage() {
         Number(groupId),
         Number(examId),
       )
+      
+      console.log('GET submissions 전체:', allSubs);
+      
       const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
       console.log(`✅ 학생 제출물 필터링 완료: ${studentSubs.length}개`);
       
       const mapped: Submission[] = await Promise.all(
-        studentSubs.map(async (s) => {
+        studentSubs.map(async (s: any) => {
           let profScore = null
           let profFeedback = ""
           
           try {
             const scores = await grading_api.get_submission_scores(s.submission_id)
             
-            // 🔍 핵심 디버깅: API 응답 구조 확인
-            console.log(`\n[제출 ${s.submission_id}] API 응답 구조:`);
-            if (scores && scores.length > 0) {
-              console.log(`  - 응답 타입: ${Array.isArray(scores) ? '배열' : typeof scores}`);
-              console.log(`  - 점수 개수: ${scores.length}개`);
-              
-              // 첫 번째 객체의 전체 키 확인
-              const firstScore = scores[0];
-              console.log(`  - 첫 번째 점수 객체 키: ${Object.keys(firstScore).join(', ')}`);
-              console.log(`  - prof_score 필드 존재: ${firstScore.hasOwnProperty('prof_score')}`);
-              console.log(`  - prof_feedback 필드 존재: ${firstScore.hasOwnProperty('prof_feedback')}`);
-              console.log(`  - prof_score 값: ${firstScore.prof_score} (타입: ${typeof firstScore.prof_score})`);
-              console.log(`  - prof_feedback 값: "${firstScore.prof_feedback}" (타입: ${typeof firstScore.prof_feedback})`);
-            }
-            
             // 교수 점수 필터링
             const profScores = scores.filter((score: any) => {
               const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
               const hasProfScore = score.prof_score !== undefined && score.prof_score !== null;
-              
-              if (hasGradedBy && hasProfScore) {
-                console.log(`  ✅ 교수 점수 발견: ${score.prof_score}점 (graded_by: ${score.graded_by})`);
-                return true;
-              }
-              return false;
+              return hasGradedBy && hasProfScore;
             })
             
-            console.log(`  📊 필터링 결과: 총 ${scores.length}개 중 ${profScores.length}개가 교수 점수`);
-            
             if (profScores.length > 0) {
-              // 가장 최신 교수 점수만 선택
               const latestProf = profScores.reduce((latest: any, current: any) => {
                 return current.submission_score_id > latest.submission_score_id ? current : latest
               })
               
               profScore = latestProf.prof_score
               profFeedback = latestProf.prof_feedback || ""
-              
-              console.log(`  ➡️ 최종 교수 점수: ${profScore}점`);
-              console.log(`  ➡️ 최종 교수 피드백: "${profFeedback}"`);
-            } else {
-              console.log(`  ➡️ 교수 점수 없음`);
             }
             
           } catch (err) {
@@ -148,12 +103,14 @@ export default function StudentGradingPage() {
             submissionId: s.submission_id,
             problemId: s.problem_id,
             problemTitle: s.problem_title,
-            problemType: s.problme_type || "code",
-            answerType: s.problme_type || "code",
-            answer: "",
-            aiScore: s.ai_score,  // AI 점수는 get_all_submissions에서 직접 가져옴 (원본 유지)
-            profScore: profScore,  // 교수 점수 (실제 교수가 수정한 것만)
-            profFeedback: profFeedback,  // 교수 피드백
+            problemType: s.problem_type || s.problme_type || "Coding",
+            codes: s.codes,
+            selectedOptions: s.selected_options,
+            writtenText: s.written_text,
+            writtenAnswers: s.written_answers,
+            aiScore: s.ai_score,
+            profScore: profScore,
+            profFeedback: profFeedback,
             reviewed: s.reviewed,
             userName: s.user_name,
             createdAt: s.created_at,
@@ -166,12 +123,6 @@ export default function StudentGradingPage() {
       
       console.log(`\n===== 최종 결과 =====`);
       console.log(`문제 수: ${mapped.length}개`);
-      
-      // 최종 점수 상태 확인
-      console.log("\n[점수 분리 상태 요약]");
-      mapped.forEach(sub => {
-        console.log(`  문제${sub.problemId}: AI=${sub.aiScore}, Prof=${sub.profScore}`);
-      });
       
       setSubmissions(mapped)
       
@@ -244,33 +195,6 @@ export default function StudentGradingPage() {
   const lastIdx = submissions.length - 1
   const current = submissions[currentIdx]
 
-  // 코드 로그 로드
-  useEffect(() => {
-    const subId = current?.submissionId
-    if (!subId) return
-    if (latestLogCache[subId]) return
-
-    let cancelled = false
-    ;(async () => {
-      try {
-        const data = await code_log_api.code_logs_get_by_solve_id(subId)
-        if (cancelled) return
-        const last = pickLatestLog(data)
-        setLatestLogCache((prev) => ({
-          ...prev,
-          [subId]: last ?? { code: "", timestamp: "" },
-        }))
-      } catch (e) {
-        console.error("코드 로그 로드 실패:", e)
-        setLatestLogCache((prev) => ({ ...prev, [subId]: { code: "", timestamp: "" } }))
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [current?.submissionId, latestLogCache])
-
   // 네비게이션
   const goPrev = useCallback(() => {
     if (currentIdx > 0) setCurrentIdx((i) => i - 1)
@@ -298,7 +222,6 @@ export default function StudentGradingPage() {
   // 현재 제출물이 바뀔 때 편집 상태 초기화
   useEffect(() => {
     if (current) {
-      // 교수 점수가 없으면 0으로 시작 (AI 점수를 복사하지 않음)
       setEditedProfScore(current.profScore ?? 0)
       setEditedProfFeedback(current.profFeedback || "")
       setIsEditingScore(false)
@@ -318,12 +241,6 @@ export default function StudentGradingPage() {
       const num = Number(editedProfScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      console.log("💾 교수 점수 저장:", {
-        submissionId: current.submissionId,
-        prof_score: clamped,
-        prof_feedback: editedProfFeedback
-      })
-
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
@@ -331,13 +248,12 @@ export default function StudentGradingPage() {
         myUserId ?? undefined
       )
 
-      // 로컬 상태 업데이트 (AI 점수는 절대 변경하지 않음)
       setSubmissions((prev) => {
         const next = [...prev]
         next[currentIdx] = { 
           ...next[currentIdx], 
-          profScore: clamped,  // 교수 점수만 업데이트
-          profFeedback: editedProfFeedback  // 피드백도 함께 업데이트
+          profScore: clamped,
+          profFeedback: editedProfFeedback
         }
         return next
       })
@@ -359,14 +275,7 @@ export default function StudentGradingPage() {
     }
 
     try {
-      // 교수 점수가 있으면 그대로 사용, 없으면 편집 중인 값 사용
       const scoreToSave = current.profScore !== null ? current.profScore : editedProfScore
-
-      console.log("💾 교수 피드백 저장:", {
-        submissionId: current.submissionId,
-        prof_score: scoreToSave,
-        prof_feedback: editedProfFeedback
-      })
 
       await grading_api.post_submission_score(
         current.submissionId,
@@ -375,13 +284,12 @@ export default function StudentGradingPage() {
         myUserId ?? undefined
       )
 
-      // 서버 재조회 없이 바로 로컬 상태 업데이트
       setSubmissions((prev) => {
         const next = [...prev]
         next[currentIdx] = { 
           ...next[currentIdx], 
           profScore: scoreToSave,
-          profFeedback: editedProfFeedback,  // 입력한 값 그대로 저장
+          profFeedback: editedProfFeedback,
         }
         return next
       })
@@ -394,7 +302,7 @@ export default function StudentGradingPage() {
     }
   }, [currentIdx, current, editedProfScore, editedProfFeedback, isGroupOwner, myUserId])
 
-  // 검토 완료 (점수와 피드백 모두 저장)
+  // 검토 완료
   const handleCompleteReview = useCallback(async () => {
     if (!isGroupOwner) {
       alert("그룹장만 검토를 완료할 수 있습니다.")
@@ -407,12 +315,6 @@ export default function StudentGradingPage() {
       const num = Number(editedProfScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      console.log("💾 검토 완료 - 점수와 피드백 저장:", {
-        submissionId: current.submissionId,
-        prof_score: clamped,
-        prof_feedback: editedProfFeedback
-      })
-
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
@@ -420,7 +322,6 @@ export default function StudentGradingPage() {
         myUserId ?? undefined
       )
 
-      // 로컬 상태 업데이트
       setSubmissions((prev) => {
         const next = [...prev]
         next[currentIdx] = { 
@@ -480,7 +381,7 @@ export default function StudentGradingPage() {
     }
   }, [current?.submissionId, fetchAiFeedback])
 
-  // 통과 조건 (교수 점수 우선, 없으면 AI 점수)
+  // 통과 조건
   const finalScore = current?.profScore ?? current?.aiScore ?? 0
   const passedCondition = finalScore >= (maxScore ?? 0)
 
@@ -496,11 +397,83 @@ export default function StudentGradingPage() {
     )
   }
 
-  // 에디터 표시
-  const latestLog = current?.submissionId ? latestLogCache[current.submissionId] : undefined
-  const effectiveAnswerType = current?.answerType === "code" ? "code" : "text"
-  const effectiveLanguage = effectiveAnswerType === "code" ? "javascript" : "plaintext"
-  const effectiveAnswer = latestLog?.code ?? current?.answer ?? ""
+  // 답안 렌더링 함수
+  const renderAnswer = () => {
+    if (!current) return null
+
+    const problemType = current.problemType
+
+    // 코딩 또는 디버깅 문제
+    if (problemType === "Coding" || problemType === "코딩" || problemType === "디버깅") {
+      return (
+        <MonacoEditor
+          height="calc(100% - 30px)"
+          language="python"
+          value={current.codes || "// 코드가 없습니다"}
+          options={{ readOnly: true, minimap: { enabled: false }, wordWrap: "on", fontSize: 14 }}
+        />
+      )
+    }
+
+    // 객관식
+    if (problemType === "객관식") {
+      return (
+        <div className="p-4">
+          <p className="text-sm text-gray-600 mb-2">선택한 답:</p>
+          <div className="space-y-2">
+            {current.selectedOptions && current.selectedOptions.length > 0 ? (
+              current.selectedOptions.map((option) => (
+                <div key={option} className="p-2 bg-blue-50 rounded border border-blue-200">
+                  선택 {option}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">선택된 답이 없습니다</p>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // 주관식
+    if (problemType === "주관식") {
+      return (
+        <div className="p-4">
+          <p className="text-sm text-gray-600 mb-2">작성한 답:</p>
+          <div className="p-3 bg-gray-50 rounded border border-gray-200 whitespace-pre-wrap">
+            {current.writtenText || "작성된 답이 없습니다"}
+          </div>
+        </div>
+      )
+    }
+
+    // 단답형
+    if (problemType === "단답형") {
+      return (
+        <div className="p-4">
+          <p className="text-sm text-gray-600 mb-2">작성한 답:</p>
+          <div className="space-y-2">
+            {current.writtenAnswers && current.writtenAnswers.length > 0 ? (
+              current.writtenAnswers.map((answer, idx) => (
+                <div key={idx} className="p-2 bg-gray-50 rounded border border-gray-200">
+                  {answer}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">작성된 답이 없습니다</p>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // 기본값
+    return (
+      <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+        답안이 없습니다
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -526,26 +499,15 @@ export default function StudentGradingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 좌: 답안 */}
           <motion.div
-            className="bg-white rounded-lg shadow border p-4 h-[600px]"
+            className="bg-white rounded-lg shadow border p-4 h-[600px] overflow-y-auto"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            key={`${current?.submissionId}-${effectiveAnswerType}`}
+            key={current?.submissionId}
           >
             <div className="mb-2 text-sm text-gray-600">
               문제 유형: <span className="font-medium">{current?.problemType}</span>
             </div>
-            {effectiveAnswer == null ? (
-              <div className="h-full flex items-center justify-center text-gray-500 text-sm">
-                답안 불러오는 중…
-              </div>
-            ) : (
-              <MonacoEditor
-                height="calc(100% - 30px)"
-                language={effectiveLanguage}
-                value={effectiveAnswer}
-                options={{ readOnly: true, minimap: { enabled: false }, wordWrap: "on", fontSize: 14 }}
-              />
-            )}
+            {renderAnswer()}
           </motion.div>
 
           {/* 우: 피드백 */}

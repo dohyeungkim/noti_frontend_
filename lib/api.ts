@@ -1474,7 +1474,11 @@ export interface SubmissionSummary {
   problem_ref_id: number
 	problem_id: number
 	problem_title: string
-	problme_type: string
+	problme_type?: string
+	codes?: string
+  selected_options?: number[]
+  written_text?: string
+  written_answers?: string[]
 	user_name: string
 	ai_score: number | null // AI 또는 교수 최종 점수
 	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
