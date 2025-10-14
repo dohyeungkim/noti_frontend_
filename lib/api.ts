@@ -1504,13 +1504,15 @@ export const grading_api = {
 async get_all_submissions(group_id: number, workbook_id: number): Promise<SubmissionSummary[]> {
 	const url = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
 	
-
 	const res = await fetchWithAuth(url, {
 		method: "GET",
 		credentials: "include",
 	})
 	if (!res.ok) throw new Error("제출 목록 가져오기 실패")
-	return res.json()
+	
+	const data = await res.json()
+	console.log('GET submissions:', { count: data.length, first: data[0] })
+	return data
 },
 
 async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
@@ -1519,20 +1521,32 @@ async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
 		credentials: "include",
 	})
 	if (!res.ok) throw new Error("채점 기록 조회 실패")
-	return res.json()
+	
+	const data = await res.json()
+	console.log('GET scores:', {
+		solve_id,
+		count: data.length,
+		first: data[0],
+		prof_score: data[0]?.prof_score,
+		prof_feedback: data[0]?.prof_feedback,
+		types: { score: typeof data[0]?.prof_score, feedback: typeof data[0]?.prof_feedback }
+	})
+	return data
 },
 
 async post_submission_score(
   solve_id: number,
   prof_score: number,
   prof_feedback: string,
-  graded_by?: string | number  // 추가
+  graded_by?: string | number
 ) {
   const payload = {
     prof_score,
     prof_feedback,
-    ...(graded_by !== undefined && { graded_by })  // graded_by가 있으면 포함
+    ...(graded_by !== undefined && { graded_by })
   }
+  
+  console.log('POST score:', { solve_id, payload })
 
   const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
     method: "POST",
@@ -1550,8 +1564,11 @@ async post_submission_score(
     const msg = Array.isArray(body?.detail)
       ? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
       : body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패"
+    console.error('POST error:', msg)
     throw new Error(msg)
   }
+  
+  console.log('POST result:', body)
   return body
 }
 }
