@@ -286,7 +286,6 @@ export default function StudentGradingPage() {
         current.submissionId,
         clamped,
         editedProfFeedback,
-        myUserId?? undefined
       )
 
       // 로컬 상태 업데이트 (AI 점수는 절대 변경하지 않음)
@@ -329,8 +328,7 @@ export default function StudentGradingPage() {
       await grading_api.post_submission_score(
         current.submissionId,
         scoreToSave,
-        editedProfFeedback,
-        myUserId ?? undefined
+        editedProfFeedback
       )
 
       // 서버 재조회 없이 바로 로컬 상태 업데이트
@@ -375,7 +373,6 @@ export default function StudentGradingPage() {
         current.submissionId,
         clamped,
         editedProfFeedback,
-        myUserId?? undefined
       )
 
       // 로컬 상태 업데이트

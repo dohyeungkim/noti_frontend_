@@ -1526,12 +1526,10 @@ async post_submission_score(
   solve_id: number,
   prof_score: number,
   prof_feedback: string,
-  graded_by?: string | number  // 추가
 ) {
   const payload = {
     prof_score,
-    prof_feedback,
-    ...(graded_by !== undefined && { graded_by })  // graded_by가 있으면 포함
+    prof_feedback
   }
 
   const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
