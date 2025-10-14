@@ -1524,12 +1524,12 @@ async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
 
 async post_submission_score(
   solve_id: number,
-  score: number,
+  prof_score: number,
   prof_feedback: string,
   graded_by?: string | number  // 추가
 ) {
   const payload = {
-    score,
+    prof_score,
     prof_feedback,
     ...(graded_by !== undefined && { graded_by })  // graded_by가 있으면 포함
   }
