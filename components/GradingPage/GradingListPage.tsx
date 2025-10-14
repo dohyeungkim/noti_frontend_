@@ -76,15 +76,15 @@ export default function GradingListPage() {
       console.log("✅ 전체 제출 목록:", submissions);
       console.log("📊 총 제출 건수:", submissions.length);
 
-      // 2. 교수 점수만 일괄 조회 (AI 자동 채점 제외)
-      console.log("🔄 교수 점수 일괄 조회 시작 (AI 자동 채점 제외)...");
+      // 2. 교수 점수만 일괄 조회
+      console.log("🔄 교수 점수 일괄 조회 시작...");
       const profScoresMap = new Map<number, number | null>();
 
       await Promise.all(
         submissions.map(async (sub) => {
           try {
             console.log(`\n📋 제출 ID ${sub.submission_id} 분석 시작`);
-            console.log(`  📊 AI 점수 (get_all_submissions의 sub.score): ${sub.ai_score}`);
+            console.log(`  📊 원본 AI 점수: ${sub.ai_score}`);
             
             const scores = await grading_api.get_submission_scores(sub.submission_id);
             console.log(`  - get_submission_scores 응답 개수: ${scores.length}`);
@@ -93,28 +93,32 @@ export default function GradingListPage() {
               // 모든 점수 출력
               console.log(`  - 전체 점수 목록:`);
               scores.forEach((score: any, idx: number) => {
-                console.log(`    [${idx}] score: ${score.score}, graded_by: "${score.graded_by}", created_at: ${score.created_at}`);
+                console.log(`    [${idx}] prof_score: ${score.prof_score}, graded_by: "${score.graded_by}", created_at: ${score.created_at}`);
               });
               
-              // 🔧 먼저 교수가 직접 수정한 점수만 필터링 (AI 자동 채점 제외)
+              // 교수가 직접 수정한 점수만 필터링 (graded_by가 있고 auto:로 시작하지 않는 것)
               const profScores = scores.filter((score: any) => {
                 const gradedBy = score.graded_by;
-                const isNull = gradedBy == null;
-                const isAuto = typeof gradedBy === 'string' && gradedBy.startsWith('auto:');
                 
-                console.log(`    - 필터링 검사: graded_by="${gradedBy}", null=${isNull}, auto=${isAuto}`);
-                
-                // graded_by가 null이거나 "auto:"로 시작하면 AI 자동 채점
-                if (isNull) {
-                  console.log(`      ❌ 제외 (null)`);
+                // graded_by가 없거나 null이면 제외
+                if (!gradedBy) {
+                  console.log(`      ❌ 제외 (graded_by가 null 또는 없음)`);
                   return false;
                 }
-                if (isAuto) {
-                  console.log(`      ❌ 제외 (auto)`);
+                
+                // auto:로 시작하면 AI 자동 채점이므로 제외
+                if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) {
+                  console.log(`      ❌ 제외 (AI 자동 채점: ${gradedBy})`);
                   return false;
                 }
-                // 그 외는 교수가 직접 수정한 점수
-                console.log(`      ✅ 포함 (교수 점수)`);
+                
+                // prof_score 필드가 있어야 함
+                if (score.prof_score === undefined || score.prof_score === null) {
+                  console.log(`      ❌ 제외 (prof_score가 없음)`);
+                  return false;
+                }
+                
+                console.log(`      ✅ 포함 (교수 점수: ${score.prof_score})`);
                 return true;
               });
               
@@ -128,12 +132,13 @@ export default function GradingListPage() {
                 
                 const latestProfScore = profScores[0];
                 profScoresMap.set(sub.submission_id, latestProfScore.prof_score);
-                console.log(`  ✅ 최종 교수 점수: ${latestProfScore.prof_score}점 (graded_by: ${latestProfScore.graded_by})`);
-                console.log(`  ✅ AI 점수: ${sub.ai_score}점 (변경 없음)`);
+                console.log(`  ✅ 최종 교수 점수: ${latestProfScore.prof_score}점`);
               } else {
                 profScoresMap.set(sub.submission_id, null);
-                console.log(`  ℹ️ 교수가 수정한 점수 없음 (AI 자동 채점만 있음)`);
+                console.log(`  ℹ️ 교수가 수정한 점수 없음`);
               }
+              
+              console.log(`  ✅ AI 점수는 원본 유지: ${sub.ai_score}점`);
             } else {
               profScoresMap.set(sub.submission_id, null);
               console.log(`  ℹ️ 점수 기록 없음`);
@@ -248,14 +253,21 @@ export default function GradingListPage() {
             continue;
           }
 
-          // 제출 기록 생성
-          const submissionRecords: SubmissionRecord[] = subs.map(sub => ({
-            submissionId: sub.submission_id,
-            aiScore: sub.ai_score, // get_all_submissions에서 받은 AI 점수 그대로 사용
-            profScore: profScoresMap.get(sub.submission_id) ?? null, // 교수가 직접 수정한 점수만
-            submittedAt: sub.updated_at,
-            reviewed: sub.reviewed,
-          }));
+          // 제출 기록 생성 - AI 점수와 교수 점수를 독립적으로 관리
+          const submissionRecords: SubmissionRecord[] = subs.map(sub => {
+            const aiScore = sub.ai_score;  // 원본 AI 점수
+            const profScore = profScoresMap.get(sub.submission_id) ?? null;  // 교수 점수
+            
+            console.log(`    제출 ${sub.submission_id}: AI=${aiScore}, Prof=${profScore}`);
+            
+            return {
+              submissionId: sub.submission_id,
+              aiScore: aiScore,  // AI 점수는 절대 변경되지 않음
+              profScore: profScore,  // 교수가 수정한 점수만 (없으면 null)
+              submittedAt: sub.updated_at,
+              reviewed: sub.reviewed,
+            };
+          });
 
           console.log(`  ✅ 문제 ${pid}: 총 ${submissionRecords.length}개 제출 처리 완료`);
 
@@ -281,6 +293,18 @@ export default function GradingListPage() {
 
       console.log("\n🎉 최종 학생 목록 생성 완료!");
       console.log("📊 최종 학생 수:", rows.length);
+      
+      // 최종 점수 상태 확인 로그
+      console.log("\n📊 최종 점수 분리 상태 확인:");
+      rows.forEach(student => {
+        console.log(`\n학생: ${student.studentName}`);
+        student.problemScores.forEach((score, idx) => {
+          if (score.submissions.length > 0) {
+            const latest = score.submissions[0];
+            console.log(`  문제${idx + 1}: AI=${latest.aiScore}, Prof=${latest.profScore}`);
+          }
+        });
+      });
 
       setStudents(rows);
     } catch (err) {
@@ -499,7 +523,7 @@ export default function GradingListPage() {
                           <div className="text-center text-gray-300 font-bold">-</div>
                         ) : (
                           <div className="flex flex-col gap-2">
-                            {/* 최신 제출 */}
+                            {/* 최신 제출 - AI와 교수 점수를 독립적으로 표시 */}
                             <div className="flex items-center justify-center space-x-6">
                               {/* 교수 점수 */}
                               <div className="flex flex-col items-center min-w-[40px]">
@@ -516,7 +540,7 @@ export default function GradingListPage() {
                                 </span>
                               </div>
 
-                              {/* AI 점수 */}
+                              {/* AI 점수 - 교수 점수와 독립적으로 표시 */}
                               <div className="flex flex-col items-center min-w-[40px]">
                                 <span
                                   className={`text-base font-bold ${
@@ -564,7 +588,7 @@ export default function GradingListPage() {
                                         <div className="flex gap-3">
                                           <span
                                             className={
-                                              sub.profScore
+                                              sub.profScore !== null
                                                 ? sub.profScore >= data.maxPoints
                                                   ? "text-green-600"
                                                   : "text-red-600"
@@ -575,9 +599,11 @@ export default function GradingListPage() {
                                           </span>
                                           <span
                                             className={
-                                              sub.aiScore && sub.aiScore >= data.maxPoints
-                                                ? "text-green-600"
-                                                : "text-red-600"
+                                              sub.aiScore !== null
+                                                ? sub.aiScore >= data.maxPoints
+                                                  ? "text-green-600"
+                                                  : "text-red-600"
+                                                : "text-gray-300"
                                             }
                                           >
                                             AI: {sub.aiScore ?? "-"}
