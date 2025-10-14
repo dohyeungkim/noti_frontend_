@@ -150,18 +150,18 @@ export default function GradingListPage() {
     }
 
     // 4. 학생별로 그룹화
-    const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
+  const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
     for (const sub of submissions) {
       const userId = String(sub.user_id);
       
-      if (
-        (ownerId && userId === String(ownerId)) || 
-        (meId && userId === String(meId))
-      ) {
-        continue;
+      // ⭐ 그룹장만 제외 (본인은 포함)
+      if (ownerId && userId === String(ownerId)) {
+        continue; // 그룹장만 제외
       }
-
+      
+      // 또는 아예 제외하지 않으려면 이 if 블록 전체를 삭제하세요
+      
       const userName = sub.user_name || "이름 없음";
       const studentNo = sub.user_id;
 
