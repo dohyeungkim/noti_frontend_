@@ -1527,13 +1527,20 @@ async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
 	if (!res.ok) throw new Error("채점 기록 조회 실패")
 	
 	const data = await res.json()
+
+	const latest = data.length > 0 
+		? data.reduce((prev: any, curr: any) => 
+			curr.submission_score_id > prev.submission_score_id ? curr : prev
+		)
+		: null
+
 	console.log('GET scores:', {
 		solve_id,
 		count: data.length,
-		first: data[0],
-		prof_score: data[0]?.prof_score,
-		prof_feedback: data[0]?.prof_feedback,
-		types: { score: typeof data[0]?.prof_score, feedback: typeof data[0]?.prof_feedback }
+		latest: latest,
+		prof_score: latest?.prof_score,
+		prof_feedback: latest?.prof_feedback,
+		types: { score: typeof latest?.prof_score, feedback: typeof latest?.prof_feedback }
 	})
 	return data
 },
