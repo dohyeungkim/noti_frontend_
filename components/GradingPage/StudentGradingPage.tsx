@@ -231,40 +231,66 @@ export default function StudentGradingPage() {
 
   // 점수만 저장
   const saveProfScore = useCallback(async () => {
-    if (!current) return
-    if (!isGroupOwner) {
-      alert("그룹장만 점수를 수정할 수 있습니다.")
-      return
-    }
+  if (!current) return
+  if (!isGroupOwner) {
+    alert("그룹장만 점수를 수정할 수 있습니다.")
+    return
+  }
 
-    try {
-      const num = Number(editedProfScore)
-      const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+  try {
+    const num = Number(editedProfScore)
+    const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      await grading_api.post_submission_score(
-        current.submissionId,
-        clamped,
-        editedProfFeedback,
-        myUserId ?? undefined
-      )
+    console.log(`\n💾 저장 전 상태:`);
+    console.log(`  제출 ID: ${current.submissionId}`);
+    console.log(`  현재 AI 점수: ${current.aiScore}`);
+    console.log(`  현재 교수 점수: ${current.profScore}`);
+    console.log(`  저장할 교수 점수: ${clamped}`);
 
-      setSubmissions((prev) => {
-        const next = [...prev]
-        next[currentIdx] = { 
-          ...next[currentIdx], 
-          profScore: clamped,
-          profFeedback: editedProfFeedback
-        }
-        return next
-      })
+    await grading_api.post_submission_score(
+      current.submissionId,
+      clamped,
+      editedProfFeedback,
+      myUserId ?? undefined
+    )
+
+    console.log(`✅ 저장 API 호출 완료`);
+    
+    // 저장 후 다시 조회해서 확인
+    const updatedScores = await grading_api.get_submission_scores(current.submissionId);
+    console.log(`\n📊 저장 후 점수 확인:`, updatedScores);
+    
+    const profScores = updatedScores.filter((score: any) => {
+      return score.graded_by && !score.graded_by.startsWith('auto:');
+    });
+    console.log(`  교수 점수 목록:`, profScores);
+
+    // 로컬 상태 업데이트
+    setSubmissions((prev) => {
+      const next = [...prev]
+      const originalAiScore = next[currentIdx].aiScore
       
-      setIsEditingScore(false)
-      alert("교수 점수가 저장되었습니다.")
-    } catch (e: any) {
-      console.error("점수 저장 실패:", e)
-      alert(e?.message || "점수 저장 실패")
-    }
-  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
+      console.log(`\n🔄 로컬 상태 업데이트:`);
+      console.log(`  AI 점수 유지: ${originalAiScore}`);
+      console.log(`  교수 점수 변경: ${next[currentIdx].profScore} → ${clamped}`);
+      
+      next[currentIdx] = { 
+        ...next[currentIdx], 
+        aiScore: originalAiScore,
+        profScore: clamped,
+        profFeedback: editedProfFeedback
+      }
+      
+      return next
+    })
+    
+    setIsEditingScore(false)
+    alert("교수 점수가 저장되었습니다.")
+  } catch (e: any) {
+    console.error("점수 저장 실패:", e)
+    alert(e?.message || "점수 저장 실패")
+  }
+}, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
 
   // 피드백만 저장
   const saveProfFeedback = useCallback(async () => {
