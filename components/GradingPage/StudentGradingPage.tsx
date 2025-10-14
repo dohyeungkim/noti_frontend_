@@ -77,69 +77,102 @@ export default function StudentGradingPage() {
 
   // 제출 목록 로드
   const fetchSubmissions = useCallback(async () => {
-  try {
-    const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
-      Number(groupId),
-      Number(examId),
-    )
-    const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
-    const mapped: Submission[] = await Promise.all(
-      studentSubs.map(async (s) => {
-        let profScore = null
-        let profFeedback = ""
-        
-        try {
-          const scores = await grading_api.get_submission_scores(s.submission_id)
-          console.log(`📊 제출물 ${s.submission_id} 점수 목록:`, scores)
+    try {
+      const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
+        Number(groupId),
+        Number(examId),
+      )
+      const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
+      const mapped: Submission[] = await Promise.all(
+        studentSubs.map(async (s) => {
+          let profScore = null
+          let profFeedback = ""
           
-          // 교수 점수 찾기 (prof_score 필드가 있는 것 중 최신)
-          const profScores = scores.filter((score: any) => {
-            return score.prof_score !== null && score.prof_score !== undefined
-          })
-          
-          if (profScores.length > 0) {
-            // 가장 최신 교수 점수만 선택
-            const latestProf = profScores.reduce((latest: any, current: any) => {
-              return current.submission_score_id > latest.submission_score_id ? current : latest
+          try {
+            const scores = await grading_api.get_submission_scores(s.submission_id)
+            console.log(`📊 제출물 ${s.submission_id} 점수 목록:`, scores)
+            
+            // 교수 점수 찾기 - grading-list.tsx와 동일한 필터링 로직 적용
+            const profScores = scores.filter((score: any) => {
+              const gradedBy = score.graded_by;
+              
+              // graded_by가 없거나 null이면 제외
+              if (!gradedBy) {
+                console.log(`  ❌ 제외 (graded_by가 null)`);
+                return false;
+              }
+              
+              // auto:로 시작하면 AI 자동 채점이므로 제외
+              if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) {
+                console.log(`  ❌ 제외 (AI 자동 채점: ${gradedBy})`);
+                return false;
+              }
+              
+              // prof_score 필드가 있어야 함
+              if (score.prof_score === undefined || score.prof_score === null) {
+                console.log(`  ❌ 제외 (prof_score가 없음)`);
+                return false;
+              }
+              
+              console.log(`  ✅ 포함 (교수 점수: ${score.prof_score})`);
+              return true;
             })
-            profScore = latestProf.prof_score
-            profFeedback = latestProf.prof_feedback || ""
+            
+            if (profScores.length > 0) {
+              // 가장 최신 교수 점수만 선택
+              const latestProf = profScores.reduce((latest: any, current: any) => {
+                return current.submission_score_id > latest.submission_score_id ? current : latest
+              })
+              profScore = latestProf.prof_score
+              profFeedback = latestProf.prof_feedback || ""
+              console.log(`✅ 교수 점수 설정: ${profScore}`);
+            } else {
+              console.log(`ℹ️ 교수가 수정한 점수 없음`);
+            }
+            
+          } catch (err) {
+            console.error(`❌ 점수 조회 실패:`, err)
           }
           
-        } catch (err) {
-          console.error(`❌ 점수 조회 실패:`, err)
-        }
-        
-        return {
-          submissionId: s.submission_id,
-          problemId: s.problem_id,
-          problemTitle: s.problem_title,
-          problemType: s.problme_type || "code",
-          answerType: s.problme_type || "code",
-          answer: "",
-          aiScore: s.ai_score,  // AI 점수는 get_all_submissions에서 직접 가져옴
-          profScore: profScore,  // 교수 점수 (최신)
-          profFeedback: profFeedback,  // 교수 피드백 (최신)
-          reviewed: s.reviewed,
-          userName: s.user_name,
-          createdAt: s.created_at,
-          updatedAt: s.updated_at,
-          passed: s.passed,
-        }
-      })
-    )
-    mapped.sort((a, b) => a.problemId - b.problemId)
-    
-    console.log("📋 최종 제출물 목록:", mapped)
-    setSubmissions(mapped)
-    
-    if (mapped.length > 0) {
-      setStudentName(mapped[0].userName || "")
+          console.log(`📋 문제 ${s.problem_id}: AI=${s.ai_score}, Prof=${profScore}`);
+          
+          return {
+            submissionId: s.submission_id,
+            problemId: s.problem_id,
+            problemTitle: s.problem_title,
+            problemType: s.problme_type || "code",
+            answerType: s.problme_type || "code",
+            answer: "",
+            aiScore: s.ai_score,  // AI 점수는 get_all_submissions에서 직접 가져옴 (원본 유지)
+            profScore: profScore,  // 교수 점수 (실제 교수가 수정한 것만)
+            profFeedback: profFeedback,  // 교수 피드백
+            reviewed: s.reviewed,
+            userName: s.user_name,
+            createdAt: s.created_at,
+            updatedAt: s.updated_at,
+            passed: s.passed,
+          }
+        })
+      )
+      mapped.sort((a, b) => a.problemId - b.problemId)
+      
+      console.log("📋 최종 제출물 목록:", mapped);
+      
+      // 최종 점수 상태 확인
+      console.log("\n📊 최종 점수 분리 상태:");
+      mapped.forEach(sub => {
+        console.log(`  문제${sub.problemId}: AI=${sub.aiScore}, Prof=${sub.profScore}`);
+      });
+      
+      setSubmissions(mapped)
+      
+      if (mapped.length > 0) {
+        setStudentName(mapped[0].userName || "")
+      }
+    } catch (err) {
+      console.error("학생 제출물 불러오기 실패", err)
     }
-  } catch (err) {
-    console.error("학생 제출물 불러오기 실패", err)
-  }
-}, [groupId, examId, studentId])
+  }, [groupId, examId, studentId])
 
   // 문제 배점 로드
   const fetchProblemPoints = useCallback(async () => {
@@ -278,15 +311,15 @@ export default function StudentGradingPage() {
 
       console.log("💾 교수 점수 저장 중:", {
         submissionId: current.submissionId,
-        score: clamped,
-        feedback: editedProfFeedback
+        prof_score: clamped,
+        prof_feedback: editedProfFeedback
       })
 
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
         editedProfFeedback,
-        myUserId?? undefined
+        myUserId ?? undefined
       )
 
       // 로컬 상태 업데이트 (AI 점수는 절대 변경하지 않음)
@@ -308,7 +341,7 @@ export default function StudentGradingPage() {
     }
   }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
 
-  // 피드백만 저장 - 수정된 버전 (서버 재조회 제거)
+  // 피드백만 저장
   const saveProfFeedback = useCallback(async () => {
     if (!current) return
     if (!isGroupOwner) {
@@ -322,8 +355,8 @@ export default function StudentGradingPage() {
 
       console.log("💾 교수 피드백 저장 중:", {
         submissionId: current.submissionId,
-        score: scoreToSave,
-        feedback: editedProfFeedback
+        prof_score: scoreToSave,
+        prof_feedback: editedProfFeedback
       })
 
       await grading_api.post_submission_score(
@@ -367,15 +400,15 @@ export default function StudentGradingPage() {
 
       console.log("💾 검토 완료 - 점수와 피드백 저장 중:", {
         submissionId: current.submissionId,
-        score: clamped,
-        feedback: editedProfFeedback
+        prof_score: clamped,
+        prof_feedback: editedProfFeedback
       })
 
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
         editedProfFeedback,
-        myUserId?? undefined
+        myUserId ?? undefined
       )
 
       // 로컬 상태 업데이트
