@@ -35,14 +35,11 @@ export default function GradingListPage() {
   const [problemRefs, setProblemRefs] = useState<ProblemRef[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 좌우 스크롤 상태
   const [startIdx, setStartIdx] = useState(0);
   const MAX_VISIBLE = 6;
 
-  // 제출 기록 확장 상태
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
 
-  // 문제 목록 조회
   const fetchProblemRefs = useCallback(async () => {
     try {
       const refs = await problem_ref_api.problem_ref_get(
@@ -57,7 +54,6 @@ export default function GradingListPage() {
     }
   }, [groupId, examId]);
 
-  // ⭐ 제출 목록 조회 - useEffect 내부로 이동
   useEffect(() => {
     if (problemRefs.length === 0) {
       return;
@@ -68,7 +64,6 @@ export default function GradingListPage() {
         setLoading(true);
         console.log("===== 채점 데이터 로딩 시작 =====");
 
-        // 1. 전체 제출 목록 조회 (AI 점수 포함)
         const submissions = await grading_api.get_all_submissions(
           Number(groupId),
           Number(examId)
@@ -77,7 +72,6 @@ export default function GradingListPage() {
         console.log('\n📦 GET submissions 전체:', submissions);
         console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
         
-        // 🔒 AI 점수를 별도로 저장하고 절대 변경하지 않음
         const aiScoresMap = new Map<number, number | null>();
         
         submissions.forEach(sub => {
@@ -87,7 +81,6 @@ export default function GradingListPage() {
           }
         });
 
-        // 2. 교수 점수만 일괄 조회 (AI 점수와 완전히 분리)
         const profScoresMap = new Map<number, number | null>();
 
         await Promise.all(
@@ -95,7 +88,6 @@ export default function GradingListPage() {
             try {
               const scores = await grading_api.get_submission_scores(sub.submission_id);
               
-              // 교수 점수 필터링
               const profScores = scores.filter((score: any) => {
                 const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
                 const hasProfScore = score.prof_score !== undefined && score.prof_score !== null;
@@ -103,7 +95,6 @@ export default function GradingListPage() {
               });
               
               if (profScores.length > 0) {
-                // ✅ submission_score_id 기준으로 최신 점수 선택
                 profScores.sort((a: any, b: any) => 
                   b.submission_score_id - a.submission_score_id
                 );
@@ -125,7 +116,6 @@ export default function GradingListPage() {
         console.log(`AI 점수 (영구 저장): ${aiScoresMap.size}개`);
         console.log(`교수 점수: ${Array.from(profScoresMap.values()).filter(v => v !== null).length}개`);
 
-        // 3. 그룹장과 본인 제외를 위한 ID 조회
         let ownerId: string | number | undefined;
         let meId: string | number | undefined;
         try {
@@ -150,13 +140,11 @@ export default function GradingListPage() {
           console.warn("그룹장/본인 정보 조회 실패:", err);
         }
 
-        // 4. 학생별로 그룹화
         const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
         for (const sub of submissions) {
           const userId = String(sub.user_id);
           
-          // ⭐ 그룹장만 제외 (본인은 포함)
           if (ownerId && userId === String(ownerId)) {
             console.log(`⏭️  그룹장 ${userId} 제외`);
             continue;
@@ -173,7 +161,6 @@ export default function GradingListPage() {
 
         console.log(`\n👥 필터링 후 학생 수: ${byUser.size}명`);
 
-        // 5. 각 학생의 문제별 점수 구조화
         const rows: GradingStudentSummary[] = [];
 
         for (const [userId, userInfo] of Array.from(byUser.entries())) {
@@ -210,10 +197,7 @@ export default function GradingListPage() {
             }
 
             const submissionRecords: SubmissionRecord[] = subs.map(sub => {
-              // 🔒 AI 점수는 영구 저장된 값만 사용 (절대 변경 불가)
               const aiScore = aiScoresMap.get(sub.submission_id) ?? null;
-              
-              // 👨‍🏫 교수 점수는 profScoresMap에서만 가져옴
               const profScore = profScoresMap.get(sub.submission_id) ?? null;
               
               return {
@@ -279,7 +263,6 @@ export default function GradingListPage() {
     });
   };
 
-  // 좌우 스크롤
   const totalProblems = problemRefs.length;
   const visibleCount = Math.min(MAX_VISIBLE, totalProblems);
   const endIdx = Math.min(totalProblems, startIdx + visibleCount);
@@ -312,7 +295,6 @@ export default function GradingListPage() {
 
   return (
     <div className="pb-10 px-4">
-      {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
 
@@ -347,7 +329,6 @@ export default function GradingListPage() {
         )}
       </div>
 
-      {/* 안내 메시지 */}
       {showScrollButtons && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
           💡 문제가 {totalProblems}개 있습니다. 위의 버튼으로 나머지 문제를 확인하세요. (현재{" "}
@@ -355,10 +336,8 @@ export default function GradingListPage() {
         </div>
       )}
 
-      {/* 테이블 */}
       <div className="overflow-x-auto border-2 border-blue-600 rounded-lg shadow-lg">
         <table className="w-full border-collapse bg-white">
-          {/* 헤더 */}
           <thead className="bg-gray-50">
             <tr>
               <th className="border-r-2 border-blue-600 px-6 py-4 text-left font-bold text-gray-700 min-w-[200px]">
@@ -398,23 +377,28 @@ export default function GradingListPage() {
             </tr>
           </thead>
 
-          {/* 바디 */}
           <tbody>
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
               
-              // 최종 점수 기준으로 상태 판단 (교수 점수 우선, 없으면 AI 점수)
-              const allCorrect = visibleScores.every((data) => {
-                if (data.submissions.length === 0) return false;
+              // ⭐ 새로운 상태 판단 기준: 교수 채점 완료 여부
+              // 1. 제출한 문제가 하나라도 있는지 확인
+              const hasAnySubmission = visibleScores.some(data => data.submissions.length > 0);
+              
+              // 2. 모든 제출된 문제에 교수 점수가 있는지 확인 (완료)
+              const allGraded = hasAnySubmission && visibleScores.every((data) => {
+                // 제출이 없으면 채점 대상이 아니므로 true로 처리
+                if (data.submissions.length === 0) return true;
+                // 제출이 있으면 교수 점수가 있어야 함
                 const latestSub = data.submissions[0];
-                const finalScore = latestSub.profScore ?? latestSub.aiScore;
-                return finalScore !== null && finalScore >= data.maxPoints;
+                return latestSub.profScore !== null;
               });
-              const anyWrong = visibleScores.some((data) => {
+              
+              // 3. 일부만 채점된 경우 (검토중)
+              const someGraded = hasAnySubmission && visibleScores.some((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
-                const finalScore = latestSub.profScore ?? latestSub.aiScore;
-                return finalScore !== null && finalScore < data.maxPoints;
+                return latestSub.profScore !== null;
               });
 
               return (
@@ -427,7 +411,6 @@ export default function GradingListPage() {
                     ${stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   `}
                 >
-                  {/* 학생 이름/학번 */}
                   <td
                     className="border-r-2 border-blue-600 px-6 py-4 cursor-pointer"
                     onClick={() => selectStudent(stu.studentId)}
@@ -442,7 +425,6 @@ export default function GradingListPage() {
                     </div>
                   </td>
 
-                  {/* 각 문제별 점수 */}
                   {visibleScores.map((data, localIdx) => {
                     const globalIdx = startIdx + localIdx;
                     const cellKey = `${stu.studentId}-${globalIdx}`;
@@ -459,9 +441,7 @@ export default function GradingListPage() {
                           <div className="text-center text-gray-300 font-bold">-</div>
                         ) : (
                           <div className="flex flex-col gap-2">
-                            {/* 최신 제출 - AI와 교수 점수를 독립적으로 표시 */}
                             <div className="flex items-center justify-center space-x-6">
-                              {/* 교수 점수 */}
                               <div className="flex flex-col items-center min-w-[40px]">
                                 <span
                                   className={`text-base font-bold ${
@@ -476,7 +456,6 @@ export default function GradingListPage() {
                                 </span>
                               </div>
 
-                              {/* AI 점수 - 교수 점수와 독립적으로 표시 */}
                               <div className="flex flex-col items-center min-w-[40px]">
                                 <span
                                   className={`text-base font-bold ${
@@ -492,7 +471,6 @@ export default function GradingListPage() {
                               </div>
                             </div>
 
-                            {/* 제출 횟수 표시 및 확장 버튼 */}
                             {hasMultipleSubmissions && (
                               <>
                                 <button
@@ -504,7 +482,6 @@ export default function GradingListPage() {
                                     : `이전 제출 ${data.submissions.length - 1}건 보기 ▼`}
                                 </button>
 
-                                {/* 이전 제출 기록 */}
                                 {isExpanded && (
                                   <div className="mt-2 pt-2 border-t border-gray-200 space-y-2">
                                     {data.submissions.slice(1).map((sub, idx) => (
@@ -557,7 +534,6 @@ export default function GradingListPage() {
                     );
                   })}
 
-                  {/* 상태 표시 */}
                   <td className="px-4 py-4">
                     <div className="flex flex-col items-center space-y-1">
                       <div
@@ -566,23 +542,23 @@ export default function GradingListPage() {
                           flex items-center justify-center
                           transition-all duration-200
                           ${
-                            allCorrect
+                            allGraded
                               ? "bg-green-500 border-green-600"
-                              : anyWrong
+                              : someGraded
                               ? "bg-yellow-500 border-yellow-600"
                               : "bg-gray-300 border-gray-400"
                           }
                         `}
                       >
-                        {allCorrect && (
+                        {allGraded && (
                           <span className="text-white text-xl font-bold">✓</span>
                         )}
-                        {anyWrong && !allCorrect && (
+                        {someGraded && !allGraded && (
                           <span className="text-white text-xl font-bold">!</span>
                         )}
                       </div>
                       <span className="text-xs text-gray-600 font-medium">
-                        {allCorrect ? "완료" : anyWrong ? "검토중" : "대기"}
+                        {allGraded ? "완료" : someGraded ? "검토중" : "대기"}
                       </span>
                     </div>
                   </td>
@@ -593,7 +569,6 @@ export default function GradingListPage() {
         </table>
       </div>
 
-      {/* 학생이 없을 때 */}
       {students.length === 0 && !loading && (
         <div className="text-center py-16">
           <div className="text-gray-400 text-lg">제출한 학생이 없습니다.</div>
