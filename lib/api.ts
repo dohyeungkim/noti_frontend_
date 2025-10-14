@@ -1491,7 +1491,8 @@ export interface SubmissionSummary {
 type SubmissionScore = {
 	submission_score_id: number // 점수 레코드 PK
 	submission_id: number
-	prof_score: number
+	ai_score: number | null
+	prof_score: number | null
 	prof_feedback: string
 	graded_by: string | null // null=AI, string=교수ID
 	created_at: string // 채점 시각

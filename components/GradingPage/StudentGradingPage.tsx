@@ -63,6 +63,7 @@ export default function StudentGradingPage() {
       console.log("===== 학생 제출물 로딩 시작 =====");
       console.log(`학생 ID: ${studentId}`);
       
+      // 1. get_all_submissions: 제출물 기본 정보만 가져오기
       const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
         Number(groupId),
         Number(examId),
@@ -73,27 +74,26 @@ export default function StudentGradingPage() {
       const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
       console.log(`✅ 학생 제출물 필터링 완료: ${studentSubs.length}개`);
       
+      // 2. ⭐ get_submission_scores로 각 제출물의 점수 조회
       const mapped: Submission[] = await Promise.all(
         studentSubs.map(async (s: any) => {
+          let aiScore = null
           let profScore = null
           let profFeedback = ""
           
           try {
             const scores = await grading_api.get_submission_scores(s.submission_id)
             
-            const profScores = scores.filter((score: any) => {
-              const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
-              const hasProfScore = score.prof_score !== undefined && score.prof_score !== null;
-              return hasGradedBy && hasProfScore;
-            })
-            
-            if (profScores.length > 0) {
-              const latestProf = profScores.reduce((latest: any, current: any) => {
-                return current.submission_score_id > latest.submission_score_id ? current : latest
-              })
+            if (scores.length > 0) {
+              // ⭐ 최신 레코드 하나에서 ai_score와 prof_score 동시에 가져오기
+              scores.sort((a: any, b: any) => b.submission_score_id - a.submission_score_id);
+              const latest = scores[0];
               
-              profScore = latestProf.prof_score
-              profFeedback = latestProf.prof_feedback || ""
+              aiScore = latest.ai_score ?? null;
+              profScore = latest.prof_score ?? null;
+              profFeedback = latest.prof_feedback || "";
+              
+              console.log(`📊 제출 ${s.submission_id} 최신 점수: AI=${aiScore}, 교수=${profScore}`);
             }
             
           } catch (err) {
@@ -109,8 +109,8 @@ export default function StudentGradingPage() {
             selectedOptions: s.selected_options,
             writtenText: s.written_text,
             writtenAnswers: s.written_answers,
-            aiScore: s.ai_score,
-            profScore: profScore,
+            aiScore: aiScore,  // ⭐ 최신 레코드의 ai_score
+            profScore: profScore,  // ⭐ 최신 레코드의 prof_score
             profFeedback: profFeedback,
             reviewed: s.reviewed,
             userName: s.user_name,
@@ -274,9 +274,21 @@ export default function StudentGradingPage() {
 
       console.log(`✅ 저장 API 호출 완료`);
       
+      // 저장 후 점수 다시 조회
       const updatedScores = await grading_api.get_submission_scores(current.submissionId);
       console.log(`\n📊 저장 후 점수 확인:`, updatedScores);
       
+      // AI 점수 추출
+      const aiScores = updatedScores.filter((score: any) => {
+        return score.graded_by && score.graded_by.startsWith('auto:');
+      });
+      let updatedAiScore = current.aiScore;
+      if (aiScores.length > 0) {
+        aiScores.sort((a: any, b: any) => b.submission_score_id - a.submission_score_id);
+        updatedAiScore = aiScores[0].ai_score ?? null;
+      }
+      
+      // 교수 점수 추출
       const profScores = updatedScores.filter((score: any) => {
         return score.graded_by && !score.graded_by.startsWith('auto:');
       });
@@ -284,15 +296,14 @@ export default function StudentGradingPage() {
 
       setSubmissions((prev) => {
         const next = [...prev]
-        const originalAiScore = next[currentIdx].aiScore
         
         console.log(`\n🔄 로컬 상태 업데이트:`);
-        console.log(`  AI 점수 유지: ${originalAiScore}`);
+        console.log(`  AI 점수: ${updatedAiScore}`);
         console.log(`  교수 점수 변경: ${next[currentIdx].profScore} → ${clamped}`);
         
         next[currentIdx] = { 
           ...next[currentIdx], 
-          aiScore: originalAiScore,
+          aiScore: updatedAiScore,
           profScore: clamped,
           profFeedback: editedProfFeedback
         }
@@ -517,7 +528,6 @@ export default function StudentGradingPage() {
 
     return (
       <div className="space-y-4 h-full flex flex-col">
-        {/* 문제 제목 및 메타 정보 */}
         <div className="border-b pb-4">
           <h4 className="font-bold text-lg text-gray-900 mb-3">
             {currentProblem.title || "제목 없음"}
@@ -537,7 +547,6 @@ export default function StudentGradingPage() {
           </div>
         </div>
 
-        {/* 문제 설명 - 스크롤 가능한 영역 */}
         <div className="flex-1 overflow-y-auto">
           {currentProblem.description ? (
             <div className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-5 shadow-sm">
@@ -555,7 +564,6 @@ export default function StudentGradingPage() {
             </div>
           )}
 
-          {/* 태그 */}
           {currentProblem.tags && currentProblem.tags.length > 0 && (
             <div className="mt-4">
               <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
@@ -572,7 +580,6 @@ export default function StudentGradingPage() {
             </div>
           )}
 
-          {/* 추가 정보가 있다면 표시 */}
           {currentProblem.constraints && (
             <div className="mt-4">
               <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
