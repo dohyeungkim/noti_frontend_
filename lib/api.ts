@@ -1540,6 +1540,7 @@ async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
 		solve_id,
 		count: data.length,
 		latest: latest,
+		ai_score: latest?.ai_score,
 		prof_score: latest?.prof_score,
 		prof_feedback: latest?.prof_feedback,
 		types: { score: typeof latest?.prof_score, feedback: typeof latest?.prof_feedback }
