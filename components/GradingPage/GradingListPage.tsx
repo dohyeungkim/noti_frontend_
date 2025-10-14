@@ -72,6 +72,7 @@ export default function GradingListPage() {
         Number(groupId),
         Number(examId)
       );
+      console.log('GET submissions 전체:', submissions);
       console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
 
       // 2. 교수 점수만 일괄 조회
