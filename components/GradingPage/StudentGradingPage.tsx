@@ -12,7 +12,7 @@ import {
   auth_api,
   type SubmissionSummary,
 } from "@/lib/api"
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Code } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { motion } from "framer-motion"
 
@@ -54,6 +54,11 @@ export default function StudentGradingPage() {
 
   // 문제별 배점 맵
   const [pointsByProblem, setPointsByProblem] = useState<Record<number, number>>({})
+
+  // ⭐ 모범답안 상태 추가
+  const [currentProblem, setCurrentProblem] = useState<any | null>(null)
+  const [problemLoading, setProblemLoading] = useState(false)
+  const [allProblems, setAllProblems] = useState<any[]>([]) // ⭐ 전체 문제 캐시
 
   // 제출 목록 로드
   const fetchSubmissions = useCallback(async () => {
@@ -134,7 +139,7 @@ export default function StudentGradingPage() {
     }
   }, [groupId, examId, studentId])
 
-  // 문제 배점 로드
+  // ⭐ 문제 배점 및 상세 정보 로드 (수정됨)
   const fetchProblemPoints = useCallback(async () => {
     try {
       const list = await problem_ref_api.problem_ref_get(Number(groupId), Number(examId))
@@ -145,9 +150,12 @@ export default function StudentGradingPage() {
         }
       }
       setPointsByProblem(map)
+      setAllProblems(list as any[]) // ⭐ 전체 문제 목록 저장
+      console.log("📚 문제 목록 로드 완료:", list)
     } catch (e) {
       console.error("배점 불러오기 실패:", e)
       setPointsByProblem({})
+      setAllProblems([])
     }
   }, [groupId, examId])
 
@@ -195,6 +203,32 @@ export default function StudentGradingPage() {
   const lastIdx = submissions.length - 1
   const current = submissions[currentIdx]
 
+  // ⭐ current 변경 시 캐시된 문제에서 찾기 (수정됨)
+  useEffect(() => {
+    if (!current?.problemId || allProblems.length === 0) {
+      setCurrentProblem(null)
+      setProblemLoading(false)
+      return
+    }
+    
+    setProblemLoading(true)
+    
+    // 캐시된 문제 목록에서 찾기
+    const foundProblem = allProblems.find(
+      (prob: any) => prob.problem_id === current.problemId
+    )
+    
+    console.log(`🔍 문제 ${current.problemId} 찾기:`, foundProblem)
+    
+    if (foundProblem) {
+      setCurrentProblem(foundProblem)
+    } else {
+      setCurrentProblem(null)
+    }
+    
+    setProblemLoading(false)
+  }, [current?.problemId, allProblems])
+
   // 네비게이션
   const goPrev = useCallback(() => {
     if (currentIdx > 0) setCurrentIdx((i) => i - 1)
@@ -231,66 +265,66 @@ export default function StudentGradingPage() {
 
   // 점수만 저장
   const saveProfScore = useCallback(async () => {
-  if (!current) return
-  if (!isGroupOwner) {
-    alert("그룹장만 점수를 수정할 수 있습니다.")
-    return
-  }
+    if (!current) return
+    if (!isGroupOwner) {
+      alert("그룹장만 점수를 수정할 수 있습니다.")
+      return
+    }
 
-  try {
-    const num = Number(editedProfScore)
-    const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
+    try {
+      const num = Number(editedProfScore)
+      const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-    console.log(`\n💾 저장 전 상태:`);
-    console.log(`  제출 ID: ${current.submissionId}`);
-    console.log(`  현재 AI 점수: ${current.aiScore}`);
-    console.log(`  현재 교수 점수: ${current.profScore}`);
-    console.log(`  저장할 교수 점수: ${clamped}`);
+      console.log(`\n💾 저장 전 상태:`);
+      console.log(`  제출 ID: ${current.submissionId}`);
+      console.log(`  현재 AI 점수: ${current.aiScore}`);
+      console.log(`  현재 교수 점수: ${current.profScore}`);
+      console.log(`  저장할 교수 점수: ${clamped}`);
 
-    await grading_api.post_submission_score(
-      current.submissionId,
-      clamped,
-      editedProfFeedback,
-      myUserId ?? undefined
-    )
+      await grading_api.post_submission_score(
+        current.submissionId,
+        clamped,
+        editedProfFeedback,
+        myUserId ?? undefined
+      )
 
-    console.log(`✅ 저장 API 호출 완료`);
-    
-    // 저장 후 다시 조회해서 확인
-    const updatedScores = await grading_api.get_submission_scores(current.submissionId);
-    console.log(`\n📊 저장 후 점수 확인:`, updatedScores);
-    
-    const profScores = updatedScores.filter((score: any) => {
-      return score.graded_by && !score.graded_by.startsWith('auto:');
-    });
-    console.log(`  교수 점수 목록:`, profScores);
-
-    // 로컬 상태 업데이트
-    setSubmissions((prev) => {
-      const next = [...prev]
-      const originalAiScore = next[currentIdx].aiScore
+      console.log(`✅ 저장 API 호출 완료`);
       
-      console.log(`\n🔄 로컬 상태 업데이트:`);
-      console.log(`  AI 점수 유지: ${originalAiScore}`);
-      console.log(`  교수 점수 변경: ${next[currentIdx].profScore} → ${clamped}`);
+      // 저장 후 다시 조회해서 확인
+      const updatedScores = await grading_api.get_submission_scores(current.submissionId);
+      console.log(`\n📊 저장 후 점수 확인:`, updatedScores);
       
-      next[currentIdx] = { 
-        ...next[currentIdx], 
-        aiScore: originalAiScore,
-        profScore: clamped,
-        profFeedback: editedProfFeedback
-      }
+      const profScores = updatedScores.filter((score: any) => {
+        return score.graded_by && !score.graded_by.startsWith('auto:');
+      });
+      console.log(`  교수 점수 목록:`, profScores);
+
+      // 로컬 상태 업데이트
+      setSubmissions((prev) => {
+        const next = [...prev]
+        const originalAiScore = next[currentIdx].aiScore
+        
+        console.log(`\n🔄 로컬 상태 업데이트:`);
+        console.log(`  AI 점수 유지: ${originalAiScore}`);
+        console.log(`  교수 점수 변경: ${next[currentIdx].profScore} → ${clamped}`);
+        
+        next[currentIdx] = { 
+          ...next[currentIdx], 
+          aiScore: originalAiScore,
+          profScore: clamped,
+          profFeedback: editedProfFeedback
+        }
+        
+        return next
+      })
       
-      return next
-    })
-    
-    setIsEditingScore(false)
-    alert("교수 점수가 저장되었습니다.")
-  } catch (e: any) {
-    console.error("점수 저장 실패:", e)
-    alert(e?.message || "점수 저장 실패")
-  }
-}, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
+      setIsEditingScore(false)
+      alert("교수 점수가 저장되었습니다.")
+    } catch (e: any) {
+      console.error("점수 저장 실패:", e)
+      alert(e?.message || "점수 저장 실패")
+    }
+  }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, myUserId])
 
   // 피드백만 저장
   const saveProfFeedback = useCallback(async () => {
@@ -501,6 +535,77 @@ export default function StudentGradingPage() {
     )
   }
 
+  // ⭐ 문제 설명 렌더링 함수 (간단하게 수정)
+  const renderProblemDescription = () => {
+    if (problemLoading) {
+      return <p className="text-gray-500 text-sm">문제 정보를 불러오는 중...</p>
+    }
+
+    if (!currentProblem) {
+      return <p className="text-gray-500 text-sm">문제 정보가 없습니다.</p>
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* 문제 제목 */}
+        <div>
+          <h4 className="font-semibold text-base text-gray-800 mb-2">
+            {currentProblem.title || "제목 없음"}
+          </h4>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
+              {currentProblem.problem_type || currentProblem.problemType || "유형 미지정"}
+            </span>
+            {currentProblem.difficulty && (
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                난이도: {currentProblem.difficulty}
+              </span>
+            )}
+            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+              배점: {currentProblem.points || 0}점
+            </span>
+          </div>
+        </div>
+
+        {/* 문제 설명 */}
+        {currentProblem.description && (
+          <div>
+            <h5 className="font-semibold text-sm text-gray-700 mb-2">문제 설명</h5>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {currentProblem.description}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 추가 정보가 있다면 표시 */}
+        {currentProblem.tags && currentProblem.tags.length > 0 && (
+          <div>
+            <h5 className="font-semibold text-sm text-gray-700 mb-2">태그</h5>
+            <div className="flex flex-wrap gap-2">
+              {currentProblem.tags.map((tag: string, idx: number) => (
+                <span key={idx} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* JSON 전체 구조 확인용 (개발 중에만 사용) */}
+        <details className="mt-4">
+          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+            전체 문제 데이터 보기 (개발용)
+          </summary>
+          <pre className="mt-2 p-3 bg-gray-900 text-gray-100 rounded text-xs overflow-auto max-h-60">
+            {JSON.stringify(currentProblem, null, 2)}
+          </pre>
+        </details>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="flex-1 max-w-7xl mx-auto p-6 space-y-6">
@@ -521,24 +626,36 @@ export default function StudentGradingPage() {
           </button>
         </div>
 
-        {/* 본문 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 좌: 답안 */}
+        {/* ⭐ 본문 - 3단 그리드 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 좌: 학생 답안 */}
           <motion.div
             className="bg-white rounded-lg shadow border p-4 h-[600px] overflow-y-auto"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             key={current?.submissionId}
           >
+            <h3 className="font-semibold mb-3 text-gray-800">학생 답안</h3>
             <div className="mb-2 text-sm text-gray-600">
               문제 유형: <span className="font-medium">{current?.problemType}</span>
             </div>
             {renderAnswer()}
           </motion.div>
 
+          {/* ⭐ 중앙: 문제 설명 (수정됨) */}
+          <motion.div
+            className="bg-white rounded-lg shadow border p-4 h-[600px] overflow-y-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            key={`problem-${current?.problemId}`}
+          >
+            <h3 className="font-semibold mb-3 text-gray-800">문제 정보</h3>
+            {renderProblemDescription()}
+          </motion.div>
+
           {/* 우: 피드백 */}
           <motion.div
-            className="bg-white rounded-lg shadow border flex flex-col"
+            className="bg-white rounded-lg shadow border flex flex-col h-[600px]"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
           >
