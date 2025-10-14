@@ -76,11 +76,17 @@ export default function GradingListPage() {
     console.log('\n📦 GET submissions 전체:', submissions);
     console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
     
-    // 🔒 AI 점수를 별도로 저장 (절대 덮어쓰지 않음)
+    // 🔒 AI 점수를 별도로 저장하고 절대 변경하지 않음
     const aiScoresMap = new Map<number, number | null>();
+    
+    // ⚠️ CRITICAL: 여기서 한 번만 저장하고 이후에는 절대 변경 안 함
     submissions.forEach(sub => {
-      aiScoresMap.set(sub.submission_id, sub.ai_score);
-      console.log(`🤖 [제출 ${sub.submission_id}] AI 점수 저장: ${sub.ai_score}`);
+      // 백엔드가 ai_score를 변경했을 가능성이 있으므로
+      // 첫 로드 시에만 저장하고 이후 변경 불가
+      if (!aiScoresMap.has(sub.submission_id)) {
+        aiScoresMap.set(sub.submission_id, sub.ai_score);
+        console.log(`🔒 [제출 ${sub.submission_id}] 원본 AI 점수 영구 저장: ${sub.ai_score}`);
+      }
     });
 
     // 2. 교수 점수만 일괄 조회 (AI 점수와 완전히 분리)
@@ -91,9 +97,6 @@ export default function GradingListPage() {
         try {
           const scores = await grading_api.get_submission_scores(sub.submission_id);
           
-          console.log(`\n[제출 ${sub.submission_id}] 점수 조회:`);
-          console.log(`  🤖 AI 점수 (get_all_submissions): ${aiScoresMap.get(sub.submission_id)}`);
-          
           // 교수 점수 필터링
           const profScores = scores.filter((score: any) => {
             const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
@@ -102,17 +105,15 @@ export default function GradingListPage() {
           });
           
           if (profScores.length > 0) {
-            // 최신 교수 점수 선택
+            // ✅ submission_score_id 기준으로 최신 점수 선택
             profScores.sort((a: any, b: any) => 
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+              b.submission_score_id - a.submission_score_id
             );
             
             const latestProfScore = profScores[0].prof_score;
             profScoresMap.set(sub.submission_id, latestProfScore);
-            console.log(`  👨‍🏫 교수 점수 (get_submission_scores): ${latestProfScore}`);
           } else {
             profScoresMap.set(sub.submission_id, null);
-            console.log(`  👨‍🏫 교수 점수: 없음`);
           }
           
         } catch (err) {
@@ -123,7 +124,7 @@ export default function GradingListPage() {
     );
 
     console.log(`\n===== 점수 조회 완료 =====`);
-    console.log(`AI 점수: ${aiScoresMap.size}개`);
+    console.log(`AI 점수 (영구 저장): ${aiScoresMap.size}개`);
     console.log(`교수 점수: ${Array.from(profScoresMap.values()).filter(v => v !== null).length}개`);
 
     // 3. 그룹장과 본인 제외를 위한 ID 조회
@@ -154,7 +155,6 @@ export default function GradingListPage() {
     for (const sub of submissions) {
       const userId = String(sub.user_id);
       
-      // 그룹장 및 본인 제외
       if (
         (ownerId && userId === String(ownerId)) || 
         (meId && userId === String(meId))
@@ -162,7 +162,6 @@ export default function GradingListPage() {
         continue;
       }
 
-      // user_name을 이름으로, user_id를 학번으로 사용
       const userName = sub.user_name || "이름 없음";
       const studentNo = sub.user_id;
 
@@ -178,7 +177,6 @@ export default function GradingListPage() {
     for (const [userId, userInfo] of Array.from(byUser.entries())) {
       const { name, studentNo, items } = userInfo;
 
-      // 문제별로 제출 그룹화 (problem_id 기준)
       const subMapByProblem = new Map<number, SubmissionSummary[]>();
       
       for (const item of items) {
@@ -188,7 +186,6 @@ export default function GradingListPage() {
         subMapByProblem.get(item.problem_id)!.push(item);
       }
 
-      // 각 문제의 제출들을 시간순 정렬 (최신순)
       for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
         subs.sort((a, b) =>
           new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -197,7 +194,6 @@ export default function GradingListPage() {
 
       const problemScores: ProblemScoreData[] = [];
 
-      // problemRefs의 순서대로 처리
       for (const prob of problemRefs) {
         const pid = prob.problem_id;
         const subs = subMapByProblem.get(pid) || [];
@@ -211,23 +207,22 @@ export default function GradingListPage() {
           continue;
         }
 
-        // 제출 기록 생성 - AI 점수와 교수 점수를 완전히 독립적으로 관리
         const submissionRecords: SubmissionRecord[] = subs.map(sub => {
-          // 🔒 AI 점수는 오직 aiScoresMap에서만 가져옴
+          // 🔒 AI 점수는 영구 저장된 값만 사용 (절대 변경 불가)
           const aiScore = aiScoresMap.get(sub.submission_id) ?? null;
           
           // 👨‍🏫 교수 점수는 profScoresMap에서만 가져옴
           const profScore = profScoresMap.get(sub.submission_id) ?? null;
           
           console.log(`\n📊 [제출 ${sub.submission_id}] 최종 점수 확인:`);
-          console.log(`  🤖 AI 점수: ${aiScore}`);
+          console.log(`  🔒 AI 점수 (영구 저장): ${aiScore}`);
           console.log(`  👨‍🏫 교수 점수: ${profScore}`);
-          console.log(`  ✅ 독립성: ${aiScore !== profScore || aiScore === null || profScore === null ? '정상' : '⚠️ 값 동일 (우연일 수 있음)'}`);
+          console.log(`  🔍 백엔드 ai_score 값: ${sub.ai_score} ${sub.ai_score !== aiScore ? '⚠️ 백엔드가 변경함!' : '✅ 정상'}`);
           
           return {
             submissionId: sub.submission_id,
-            aiScore: aiScore,  // 🔒 AI 점수 (get_all_submissions에서만)
-            profScore: profScore,  // 👨‍🏫 교수 점수 (get_submission_scores에서만)
+            aiScore: aiScore,  // 🔒 영구 저장된 AI 점수만 사용
+            profScore: profScore,
             submittedAt: sub.updated_at,
             reviewed: sub.reviewed,
           };
@@ -247,39 +242,12 @@ export default function GradingListPage() {
       });
     }
 
-    // 이름 순으로 정렬
     rows.sort((a, b) =>
       a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
     );
 
     console.log(`\n===== 최종 결과 =====`);
     console.log(`학생 수: ${rows.length}명`);
-    
-    // 최종 점수 상태 요약
-    console.log("\n[점수 분리 상태 요약]");
-    let totalWithProfScore = 0;
-    let totalWithOnlyAI = 0;
-    let totalWithBoth = 0;
-    
-    rows.forEach(student => {
-      student.problemScores.forEach((score) => {
-        if (score.submissions.length > 0) {
-          const latest = score.submissions[0];
-          if (latest.profScore !== null && latest.aiScore !== null) {
-            totalWithBoth++;
-          } else if (latest.profScore !== null) {
-            totalWithProfScore++;
-          } else if (latest.aiScore !== null) {
-            totalWithOnlyAI++;
-          }
-        }
-      });
-    });
-    
-    console.log(`📊 통계:`);
-    console.log(`  - AI + 교수 점수 모두 있음: ${totalWithBoth}개`);
-    console.log(`  - 교수 점수만 있음: ${totalWithProfScore}개`);
-    console.log(`  - AI 점수만 있음: ${totalWithOnlyAI}개`);
 
     setStudents(rows);
   } catch (err) {

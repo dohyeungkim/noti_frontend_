@@ -258,7 +258,7 @@ export default function StudentGradingPage() {
     
     // 저장 후 다시 조회해서 확인
     const updatedScores = await grading_api.get_submission_scores(current.submissionId);
-    console.log(`\n📊 수 확인:`, updatedScores);
+    console.log(`\n📊 저장 후 점수 확인:`, updatedScores);
     
     const profScores = updatedScores.filter((score: any) => {
       return score.graded_by && !score.graded_by.startsWith('auto:');
