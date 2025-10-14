@@ -1481,6 +1481,7 @@ export interface SubmissionSummary {
   written_answers?: string[]
 	user_name: string
 	ai_score: number | null // AI 또는 교수 최종 점수
+	prof_score: number | null,
 	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
 	created_at: string
 	updated_at: string

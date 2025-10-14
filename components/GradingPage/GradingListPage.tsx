@@ -62,8 +62,9 @@ export default function GradingListPage() {
     const fetchSubmissions = async () => {
       try {
         setLoading(true);
-        console.log("===== 채점 데이터 로딩 시작 =====");
+        console.log("===== 채점 데이터 로딩 시작 (최적화) =====");
 
+        // ⭐ 단일 API 호출로 모든 데이터 가져오기
         const submissions = await grading_api.get_all_submissions(
           Number(groupId),
           Number(examId)
@@ -71,60 +72,15 @@ export default function GradingListPage() {
         
         console.log('\n📦 GET submissions 전체:', submissions);
         console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
-        
-        const aiScoresMap = new Map<number, number | null>();
-        
-        submissions.forEach(sub => {
-          if (!aiScoresMap.has(sub.submission_id)) {
-            aiScoresMap.set(sub.submission_id, sub.ai_score);
-            console.log(`🔒 [제출 ${sub.submission_id}] 원본 AI 점수 영구 저장: ${sub.ai_score}`);
-          }
-        });
 
-        const profScoresMap = new Map<number, number | null>();
-
-        await Promise.all(
-          submissions.map(async (sub) => {
-            try {
-              const scores = await grading_api.get_submission_scores(sub.submission_id);
-              
-              const profScores = scores.filter((score: any) => {
-                const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
-                const hasProfScore = score.prof_score !== undefined && score.prof_score !== null;
-                return hasGradedBy && hasProfScore;
-              });
-              
-              if (profScores.length > 0) {
-                profScores.sort((a: any, b: any) => 
-                  b.submission_score_id - a.submission_score_id
-                );
-                
-                const latestProfScore = profScores[0].prof_score;
-                profScoresMap.set(sub.submission_id, latestProfScore);
-              } else {
-                profScoresMap.set(sub.submission_id, null);
-              }
-              
-            } catch (err) {
-              console.error(`❌ 제출 ${sub.submission_id} 점수 조회 실패:`, err);
-              profScoresMap.set(sub.submission_id, null);
-            }
-          })
-        );
-
-        console.log(`\n===== 점수 조회 완료 =====`);
-        console.log(`AI 점수 (영구 저장): ${aiScoresMap.size}개`);
-        console.log(`교수 점수: ${Array.from(profScoresMap.values()).filter(v => v !== null).length}개`);
-
+        // 그룹장 정보 조회
         let ownerId: string | number | undefined;
-        let meId: string | number | undefined;
         try {
           const [me, grp]: [{ user_id: string | number }, any] =
             await Promise.all([
               auth_api.getUser(),
               group_api.group_get_by_id(Number(groupId)),
             ]);
-          meId = me?.user_id;
           ownerId =
             grp?.group_owner ??
             grp?.owner_id ??
@@ -134,17 +90,18 @@ export default function GradingListPage() {
             grp?.leader_id ??
             grp?.owner?.user_id;
             
-          console.log(`\n👤 현재 사용자 ID: ${meId}`);
-          console.log(`👑 그룹장 ID: ${ownerId}`);
+          console.log(`\n👑 그룹장 ID: ${ownerId}`);
         } catch (err) {
-          console.warn("그룹장/본인 정보 조회 실패:", err);
+          console.warn("그룹장 정보 조회 실패:", err);
         }
 
+        // 학생별로 그룹화 (그룹장 제외)
         const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
         for (const sub of submissions) {
           const userId = String(sub.user_id);
           
+          // 그룹장 제외
           if (ownerId && userId === String(ownerId)) {
             console.log(`⏭️  그룹장 ${userId} 제외`);
             continue;
@@ -161,11 +118,13 @@ export default function GradingListPage() {
 
         console.log(`\n👥 필터링 후 학생 수: ${byUser.size}명`);
 
+        // 각 학생의 문제별 점수 구조화
         const rows: GradingStudentSummary[] = [];
 
         for (const [userId, userInfo] of Array.from(byUser.entries())) {
           const { name, studentNo, items } = userInfo;
 
+          // 문제별로 제출물 그룹화
           const subMapByProblem = new Map<number, SubmissionSummary[]>();
           
           for (const item of items) {
@@ -175,6 +134,7 @@ export default function GradingListPage() {
             subMapByProblem.get(item.problem_id)!.push(item);
           }
 
+          // 각 문제별로 제출 시간 기준 정렬 (최신순)
           for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
             subs.sort((a, b) =>
               new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -196,16 +156,14 @@ export default function GradingListPage() {
               continue;
             }
 
+            // ⭐ get_all_submissions에서 직접 AI 점수와 교수 점수 사용
             const submissionRecords: SubmissionRecord[] = subs.map(sub => {
-              const aiScore = aiScoresMap.get(sub.submission_id) ?? null;
-              const profScore = profScoresMap.get(sub.submission_id) ?? null;
-              
               return {
                 submissionId: sub.submission_id,
-                aiScore: aiScore,
-                profScore: profScore,
+                aiScore: sub.ai_score ?? null,
+                profScore: sub.prof_score ?? null, // ⭐ API에서 직접 가져온 교수 점수
                 submittedAt: sub.updated_at,
-                reviewed: sub.reviewed,
+                reviewed: sub.reviewed ?? false,
               };
             });
 
@@ -223,12 +181,14 @@ export default function GradingListPage() {
           });
         }
 
+        // 이름 순 정렬
         rows.sort((a, b) =>
           a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
         );
 
         console.log(`\n===== 최종 결과 =====`);
         console.log(`학생 수: ${rows.length}명`);
+        console.log(`총 API 호출 횟수: 1회 (get_all_submissions)`);
 
         setStudents(rows);
       } catch (err) {
@@ -381,20 +341,15 @@ export default function GradingListPage() {
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
               
-              // ⭐ 새로운 상태 판단 기준: 교수 채점 완료 여부
-              // 1. 제출한 문제가 하나라도 있는지 확인
+              // 상태 판단: 교수 채점 완료 여부
               const hasAnySubmission = visibleScores.some(data => data.submissions.length > 0);
               
-              // 2. 모든 제출된 문제에 교수 점수가 있는지 확인 (완료)
               const allGraded = hasAnySubmission && visibleScores.every((data) => {
-                // 제출이 없으면 채점 대상이 아니므로 true로 처리
                 if (data.submissions.length === 0) return true;
-                // 제출이 있으면 교수 점수가 있어야 함
                 const latestSub = data.submissions[0];
                 return latestSub.profScore !== null;
               });
               
-              // 3. 일부만 채점된 경우 (검토중)
               const someGraded = hasAnySubmission && visibleScores.some((data) => {
                 if (data.submissions.length === 0) return false;
                 const latestSub = data.submissions[0];
