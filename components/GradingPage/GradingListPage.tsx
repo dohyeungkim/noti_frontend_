@@ -57,216 +57,210 @@ export default function GradingListPage() {
     }
   }, [groupId, examId]);
 
-  // 제출 목록 조회
-  const fetchSubmissions = useCallback(async () => {
-  if (problemRefs.length === 0) {
-    return;
-  }
+  // ⭐ 제출 목록 조회 - useEffect 내부로 이동
+  useEffect(() => {
+    if (problemRefs.length === 0) {
+      return;
+    }
 
-  try {
-    setLoading(true);
-    console.log("===== 채점 데이터 로딩 시작 =====");
+    const fetchSubmissions = async () => {
+      try {
+        setLoading(true);
+        console.log("===== 채점 데이터 로딩 시작 =====");
 
-    // 1. 전체 제출 목록 조회 (AI 점수 포함)
-    const submissions = await grading_api.get_all_submissions(
-      Number(groupId),
-      Number(examId)
-    );
-    
-    console.log('\n📦 GET submissions 전체:', submissions);
-    console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
-    
-    // 🔒 AI 점수를 별도로 저장하고 절대 변경하지 않음
-    const aiScoresMap = new Map<number, number | null>();
-    
-    // ⚠️ CRITICAL: 여기서 한 번만 저장하고 이후에는 절대 변경 안 함
-    submissions.forEach(sub => {
-      // 백엔드가 ai_score를 변경했을 가능성이 있으므로
-      // 첫 로드 시에만 저장하고 이후 변경 불가
-      if (!aiScoresMap.has(sub.submission_id)) {
-        aiScoresMap.set(sub.submission_id, sub.ai_score);
-        console.log(`🔒 [제출 ${sub.submission_id}] 원본 AI 점수 영구 저장: ${sub.ai_score}`);
-      }
-    });
+        // 1. 전체 제출 목록 조회 (AI 점수 포함)
+        const submissions = await grading_api.get_all_submissions(
+          Number(groupId),
+          Number(examId)
+        );
+        
+        console.log('\n📦 GET submissions 전체:', submissions);
+        console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
+        
+        // 🔒 AI 점수를 별도로 저장하고 절대 변경하지 않음
+        const aiScoresMap = new Map<number, number | null>();
+        
+        submissions.forEach(sub => {
+          if (!aiScoresMap.has(sub.submission_id)) {
+            aiScoresMap.set(sub.submission_id, sub.ai_score);
+            console.log(`🔒 [제출 ${sub.submission_id}] 원본 AI 점수 영구 저장: ${sub.ai_score}`);
+          }
+        });
 
-    // 2. 교수 점수만 일괄 조회 (AI 점수와 완전히 분리)
-    const profScoresMap = new Map<number, number | null>();
+        // 2. 교수 점수만 일괄 조회 (AI 점수와 완전히 분리)
+        const profScoresMap = new Map<number, number | null>();
 
-    await Promise.all(
-      submissions.map(async (sub) => {
+        await Promise.all(
+          submissions.map(async (sub) => {
+            try {
+              const scores = await grading_api.get_submission_scores(sub.submission_id);
+              
+              // 교수 점수 필터링
+              const profScores = scores.filter((score: any) => {
+                const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
+                const hasProfScore = score.prof_score !== undefined && score.prof_score !== null;
+                return hasGradedBy && hasProfScore;
+              });
+              
+              if (profScores.length > 0) {
+                // ✅ submission_score_id 기준으로 최신 점수 선택
+                profScores.sort((a: any, b: any) => 
+                  b.submission_score_id - a.submission_score_id
+                );
+                
+                const latestProfScore = profScores[0].prof_score;
+                profScoresMap.set(sub.submission_id, latestProfScore);
+              } else {
+                profScoresMap.set(sub.submission_id, null);
+              }
+              
+            } catch (err) {
+              console.error(`❌ 제출 ${sub.submission_id} 점수 조회 실패:`, err);
+              profScoresMap.set(sub.submission_id, null);
+            }
+          })
+        );
+
+        console.log(`\n===== 점수 조회 완료 =====`);
+        console.log(`AI 점수 (영구 저장): ${aiScoresMap.size}개`);
+        console.log(`교수 점수: ${Array.from(profScoresMap.values()).filter(v => v !== null).length}개`);
+
+        // 3. 그룹장과 본인 제외를 위한 ID 조회
+        let ownerId: string | number | undefined;
+        let meId: string | number | undefined;
         try {
-          const scores = await grading_api.get_submission_scores(sub.submission_id);
-          
-          // 교수 점수 필터링
-          const profScores = scores.filter((score: any) => {
-            const hasGradedBy = score.graded_by && !score.graded_by.startsWith('auto:');
-            const hasProfScore = score.prof_score !== undefined && score.prof_score !== null;
-            return hasGradedBy && hasProfScore;
-          });
-          
-          if (profScores.length > 0) {
-            // ✅ submission_score_id 기준으로 최신 점수 선택
-            profScores.sort((a: any, b: any) => 
-              b.submission_score_id - a.submission_score_id
-            );
+          const [me, grp]: [{ user_id: string | number }, any] =
+            await Promise.all([
+              auth_api.getUser(),
+              group_api.group_get_by_id(Number(groupId)),
+            ]);
+          meId = me?.user_id;
+          ownerId =
+            grp?.group_owner ??
+            grp?.owner_id ??
+            grp?.group_owner_id ??
+            grp?.owner_user_id ??
+            grp?.ownerId ??
+            grp?.leader_id ??
+            grp?.owner?.user_id;
             
-            const latestProfScore = profScores[0].prof_score;
-            profScoresMap.set(sub.submission_id, latestProfScore);
-          } else {
-            profScoresMap.set(sub.submission_id, null);
+          console.log(`\n👤 현재 사용자 ID: ${meId}`);
+          console.log(`👑 그룹장 ID: ${ownerId}`);
+        } catch (err) {
+          console.warn("그룹장/본인 정보 조회 실패:", err);
+        }
+
+        // 4. 학생별로 그룹화
+        const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
+
+        for (const sub of submissions) {
+          const userId = String(sub.user_id);
+          
+          // ⭐ 그룹장만 제외 (본인은 포함)
+          if (ownerId && userId === String(ownerId)) {
+            console.log(`⏭️  그룹장 ${userId} 제외`);
+            continue;
           }
           
-        } catch (err) {
-          console.error(`❌ 제출 ${sub.submission_id} 점수 조회 실패:`, err);
-          profScoresMap.set(sub.submission_id, null);
+          const userName = sub.user_name || "이름 없음";
+          const studentNo = String(sub.user_id);
+
+          if (!byUser.has(userId)) {
+            byUser.set(userId, { name: userName, studentNo, items: [] });
+          }
+          byUser.get(userId)!.items.push(sub);
         }
-      })
-    );
 
-    console.log(`\n===== 점수 조회 완료 =====`);
-    console.log(`AI 점수 (영구 저장): ${aiScoresMap.size}개`);
-    console.log(`교수 점수: ${Array.from(profScoresMap.values()).filter(v => v !== null).length}개`);
+        console.log(`\n👥 필터링 후 학생 수: ${byUser.size}명`);
 
-    // 3. 그룹장과 본인 제외를 위한 ID 조회
-    let ownerId: string | number | undefined;
-    let meId: string | number | undefined;
-    try {
-      const [me, grp]: [{ user_id: string | number }, any] =
-        await Promise.all([
-          auth_api.getUser(),
-          group_api.group_get_by_id(Number(groupId)),
-        ]);
-      meId = me?.user_id;
-      ownerId =
-        grp?.group_owner ??
-        grp?.owner_id ??
-        grp?.group_owner_id ??
-        grp?.owner_user_id ??
-        grp?.ownerId ??
-        grp?.leader_id ??
-        grp?.owner?.user_id;
-    } catch (err) {
-      console.warn("그룹장/본인 정보 조회 실패:", err);
-    }
+        // 5. 각 학생의 문제별 점수 구조화
+        const rows: GradingStudentSummary[] = [];
 
-    // 4. 학생별로 그룹화
-  const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
+        for (const [userId, userInfo] of Array.from(byUser.entries())) {
+          const { name, studentNo, items } = userInfo;
 
-    for (const sub of submissions) {
-      const userId = String(sub.user_id);
-      
-      // ⭐ 그룹장만 제외 (본인은 포함)
-      if (ownerId && userId === String(ownerId)) {
-        continue; // 그룹장만 제외
-      }
-      
-      // 또는 아예 제외하지 않으려면 이 if 블록 전체를 삭제하세요
-      
-      const userName = sub.user_name || "이름 없음";
-      const studentNo = sub.user_id;
+          const subMapByProblem = new Map<number, SubmissionSummary[]>();
+          
+          for (const item of items) {
+            if (!subMapByProblem.has(item.problem_id)) {
+              subMapByProblem.set(item.problem_id, []);
+            }
+            subMapByProblem.get(item.problem_id)!.push(item);
+          }
 
-      if (!byUser.has(userId)) {
-        byUser.set(userId, { name: userName, studentNo, items: [] });
-      }
-      byUser.get(userId)!.items.push(sub);
-    }
+          for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
+            subs.sort((a, b) =>
+              new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+            );
+          }
 
-    // 5. 각 학생의 문제별 점수 구조화
-    const rows: GradingStudentSummary[] = [];
+          const problemScores: ProblemScoreData[] = [];
 
-    for (const [userId, userInfo] of Array.from(byUser.entries())) {
-      const { name, studentNo, items } = userInfo;
+          for (const prob of problemRefs) {
+            const pid = prob.problem_id;
+            const subs = subMapByProblem.get(pid) || [];
+            const maxPoints = prob.points ?? 10;
 
-      const subMapByProblem = new Map<number, SubmissionSummary[]>();
-      
-      for (const item of items) {
-        if (!subMapByProblem.has(item.problem_id)) {
-          subMapByProblem.set(item.problem_id, []);
-        }
-        subMapByProblem.get(item.problem_id)!.push(item);
-      }
+            if (subs.length === 0) {
+              problemScores.push({
+                maxPoints,
+                submissions: [],
+              });
+              continue;
+            }
 
-      for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
-        subs.sort((a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        );
-      }
+            const submissionRecords: SubmissionRecord[] = subs.map(sub => {
+              // 🔒 AI 점수는 영구 저장된 값만 사용 (절대 변경 불가)
+              const aiScore = aiScoresMap.get(sub.submission_id) ?? null;
+              
+              // 👨‍🏫 교수 점수는 profScoresMap에서만 가져옴
+              const profScore = profScoresMap.get(sub.submission_id) ?? null;
+              
+              return {
+                submissionId: sub.submission_id,
+                aiScore: aiScore,
+                profScore: profScore,
+                submittedAt: sub.updated_at,
+                reviewed: sub.reviewed,
+              };
+            });
 
-      const problemScores: ProblemScoreData[] = [];
+            problemScores.push({
+              maxPoints,
+              submissions: submissionRecords,
+            });
+          }
 
-      for (const prob of problemRefs) {
-        const pid = prob.problem_id;
-        const subs = subMapByProblem.get(pid) || [];
-        const maxPoints = prob.points ?? 10;
-
-        if (subs.length === 0) {
-          problemScores.push({
-            maxPoints,
-            submissions: [],
+          rows.push({
+            studentId: userId,
+            studentName: name,
+            studentNo: studentNo,
+            problemScores,
           });
-          continue;
         }
 
-        const submissionRecords: SubmissionRecord[] = subs.map(sub => {
-          // 🔒 AI 점수는 영구 저장된 값만 사용 (절대 변경 불가)
-          const aiScore = aiScoresMap.get(sub.submission_id) ?? null;
-          
-          // 👨‍🏫 교수 점수는 profScoresMap에서만 가져옴
-          const profScore = profScoresMap.get(sub.submission_id) ?? null;
-          
-          console.log(`\n📊 [제출 ${sub.submission_id}] 최종 점수 확인:`);
-          console.log(`  🔒 AI 점수 (영구 저장): ${aiScore}`);
-          console.log(`  👨‍🏫 교수 점수: ${profScore}`);
-          console.log(`  🔍 백엔드 ai_score 값: ${sub.ai_score} ${sub.ai_score !== aiScore ? '⚠️ 백엔드가 변경함!' : '✅ 정상'}`);
-          
-          return {
-            submissionId: sub.submission_id,
-            aiScore: aiScore,  // 🔒 영구 저장된 AI 점수만 사용
-            profScore: profScore,
-            submittedAt: sub.updated_at,
-            reviewed: sub.reviewed,
-          };
-        });
+        rows.sort((a, b) =>
+          a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
+        );
 
-        problemScores.push({
-          maxPoints,
-          submissions: submissionRecords,
-        });
+        console.log(`\n===== 최종 결과 =====`);
+        console.log(`학생 수: ${rows.length}명`);
+
+        setStudents(rows);
+      } catch (err) {
+        console.error("❌ 제출 목록 로드 실패:", err);
+        setStudents([]);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      rows.push({
-        studentId: userId,
-        studentName: name,
-        studentNo: studentNo,
-        problemScores,
-      });
-    }
-
-    rows.sort((a, b) =>
-      a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
-    );
-
-    console.log(`\n===== 최종 결과 =====`);
-    console.log(`학생 수: ${rows.length}명`);
-
-    setStudents(rows);
-  } catch (err) {
-    console.error("❌ 제출 목록 로드 실패:", err);
-    setStudents([]);
-  } finally {
-    setLoading(false);
-  }
-}, [groupId, examId, problemRefs]);
-
-useEffect(() => {
-    fetchProblemRefs();
-  }, [fetchProblemRefs]);
+    fetchSubmissions();
+  }, [groupId, examId, problemRefs]);
 
   useEffect(() => {
-    if (problemRefs.length > 0) {
-      fetchSubmissions();
-    }
-  }, [fetchSubmissions, problemRefs.length]);
+    fetchProblemRefs();
+  }, [fetchProblemRefs]);
 
   const selectStudent = (studentId: string) => {
     router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`);
