@@ -127,8 +127,8 @@ export default function GradingListPage() {
                 );
                 
                 const latestProfScore = profScores[0];
-                profScoresMap.set(sub.submission_id, latestProfScore.score);
-                console.log(`  ✅ 최종 교수 점수: ${latestProfScore.score}점 (graded_by: ${latestProfScore.graded_by})`);
+                profScoresMap.set(sub.submission_id, latestProfScore.prof_score);
+                console.log(`  ✅ 최종 교수 점수: ${latestProfScore.prof_score}점 (graded_by: ${latestProfScore.graded_by})`);
                 console.log(`  ✅ AI 점수: ${sub.score}점 (변경 없음)`);
               } else {
                 profScoresMap.set(sub.submission_id, null);

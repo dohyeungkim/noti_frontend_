@@ -82,9 +82,7 @@ export default function StudentGradingPage() {
       Number(groupId),
       Number(examId),
     )
-
     const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
-
     const mapped: Submission[] = await Promise.all(
       studentSubs.map(async (s) => {
         let profScore = null
@@ -94,30 +92,24 @@ export default function StudentGradingPage() {
           const scores = await grading_api.get_submission_scores(s.submission_id)
           console.log(`📊 제출물 ${s.submission_id} 점수 목록:`, scores)
           
-          // 모든 교수 점수 찾기
+          // 교수 점수 찾기 (prof_score 필드가 있는 것 중 최신)
           const profScores = scores.filter((score: any) => {
-            const gradedBy = score.graded_by
-            if (gradedBy == null) return false
-            if (typeof gradedBy === 'string' && gradedBy.startsWith('auto:')) return false
-            return true
+            return score.prof_score !== null && score.prof_score !== undefined
           })
           
-          // 가장 최신 점수 선택 (submission_score_id가 가장 큰 것)
           if (profScores.length > 0) {
-            const latestScore = profScores.reduce((latest: any, current: any) => {
+            // 가장 최신 교수 점수만 선택
+            const latestProf = profScores.reduce((latest: any, current: any) => {
               return current.submission_score_id > latest.submission_score_id ? current : latest
             })
-            
-            profScore = latestScore.score
-            profFeedback = latestScore.prof_feedback || ""
-            console.log(`✅ 최신 교수 점수: ${profScore}, 피드백: ${profFeedback}, ID: ${latestScore.submission_score_id}`)
-          } else {
-            console.log(`⚠️ 제출물 ${s.submission_id}: 교수 점수 없음`)
+            profScore = latestProf.prof_score
+            profFeedback = latestProf.prof_feedback || ""
           }
+          
         } catch (err) {
-          console.error(`❌ 교수 점수 조회 실패 (submission_id: ${s.submission_id}):`, err)
+          console.error(`❌ 점수 조회 실패:`, err)
         }
-
+        
         return {
           submissionId: s.submission_id,
           problemId: s.problem_id,
@@ -125,9 +117,9 @@ export default function StudentGradingPage() {
           problemType: s.problme_type || "code",
           answerType: s.problme_type || "code",
           answer: "",
-          aiScore: s.score,
-          profScore: profScore,
-          profFeedback: profFeedback,
+          aiScore: s.score,  // AI 점수는 get_all_submissions에서 직접 가져옴
+          profScore: profScore,  // 교수 점수 (최신)
+          profFeedback: profFeedback,  // 교수 피드백 (최신)
           reviewed: s.reviewed,
           userName: s.user_name,
           createdAt: s.created_at,
@@ -136,7 +128,6 @@ export default function StudentGradingPage() {
         }
       })
     )
-
     mapped.sort((a, b) => a.problemId - b.problemId)
     
     console.log("📋 최종 제출물 목록:", mapped)
