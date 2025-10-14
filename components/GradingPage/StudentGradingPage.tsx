@@ -516,58 +516,99 @@ export default function StudentGradingPage() {
     }
 
     return (
-      <div className="space-y-4">
-        <div>
-          <h4 className="font-semibold text-base text-gray-800 mb-2">
+      <div className="space-y-4 h-full flex flex-col">
+        {/* 문제 제목 및 메타 정보 */}
+        <div className="border-b pb-4">
+          <h4 className="font-bold text-lg text-gray-900 mb-3">
             {currentProblem.title || "제목 없음"}
           </h4>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
               {currentProblem.problem_type || currentProblem.problemType || "유형 미지정"}
             </span>
             {currentProblem.difficulty && (
-              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                 난이도: {currentProblem.difficulty}
               </span>
             )}
-            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
               배점: {currentProblem.points || 0}점
             </span>
           </div>
         </div>
 
-        {currentProblem.description && (
-          <div>
-            <h5 className="font-semibold text-sm text-gray-700 mb-2">문제 설명</h5>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+        {/* 문제 설명 - 스크롤 가능한 영역 */}
+        <div className="flex-1 overflow-y-auto">
+          {currentProblem.description ? (
+            <div className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-5 shadow-sm">
+              <h5 className="font-semibold text-sm text-gray-800 mb-3 flex items-center gap-2">
+                <span className="w-1 h-4 bg-blue-500 rounded"></span>
+                문제 설명
+              </h5>
+              <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                 {currentProblem.description}
-              </p>
+              </div>
             </div>
-          </div>
-        )}
-
-        {currentProblem.tags && currentProblem.tags.length > 0 && (
-          <div>
-            <h5 className="font-semibold text-sm text-gray-700 mb-2">태그</h5>
-            <div className="flex flex-wrap gap-2">
-              {currentProblem.tags.map((tag: string, idx: number) => (
-                <span key={idx} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs">
-                  #{tag}
-                </span>
-              ))}
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 text-center text-gray-400">
+              문제 설명이 없습니다.
             </div>
-          </div>
-        )}
+          )}
 
-        <details className="mt-4">
-          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-            전체 문제 데이터 보기 (개발용)
-          </summary>
-          <pre className="mt-2 p-3 bg-gray-900 text-gray-100 rounded text-xs overflow-auto max-h-60">
-            {JSON.stringify(currentProblem, null, 2)}
-          </pre>
-        </details>
+          {/* 태그 */}
+          {currentProblem.tags && currentProblem.tags.length > 0 && (
+            <div className="mt-4">
+              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+                <span className="w-1 h-4 bg-indigo-500 rounded"></span>
+                태그
+              </h5>
+              <div className="flex flex-wrap gap-2">
+                {currentProblem.tags.map((tag: string, idx: number) => (
+                  <span key={idx} className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 추가 정보가 있다면 표시 */}
+          {currentProblem.constraints && (
+            <div className="mt-4">
+              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+                <span className="w-1 h-4 bg-yellow-500 rounded"></span>
+                제약 조건
+              </h5>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-gray-700">
+                {currentProblem.constraints}
+              </div>
+            </div>
+          )}
+
+          {currentProblem.hints && (
+            <div className="mt-4">
+              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+                <span className="w-1 h-4 bg-orange-500 rounded"></span>
+                힌트
+              </h5>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-gray-700">
+                {currentProblem.hints}
+              </div>
+            </div>
+          )}
+
+          {currentProblem.examples && (
+            <div className="mt-4">
+              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+                <span className="w-1 h-4 bg-teal-500 rounded"></span>
+                예제
+              </h5>
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                {currentProblem.examples}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
