@@ -1521,7 +1521,7 @@ async get_all_submissions(group_id: number, workbook_id: number): Promise<Submis
 	return data
 },
 
-async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
+async get_submission_scores(solve_id: number): Promise<SubmissionScore> {
 	const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}/scores`, {
 		method: "GET",
 		credentials: "include",
