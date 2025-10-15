@@ -1630,9 +1630,14 @@ export interface SubmissionSummary {
   problem_ref_id: number
 	problem_id: number
 	problem_title: string
-	problme_type: string
+	problme_type?: string
+	codes?: string
+  selected_options?: number[]
+  written_text?: string
+  written_answers?: string[]
 	user_name: string
 	ai_score: number | null // AI 또는 교수 최종 점수
+	prof_score: number | null
 	reviewed: boolean // 검토 됐는지의 여부 -> 채점완료 버튼 만들어서 그거 누르면 reviewed==true
 	created_at: string
 	updated_at: string
@@ -1642,7 +1647,8 @@ export interface SubmissionSummary {
 type SubmissionScore = {
 	submission_score_id: number // 점수 레코드 PK
 	submission_id: number
-	prof_score: number
+	ai_score: number | null
+	prof_score: number | null
 	prof_feedback: string
 	graded_by: string | null // null=AI, string=교수ID
 	created_at: string // 채점 시각
@@ -1660,16 +1666,18 @@ export const grading_api = {
 async get_all_submissions(group_id: number, workbook_id: number): Promise<SubmissionSummary[]> {
 	const url = `/api/proxy/solves/groups/${group_id}/workbooks/${workbook_id}/submissions`
 	
-
 	const res = await fetchWithAuth(url, {
 		method: "GET",
 		credentials: "include",
 	})
 	if (!res.ok) throw new Error("제출 목록 가져오기 실패")
-	return res.json()
+	
+	const data = await res.json()
+	console.log('GET submissions:', { count: data.length, first: data[0] })
+	return data
 },
 
-async get_submission_scores(solve_id: number): Promise<SubmissionScore[]> {
+async get_submission_scores(solve_id: number): Promise<SubmissionScore> {
 	const res = await fetchWithAuth(`/api/proxy/solves/${solve_id}/scores`, {
 		method: "GET",
 		credentials: "include",
@@ -1682,13 +1690,15 @@ async post_submission_score(
   solve_id: number,
   prof_score: number,
   prof_feedback: string,
-  graded_by?: string | number  // 추가
+  graded_by?: string | number
 ) {
   const payload = {
     prof_score,
     prof_feedback,
-    ...(graded_by !== undefined && { graded_by })  // graded_by가 있으면 포함
+    ...(graded_by !== undefined && { graded_by })
   }
+  
+  console.log('POST score:', { solve_id, payload })
 
   const res = await fetchWithAuth(`/api/proxy/solves/grading/${solve_id}/score`, {
     method: "POST",
@@ -1706,8 +1716,11 @@ async post_submission_score(
     const msg = Array.isArray(body?.detail)
       ? body.detail.map((d: any) => `${(d.loc||[]).join(" > ")}: ${d.msg}`).join("\n")
       : body?.detail?.msg || body?.detail || body?.message || "채점 저장 실패"
+    console.error('POST error:', msg)
     throw new Error(msg)
   }
+  
+  console.log('POST result:', body)
   return body
 }
 }

@@ -1,23 +1,29 @@
 "use client";
-/**
- * 해당 그룹에 존재하는 학생들 리스트 랜더링
- * -> 이름 (학번)  o x o x o  (2/5 검토)
- *
- * 해당 문제지의 모든 제출(problem_id, score, reviewed) 받아온 후 학생 별로 묶어서 각 행별로 랜더링
- */
 
-import { useEffect, useState, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/stores/auth";
-import { group_api, grading_api, problem_ref_api } from "@/lib/api";
+import { group_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
 import type { SubmissionSummary, ProblemRef } from "@/lib/api";
+
+interface SubmissionRecord {
+  submissionId: number;
+  aiScore: number | null;
+  profScore: number | null;
+  submittedAt: string;
+  reviewed: boolean;
+}
+
+interface ProblemScoreData {
+  maxPoints: number;
+  submissions: SubmissionRecord[];
+}
 
 interface GradingStudentSummary {
   studentId: string;
   studentName: string;
-  problemScores: (number | null)[];     // 점수 표기용 ("-" 처리)
-  problemStates: ("green" | "red" | "gray")[]; // 동그라미 색상: 맞음/틀림/안풂
+  studentNo: string;
+  problemScores: ProblemScoreData[];
 }
 
 export default function GradingListPage() {
@@ -25,227 +31,504 @@ export default function GradingListPage() {
   const { userName } = useAuth();
   const { groupId, examId } = useParams<{ groupId: string; examId: string }>();
 
-  // 그룹장 여부
-  const [groupOwner, setGroupOwner] = useState<string | null>(null);
-  const isGroupOwner = userName === groupOwner;
-
-  // 학생별 요약 데이터
   const [students, setStudents] = useState<GradingStudentSummary[]>([]);
-
-  // 문제지의 문제 목록 (동그라미 개수 및 순서 기준)
   const [problemRefs, setProblemRefs] = useState<ProblemRef[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ 매 렌더마다 새로 만들지 말고 메모이즈 (루프 방지 핵심)
-  const problemIds = useMemo(
-    () => problemRefs.map((p) => p.problem_id),
-    [problemRefs]
-  );
-  const pointsByProblemId = useMemo(
-    () => new Map(problemRefs.map((p) => [p.problem_id, p.points] as const)),
-    [problemRefs]
-  );
+  const [startIdx, setStartIdx] = useState(0);
+  const MAX_VISIBLE = 6;
 
-  // 1) 그룹장 정보 조회
-  const fetchOwner = useCallback(async () => {
-    try {
-      const groups: Array<{ group_id: number; group_owner: string }> =
-        await group_api.my_group_get();
-      const group = groups.find((g) => g.group_id === Number(groupId));
-      setGroupOwner(group?.group_owner ?? null);
-    } catch (err) {
-      console.error("그룹장 정보 로드 실패", err);
-    }
-  }, [groupId]);
+  const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
 
-  // (NEW) 문제지에 속한 문제 목록 조회 → 동그라미 개수/순서 고정
   const fetchProblemRefs = useCallback(async () => {
     try {
       const refs = await problem_ref_api.problem_ref_get(
         Number(groupId),
         Number(examId)
       );
-      // 보기 좋게 problem_id 오름차순 정렬
       refs.sort((a, b) => a.problem_id - b.problem_id);
       setProblemRefs(refs);
     } catch (err) {
       console.error("문제 참조 로드 실패", err);
-      setProblemRefs([]); // 실패 시 빈 배열
+      setProblemRefs([]);
     }
   }, [groupId, examId]);
 
-  // 2) 전체 제출 조회 → 학생별 그룹핑
-  //    ⮕ 시험 문제 수에 맞춰 고정 길이 배열로 매핑 + 색상 결정(초록/빨강/회색)
-  const fetchSubmissions = useCallback(async () => {
-    try {
-      const subs: SubmissionSummary[] = await grading_api.get_all_submissions(
-        Number(groupId),
-        Number(examId)
-      );
-
-      // user_id -> { name, items[] } 로 그룹화
-      const byUser = new Map<string, { name: string; items: SubmissionSummary[] }>();
-      for (const s of subs) {
-        if (!byUser.has(s.user_id)) {
-          byUser.set(s.user_id, { name: s.user_name, items: [] });
-        }
-        byUser.get(s.user_id)!.items.push(s);
-      }
-
-      // 학생별 요약(시험 문제 전체 기준으로 고정 길이 배열 생성)
-      const rows: GradingStudentSummary[] = [];
-      byUser.forEach(({ name, items }, user_id) => {
-        // 빠른 조회를 위해 문제별 제출 맵
-        const subMap = new Map<number, SubmissionSummary>();
-        for (const it of items) subMap.set(it.problem_id, it);
-
-        // 점수와 상태(색상) 배열 생성 (문제지의 순서 기준)
-        const scores: (number | null)[] = [];
-        const states: ("green" | "red" | "gray")[] = [];
-
-        for (const pid of problemIds) {
-          const sub = subMap.get(pid) || null;
-          const score = sub?.score ?? null;        // 제출이 없으면 null
-          const maxPoint = pointsByProblemId.get(pid) ?? 0;
-
-          scores.push(score);
-
-          // 색상 판정: 회색(미제출), 초록(정답/만점), 빨강(제출했지만 만점 미만)
-          if (score === null || typeof score !== "number") {
-            states.push("gray");
-          } else if (score >= maxPoint) {
-            states.push("green");
-          } else {
-            states.push("red");
-          }
-        }
-
-        rows.push({
-          studentId: user_id,
-          studentName: name,
-          problemScores: scores,
-          problemStates: states,
-        });
-      });
-
-      setStudents(rows);
-    } catch (err) {
-      console.error("제출 목록 로드 실패", err);
-      setStudents([]);
+  useEffect(() => {
+    if (problemRefs.length === 0) {
+      return;
     }
-    // ✅ 의존성: 안정화된 메모 값만 사용 (Map 자체를 매번 새로 만들지 않음)
-  }, [groupId, examId, problemIds, pointsByProblemId]);
 
-  // 마운트 시 데이터 로드
-  useEffect(() => {
-    fetchOwner();
-  }, [fetchOwner]);
+    const fetchSubmissions = async () => {
+      try {
+        setLoading(true);
+        console.log("===== 채점 데이터 로딩 시작 (최적화) =====");
 
-  // 문제 목록 → 로드 완료 후 제출 목록을 로드 (순서 보장)
+        // ⭐ 단일 API 호출로 모든 데이터 가져오기
+        const submissions = await grading_api.get_all_submissions(
+          Number(groupId),
+          Number(examId)
+        );
+        
+        console.log('\n📦 GET submissions 전체:', submissions);
+        console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
+
+        // 그룹장 정보 조회
+        let ownerId: string | number | undefined;
+        try {
+          const [me, grp]: [{ user_id: string | number }, any] =
+            await Promise.all([
+              auth_api.getUser(),
+              group_api.group_get_by_id(Number(groupId)),
+            ]);
+          ownerId =
+            grp?.group_owner ??
+            grp?.owner_id ??
+            grp?.group_owner_id ??
+            grp?.owner_user_id ??
+            grp?.ownerId ??
+            grp?.leader_id ??
+            grp?.owner?.user_id;
+            
+          console.log(`\n👑 그룹장 ID: ${ownerId}`);
+        } catch (err) {
+          console.warn("그룹장 정보 조회 실패:", err);
+        }
+
+        // 학생별로 그룹화 (그룹장 제외)
+        const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
+
+        for (const sub of submissions) {
+          const userId = String(sub.user_id);
+          
+          // 그룹장 제외
+          if (ownerId && userId === String(ownerId)) {
+            console.log(`⏭️  그룹장 ${userId} 제외`);
+            continue;
+          }
+          
+          const userName = sub.user_name || "이름 없음";
+          const studentNo = String(sub.user_id);
+
+          if (!byUser.has(userId)) {
+            byUser.set(userId, { name: userName, studentNo, items: [] });
+          }
+          byUser.get(userId)!.items.push(sub);
+        }
+
+        console.log(`\n👥 필터링 후 학생 수: ${byUser.size}명`);
+
+        // 각 학생의 문제별 점수 구조화
+        const rows: GradingStudentSummary[] = [];
+
+        for (const [userId, userInfo] of Array.from(byUser.entries())) {
+          const { name, studentNo, items } = userInfo;
+
+          // 문제별로 제출물 그룹화
+          const subMapByProblem = new Map<number, SubmissionSummary[]>();
+          
+          for (const item of items) {
+            if (!subMapByProblem.has(item.problem_id)) {
+              subMapByProblem.set(item.problem_id, []);
+            }
+            subMapByProblem.get(item.problem_id)!.push(item);
+          }
+
+          // 각 문제별로 제출 시간 기준 정렬 (최신순)
+          for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
+            subs.sort((a, b) =>
+              new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+            );
+          }
+
+          const problemScores: ProblemScoreData[] = [];
+
+          for (const prob of problemRefs) {
+            const pid = prob.problem_id;
+            const subs = subMapByProblem.get(pid) || [];
+            const maxPoints = prob.points ?? 10;
+
+            if (subs.length === 0) {
+              problemScores.push({
+                maxPoints,
+                submissions: [],
+              });
+              continue;
+            }
+
+            // ⭐ get_all_submissions에서 직접 AI 점수와 교수 점수 사용
+            const submissionRecords: SubmissionRecord[] = subs.map(sub => {
+              return {
+                submissionId: sub.submission_id,
+                aiScore: sub.ai_score ?? null,
+                profScore: sub.prof_score ?? null, // ⭐ API에서 직접 가져온 교수 점수
+                submittedAt: sub.updated_at,
+                reviewed: sub.reviewed ?? false,
+              };
+            });
+
+            problemScores.push({
+              maxPoints,
+              submissions: submissionRecords,
+            });
+          }
+
+          rows.push({
+            studentId: userId,
+            studentName: name,
+            studentNo: studentNo,
+            problemScores,
+          });
+        }
+
+        // 이름 순 정렬
+        rows.sort((a, b) =>
+          a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
+        );
+
+        console.log(`\n===== 최종 결과 =====`);
+        console.log(`학생 수: ${rows.length}명`);
+        console.log(`총 API 호출 횟수: 1회 (get_all_submissions)`);
+
+        setStudents(rows);
+      } catch (err) {
+        console.error("❌ 제출 목록 로드 실패:", err);
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, [groupId, examId, problemRefs]);
+
   useEffect(() => {
-    (async () => {
-      await fetchProblemRefs();
-    })();
+    fetchProblemRefs();
   }, [fetchProblemRefs]);
 
-  useEffect(() => {
-    if (problemIds.length > 0) {
-      fetchSubmissions();
-    } else {
-      // 문제 목록이 비었을 때도 학생행 초기화 (동그라미 없음)
-      setStudents([]);
-    }
-  }, [fetchSubmissions, problemIds.length]);
-
-  // 학생 클릭 → 상세 페이지
   const selectStudent = (studentId: string) => {
     router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`);
   };
 
+  const toggleExpanded = (studentId: string, problemIdx: number) => {
+    const key = `${studentId}-${problemIdx}`;
+    setExpandedCells((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+
+  const totalProblems = problemRefs.length;
+  const visibleCount = Math.min(MAX_VISIBLE, totalProblems);
+  const endIdx = Math.min(totalProblems, startIdx + visibleCount);
+  const visibleProblems = problemRefs.slice(startIdx, endIdx);
+
+  const canLeft = startIdx > 0;
+  const canRight = endIdx < totalProblems;
+
+  const goLeft = () => {
+    if (canLeft) {
+      setStartIdx(Math.max(0, startIdx - 1));
+    }
+  };
+
+  const goRight = () => {
+    if (canRight) {
+      setStartIdx(Math.min(totalProblems - visibleCount, startIdx + 1));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">로딩 중...</div>
+      </div>
+    );
+  }
+
+  const showScrollButtons = totalProblems > MAX_VISIBLE;
+
   return (
-    <div className="pb-10">
-      {/* 헤더 */}
-      <div className="flex items-center mb-6">
+    <div className="pb-10 px-4">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
+
+        {showScrollButtons && (
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border shadow-sm">
+            <button
+              onClick={goLeft}
+              disabled={!canLeft}
+              className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+                canLeft
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              ← 이전
+            </button>
+            <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
+              {startIdx + 1}-{endIdx} / {totalProblems}
+            </span>
+            <button
+              onClick={goRight}
+              disabled={!canRight}
+              className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+                canRight
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              다음 →
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* 학생 리스트 */}
-      <div className="mb-8">
-        {students.map((stu) => (
-          <motion.div
-            key={stu.studentId}
-            onClick={(e) => {
-              e.stopPropagation();
-              selectStudent(stu.studentId);
-            }}
-            className="flex items-center p-4 border-b cursor-pointer hover:bg-gray-50"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="w-1/4 font-medium text-lg">
-              {stu.studentName} ( {stu.studentId} )
-            </div>
+      {showScrollButtons && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          💡 문제가 {totalProblems}개 있습니다. 위의 버튼으로 나머지 문제를 확인하세요. (현재{" "}
+          {startIdx + 1}-{endIdx}번 문제 표시 중)
+        </div>
+      )}
 
-            <div className="flex-grow flex items-center">
-              {/* 점수 뱃지 영역 (문제 수 고정) */}
-              <div className="flex space-x-2 mr-6">
-                {stu.problemScores.map((score, idx) => (
-                  <div key={idx} className="w-10 h-10 flex items-center justify-center">
-                    <span
-                      className={`text-sm font-medium ${
-                        score == null ? "text-gray-400" : "text-blue-600"
-                      }`}
-                    >
-                      {score ?? "-"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* 동그라미 상태 표시 영역 (문제 수 고정) */}
-              <div className="flex space-x-2">
-                {stu.problemStates.map((state, idx) => {
-                  const pid = problemIds[idx];
-                  const title =
-                    problemRefs.find((p) => p.problem_id === pid)?.title ?? "";
-                  const cls =
-                    state === "green"
-                      ? "bg-green-500 border-green-600"
-                      : state === "red"
-                      ? "bg-red-500 border-red-600"
-                      : "bg-gray-200 border-gray-300";
-                  return (
-                    <div
-                      key={`${stu.studentId}-${idx}`}
-                      className={`w-8 h-8 rounded-full border-2 ${cls} flex items-center justify-center`}
-                      title={`문제 ${idx + 1} (ID: ${pid}) ${title ? `- ${title}` : ""}`}
-                    >
-                      {state === "green" && <span className="text-white text-xs">✓</span>}
-                      {state === "red" && <span className="text-white text-xs">✕</span>}
-                      {/* gray는 아이콘 없음 */}
+      <div className="overflow-x-auto border-2 border-blue-600 rounded-lg shadow-lg">
+        <table className="w-full border-collapse bg-white">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="border-r-2 border-blue-600 px-6 py-4 text-left font-bold text-gray-700 min-w-[200px]">
+                이름 / 학번
+              </th>
+              {visibleProblems.map((prob, idx) => (
+                <th
+                  key={prob.problem_id}
+                  className="border-r-2 border-blue-600 px-4 py-4 text-center min-w-[140px]"
+                >
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="text-sm font-bold text-gray-800">
+                      문제 {startIdx + idx + 1}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    <div
+                      className="text-xs text-gray-600 font-medium max-w-[120px] truncate"
+                      title={prob.title}
+                    >
+                      {prob.title}
+                    </div>
+                    <div className="flex items-center justify-center space-x-4 w-full">
+                      <div className="text-xs text-gray-500">교수점수</div>
+                      <div className="text-xs text-gray-500">AI점수</div>
+                    </div>
+                    <div className="text-xs text-gray-500">(배점: {prob.points}점)</div>
+                  </div>
+                </th>
+              ))}
+              <th className="px-4 py-4 text-center font-bold min-w-[120px]">
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="w-12 h-12 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                    <span className="text-2xl">⚡</span>
+                  </div>
+                  <div className="text-xs text-gray-600">상태</div>
+                </div>
+              </th>
+            </tr>
+          </thead>
 
-            <div className="w-28 text-right">
-              {/* 완료 카운트: 초록만 완료로 집계 */}
-              {stu.problemStates.length > 0 &&
-              stu.problemStates.every((s) => s === "green") ? (
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                  채점 완료
-                </span>
-              ) : (
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                  {stu.problemStates.filter((s) => s === "green").length}/
-                  {stu.problemStates.length} 정답
-                </span>
-              )}
-            </div>
-          </motion.div>
-        ))}
+          <tbody>
+            {students.map((stu, stuIdx) => {
+              const visibleScores = stu.problemScores.slice(startIdx, endIdx);
+              
+              // 상태 판단: 교수 채점 완료 여부
+              const hasAnySubmission = visibleScores.some(data => data.submissions.length > 0);
+              
+              const allGraded = hasAnySubmission && visibleScores.every((data) => {
+                if (data.submissions.length === 0) return true;
+                const latestSub = data.submissions[0];
+                return latestSub.profScore !== null;
+              });
+              
+              const someGraded = hasAnySubmission && visibleScores.some((data) => {
+                if (data.submissions.length === 0) return false;
+                const latestSub = data.submissions[0];
+                return latestSub.profScore !== null;
+              });
+
+              return (
+                <tr
+                  key={stu.studentId}
+                  className={`
+                    border-t-2 border-blue-600 
+                    hover:bg-blue-50
+                    transition-all duration-200
+                    ${stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  `}
+                >
+                  <td
+                    className="border-r-2 border-blue-600 px-6 py-4 cursor-pointer"
+                    onClick={() => selectStudent(stu.studentId)}
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-base font-medium text-gray-800">
+                        {stu.studentName}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {stu.studentNo}
+                      </span>
+                    </div>
+                  </td>
+
+                  {visibleScores.map((data, localIdx) => {
+                    const globalIdx = startIdx + localIdx;
+                    const cellKey = `${stu.studentId}-${globalIdx}`;
+                    const isExpanded = expandedCells.has(cellKey);
+                    const hasMultipleSubmissions = data.submissions.length > 1;
+                    const latestSubmission = data.submissions[0];
+
+                    return (
+                      <td
+                        key={cellKey}
+                        className="border-r-2 border-blue-600 px-4 py-4"
+                      >
+                        {data.submissions.length === 0 ? (
+                          <div className="text-center text-gray-300 font-bold">-</div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-center space-x-6">
+                              <div className="flex flex-col items-center min-w-[40px]">
+                                <span
+                                  className={`text-base font-bold ${
+                                    latestSubmission.profScore === null
+                                      ? "text-gray-300"
+                                      : latestSubmission.profScore >= data.maxPoints
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {latestSubmission.profScore ?? "-"}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-col items-center min-w-[40px]">
+                                <span
+                                  className={`text-base font-bold ${
+                                    latestSubmission.aiScore === null
+                                      ? "text-gray-300"
+                                      : latestSubmission.aiScore >= data.maxPoints
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {latestSubmission.aiScore ?? "-"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {hasMultipleSubmissions && (
+                              <>
+                                <button
+                                  onClick={() => toggleExpanded(stu.studentId, globalIdx)}
+                                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {isExpanded
+                                    ? "접기 ▲"
+                                    : `이전 제출 ${data.submissions.length - 1}건 보기 ▼`}
+                                </button>
+
+                                {isExpanded && (
+                                  <div className="mt-2 pt-2 border-t border-gray-200 space-y-2">
+                                    {data.submissions.slice(1).map((sub, idx) => (
+                                      <div
+                                        key={sub.submissionId}
+                                        className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded"
+                                      >
+                                        <span className="text-gray-500">
+                                          {idx + 2}차:{" "}
+                                          {new Date(sub.submittedAt).toLocaleString("ko-KR", {
+                                            month: "short",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}
+                                        </span>
+                                        <div className="flex gap-3">
+                                          <span
+                                            className={
+                                              sub.profScore !== null
+                                                ? sub.profScore >= data.maxPoints
+                                                  ? "text-green-600"
+                                                  : "text-red-600"
+                                                : "text-gray-300"
+                                            }
+                                          >
+                                            교수: {sub.profScore ?? "-"}
+                                          </span>
+                                          <span
+                                            className={
+                                              sub.aiScore !== null
+                                                ? sub.aiScore >= data.maxPoints
+                                                  ? "text-green-600"
+                                                  : "text-red-600"
+                                                : "text-gray-300"
+                                            }
+                                          >
+                                            AI: {sub.aiScore ?? "-"}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col items-center space-y-1">
+                      <div
+                        className={`
+                          w-12 h-12 rounded-full border-2 
+                          flex items-center justify-center
+                          transition-all duration-200
+                          ${
+                            allGraded
+                              ? "bg-green-500 border-green-600"
+                              : someGraded
+                              ? "bg-yellow-500 border-yellow-600"
+                              : "bg-gray-300 border-gray-400"
+                          }
+                        `}
+                      >
+                        {allGraded && (
+                          <span className="text-white text-xl font-bold">✓</span>
+                        )}
+                        {someGraded && !allGraded && (
+                          <span className="text-white text-xl font-bold">!</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-600 font-medium">
+                        {allGraded ? "완료" : someGraded ? "검토중" : "대기"}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
+
+      {students.length === 0 && !loading && (
+        <div className="text-center py-16">
+          <div className="text-gray-400 text-lg">제출한 학생이 없습니다.</div>
+        </div>
+      )}
     </div>
   );
 }
