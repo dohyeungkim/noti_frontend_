@@ -707,9 +707,8 @@ export default function StudentGradingPage() {
                   {!isEditingProfessor ? (
                     <>
                       <div className="prose prose-sm max-w-none flex-1 overflow-y-auto">
-                        {editedProfFeedback ? (
-                          <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>
-                        ) : (
+                        {editedProfFeedback && editedProfFeedback.trim() && editedProfFeedback !== "null" ? (
+                          <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>) : (
                           <p className="text-gray-500">교수 피드백이 없습니다.</p>
                         )}
                       </div>
