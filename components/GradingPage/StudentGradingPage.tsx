@@ -12,7 +12,7 @@ import {
   auth_api,
   type SubmissionSummary,
 } from "@/lib/api"
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Code } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { motion } from "framer-motion"
 
@@ -465,15 +465,197 @@ export default function StudentGradingPage() {
   const finalScore = current?.profScore ?? current?.aiScore ?? 0
   const passedCondition = finalScore >= (maxScore ?? 0)
 
-  if (submissions.length === 0) {
+  // 문제 답안 렌더링 함수 (문제 유형별)
+  const renderProblemAnswer = () => {
+    if (!currentProblem) {
+      return (
+        <div className="p-4 h-full flex items-center justify-center">
+          <p className="text-gray-500">답안 정보를 불러올 수 없습니다.</p>
+        </div>
+      )
+    }
+
+    const problemType = currentProblem.problem_type || currentProblem.problemType || current?.problemType
+
+    // 객관식
+    if (problemType === "객관식" || problemType === "multiple_choice") {
+      return (
+        <div className="p-4 h-full overflow-auto">
+          <div className="space-y-3">
+            {currentProblem.options?.map((option: string, index: number) => {
+              const isCorrect = currentProblem.correct_answers?.includes(index + 1)
+              return (
+                <div
+                  key={index}
+                  className={`border rounded-lg p-3 transition-colors ${
+                    isCorrect
+                      ? "bg-green-50 border-green-300"
+                      : "bg-gray-50 border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className={`font-bold ${isCorrect ? "text-green-700" : "text-gray-600"}`}>
+                      {index + 1}.
+                    </span>
+                    <span className={`flex-1 ${isCorrect ? "text-green-900 font-medium" : "text-gray-700"}`}>
+                      {option}
+                    </span>
+                    {isCorrect && (
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    )}
+                  </div>
+                </div>
+              )
+            }) || <p className="text-gray-500">선택지 정보가 없습니다.</p>}
+          </div>
+          
+          {currentProblem.correct_answers && (
+            <div className="mt-4 bg-green-100 border border-green-300 rounded-lg p-3">
+              <p className="text-green-800 font-semibold text-sm">
+                정답: {currentProblem.correct_answers.join(", ")}번
+              </p>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // 단답형
+    if (problemType === "단답형" || problemType === "short_answer") {
+      return (
+        <div className="p-4 h-full overflow-auto">
+          <div className="bg-green-50 border border-green-300 rounded-lg p-4">
+            <h5 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              정답
+            </h5>
+            <div className="space-y-2">
+              {currentProblem.answer_text?.map((answer: string, index: number) => (
+                <div key={index} className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-green-900 font-medium">{answer}</span>
+                </div>
+              )) || <p className="text-gray-500">정답 정보가 없습니다.</p>}
+            </div>
+          </div>
+
+          {currentProblem.grading_criteria?.length > 0 && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h5 className="text-xs font-semibold text-blue-700 mb-2">채점 기준</h5>
+              <ul className="space-y-1">
+                {currentProblem.grading_criteria.map((criteria: string, index: number) => (
+                  <li key={index} className="flex items-start gap-2 text-sm text-blue-900">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>{criteria}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // 주관식
+    if (problemType === "주관식" || problemType === "essay") {
+      return (
+        <div className="p-4 h-full overflow-auto">
+          <div className="bg-green-50 border border-green-300 rounded-lg p-4">
+            <h5 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              모범 답안
+            </h5>
+            <div className="text-green-900 whitespace-pre-wrap leading-relaxed">
+              {currentProblem.answer_text || "모범 답안이 없습니다."}
+            </div>
+          </div>
+
+          {currentProblem.grading_criteria?.length > 0 && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h5 className="text-xs font-semibold text-blue-700 mb-2">채점 기준</h5>
+              <ul className="space-y-1">
+                {currentProblem.grading_criteria.map((criteria: string, index: number) => (
+                  <li key={index} className="flex items-start gap-2 text-sm text-blue-900">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span>{criteria}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // 코딩/디버깅
+    if (problemType === "코딩" || problemType === "디버깅" || problemType === "Coding") {
+      const codesToDisplay = problemType === "코딩" 
+        ? currentProblem.reference_codes 
+        : currentProblem.base_code
+
+      return (
+        <div className="p-4 h-full overflow-auto space-y-4">
+          {codesToDisplay?.length > 0 ? (
+            <div className="space-y-3">
+              {codesToDisplay.map((code: any, index: number) => (
+                <div key={index} className="border border-gray-300 rounded-lg overflow-hidden">
+                  <div className="bg-gray-700 px-4 py-2 flex items-center justify-between">
+                    <span className="text-white text-sm font-semibold">
+                      {code.language || "코드"}
+                    </span>
+                    <span className="text-gray-300 text-xs">
+                      {problemType === "코딩" ? "Reference Code" : "Base Code"}
+                    </span>
+                  </div>
+                  <div className="bg-gray-50 p-4 overflow-x-auto">
+                    <pre className="text-sm text-gray-800 font-mono">
+                      <code>{code.code || "// 코드가 없습니다"}</code>
+                    </pre>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-gray-500 text-center">코드 정보가 없습니다.</p>
+            </div>
+          )}
+
+          {currentProblem.test_cases?.length > 0 && (
+            <div className="space-y-2">
+              <h5 className="text-xs font-semibold text-purple-700">테스트 케이스</h5>
+              {currentProblem.test_cases.map((testCase: any, index: number) => (
+                <div key={index} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <div className="text-xs font-semibold text-purple-700 mb-2">
+                    Test Case {index + 1}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600 font-medium">Input:</span>
+                      <pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded border border-purple-100">
+                        {testCase.input}
+                      </pre>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 font-medium">Output:</span>
+                      <pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded border border-purple-100">
+                        {testCase.expected_output || testCase.output}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // 기본값
     return (
-      <motion.div
-        className="w-full min-h-screen flex items-center justify-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <p>제출물을 불러오는 중...</p>
-      </motion.div>
+      <div className="p-4 h-full flex items-center justify-center">
+        <p className="text-gray-500">답안 정보를 불러올 수 없습니다.</p>
+      </div>
     )
   }
 
@@ -594,6 +776,18 @@ export default function StudentGradingPage() {
     )
   }
 
+  if (submissions.length === 0) {
+    return (
+      <motion.div
+        className="w-full min-h-screen flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <p>제출물을 불러오는 중...</p>
+      </motion.div>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="flex-1 max-w-[1800px] mx-auto p-6 w-full">
@@ -630,13 +824,13 @@ export default function StudentGradingPage() {
                 </div>
               </div>
 
-              {/* 문제 답안 (아래) */}
+              {/* 문제 답안 (아래) - 업데이트된 부분 */}
               <div className="flex-1 bg-white rounded-lg shadow border flex flex-col">
                 <div className="px-4 py-3 border-b bg-gray-50">
                   <h3 className="font-semibold text-gray-800">문제 답안</h3>
                 </div>
-                <div className="flex-1 overflow-auto flex items-center justify-center">
-                  <p className="text-gray-400">문제 답안 준비 중...</p>
+                <div className="flex-1 overflow-auto">
+                  {renderProblemAnswer()}
                 </div>
               </div>
             </div>
@@ -811,3 +1005,4 @@ export default function StudentGradingPage() {
     </div>
   )
 }
+                
