@@ -427,13 +427,43 @@ export default function StudentGradingPage() {
     setAiError(null)
     try {
       const data: any = await ai_feedback_api.get_ai_feedback(submissionId)
-      const text =
-        (typeof data === "string" && data) ||
-        data?.feedback ||
-        data?.ai_feedback ||
-        data?.message ||
-        (Array.isArray(data) ? data.join("\n") : JSON.stringify(data, null, 2))
-      setAiFeedback(text || "AI 피드백이 없습니다.")
+      
+      console.log("📝 AI 피드백 원본 데이터:", data)
+      
+      // 먼저 ai_feedback 필드가 있는지 확인
+      if (data?.ai_feedback && typeof data.ai_feedback === "string" && data.ai_feedback.trim()) {
+        setAiFeedback(data.ai_feedback)
+        return
+      }
+      
+      // feedback 필드 확인
+      if (data?.feedback && typeof data.feedback === "string" && data.feedback.trim()) {
+        setAiFeedback(data.feedback)
+        return
+      }
+      
+      // message 필드 확인
+      if (data?.message && typeof data.message === "string" && data.message.trim()) {
+        setAiFeedback(data.message)
+        return
+      }
+      
+      // 순수 문자열인 경우
+      if (typeof data === "string" && data.trim()) {
+        setAiFeedback(data)
+        return
+      }
+      
+      // 배열인 경우
+      if (Array.isArray(data) && data.length > 0) {
+        setAiFeedback(data.join("\n"))
+        return
+      }
+      
+      // ai_feedback이 없는 경우 - AI 피드백이 없다고 표시
+      console.log("⚠️ AI 피드백 필드를 찾을 수 없음")
+      setAiFeedback("AI 피드백이 없습니다.")
+      
     } catch (e: any) {
       setAiFeedback("")
       setAiError(e?.message || "AI 피드백 로드 실패")
