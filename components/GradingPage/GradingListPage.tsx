@@ -17,7 +17,7 @@ interface SubmissionRecord {
 interface ProblemScoreData {
   maxPoints: number;
   submissions: SubmissionRecord[];
-  problemId: number; // 추가: 문제 ID
+  problemId: number;
 }
 
 interface GradingStudentSummary {
@@ -146,7 +146,7 @@ export default function GradingListPage() {
               problemScores.push({
                 maxPoints,
                 submissions: [],
-                problemId: pid, // 추가
+                problemId: pid,
               });
               continue;
             }
@@ -164,7 +164,7 @@ export default function GradingListPage() {
             problemScores.push({
               maxPoints,
               submissions: submissionRecords,
-              problemId: pid, // 추가
+              problemId: pid,
             });
           }
 
@@ -200,13 +200,12 @@ export default function GradingListPage() {
     fetchProblemRefs();
   }, [fetchProblemRefs]);
 
-  // ⭐ 새로운 함수: 특정 문제 셀 클릭 시 해당 학생의 해당 문제로 이동
   const handleProblemCellClick = (studentId: string, problemId: number) => {
     router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}?problemId=${problemId}`);
   };
 
   const toggleExpanded = (studentId: string, problemIdx: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // 부모 클릭 이벤트 방지
+    e.stopPropagation();
     const key = `${studentId}-${problemIdx}`;
     setExpandedCells((prev) => {
       const newSet = new Set(prev);
@@ -251,15 +250,15 @@ export default function GradingListPage() {
 
   return (
     <div className="pb-10 px-4">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col items-center mb-6 space-y-4">
         <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
 
         {showScrollButtons && (
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border shadow-sm">
+          <div className="flex items-center gap-4 bg-white px-6 py-3 rounded-lg border shadow-md">
             <button
               onClick={goLeft}
               disabled={!canLeft}
-              className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+              className={`px-6 py-3 rounded-lg border font-bold text-base transition-all ${
                 canLeft
                   ? "bg-blue-600 text-white hover:bg-blue-700"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -267,13 +266,13 @@ export default function GradingListPage() {
             >
               ← 이전
             </button>
-            <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
+            <span className="text-base font-bold text-gray-700 min-w-[100px] text-center">
               {startIdx + 1}-{endIdx} / {totalProblems}
             </span>
             <button
               onClick={goRight}
               disabled={!canRight}
-              className={`px-4 py-2 rounded-lg border font-semibold transition-all ${
+              className={`px-6 py-3 rounded-lg border font-bold text-base transition-all ${
                 canRight
                   ? "bg-blue-600 text-white hover:bg-blue-700"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -300,8 +299,11 @@ export default function GradingListPage() {
         <table className="w-full border-collapse bg-white">
           <thead className="bg-gray-50">
             <tr>
-              <th className="border-r-2 border-blue-600 px-6 py-4 text-left font-bold text-gray-700 min-w-[200px]">
-                이름 / 학번
+              <th className="border-r-2 border-blue-600 px-4 py-4 text-left font-bold text-gray-700 min-w-[120px]">
+                이름
+              </th>
+              <th className="border-r-2 border-blue-600 px-4 py-4 text-left font-bold text-gray-700 min-w-[120px]">
+                학번
               </th>
               {visibleProblems.map((prob, idx) => (
                 <th
@@ -318,9 +320,8 @@ export default function GradingListPage() {
                     >
                       {prob.title}
                     </div>
-                    <div className="flex items-center justify-center space-x-4 w-full">
-                      <div className="text-xs text-gray-500">교수점수</div>
-                      <div className="text-xs text-gray-500">AI점수</div>
+                    <div className="text-xs text-gray-500">
+                      교수점수 / AI점수
                     </div>
                     <div className="text-xs text-gray-500">(배점: {prob.points}점)</div>
                   </div>
@@ -364,15 +365,15 @@ export default function GradingListPage() {
                     ${stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   `}
                 >
-                  <td className="border-r-2 border-blue-600 px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-base font-medium text-gray-800">
-                        {stu.studentName}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {stu.studentNo}
-                      </span>
-                    </div>
+                  <td className="border-r-2 border-blue-600 px-4 py-4">
+                    <span className="text-base font-medium text-gray-800">
+                      {stu.studentName}
+                    </span>
+                  </td>
+                  <td className="border-r-2 border-blue-600 px-4 py-4">
+                    <span className="text-sm text-gray-600">
+                      {stu.studentNo}
+                    </span>
                   </td>
 
                   {visibleScores.map((data, localIdx) => {
@@ -400,34 +401,30 @@ export default function GradingListPage() {
                           <div className="text-center text-gray-300 font-bold">-</div>
                         ) : (
                           <div className="flex flex-col gap-2">
-                            <div className="flex items-center justify-center space-x-6">
-                              <div className="flex flex-col items-center min-w-[40px]">
-                                <span
-                                  className={`text-base font-bold ${
-                                    latestSubmission.profScore === null
-                                      ? "text-gray-300"
-                                      : latestSubmission.profScore >= 7
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }`}
-                                >
-                                  {latestSubmission.profScore ?? "-"}
-                                </span>
-                              </div>
-
-                              <div className="flex flex-col items-center min-w-[40px]">
-                                <span
-                                  className={`text-base font-bold ${
-                                    latestSubmission.aiScore === null
-                                      ? "text-gray-300"
-                                      : latestSubmission.aiScore >= 7
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }`}
-                                >
-                                  {latestSubmission.aiScore ?? "-"}
-                                </span>
-                              </div>
+                            <div className="flex items-center justify-center">
+                              <span
+                                className={`text-base font-bold ${
+                                  latestSubmission.profScore === null
+                                    ? "text-gray-300"
+                                    : latestSubmission.profScore >= 7
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {latestSubmission.profScore ?? "-"}
+                              </span>
+                              <span className="text-gray-400 mx-1">/</span>
+                              <span
+                                className={`text-base font-bold ${
+                                  latestSubmission.aiScore === null
+                                    ? "text-gray-300"
+                                    : latestSubmission.aiScore >= 7
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {latestSubmission.aiScore ?? "-"}
+                              </span>
                             </div>
 
                             {hasMultipleSubmissions && (
@@ -457,7 +454,7 @@ export default function GradingListPage() {
                                             minute: "2-digit",
                                           })}
                                         </span>
-                                        <div className="flex gap-3">
+                                        <div className="flex items-center gap-1">
                                           <span
                                             className={
                                               sub.profScore !== null
@@ -467,8 +464,9 @@ export default function GradingListPage() {
                                                 : "text-gray-300"
                                             }
                                           >
-                                            교수: {sub.profScore ?? "-"}
+                                            {sub.profScore ?? "-"}
                                           </span>
+                                          <span className="text-gray-400">/</span>
                                           <span
                                             className={
                                               sub.aiScore !== null
@@ -478,7 +476,7 @@ export default function GradingListPage() {
                                                 : "text-gray-300"
                                             }
                                           >
-                                            AI: {sub.aiScore ?? "-"}
+                                            {sub.aiScore ?? "-"}
                                           </span>
                                         </div>
                                       </div>
