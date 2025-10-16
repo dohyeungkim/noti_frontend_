@@ -305,6 +305,12 @@ export default function GradingListPage() {
               <th className="border-r-2 border-blue-600 px-4 py-4 text-left font-bold text-gray-700 min-w-[120px]">
                 학번
               </th>
+              <th className="border-r-2 border-blue-600 px-4 py-4 text-center font-bold text-gray-700 min-w-[120px]">
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="text-sm font-bold text-gray-800">총점</div>
+                  <div className="text-xs text-gray-500">교수 / AI</div>
+                </div>
+              </th>
               {visibleProblems.map((prob, idx) => (
                 <th
                   key={prob.problem_id}
@@ -342,6 +348,22 @@ export default function GradingListPage() {
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
               
+              // 총점 계산 (전체 문제 기준)
+              let totalProfScore = 0;
+              let totalAiScore = 0;
+              
+              for (const data of stu.problemScores) {
+                if (data.submissions.length > 0) {
+                  const latestSub = data.submissions[0];
+                  if (latestSub.profScore !== null) {
+                    totalProfScore += latestSub.profScore;
+                  }
+                  if (latestSub.aiScore !== null) {
+                    totalAiScore += latestSub.aiScore;
+                  }
+                }
+              }
+              
               const hasAnySubmission = visibleScores.some(data => data.submissions.length > 0);
               
               const allGraded = hasAnySubmission && visibleScores.every((data) => {
@@ -374,6 +396,17 @@ export default function GradingListPage() {
                     <span className="text-sm text-gray-600">
                       {stu.studentNo}
                     </span>
+                  </td>
+                  <td className="border-r-2 border-blue-600 px-4 py-4">
+                    <div className="flex items-center justify-center">
+                      <span className="text-base font-bold text-blue-600">
+                        {totalProfScore}
+                      </span>
+                      <span className="text-gray-400 mx-1">/</span>
+                      <span className="text-base font-bold text-green-600">
+                        {totalAiScore}
+                      </span>
+                    </div>
                   </td>
 
                   {visibleScores.map((data, localIdx) => {
