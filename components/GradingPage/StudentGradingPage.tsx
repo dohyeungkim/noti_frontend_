@@ -466,6 +466,7 @@ export default function StudentGradingPage() {
   const passedCondition = finalScore >= (maxScore ?? 0)
 
   // 문제 답안 렌더링 함수 (문제 유형별)
+    // 문제 답안 렌더링 함수 (문제 유형별)
   const renderProblemAnswer = () => {
     if (!currentProblem) {
       return (
@@ -475,10 +476,10 @@ export default function StudentGradingPage() {
       )
     }
 
-    const problemType = currentProblem.problem_type || currentProblem.problemType || current?.problemType
+    const problemType = currentProblem.problemType || currentProblem.problem_type || current?.problemType
 
     // 객관식
-    if (problemType === "객관식" || problemType === "multiple_choice") {
+    if (problemType === "객관식") {
       return (
         <div className="p-4 h-full overflow-auto">
           <div className="space-y-3">
@@ -509,7 +510,7 @@ export default function StudentGradingPage() {
             }) || <p className="text-gray-500">선택지 정보가 없습니다.</p>}
           </div>
           
-          {currentProblem.correct_answers && (
+          {currentProblem.correct_answers && currentProblem.correct_answers.length > 0 && (
             <div className="mt-4 bg-green-100 border border-green-300 rounded-lg p-3">
               <p className="text-green-800 font-semibold text-sm">
                 정답: {currentProblem.correct_answers.join(", ")}번
@@ -521,7 +522,7 @@ export default function StudentGradingPage() {
     }
 
     // 단답형
-    if (problemType === "단답형" || problemType === "short_answer") {
+    if (problemType === "단답형") {
       return (
         <div className="p-4 h-full overflow-auto">
           <div className="bg-green-50 border border-green-300 rounded-lg p-4">
@@ -530,18 +531,22 @@ export default function StudentGradingPage() {
               정답
             </h5>
             <div className="space-y-2">
-              {currentProblem.answer_text?.map((answer: string, index: number) => (
-                <div key={index} className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-green-900 font-medium">{answer}</span>
-                </div>
-              )) || <p className="text-gray-500">정답 정보가 없습니다.</p>}
+              {currentProblem.answer_text && currentProblem.answer_text.length > 0 ? (
+                currentProblem.answer_text.map((answer: string, index: number) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">•</span>
+                    <span className="text-green-900 font-medium">{answer}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500">정답 정보가 없습니다.</p>
+              )}
             </div>
           </div>
 
-          {currentProblem.grading_criteria?.length > 0 && (
+          {currentProblem.grading_criteria && currentProblem.grading_criteria.length > 0 && (
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <h5 className="text-xs font-semibold text-blue-700 mb-2">채점 기준</h5>
+              <h5 className="text-xs font-semibold text-blue-700 mb-2">AI 채점 기준</h5>
               <ul className="space-y-1">
                 {currentProblem.grading_criteria.map((criteria: string, index: number) => (
                   <li key={index} className="flex items-start gap-2 text-sm text-blue-900">
@@ -557,7 +562,7 @@ export default function StudentGradingPage() {
     }
 
     // 주관식
-    if (problemType === "주관식" || problemType === "essay") {
+    if (problemType === "주관식") {
       return (
         <div className="p-4 h-full overflow-auto">
           <div className="bg-green-50 border border-green-300 rounded-lg p-4">
@@ -570,9 +575,9 @@ export default function StudentGradingPage() {
             </div>
           </div>
 
-          {currentProblem.grading_criteria?.length > 0 && (
+          {currentProblem.grading_criteria && currentProblem.grading_criteria.length > 0 && (
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <h5 className="text-xs font-semibold text-blue-700 mb-2">채점 기준</h5>
+              <h5 className="text-xs font-semibold text-blue-700 mb-2">AI 채점 기준</h5>
               <ul className="space-y-1">
                 {currentProblem.grading_criteria.map((criteria: string, index: number) => (
                   <li key={index} className="flex items-start gap-2 text-sm text-blue-900">
@@ -587,24 +592,19 @@ export default function StudentGradingPage() {
       )
     }
 
-    // 코딩/디버깅
-    if (problemType === "코딩" || problemType === "디버깅" || problemType === "Coding") {
-      const codesToDisplay = problemType === "코딩" 
-        ? currentProblem.reference_codes 
-        : currentProblem.base_code
-
+    // 코딩
+    if (problemType === "코딩") {
       return (
         <div className="p-4 h-full overflow-auto space-y-4">
-          {codesToDisplay?.length > 0 ? (
+          {/* Reference Codes */}
+          {currentProblem.reference_codes && currentProblem.reference_codes.length > 0 ? (
             <div className="space-y-3">
-              {codesToDisplay.map((code: any, index: number) => (
+              <h5 className="text-sm font-semibold text-gray-700">정답 코드 (Reference Code)</h5>
+              {currentProblem.reference_codes.map((code: any, index: number) => (
                 <div key={index} className="border border-gray-300 rounded-lg overflow-hidden">
                   <div className="bg-gray-700 px-4 py-2 flex items-center justify-between">
                     <span className="text-white text-sm font-semibold">
                       {code.language || "코드"}
-                    </span>
-                    <span className="text-gray-300 text-xs">
-                      {problemType === "코딩" ? "Reference Code" : "Base Code"}
                     </span>
                   </div>
                   <div className="bg-gray-50 p-4 overflow-x-auto">
@@ -617,13 +617,14 @@ export default function StudentGradingPage() {
             </div>
           ) : (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <p className="text-gray-500 text-center">코드 정보가 없습니다.</p>
+              <p className="text-gray-500 text-center">정답 코드가 없습니다.</p>
             </div>
           )}
 
-          {currentProblem.test_cases?.length > 0 && (
+          {/* Test Cases */}
+          {currentProblem.test_cases && currentProblem.test_cases.length > 0 && (
             <div className="space-y-2">
-              <h5 className="text-xs font-semibold text-purple-700">테스트 케이스</h5>
+              <h5 className="text-sm font-semibold text-purple-700">테스트 케이스</h5>
               {currentProblem.test_cases.map((testCase: any, index: number) => (
                 <div key={index} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
                   <div className="text-xs font-semibold text-purple-700 mb-2">
@@ -633,13 +634,96 @@ export default function StudentGradingPage() {
                     <div>
                       <span className="text-gray-600 font-medium">Input:</span>
                       <pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded border border-purple-100">
-                        {testCase.input}
+                        {testCase.input || ""}
                       </pre>
                     </div>
                     <div>
-                      <span className="text-gray-600 font-medium">Output:</span>
+                      <span className="text-gray-600 font-medium">Expected Output:</span>
                       <pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded border border-purple-100">
-                        {testCase.expected_output || testCase.output}
+                        {testCase.expected_output || testCase.output || ""}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // 디버깅
+    if (problemType === "디버깅") {
+      return (
+        <div className="p-4 h-full overflow-auto space-y-4">
+          {/* Base Code (버그가 있는 코드) */}
+          {currentProblem.base_code && currentProblem.base_code.length > 0 ? (
+            <div className="space-y-3">
+              <h5 className="text-sm font-semibold text-gray-700">기본 코드 (디버깅 대상)</h5>
+              {currentProblem.base_code.map((code: any, index: number) => (
+                <div key={index} className="border border-orange-300 rounded-lg overflow-hidden">
+                  <div className="bg-orange-600 px-4 py-2 flex items-center justify-between">
+                    <span className="text-white text-sm font-semibold">
+                      {code.language || "코드"}
+                    </span>
+                    <span className="text-orange-100 text-xs">버그가 있는 코드</span>
+                  </div>
+                  <div className="bg-orange-50 p-4 overflow-x-auto">
+                    <pre className="text-sm text-gray-800 font-mono">
+                      <code>{code.code || "// 코드가 없습니다"}</code>
+                    </pre>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-gray-500 text-center">기본 코드가 없습니다.</p>
+            </div>
+          )}
+
+          {/* Reference Codes (정답) */}
+          {currentProblem.reference_codes && currentProblem.reference_codes.length > 0 && (
+            <div className="space-y-3">
+              <h5 className="text-sm font-semibold text-green-700">정답 코드 (수정된 코드)</h5>
+              {currentProblem.reference_codes.map((code: any, index: number) => (
+                <div key={index} className="border border-green-300 rounded-lg overflow-hidden">
+                  <div className="bg-green-600 px-4 py-2 flex items-center justify-between">
+                    <span className="text-white text-sm font-semibold">
+                      {code.language || "코드"}
+                    </span>
+                    <span className="text-green-100 text-xs">정답</span>
+                  </div>
+                  <div className="bg-green-50 p-4 overflow-x-auto">
+                    <pre className="text-sm text-gray-800 font-mono">
+                      <code>{code.code || "// 코드가 없습니다"}</code>
+                    </pre>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Test Cases */}
+          {currentProblem.test_cases && currentProblem.test_cases.length > 0 && (
+            <div className="space-y-2">
+              <h5 className="text-sm font-semibold text-purple-700">테스트 케이스</h5>
+              {currentProblem.test_cases.map((testCase: any, index: number) => (
+                <div key={index} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <div className="text-xs font-semibold text-purple-700 mb-2">
+                    Test Case {index + 1}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600 font-medium">Input:</span>
+                      <pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded border border-purple-100">
+                        {testCase.input || ""}
+                      </pre>
+                    </div>
+                    <div>
+                      <span className="text-gray-600 font-medium">Expected Output:</span>
+                      <pre className="mt-1 text-gray-800 font-mono text-xs bg-white p-2 rounded border border-purple-100">
+                        {testCase.expected_output || testCase.output || ""}
                       </pre>
                     </div>
                   </div>
