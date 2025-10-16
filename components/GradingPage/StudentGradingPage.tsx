@@ -111,7 +111,8 @@ export default function StudentGradingPage() {
             
             if (score) {
               aiScore = score.ai_score ?? null;
-              profScore = score.prof_score ?? null;
+              // profScore가 명시적으로 설정되지 않았거나 null/undefined인 경우에만 null로 설정
+              profScore = (score.prof_score !== null && score.prof_score !== undefined) ? score.prof_score : null;
               profFeedback = score.prof_feedback || "";
               
               console.log(`  ✅ AI 점수: ${aiScore}`);
