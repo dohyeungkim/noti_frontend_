@@ -385,7 +385,11 @@ export default function GradingListPage() {
                     return (
                       <td
                         key={cellKey}
-                        className="border-r-2 border-blue-600 px-4 py-4 cursor-pointer hover:bg-blue-100 transition-colors"
+                        className={`border-r-2 border-blue-600 px-4 py-4 transition-colors ${
+                          data.submissions.length > 0 
+                            ? 'cursor-pointer hover:bg-blue-100' 
+                            : ''
+                        }`}
                         onClick={() => {
                           if (data.submissions.length > 0) {
                             handleProblemCellClick(stu.studentId, data.problemId);
@@ -402,7 +406,7 @@ export default function GradingListPage() {
                                   className={`text-base font-bold ${
                                     latestSubmission.profScore === null
                                       ? "text-gray-300"
-                                      : latestSubmission.profScore >= data.maxPoints
+                                      : latestSubmission.profScore >= 7
                                       ? "text-green-600"
                                       : "text-red-600"
                                   }`}
@@ -416,7 +420,7 @@ export default function GradingListPage() {
                                   className={`text-base font-bold ${
                                     latestSubmission.aiScore === null
                                       ? "text-gray-300"
-                                      : latestSubmission.aiScore >= data.maxPoints
+                                      : latestSubmission.aiScore >= 7
                                       ? "text-green-600"
                                       : "text-red-600"
                                   }`}
@@ -457,7 +461,7 @@ export default function GradingListPage() {
                                           <span
                                             className={
                                               sub.profScore !== null
-                                                ? sub.profScore >= data.maxPoints
+                                                ? sub.profScore >= 7
                                                   ? "text-green-600"
                                                   : "text-red-600"
                                                 : "text-gray-300"
@@ -468,7 +472,7 @@ export default function GradingListPage() {
                                           <span
                                             className={
                                               sub.aiScore !== null
-                                                ? sub.aiScore >= data.maxPoints
+                                                ? sub.aiScore >= 7
                                                   ? "text-green-600"
                                                   : "text-red-600"
                                                 : "text-gray-300"
