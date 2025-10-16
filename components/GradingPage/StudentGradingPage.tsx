@@ -12,7 +12,7 @@ import {
   auth_api,
   type SubmissionSummary,
 } from "@/lib/api"
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Code } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { motion } from "framer-motion"
 
@@ -62,17 +62,13 @@ export default function StudentGradingPage() {
   const fetchSubmissions = useCallback(async () => {
     try {
       console.log("===== 학생 제출물 로딩 시작 =====");
-      console.log(`학생 ID: ${studentId}`);
       
       const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
         Number(groupId),
         Number(examId),
       )
       
-      console.log('GET submissions 전체:', allSubs);
-      
       const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
-      console.log(`✅ 학생 제출물 필터링 완료: ${studentSubs.length}개`);
       
       const mapped: Submission[] = await Promise.all(
         studentSubs.map(async (s: any) => {
@@ -83,22 +79,13 @@ export default function StudentGradingPage() {
           try {
             const score = await grading_api.get_submission_scores(s.submission_id)
             
-            console.log(`\n📊 제출 ${s.submission_id} 점수:`, score);
-            
             if (score) {
               aiScore = score.ai_score ?? null;
               profScore = score.prof_score ?? null;
               profFeedback = score.prof_feedback || "";
-              
-              console.log(`  ✅ AI 점수: ${aiScore}`);
-              console.log(`  ✅ 교수 점수: ${profScore}`);
-              console.log(`  ✅ 피드백: ${profFeedback ? '있음' : '없음'}`);
             }
-            
-            console.log(`  📌 최종 점수: AI=${aiScore}, 교수=${profScore}`);
-            
           } catch (err) {
-            console.error(`❌ 제출물 ${s.submission_id} 점수 조회 실패:`, err)
+            console.error(`제출물 ${s.submission_id} 점수 조회 실패:`, err)
           }
           
           return {
@@ -123,9 +110,6 @@ export default function StudentGradingPage() {
       )
       mapped.sort((a, b) => a.problemId - b.problemId)
       
-      console.log(`\n===== 최종 결과 =====`);
-      console.log(`문제 수: ${mapped.length}개`);
-      
       setSubmissions(mapped)
       
       if (mapped.length > 0) {
@@ -138,10 +122,7 @@ export default function StudentGradingPage() {
         const targetIndex = mapped.findIndex(sub => sub.problemId === targetProblemId)
         
         if (targetIndex !== -1) {
-          console.log(`🎯 URL 파라미터로 문제 ${targetProblemId} 선택 (인덱스: ${targetIndex})`)
           setCurrentIdx(targetIndex)
-        } else {
-          console.warn(`⚠️ 문제 ID ${targetProblemId}를 찾을 수 없습니다.`)
         }
       }
     } catch (err) {
@@ -160,7 +141,6 @@ export default function StudentGradingPage() {
       }
       setPointsByProblem(map)
       setAllProblems(list as any[])
-      console.log("📚 문제 목록 로드 완료:", list)
     } catch (e) {
       console.error("배점 불러오기 실패:", e)
       setPointsByProblem({})
@@ -187,9 +167,6 @@ export default function StudentGradingPage() {
         grp?.owner?.user_id
       
       setGroupOwnerId(ownerId)
-      
-      console.log("👤 본인 ID:", me?.user_id)
-      console.log("👑 그룹장 ID:", ownerId)
     } catch (err) {
       console.error("사용자 정보 조회 실패:", err)
     }
@@ -226,8 +203,6 @@ export default function StudentGradingPage() {
     const foundProblem = allProblems.find(
       (prob: any) => prob.problem_id === current.problemId
     )
-    
-    console.log(`🔍 문제 ${current.problemId} 찾기:`, foundProblem)
     
     if (foundProblem) {
       setCurrentProblem(foundProblem)
@@ -394,8 +369,6 @@ export default function StudentGradingPage() {
     }
   }, [currentIdx, current, editedProfScore, editedProfFeedback, maxScore, isGroupOwner, groupId, examId, router, myUserId])
 
-  const [activeFeedbackTab, setActiveFeedbackTab] = useState<"ai" | "professor">("ai")
-
   const [aiFeedback, setAiFeedback] = useState<string>("")
   const [isAILoaded, setIsAILoaded] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -405,8 +378,6 @@ export default function StudentGradingPage() {
     setAiError(null)
     try {
       const data: any = await ai_feedback_api.get_ai_feedback(submissionId)
-      
-      console.log("📝 AI 피드백 원본 데이터:", data)
       
       if (data?.ai_feedback && typeof data.ai_feedback === "string" && data.ai_feedback.trim()) {
         setAiFeedback(data.ai_feedback)
@@ -433,7 +404,6 @@ export default function StudentGradingPage() {
         return
       }
       
-      console.log("⚠️ AI 피드백 필드를 찾을 수 없음")
       setAiFeedback("AI 피드백이 없습니다.")
       
     } catch (e: any) {
@@ -455,9 +425,6 @@ export default function StudentGradingPage() {
       cancelled = true
     }
   }, [current?.submissionId, fetchAiFeedback])
-
-  const finalScore = current?.profScore ?? current?.aiScore ?? 0
-  const passedCondition = finalScore >= (maxScore ?? 0)
 
   if (submissions.length === 0) {
     return (
@@ -660,22 +627,35 @@ export default function StudentGradingPage() {
           </button>
         </div>
 
-        {/* 메인 컨텐츠 영역 */}
-        <div className="flex gap-6 h-[calc(100vh-250px)]">
-          {/* 왼쪽: 문제 정보 + 학생 답안 (50%) */}
-          <div className="flex-1 flex flex-col gap-6">
-            {/* 문제 정보 (위) */}
-            <div className="bg-white rounded-lg shadow border h-1/2 flex flex-col">
-              <div className="px-4 py-3 border-b bg-gray-50">
-                <h3 className="font-semibold text-gray-800">문제 정보</h3>
+        {/* 메인 컨텐츠 */}
+        <div className="space-y-6">
+          {/* 상단: 왼쪽(문제정보+문제답안 세로배치) + 오른쪽(학생답안) */}
+          <div className="flex gap-6 h-[700px]">
+            {/* 왼쪽: 문제 정보 + 문제 답안 (세로 배치, 7) */}
+            <div className="flex-[7] flex flex-col gap-6">
+              {/* 문제 정보 (위) */}
+              <div className="flex-1 bg-white rounded-lg shadow border flex flex-col">
+                <div className="px-4 py-3 border-b bg-gray-50">
+                  <h3 className="font-semibold text-gray-800">문제 정보</h3>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  {renderProblemDescription()}
+                </div>
               </div>
-              <div className="flex-1 overflow-auto">
-                {renderProblemDescription()}
+
+              {/* 문제 답안 (아래) */}
+              <div className="flex-1 bg-white rounded-lg shadow border flex flex-col">
+                <div className="px-4 py-3 border-b bg-gray-50">
+                  <h3 className="font-semibold text-gray-800">문제 답안</h3>
+                </div>
+                <div className="flex-1 overflow-auto flex items-center justify-center">
+                  <p className="text-gray-400">문제 답안 준비 중...</p>
+                </div>
               </div>
             </div>
 
-            {/* 학생 답안 (아래) */}
-            <div className="bg-white rounded-lg shadow border h-1/2 flex flex-col">
+            {/* 오른쪽: 학생 답안 (4) */}
+            <div className="flex-[4] bg-white rounded-lg shadow border flex flex-col">
               <div className="px-4 py-3 border-b bg-gray-50">
                 <h3 className="font-semibold text-gray-800">학생 답안</h3>
                 <div className="text-sm text-gray-600 mt-1">
@@ -688,26 +668,15 @@ export default function StudentGradingPage() {
             </div>
           </div>
 
-          {/* 오른쪽: 피드백 (50%) */}
-          <div className="flex-1 bg-white rounded-lg shadow border flex flex-col">
-            <div className="flex border-b items-center">
-              <button
-                className={`flex-1 py-2 text-center ${activeFeedbackTab === "ai" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-600"}`}
-                onClick={() => setActiveFeedbackTab("ai")}
-              >
-                AI 피드백
-              </button>
-              <button
-                className={`flex-1 py-2 text-center ${activeFeedbackTab === "professor" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-600"}`}
-                onClick={() => setActiveFeedbackTab("professor")}
-              >
-                교수 피드백
-              </button>
-            </div>
-
-            <div className="p-4 flex-1 overflow-x-auto overflow-y-auto">
-              {activeFeedbackTab === "ai" ? (
-                !isAILoaded ? (
+          {/* 하단: AI 피드백 + 교수 피드백 (가로 스크롤) */}
+          <div className="flex gap-6 overflow-x-auto pb-2">
+            {/* AI 피드백 */}
+            <div className="min-w-[500px] w-[calc(50%-12px)] bg-white rounded-lg shadow border flex flex-col h-[300px]">
+              <div className="px-4 py-3 border-b bg-blue-50">
+                <h3 className="font-semibold text-blue-600">AI 피드백</h3>
+              </div>
+              <div className="p-4 flex-1 overflow-auto">
+                {!isAILoaded ? (
                   <p className="text-sm text-gray-500">AI 피드백 로딩 중...</p>
                 ) : aiError ? (
                   <div className="text-sm text-red-600 space-y-2">
@@ -723,90 +692,68 @@ export default function StudentGradingPage() {
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown>{aiFeedback}</ReactMarkdown>
                   </div>
-                )
-              ) : (
-                <div className="h-full flex flex-col">
-                  {!isEditingProfessor ? (
-                    <>
-                      <div className="prose prose-sm max-w-none flex-1 overflow-auto">
-                        {editedProfFeedback && editedProfFeedback.trim() && editedProfFeedback !== "null" ? (
-                          <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>) : (
-                          <p className="text-gray-500">교수 피드백이 없습니다.</p>
-                        )}
-                      </div>
-                      {isGroupOwner && (
-                        <div className="mt-3 pt-3 border-t">
-                          <button
-                            onClick={() => setIsEditingProfessor(true)}
-                            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-                          >
-                            ✏️ 편집
-                          </button>
-                        </div>
+                )}
+              </div>
+            </div>
+
+            {/* 교수 피드백 */}
+            <div className="min-w-[500px] w-[calc(50%-12px)] bg-white rounded-lg shadow border flex flex-col h-[300px]">
+              <div className="px-4 py-3 border-b bg-green-50">
+                <h3 className="font-semibold text-green-600">교수 피드백</h3>
+              </div>
+              <div className="p-4 flex-1 overflow-auto">
+                {!isEditingProfessor ? (
+                  <>
+                    <div className="prose prose-sm max-w-none flex-1 overflow-auto">
+                      {editedProfFeedback && editedProfFeedback.trim() && editedProfFeedback !== "null" ? (
+                        <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>
+                      ) : (
+                        <p className="text-gray-500">교수 피드백이 없습니다.</p>
                       )}
-                    </>
-                  ) : (
-                    <div className="flex flex-col h-full space-y-2">
-                      <textarea
-                        className="flex-1 w-full border rounded p-2 text-sm font-sans resize-none"
-                        value={editedProfFeedback}
-                        onChange={(e) => setEditedProfFeedback(e.target.value)}
-                        placeholder="교수 피드백을 입력하세요..."
-                      />
-                      <div className="flex gap-2">
+                    </div>
+                    {isGroupOwner && (
+                      <div className="mt-3 pt-3 border-t">
                         <button
-                          onClick={saveProfFeedback}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                        >
-                          저장
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditedProfFeedback(current.profFeedback || "")
-                            setIsEditingProfessor(false)
-                          }}
+                          onClick={() => setIsEditingProfessor(true)}
                           className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
                         >
-                          취소
+                          ✏️ 편집
                         </button>
                       </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex flex-col h-full space-y-2">
+                    <textarea
+                      className="flex-1 w-full border rounded p-2 text-sm font-sans resize-none"
+                      value={editedProfFeedback}
+                      onChange={(e) => setEditedProfFeedback(e.target.value)}
+                      placeholder="교수 피드백을 입력하세요..."
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveProfFeedback}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        저장
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditedProfFeedback(current.profFeedback || "")
+                          setIsEditingProfessor(false)
+                        }}
+                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm"
+                      >
+                        취소
+                      </button>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 하단: AI 피드백 + 조건 검사 결과 + 점수 */}
-        <div className="mt-6 space-y-4">
-          {/* 조건 검사 결과 */}
-          <div className="bg-white rounded-lg border shadow-sm p-4">
-            <h3 className="font-semibold text-gray-800 mb-2">조건 검사 결과</h3>
-            <div
-              className={`p-3 rounded-lg border-l-4 ${
-                passedCondition ? "bg-green-50 border-green-500" : "bg-red-50 border-red-500"
-              }`}
-            >
-              <div className="flex justify-between mb-1">
-                <span className="font-medium">통과 여부</span>
-                <span className="text-sm font-medium">{passedCondition ? "✔️ 통과" : "❌ 미통과"}</span>
-              </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>
-                  AI 점수: <b>{current?.aiScore ?? 0}</b>점
-                </p>
-                <p>
-                  교수 점수: <b>{current?.profScore !== null ? current.profScore : "-"}</b>점
-                </p>
-                <p>
-                  최종 점수: <b>{finalScore}</b>점 / 총점: <b>{maxScore}</b>점
-                </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* 점수 수정 및 검토 완료 */}
+          {/* 최하단: 제출 시간 + 점수 수정 + 검토 완료 */}
           <div className="flex items-center justify-between bg-white rounded-lg border shadow-sm p-4">
             <div className="text-sm text-gray-600">
               제출 시간: {new Date(current?.updatedAt || "").toLocaleString("ko-KR")}
