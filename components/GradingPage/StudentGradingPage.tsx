@@ -429,16 +429,6 @@ export default function StudentGradingPage() {
         return
       }
       
-      if (data?.feedback && typeof data.feedback === "string" && data.feedback.trim()) {
-        setAiFeedback(data.feedback)
-        return
-      }
-      
-      if (data?.message && typeof data.message === "string" && data.message.trim()) {
-        setAiFeedback(data.message)
-        return
-      }
-      
       if (typeof data === "string" && data.trim()) {
         setAiFeedback(data)
         return
@@ -597,58 +587,6 @@ export default function StudentGradingPage() {
             </h5>
             <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
               {currentProblem.description}
-            </div>
-          </div>
-        )}
-
-        {currentProblem.tags && currentProblem.tags.length > 0 && (
-          <div>
-            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-              <span className="w-1 h-4 bg-indigo-500 rounded"></span>
-              태그
-            </h5>
-            <div className="flex flex-wrap gap-2">
-              {currentProblem.tags.map((tag: string, idx: number) => (
-                <span key={idx} className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {currentProblem.constraints && (
-          <div>
-            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-              <span className="w-1 h-4 bg-yellow-500 rounded"></span>
-              제약 조건
-            </h5>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-gray-700">
-              {currentProblem.constraints}
-            </div>
-          </div>
-        )}
-
-        {currentProblem.hints && (
-          <div>
-            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-              <span className="w-1 h-4 bg-orange-500 rounded"></span>
-              힌트
-            </h5>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-gray-700">
-              {currentProblem.hints}
-            </div>
-          </div>
-        )}
-
-        {currentProblem.examples && (
-          <div>
-            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-              <span className="w-1 h-4 bg-teal-500 rounded"></span>
-              예제
-            </h5>
-            <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
-              {currentProblem.examples}
             </div>
           </div>
         )}
