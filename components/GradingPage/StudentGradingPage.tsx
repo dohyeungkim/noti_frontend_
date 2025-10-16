@@ -132,7 +132,6 @@ export default function StudentGradingPage() {
         setStudentName(mapped[0].userName || "")
       }
 
-      // ⭐ URL에서 problemId 파라미터 확인하여 해당 문제로 이동
       const problemIdParam = searchParams.get('problemId')
       if (problemIdParam) {
         const targetProblemId = Number(problemIdParam)
@@ -201,7 +200,6 @@ export default function StudentGradingPage() {
     fetchProblemPoints()
   }, [fetchUserInfo, fetchProblemPoints])
 
-  // ⭐ fetchSubmissions는 allProblems가 로드된 후에만 실행
   useEffect(() => {
     if (allProblems.length > 0) {
       fetchSubmissions()
@@ -243,7 +241,6 @@ export default function StudentGradingPage() {
   const goPrev = useCallback(() => {
     if (currentIdx > 0) {
       setCurrentIdx((i) => i - 1)
-      // URL 파라미터 제거
       router.replace(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`)
     } else {
       router.push(`/mygroups/${groupId}/exams/${examId}/grading`)
@@ -253,7 +250,6 @@ export default function StudentGradingPage() {
   const goNext = useCallback(() => {
     if (currentIdx < lastIdx) {
       setCurrentIdx((i) => i + 1)
-      // URL 파라미터 제거
       router.replace(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`)
     }
   }, [currentIdx, lastIdx, router, groupId, examId, studentId])
@@ -289,12 +285,6 @@ export default function StudentGradingPage() {
       const num = Number(editedProfScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
-      console.log(`\n💾 저장 전 상태:`);
-      console.log(`  제출 ID: ${current.submissionId}`);
-      console.log(`  현재 AI 점수: ${current.aiScore}`);
-      console.log(`  현재 교수 점수: ${current.profScore}`);
-      console.log(`  저장할 교수 점수: ${clamped}`);
-
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
@@ -302,10 +292,7 @@ export default function StudentGradingPage() {
         myUserId ?? undefined
       )
 
-      console.log(`✅ 저장 API 호출 완료`);
-      
       const updatedScore = await grading_api.get_submission_scores(current.submissionId);
-      console.log(`\n📊 저장 후 점수:`, updatedScore);
       
       let updatedAiScore = current.aiScore;
       let updatedProfScore = clamped;
@@ -313,25 +300,16 @@ export default function StudentGradingPage() {
       if (updatedScore) {
         updatedAiScore = updatedScore.ai_score ?? current.aiScore;
         updatedProfScore = updatedScore.prof_score ?? clamped;
-        
-        console.log(`  ✅ AI 점수: ${updatedAiScore}`);
-        console.log(`  ✅ 교수 점수: ${updatedProfScore}`);
       }
 
       setSubmissions((prev) => {
         const next = [...prev]
-        
-        console.log(`\n🔄 로컬 상태 업데이트:`);
-        console.log(`  AI 점수: ${updatedAiScore}`);
-        console.log(`  교수 점수: ${updatedProfScore}`);
-        
         next[currentIdx] = { 
           ...next[currentIdx], 
           aiScore: updatedAiScore,
           profScore: updatedProfScore,
           profFeedback: editedProfFeedback
         }
-        
         return next
       })
       
@@ -430,37 +408,31 @@ export default function StudentGradingPage() {
       
       console.log("📝 AI 피드백 원본 데이터:", data)
       
-      // 먼저 ai_feedback 필드가 있는지 확인
       if (data?.ai_feedback && typeof data.ai_feedback === "string" && data.ai_feedback.trim()) {
         setAiFeedback(data.ai_feedback)
         return
       }
       
-      // feedback 필드 확인
       if (data?.feedback && typeof data.feedback === "string" && data.feedback.trim()) {
         setAiFeedback(data.feedback)
         return
       }
       
-      // message 필드 확인
       if (data?.message && typeof data.message === "string" && data.message.trim()) {
         setAiFeedback(data.message)
         return
       }
       
-      // 순수 문자열인 경우
       if (typeof data === "string" && data.trim()) {
         setAiFeedback(data)
         return
       }
       
-      // 배열인 경우
       if (Array.isArray(data) && data.length > 0) {
         setAiFeedback(data.join("\n"))
         return
       }
       
-      // ai_feedback이 없는 경우 - AI 피드백이 없다고 표시
       console.log("⚠️ AI 피드백 필드를 찾을 수 없음")
       setAiFeedback("AI 피드백이 없습니다.")
       
@@ -507,7 +479,7 @@ export default function StudentGradingPage() {
     if (problemType === "Coding" || problemType === "코딩" || problemType === "디버깅") {
       return (
         <MonacoEditor
-          height="calc(100% - 30px)"
+          height="100%"
           language="python"
           value={current.codes || "// 코드가 없습니다"}
           options={{ readOnly: true, minimap: { enabled: false }, wordWrap: "on", fontSize: 14 }}
@@ -573,15 +545,15 @@ export default function StudentGradingPage() {
 
   const renderProblemDescription = () => {
     if (problemLoading) {
-      return <p className="text-gray-500 text-sm">문제 정보를 불러오는 중...</p>
+      return <p className="text-gray-500 text-sm p-4">문제 정보를 불러오는 중...</p>
     }
 
     if (!currentProblem) {
-      return <p className="text-gray-500 text-sm">문제 정보가 없습니다.</p>
+      return <p className="text-gray-500 text-sm p-4">문제 정보가 없습니다.</p>
     }
 
     return (
-      <div className="space-y-4 h-full flex flex-col">
+      <div className="p-4 space-y-4">
         <div className="border-b pb-4">
           <h4 className="font-bold text-lg text-gray-900 mb-3">
             {currentProblem.title || "제목 없음"}
@@ -601,83 +573,78 @@ export default function StudentGradingPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {currentProblem.description ? (
-            <div className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-5 shadow-sm">
-              <h5 className="font-semibold text-sm text-gray-800 mb-3 flex items-center gap-2">
-                <span className="w-1 h-4 bg-blue-500 rounded"></span>
-                문제 설명
-              </h5>
-              <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                {currentProblem.description}
-              </div>
+        {currentProblem.description && (
+          <div className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 rounded-lg p-5 shadow-sm">
+            <h5 className="font-semibold text-sm text-gray-800 mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-blue-500 rounded"></span>
+              문제 설명
+            </h5>
+            <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {currentProblem.description}
             </div>
-          ) : (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 text-center text-gray-400">
-              문제 설명이 없습니다.
-            </div>
-          )}
+          </div>
+        )}
 
-          {currentProblem.tags && currentProblem.tags.length > 0 && (
-            <div className="mt-4">
-              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                <span className="w-1 h-4 bg-indigo-500 rounded"></span>
-                태그
-              </h5>
-              <div className="flex flex-wrap gap-2">
-                {currentProblem.tags.map((tag: string, idx: number) => (
-                  <span key={idx} className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
+        {currentProblem.tags && currentProblem.tags.length > 0 && (
+          <div>
+            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+              <span className="w-1 h-4 bg-indigo-500 rounded"></span>
+              태그
+            </h5>
+            <div className="flex flex-wrap gap-2">
+              {currentProblem.tags.map((tag: string, idx: number) => (
+                <span key={idx} className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200">
+                  #{tag}
+                </span>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {currentProblem.constraints && (
-            <div className="mt-4">
-              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                <span className="w-1 h-4 bg-yellow-500 rounded"></span>
-                제약 조건
-              </h5>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-gray-700">
-                {currentProblem.constraints}
-              </div>
+        {currentProblem.constraints && (
+          <div>
+            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+              <span className="w-1 h-4 bg-yellow-500 rounded"></span>
+              제약 조건
+            </h5>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-gray-700">
+              {currentProblem.constraints}
             </div>
-          )}
+          </div>
+        )}
 
-          {currentProblem.hints && (
-            <div className="mt-4">
-              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                <span className="w-1 h-4 bg-orange-500 rounded"></span>
-                힌트
-              </h5>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-gray-700">
-                {currentProblem.hints}
-              </div>
+        {currentProblem.hints && (
+          <div>
+            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+              <span className="w-1 h-4 bg-orange-500 rounded"></span>
+              힌트
+            </h5>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-gray-700">
+              {currentProblem.hints}
             </div>
-          )}
+          </div>
+        )}
 
-          {currentProblem.examples && (
-            <div className="mt-4">
-              <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
-                <span className="w-1 h-4 bg-teal-500 rounded"></span>
-                예제
-              </h5>
-              <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                {currentProblem.examples}
-              </div>
+        {currentProblem.examples && (
+          <div>
+            <h5 className="font-semibold text-sm text-gray-700 mb-2 flex items-center gap-2">
+              <span className="w-1 h-4 bg-teal-500 rounded"></span>
+              예제
+            </h5>
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap font-mono">
+              {currentProblem.examples}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="flex-1 max-w-7xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex-1 max-w-[1800px] mx-auto p-6 w-full">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-6">
           <button onClick={goPrev} className="flex items-center gap-1 text-gray-600 hover:text-gray-800">
             {currentIdx > 0 ? <ChevronLeft /> : <ArrowLeft />} {currentIdx > 0 ? "이전 문제" : "목록으로"}
           </button>
@@ -693,35 +660,36 @@ export default function StudentGradingPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <motion.div
-            className="bg-white rounded-lg shadow border p-4 h-[600px] overflow-y-auto"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            key={current?.submissionId}
-          >
-            <h3 className="font-semibold mb-3 text-gray-800">학생 답안</h3>
-            <div className="mb-2 text-sm text-gray-600">
-              문제 유형: <span className="font-medium">{current?.problemType}</span>
+        {/* 메인 컨텐츠 영역 */}
+        <div className="flex gap-6 h-[calc(100vh-250px)]">
+          {/* 왼쪽: 문제 정보 + 학생 답안 (50%) */}
+          <div className="flex-1 flex flex-col gap-6">
+            {/* 문제 정보 (위) */}
+            <div className="bg-white rounded-lg shadow border h-1/2 flex flex-col">
+              <div className="px-4 py-3 border-b bg-gray-50">
+                <h3 className="font-semibold text-gray-800">문제 정보</h3>
+              </div>
+              <div className="flex-1 overflow-auto">
+                {renderProblemDescription()}
+              </div>
             </div>
-            {renderAnswer()}
-          </motion.div>
 
-          <motion.div
-            className="bg-white rounded-lg shadow border p-4 h-[600px] overflow-y-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            key={`problem-${current?.problemId}`}
-          >
-            <h3 className="font-semibold mb-3 text-gray-800">문제 정보</h3>
-            {renderProblemDescription()}
-          </motion.div>
+            {/* 학생 답안 (아래) */}
+            <div className="bg-white rounded-lg shadow border h-1/2 flex flex-col">
+              <div className="px-4 py-3 border-b bg-gray-50">
+                <h3 className="font-semibold text-gray-800">학생 답안</h3>
+                <div className="text-sm text-gray-600 mt-1">
+                  문제 유형: <span className="font-medium">{current?.problemType}</span>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto">
+                {renderAnswer()}
+              </div>
+            </div>
+          </div>
 
-          <motion.div
-            className="bg-white rounded-lg shadow border flex flex-col h-[600px]"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
+          {/* 오른쪽: 피드백 (50%) */}
+          <div className="flex-1 bg-white rounded-lg shadow border flex flex-col">
             <div className="flex border-b items-center">
               <button
                 className={`flex-1 py-2 text-center ${activeFeedbackTab === "ai" ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-600"}`}
@@ -737,7 +705,7 @@ export default function StudentGradingPage() {
               </button>
             </div>
 
-            <div className="p-4 flex-1 overflow-y-auto">
+            <div className="p-4 flex-1 overflow-x-auto overflow-y-auto">
               {activeFeedbackTab === "ai" ? (
                 !isAILoaded ? (
                   <p className="text-sm text-gray-500">AI 피드백 로딩 중...</p>
@@ -760,7 +728,7 @@ export default function StudentGradingPage() {
                 <div className="h-full flex flex-col">
                   {!isEditingProfessor ? (
                     <>
-                      <div className="prose prose-sm max-w-none flex-1 overflow-y-auto">
+                      <div className="prose prose-sm max-w-none flex-1 overflow-auto">
                         {editedProfFeedback && editedProfFeedback.trim() && editedProfFeedback !== "null" ? (
                           <ReactMarkdown>{editedProfFeedback}</ReactMarkdown>) : (
                           <p className="text-gray-500">교수 피드백이 없습니다.</p>
@@ -807,97 +775,102 @@ export default function StudentGradingPage() {
                 </div>
               )}
             </div>
-          </motion.div>
-        </div>
-
-        <div className="bg-white rounded-lg border shadow-sm p-4">
-          <h3 className="font-semibold text-gray-800 mb-2">조건 검사 결과</h3>
-          <div
-            className={`p-3 rounded-lg border-l-4 ${
-              passedCondition ? "bg-green-50 border-green-500" : "bg-red-50 border-red-500"
-            }`}
-          >
-            <div className="flex justify-between mb-1">
-              <span className="font-medium">통과 여부</span>
-              <span className="text-sm font-medium">{passedCondition ? "✔️ 통과" : "❌ 미통과"}</span>
-            </div>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p>
-                AI 점수: <b>{current?.aiScore ?? 0}</b>점
-              </p>
-              <p>
-                교수 점수: <b>{current?.profScore !== null ? current.profScore : "-"}</b>점
-              </p>
-              <p>
-                최종 점수: <b>{finalScore}</b>점 / 총점: <b>{maxScore}</b>점
-              </p>
-            </div>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            제출 시간: {new Date(current?.updatedAt || "").toLocaleString("ko-KR")}
+        {/* 하단: AI 피드백 + 조건 검사 결과 + 점수 */}
+        <div className="mt-6 space-y-4">
+          {/* 조건 검사 결과 */}
+          <div className="bg-white rounded-lg border shadow-sm p-4">
+            <h3 className="font-semibold text-gray-800 mb-2">조건 검사 결과</h3>
+            <div
+              className={`p-3 rounded-lg border-l-4 ${
+                passedCondition ? "bg-green-50 border-green-500" : "bg-red-50 border-red-500"
+              }`}
+            >
+              <div className="flex justify-between mb-1">
+                <span className="font-medium">통과 여부</span>
+                <span className="text-sm font-medium">{passedCondition ? "✔️ 통과" : "❌ 미통과"}</span>
+              </div>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>
+                  AI 점수: <b>{current?.aiScore ?? 0}</b>점
+                </p>
+                <p>
+                  교수 점수: <b>{current?.profScore !== null ? current.profScore : "-"}</b>점
+                </p>
+                <p>
+                  최종 점수: <b>{finalScore}</b>점 / 총점: <b>{maxScore}</b>점
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
-            {!isEditingScore ? (
-              <div className="flex items-baseline space-x-2">
-                <span className="text-gray-600">AI 점수:</span>
-                <span className="font-semibold">{current?.aiScore ?? 0}점</span>
-                <span className="mx-2">|</span>
-                <span className="text-gray-600">교수 점수:</span>
-                <span className="font-semibold text-lg">
-                  {current?.profScore !== null ? `${current.profScore}점` : "-"}
-                </span>
-                <span className="text-gray-400">/ {maxScore}점</span>
-                {isGroupOwner && (
-                  <button onClick={() => setIsEditingScore(true)} className="text-blue-500 hover:text-blue-700 ml-2">
-                    ✏️ 점수 수정
+
+          {/* 점수 수정 및 검토 완료 */}
+          <div className="flex items-center justify-between bg-white rounded-lg border shadow-sm p-4">
+            <div className="text-sm text-gray-600">
+              제출 시간: {new Date(current?.updatedAt || "").toLocaleString("ko-KR")}
+            </div>
+            <div className="flex items-center space-x-4">
+              {!isEditingScore ? (
+                <div className="flex items-baseline space-x-2">
+                  <span className="text-gray-600">AI 점수:</span>
+                  <span className="font-semibold">{current?.aiScore ?? 0}점</span>
+                  <span className="mx-2">|</span>
+                  <span className="text-gray-600">교수 점수:</span>
+                  <span className="font-semibold text-lg">
+                    {current?.profScore !== null ? `${current.profScore}점` : "-"}
+                  </span>
+                  <span className="text-gray-400">/ {maxScore}점</span>
+                  {isGroupOwner && (
+                    <button onClick={() => setIsEditingScore(true)} className="text-blue-500 hover:text-blue-700 ml-2">
+                      ✏️ 점수 수정
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">교수 점수:</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={maxScore || undefined}
+                    value={editedProfScore}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === "" || val === "-") {
+                        setEditedProfScore(val)
+                        return
+                      }
+                      const num = Number(val)
+                      if (!Number.isNaN(num)) {
+                        const clamped = Math.max(0, Math.min(num, maxScore || num))
+                        setEditedProfScore(String(clamped))
+                      }
+                    }}
+                    className="w-20 p-2 border rounded"
+                  />
+                  <span>/ {maxScore}점</span>
+                  <button onClick={saveProfScore} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                    저장
                   </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">교수 점수:</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={maxScore || undefined}
-                  value={editedProfScore}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    if (val === "" || val === "-") {
-                      setEditedProfScore(val)
-                      return
-                    }
-                    const num = Number(val)
-                    if (!Number.isNaN(num)) {
-                      const clamped = Math.max(0, Math.min(num, maxScore || num))
-                      setEditedProfScore(String(clamped))
-                    }
-                  }}
-                  className="w-20 p-2 border rounded"
-                />
-                <span>/ {maxScore}점</span>
-                <button onClick={saveProfScore} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
-                  저장
+                  <button
+                    onClick={() => {
+                      setEditedProfScore(current?.profScore !== null ? String(current.profScore) : "")
+                      setIsEditingScore(false)
+                    }}
+                    className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                  >
+                    취소
+                  </button>
+                </div>
+              )}
+              {isGroupOwner && (
+                <button onClick={handleCompleteReview} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                  검토 완료
                 </button>
-                <button
-                  onClick={() => {
-                    setEditedProfScore(current?.profScore !== null ? String(current.profScore) : "")
-                    setIsEditingScore(false)
-                  }}
-                  className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-                >
-                  취소
-                </button>
-              </div>
-            )}
-            {isGroupOwner && (
-              <button onClick={handleCompleteReview} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                검토 완료
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
