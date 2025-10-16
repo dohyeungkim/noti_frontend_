@@ -17,6 +17,7 @@ interface SubmissionRecord {
 interface ProblemScoreData {
   maxPoints: number;
   submissions: SubmissionRecord[];
+  problemId: number; // 추가: 문제 ID
 }
 
 interface GradingStudentSummary {
@@ -64,7 +65,6 @@ export default function GradingListPage() {
         setLoading(true);
         console.log("===== 채점 데이터 로딩 시작 (최적화) =====");
 
-        // ⭐ 단일 API 호출로 모든 데이터 가져오기
         const submissions = await grading_api.get_all_submissions(
           Number(groupId),
           Number(examId)
@@ -73,7 +73,6 @@ export default function GradingListPage() {
         console.log('\n📦 GET submissions 전체:', submissions);
         console.log(`✅ 제출 목록 조회 완료: ${submissions.length}개`);
 
-        // 그룹장 정보 조회
         let ownerId: string | number | undefined;
         try {
           const [me, grp]: [{ user_id: string | number }, any] =
@@ -95,13 +94,11 @@ export default function GradingListPage() {
           console.warn("그룹장 정보 조회 실패:", err);
         }
 
-        // 학생별로 그룹화 (그룹장 제외)
         const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
         for (const sub of submissions) {
           const userId = String(sub.user_id);
           
-          // 그룹장 제외
           if (ownerId && userId === String(ownerId)) {
             console.log(`⏭️  그룹장 ${userId} 제외`);
             continue;
@@ -118,13 +115,11 @@ export default function GradingListPage() {
 
         console.log(`\n👥 필터링 후 학생 수: ${byUser.size}명`);
 
-        // 각 학생의 문제별 점수 구조화
         const rows: GradingStudentSummary[] = [];
 
         for (const [userId, userInfo] of Array.from(byUser.entries())) {
           const { name, studentNo, items } = userInfo;
 
-          // 문제별로 제출물 그룹화
           const subMapByProblem = new Map<number, SubmissionSummary[]>();
           
           for (const item of items) {
@@ -134,7 +129,6 @@ export default function GradingListPage() {
             subMapByProblem.get(item.problem_id)!.push(item);
           }
 
-          // 각 문제별로 제출 시간 기준 정렬 (최신순)
           for (const [pid, subs] of Array.from(subMapByProblem.entries())) {
             subs.sort((a, b) =>
               new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -152,16 +146,16 @@ export default function GradingListPage() {
               problemScores.push({
                 maxPoints,
                 submissions: [],
+                problemId: pid, // 추가
               });
               continue;
             }
 
-            // ⭐ get_all_submissions에서 직접 AI 점수와 교수 점수 사용
             const submissionRecords: SubmissionRecord[] = subs.map(sub => {
               return {
                 submissionId: sub.submission_id,
                 aiScore: sub.ai_score ?? null,
-                profScore: sub.prof_score ?? null, // ⭐ API에서 직접 가져온 교수 점수
+                profScore: sub.prof_score ?? null,
                 submittedAt: sub.updated_at,
                 reviewed: sub.reviewed ?? false,
               };
@@ -170,6 +164,7 @@ export default function GradingListPage() {
             problemScores.push({
               maxPoints,
               submissions: submissionRecords,
+              problemId: pid, // 추가
             });
           }
 
@@ -181,7 +176,6 @@ export default function GradingListPage() {
           });
         }
 
-        // 이름 순 정렬
         rows.sort((a, b) =>
           a.studentName.localeCompare(b.studentName, "ko-KR", { sensitivity: "base" })
         );
@@ -206,11 +200,13 @@ export default function GradingListPage() {
     fetchProblemRefs();
   }, [fetchProblemRefs]);
 
-  const selectStudent = (studentId: string) => {
-    router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}`);
+  // ⭐ 새로운 함수: 특정 문제 셀 클릭 시 해당 학생의 해당 문제로 이동
+  const handleProblemCellClick = (studentId: string, problemId: number) => {
+    router.push(`/mygroups/${groupId}/exams/${examId}/grading/${studentId}?problemId=${problemId}`);
   };
 
-  const toggleExpanded = (studentId: string, problemIdx: number) => {
+  const toggleExpanded = (studentId: string, problemIdx: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // 부모 클릭 이벤트 방지
     const key = `${studentId}-${problemIdx}`;
     setExpandedCells((prev) => {
       const newSet = new Set(prev);
@@ -296,6 +292,10 @@ export default function GradingListPage() {
         </div>
       )}
 
+      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+        ✏️ <strong>채점 방법:</strong> 각 문제 칸을 클릭하면 해당 학생의 해당 문제를 채점할 수 있습니다.
+      </div>
+
       <div className="overflow-x-auto border-2 border-blue-600 rounded-lg shadow-lg">
         <table className="w-full border-collapse bg-white">
           <thead className="bg-gray-50">
@@ -341,7 +341,6 @@ export default function GradingListPage() {
             {students.map((stu, stuIdx) => {
               const visibleScores = stu.problemScores.slice(startIdx, endIdx);
               
-              // 상태 판단: 교수 채점 완료 여부
               const hasAnySubmission = visibleScores.some(data => data.submissions.length > 0);
               
               const allGraded = hasAnySubmission && visibleScores.every((data) => {
@@ -361,15 +360,11 @@ export default function GradingListPage() {
                   key={stu.studentId}
                   className={`
                     border-t-2 border-blue-600 
-                    hover:bg-blue-50
                     transition-all duration-200
                     ${stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   `}
                 >
-                  <td
-                    className="border-r-2 border-blue-600 px-6 py-4 cursor-pointer"
-                    onClick={() => selectStudent(stu.studentId)}
-                  >
+                  <td className="border-r-2 border-blue-600 px-6 py-4">
                     <div className="flex flex-col">
                       <span className="text-base font-medium text-gray-800">
                         {stu.studentName}
@@ -390,7 +385,12 @@ export default function GradingListPage() {
                     return (
                       <td
                         key={cellKey}
-                        className="border-r-2 border-blue-600 px-4 py-4"
+                        className="border-r-2 border-blue-600 px-4 py-4 cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={() => {
+                          if (data.submissions.length > 0) {
+                            handleProblemCellClick(stu.studentId, data.problemId);
+                          }
+                        }}
                       >
                         {data.submissions.length === 0 ? (
                           <div className="text-center text-gray-300 font-bold">-</div>
@@ -429,8 +429,8 @@ export default function GradingListPage() {
                             {hasMultipleSubmissions && (
                               <>
                                 <button
-                                  onClick={() => toggleExpanded(stu.studentId, globalIdx)}
-                                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                  onClick={(e) => toggleExpanded(stu.studentId, globalIdx, e)}
+                                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline z-10"
                                 >
                                   {isExpanded
                                     ? "접기 ▲"
