@@ -9,6 +9,7 @@ import {
   grading_api,
   ai_feedback_api,
   problem_ref_api,
+  problem_api,
   auth_api,
   type SubmissionSummary,
 } from "@/lib/api"
@@ -58,6 +59,7 @@ export default function StudentGradingPage() {
   const [currentProblem, setCurrentProblem] = useState<any | null>(null)
   const [problemLoading, setProblemLoading] = useState(false)
   const [allProblems, setAllProblems] = useState<any[]>([])
+  const [myProblems, setMyProblems] = useState<any[]>([]) // 내가 만든 문제들
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -149,18 +151,41 @@ export default function StudentGradingPage() {
     }
   }, [groupId, examId, studentId, searchParams])
 
+  // 내가 만든 문제들 가져오기
+  const fetchMyProblems = useCallback(async () => {
+    try {
+      console.log("📋 내가 만든 문제 목록 가져오기 시작");
+      const problems = await problem_api.problem_get();
+      console.log("내가 만든 문제 목록:", problems);
+      setMyProblems(problems as any[]);
+      return problems;
+    } catch (e) {
+      console.error("내 문제 목록 가져오기 실패:", e);
+      setMyProblems([]);
+      return [];
+    }
+  }, []);
+
   const fetchProblemPoints = useCallback(async () => {
     try {
       const list = await problem_ref_api.problem_ref_get(Number(groupId), Number(examId))
       const map: Record<number, number> = {}
+      
+      console.log("📚 =====문제 목록 로드 시작=====");
+      console.log("전체 문제 목록:", list);
+      
       for (const item of list as any[]) {
+        console.log(`문제 ${item?.problem_id} 상세:`, item);
+        
         if (item?.problem_id != null && typeof item?.points === "number") {
           map[item.problem_id] = item.points
         }
       }
+      
+      console.log("배점 맵:", map);
       setPointsByProblem(map)
       setAllProblems(list as any[])
-      console.log("📚 문제 목록 로드 완료:", list)
+      console.log("📚 문제 목록 로드 완료 - 총 문제 수:", list.length)
     } catch (e) {
       console.error("배점 불러오기 실패:", e)
       setPointsByProblem({})
@@ -198,7 +223,8 @@ export default function StudentGradingPage() {
   useEffect(() => {
     fetchUserInfo()
     fetchProblemPoints()
-  }, [fetchUserInfo, fetchProblemPoints])
+    fetchMyProblems() // 내가 만든 문제들도 가져오기
+  }, [fetchUserInfo, fetchProblemPoints, fetchMyProblems])
 
   useEffect(() => {
     if (allProblems.length > 0) {
@@ -215,7 +241,7 @@ export default function StudentGradingPage() {
   const current = submissions[currentIdx]
 
   useEffect(() => {
-    if (!current?.problemId || allProblems.length === 0) {
+    if (!current?.problemId || (allProblems.length === 0 && myProblems.length === 0)) {
       setCurrentProblem(null)
       setProblemLoading(false)
       return
@@ -223,20 +249,82 @@ export default function StudentGradingPage() {
     
     setProblemLoading(true)
     
-    const foundProblem = allProblems.find(
+    console.log("🔍 =====현재 문제 찾기=====");
+    console.log(`찾는 문제 ID: ${current.problemId}`);
+    
+    // 먼저 allProblems에서 찾기
+    let foundProblem = allProblems.find(
       (prob: any) => prob.problem_id === current.problemId
     )
     
-    console.log(`🔍 문제 ${current.problemId} 찾기:`, foundProblem)
+    // allProblems에서 못 찾았으면 myProblems에서 찾기
+    if (!foundProblem) {
+      console.log("📋 allProblems에서 찾지 못함. myProblems에서 검색...");
+      foundProblem = myProblems.find(
+        (prob: any) => prob.problem_id === current.problemId
+      )
+      if (foundProblem) {
+        console.log("✅ myProblems에서 문제 발견!");
+      }
+    }
+    
+    console.log(`찾은 문제:`, foundProblem);
     
     if (foundProblem) {
+      // allProblems에서 찾은 경우 points 정보 병합
+      const problemFromAllProblems = allProblems.find(
+        (prob: any) => prob.problem_id === current.problemId
+      )
+      
+      if (problemFromAllProblems?.points) {
+        foundProblem = { ...foundProblem, points: problemFromAllProblems.points }
+      }
+      
+      console.log("📋 문제 상세 정보:");
+      console.log("- 문제 유형:", foundProblem.problemType || foundProblem.problem_type);
+      console.log("- 제목:", foundProblem.title);
+      console.log("- 배점:", foundProblem.points);
+      
+      // 문제 유형별 필드 확인
+      if (foundProblem.problemType === "객관식" || foundProblem.problem_type === "객관식") {
+        console.log("📌 객관식 필드:");
+        console.log("  - options:", foundProblem.options);
+        console.log("  - correct_answers:", foundProblem.correct_answers);
+      }
+      
+      if (foundProblem.problemType === "단답형" || foundProblem.problem_type === "단답형") {
+        console.log("📌 단답형 필드:");
+        console.log("  - answer_text:", foundProblem.answer_text);
+        console.log("  - grading_criteria:", foundProblem.grading_criteria);
+      }
+      
+      if (foundProblem.problemType === "주관식" || foundProblem.problem_type === "주관식") {
+        console.log("📌 주관식 필드:");
+        console.log("  - answer_text:", foundProblem.answer_text);
+        console.log("  - grading_criteria:", foundProblem.grading_criteria);
+      }
+      
+      if (foundProblem.problemType === "코딩" || foundProblem.problem_type === "코딩") {
+        console.log("📌 코딩 필드:");
+        console.log("  - reference_codes:", foundProblem.reference_codes);
+        console.log("  - test_cases:", foundProblem.test_cases);
+      }
+      
+      if (foundProblem.problemType === "디버깅" || foundProblem.problem_type === "디버깅") {
+        console.log("📌 디버깅 필드:");
+        console.log("  - base_code:", foundProblem.base_code);
+        console.log("  - reference_codes:", foundProblem.reference_codes);
+        console.log("  - test_cases:", foundProblem.test_cases);
+      }
+      
       setCurrentProblem(foundProblem)
     } else {
+      console.log("❌ 문제를 찾을 수 없음");
       setCurrentProblem(null)
     }
     
     setProblemLoading(false)
-  }, [current?.problemId, allProblems])
+  }, [current?.problemId, allProblems, myProblems])
 
   const goPrev = useCallback(() => {
     if (currentIdx > 0) {
@@ -466,9 +554,12 @@ export default function StudentGradingPage() {
   const passedCondition = finalScore >= (maxScore ?? 0)
 
   // 문제 답안 렌더링 함수 (문제 유형별)
-    // 문제 답안 렌더링 함수 (문제 유형별)
   const renderProblemAnswer = () => {
+    console.log("===== 🎯 문제 답안 렌더링 시작 =====");
+    console.log("현재 문제 객체:", currentProblem);
+    
     if (!currentProblem) {
+      console.log("❌ currentProblem이 없음");
       return (
         <div className="p-4 h-full flex items-center justify-center">
           <p className="text-gray-500">답안 정보를 불러올 수 없습니다.</p>
@@ -477,9 +568,14 @@ export default function StudentGradingPage() {
     }
 
     const problemType = currentProblem.problemType || currentProblem.problem_type || current?.problemType
+    console.log("📝 문제 유형:", problemType);
 
     // 객관식
     if (problemType === "객관식") {
+      console.log("✅ 객관식 문제 답안 렌더링");
+      console.log("선택지(options):", currentProblem.options);
+      console.log("정답(correct_answers):", currentProblem.correct_answers);
+      
       return (
         <div className="p-4 h-full overflow-auto">
           <div className="space-y-3">
@@ -523,6 +619,10 @@ export default function StudentGradingPage() {
 
     // 단답형
     if (problemType === "단답형") {
+      console.log("✅ 단답형 문제 답안 렌더링");
+      console.log("정답(answer_text):", currentProblem.answer_text);
+      console.log("채점 기준(grading_criteria):", currentProblem.grading_criteria);
+      
       return (
         <div className="p-4 h-full overflow-auto">
           <div className="bg-green-50 border border-green-300 rounded-lg p-4">
@@ -563,6 +663,10 @@ export default function StudentGradingPage() {
 
     // 주관식
     if (problemType === "주관식") {
+      console.log("✅ 주관식 문제 답안 렌더링");
+      console.log("모범 답안(answer_text):", currentProblem.answer_text);
+      console.log("채점 기준(grading_criteria):", currentProblem.grading_criteria);
+      
       return (
         <div className="p-4 h-full overflow-auto">
           <div className="bg-green-50 border border-green-300 rounded-lg p-4">
@@ -594,6 +698,10 @@ export default function StudentGradingPage() {
 
     // 코딩
     if (problemType === "코딩") {
+      console.log("✅ 코딩 문제 답안 렌더링");
+      console.log("정답 코드(reference_codes):", currentProblem.reference_codes);
+      console.log("테스트 케이스(test_cases):", currentProblem.test_cases);
+      
       return (
         <div className="p-4 h-full overflow-auto space-y-4">
           {/* Reference Codes */}
@@ -654,6 +762,11 @@ export default function StudentGradingPage() {
 
     // 디버깅
     if (problemType === "디버깅") {
+      console.log("✅ 디버깅 문제 답안 렌더링");
+      console.log("기본 코드(base_code):", currentProblem.base_code);
+      console.log("정답 코드(reference_codes):", currentProblem.reference_codes);
+      console.log("테스트 케이스(test_cases):", currentProblem.test_cases);
+      
       return (
         <div className="p-4 h-full overflow-auto space-y-4">
           {/* Base Code (버그가 있는 코드) */}
@@ -736,6 +849,9 @@ export default function StudentGradingPage() {
     }
 
     // 기본값
+    console.log("⚠️ 알 수 없는 문제 유형 또는 답안 정보 없음");
+    console.log("문제 전체 데이터:", currentProblem);
+    
     return (
       <div className="p-4 h-full flex items-center justify-center">
         <p className="text-gray-500">답안 정보를 불러올 수 없습니다.</p>
@@ -832,7 +948,7 @@ export default function StudentGradingPage() {
           </h4>
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-              {currentProblem.problem_type || currentProblem.problemType || "유형 미지정"}
+              {currentProblem.problemType || currentProblem.problem_type || "유형 미지정"}
             </span>
             {currentProblem.difficulty && (
               <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
@@ -1089,4 +1205,3 @@ export default function StudentGradingPage() {
     </div>
   )
 }
-                
