@@ -73,7 +73,6 @@ export default function StudentGradingPage() {
       
       console.log('GET submissions 전체:', allSubs);
       
-      // get_all_submissions의 problem_id 출력
       console.log('\n📌 get_all_submissions의 problem_id 목록:');
       allSubs.forEach((sub, idx) => {
         console.log(`  [${idx}] submission_id: ${sub.submission_id}, problem_id: ${sub.problem_id}, user_id: ${sub.user_id}`);
@@ -86,7 +85,6 @@ export default function StudentGradingPage() {
         console.log(`  [${idx}] problem_id: ${sub.problem_id}, title: ${sub.problem_title}`);
       });
       
-      // 학생 제출물과 problem_get 문제들 비교
       console.log('\n🔍 ===== 제출물 vs problem_get 매칭 분석 =====');
       const submissionProblemIds = studentSubs.map(s => s.problem_id);
       const myProblemIds = myProblems.map((p: any) => p.problem_id);
@@ -181,7 +179,6 @@ export default function StudentGradingPage() {
       const problems = await problem_api.problem_get();
       console.log("내가 만든 문제 목록:", problems);
       
-      // problem_get의 problem_id 출력
       console.log('\n📌 problem_get의 problem_id 목록:');
       (problems as any[]).forEach((prob, idx) => {
         console.log(`  [${idx}] problem_id: ${prob.problem_id}, title: ${prob.title}, type: ${prob.problemType || prob.problem_type}`);
@@ -283,7 +280,6 @@ export default function StudentGradingPage() {
     console.log(`학생 제출물의 problem_id: ${current.problemId} (타입: ${typeof current.problemId})`);
     console.log(`myProblems 개수: ${myProblems.length}`);
     
-    // 학생 제출물의 problem_id와 problem_get의 problem_id 직접 비교
     console.log('\n🔎 problem_id 매칭 시도:');
     const foundProblem = myProblems.find((prob: any) => {
       const isMatch = prob.problem_id === current.problemId;
@@ -296,7 +292,6 @@ export default function StudentGradingPage() {
     if (foundProblem) {
       console.log("✅ 제출물 problem_id와 problem_get의 problem_id가 일치!");
       
-      // allProblems에서 배점 정보 가져오기
       const problemFromExam = allProblems.find(
         (prob: any) => prob.problem_id === current.problemId
       )
@@ -308,47 +303,9 @@ export default function StudentGradingPage() {
       
       console.log("📋 최종 병합된 문제 정보:", mergedProblem);
       
-      console.log("📋 문제 상세 정보:");
-      console.log("- 문제 유형:", mergedProblem.problemType || mergedProblem.problem_type);
-      console.log("- 제목:", mergedProblem.title);
-      console.log("- 배점:", mergedProblem.points);
-      
-      if (mergedProblem.problemType === "객관식" || mergedProblem.problem_type === "객관식") {
-        console.log("📌 객관식 필드:");
-        console.log("  - options:", mergedProblem.options);
-        console.log("  - correct_answers:", mergedProblem.correct_answers);
-      }
-      
-      if (mergedProblem.problemType === "단답형" || mergedProblem.problem_type === "단답형") {
-        console.log("📌 단답형 필드:");
-        console.log("  - answer_text:", mergedProblem.answer_text);
-        console.log("  - grading_criteria:", mergedProblem.grading_criteria);
-      }
-      
-      if (mergedProblem.problemType === "주관식" || mergedProblem.problem_type === "주관식") {
-        console.log("📌 주관식 필드:");
-        console.log("  - answer_text:", mergedProblem.answer_text);
-        console.log("  - grading_criteria:", mergedProblem.grading_criteria);
-      }
-      
-      if (mergedProblem.problemType === "코딩" || mergedProblem.problem_type === "코딩") {
-        console.log("📌 코딩 필드:");
-        console.log("  - reference_codes:", mergedProblem.reference_codes);
-        console.log("  - test_cases:", mergedProblem.test_cases);
-      }
-      
-      if (mergedProblem.problemType === "디버깅" || mergedProblem.problem_type === "디버깅") {
-        console.log("📌 디버깅 필드:");
-        console.log("  - base_code:", mergedProblem.base_code);
-        console.log("  - reference_codes:", mergedProblem.reference_codes);
-        console.log("  - test_cases:", mergedProblem.test_cases);
-      }
-      
       setCurrentProblem(mergedProblem)
     } else {
       console.log("❌ 제출물 problem_id와 일치하는 problem_get의 problem_id를 찾을 수 없음");
-      console.log(`   찾으려던 problem_id: ${current.problemId}`);
-      console.log(`   problem_get에 있는 problem_id들:`, myProblems.map((p: any) => p.problem_id));
       setCurrentProblem(null)
     }
     
@@ -589,7 +546,7 @@ export default function StudentGradingPage() {
     if (!currentProblem) {
       console.log("❌ currentProblem이 없음");
       return (
-        <div className="p-4 h-full flex items-center justify-center">
+        <div className="p-4 flex items-center justify-center">
           <p className="text-gray-500">답안 정보를 불러올 수 없습니다.</p>
         </div>
       )
@@ -600,41 +557,37 @@ export default function StudentGradingPage() {
 
     if (problemType === "객관식") {
       console.log("✅ 객관식 문제 답안 렌더링");
-      console.log("선택지(options):", currentProblem.options);
-      console.log("정답(correct_answers):", currentProblem.correct_answers);
       
       return (
-        <div className="p-4 h-full overflow-auto">
-          <div className="space-y-3">
-            {currentProblem.options?.map((option: string, index: number) => {
-              const isCorrect = currentProblem.correct_answers?.includes(index + 1)
-              return (
-                <div
-                  key={index}
-                  className={`border rounded-lg p-3 transition-colors ${
-                    isCorrect
-                      ? "bg-green-50 border-green-300"
-                      : "bg-gray-50 border-gray-200"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`font-bold ${isCorrect ? "text-green-700" : "text-gray-600"}`}>
-                      {index + 1}.
-                    </span>
-                    <span className={`flex-1 ${isCorrect ? "text-green-900 font-medium" : "text-gray-700"}`}>
-                      {option}
-                    </span>
-                    {isCorrect && (
-                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    )}
-                  </div>
+        <div className="space-y-3">
+          {currentProblem.options?.map((option: string, index: number) => {
+            const isCorrect = currentProblem.correct_answers?.includes(index + 1)
+            return (
+              <div
+                key={index}
+                className={`border rounded-lg p-3 transition-colors ${
+                  isCorrect
+                    ? "bg-green-50 border-green-300"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className={`font-bold ${isCorrect ? "text-green-700" : "text-gray-600"}`}>
+                    {index + 1}.
+                  </span>
+                  <span className={`flex-1 ${isCorrect ? "text-green-900 font-medium" : "text-gray-700"}`}>
+                    {option}
+                  </span>
+                  {isCorrect && (
+                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  )}
                 </div>
-              )
-            }) || <p className="text-gray-500">선택지 정보가 없습니다.</p>}
-          </div>
+              </div>
+            )
+          }) || <p className="text-gray-500">선택지 정보가 없습니다.</p>}
           
           {currentProblem.correct_answers && currentProblem.correct_answers.length > 0 && (
-            <div className="mt-4 bg-green-100 border border-green-300 rounded-lg p-3">
+            <div className="bg-green-100 border border-green-300 rounded-lg p-3">
               <p className="text-green-800 font-semibold text-sm">
                 정답: {currentProblem.correct_answers.join(", ")}번
               </p>
@@ -646,11 +599,9 @@ export default function StudentGradingPage() {
 
     if (problemType === "단답형") {
       console.log("✅ 단답형 문제 답안 렌더링");
-      console.log("정답(answer_text):", currentProblem.answer_text);
-      console.log("채점 기준(grading_criteria):", currentProblem.grading_criteria);
       
       return (
-        <div className="p-4 h-full overflow-auto">
+        <div className="space-y-4">
           <div className="bg-green-50 border border-green-300 rounded-lg p-4">
             <h5 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
               <CheckCircle className="w-4 h-4" />
@@ -671,7 +622,7 @@ export default function StudentGradingPage() {
           </div>
 
           {currentProblem.grading_criteria && currentProblem.grading_criteria.length > 0 && (
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <h5 className="text-xs font-semibold text-blue-700 mb-2">AI 채점 기준</h5>
               <ul className="space-y-1">
                 {currentProblem.grading_criteria.map((criteria: string, index: number) => (
@@ -689,11 +640,9 @@ export default function StudentGradingPage() {
 
     if (problemType === "주관식") {
       console.log("✅ 주관식 문제 답안 렌더링");
-      console.log("모범 답안(answer_text):", currentProblem.answer_text);
-      console.log("채점 기준(grading_criteria):", currentProblem.grading_criteria);
       
       return (
-        <div className="p-4 h-full overflow-auto">
+        <div className="space-y-4">
           <div className="bg-green-50 border border-green-300 rounded-lg p-4">
             <h5 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
               <CheckCircle className="w-4 h-4" />
@@ -705,7 +654,7 @@ export default function StudentGradingPage() {
           </div>
 
           {currentProblem.grading_criteria && currentProblem.grading_criteria.length > 0 && (
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <h5 className="text-xs font-semibold text-blue-700 mb-2">AI 채점 기준</h5>
               <ul className="space-y-1">
                 {currentProblem.grading_criteria.map((criteria: string, index: number) => (
@@ -723,11 +672,9 @@ export default function StudentGradingPage() {
 
     if (problemType === "코딩") {
       console.log("✅ 코딩 문제 답안 렌더링");
-      console.log("정답 코드(reference_codes):", currentProblem.reference_codes);
-      console.log("테스트 케이스(test_cases):", currentProblem.test_cases);
       
       return (
-        <div className="p-4 h-full overflow-auto space-y-4">
+        <div className="space-y-4">
           {currentProblem.reference_codes && currentProblem.reference_codes.length > 0 ? (
             <div className="space-y-3">
               <h5 className="text-sm font-semibold text-gray-700">정답 코드 (Reference Code)</h5>
@@ -784,12 +731,9 @@ export default function StudentGradingPage() {
 
     if (problemType === "디버깅") {
       console.log("✅ 디버깅 문제 답안 렌더링");
-      console.log("기본 코드(base_code):", currentProblem.base_code);
-      console.log("정답 코드(reference_codes):", currentProblem.reference_codes);
-      console.log("테스트 케이스(test_cases):", currentProblem.test_cases);
       
       return (
-        <div className="p-4 h-full overflow-auto space-y-4">
+        <div className="space-y-4">
           {currentProblem.base_code && currentProblem.base_code.length > 0 ? (
             <div className="space-y-3">
               <h5 className="text-sm font-semibold text-gray-700">기본 코드 (디버깅 대상)</h5>
@@ -867,10 +811,9 @@ export default function StudentGradingPage() {
     }
 
     console.log("⚠️ 알 수 없는 문제 유형 또는 답안 정보 없음");
-    console.log("문제 전체 데이터:", currentProblem);
     
     return (
-      <div className="p-4 h-full flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <p className="text-gray-500">답안 정보를 불러올 수 없습니다.</p>
       </div>
     )
@@ -958,7 +901,7 @@ export default function StudentGradingPage() {
     }
 
     return (
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         <div className="border-b pb-4">
           <h4 className="font-bold text-lg text-gray-900 mb-3">
             {currentProblem.title || "제목 없음"}
@@ -1026,26 +969,22 @@ export default function StudentGradingPage() {
 
         <div className="space-y-6">
           <div className="flex gap-6 h-[700px]">
-            <div className="flex-[7] flex flex-col gap-6">
-              <div className="flex-1 bg-white rounded-lg shadow border flex flex-col">
-                <div className="px-4 py-3 border-b bg-gray-50">
-                  <h3 className="font-semibold text-gray-800">문제 정보</h3>
-                </div>
-                <div className="flex-1 overflow-auto">
-                  {renderProblemDescription()}
-                </div>
+            {/* 통합된 문제 정보 + 답안 섹션 */}
+            <div className="flex-[7] bg-white rounded-lg shadow border flex flex-col">
+              <div className="px-4 py-3 border-b bg-gray-50">
+                <h3 className="font-semibold text-gray-800">문제 정보 및 답안</h3>
               </div>
-
-              <div className="flex-1 bg-white rounded-lg shadow border flex flex-col">
-                <div className="px-4 py-3 border-b bg-gray-50">
-                  <h3 className="font-semibold text-gray-800">문제 답안</h3>
-                </div>
-                <div className="flex-1 overflow-auto">
+              <div className="flex-1 overflow-auto p-4 space-y-6">
+                {renderProblemDescription()}
+                
+                <div className="border-t pt-6">
+                  <h4 className="font-semibold text-gray-800 mb-4">문제 답안</h4>
                   {renderProblemAnswer()}
                 </div>
               </div>
             </div>
 
+            {/* 학생 답안 섹션 */}
             <div className="flex-[4] bg-white rounded-lg shadow border flex flex-col">
               <div className="px-4 py-3 border-b bg-gray-50">
                 <h3 className="font-semibold text-gray-800">학생 답안</h3>
