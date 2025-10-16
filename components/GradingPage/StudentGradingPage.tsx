@@ -1092,7 +1092,7 @@ export default function StudentGradingPage() {
                   <span className="mx-2">|</span>
                   <span className="text-gray-600">교수 점수:</span>
                   <span className="font-semibold text-lg">
-                    {current?.profScore !== null ? `${current.profScore}점` : "-"}
+                    {current?.profScore !== null ? `${current.profScore}점` : "-점"}
                   </span>
                   <span className="text-gray-400">/ {maxScore}점</span>
                   {isGroupOwner && (
