@@ -62,13 +62,17 @@ export default function StudentGradingPage() {
   const fetchSubmissions = useCallback(async () => {
     try {
       console.log("===== 학생 제출물 로딩 시작 =====");
+      console.log(`학생 ID: ${studentId}`);
       
       const allSubs: SubmissionSummary[] = await grading_api.get_all_submissions(
         Number(groupId),
         Number(examId),
       )
       
+      console.log('GET submissions 전체:', allSubs);
+      
       const studentSubs = allSubs.filter(s => String(s.user_id) === String(studentId))
+      console.log(`✅ 학생 제출물 필터링 완료: ${studentSubs.length}개`);
       
       const mapped: Submission[] = await Promise.all(
         studentSubs.map(async (s: any) => {
@@ -79,13 +83,22 @@ export default function StudentGradingPage() {
           try {
             const score = await grading_api.get_submission_scores(s.submission_id)
             
+            console.log(`\n📊 제출 ${s.submission_id} 점수:`, score);
+            
             if (score) {
               aiScore = score.ai_score ?? null;
               profScore = score.prof_score ?? null;
               profFeedback = score.prof_feedback || "";
+              
+              console.log(`  ✅ AI 점수: ${aiScore}`);
+              console.log(`  ✅ 교수 점수: ${profScore}`);
+              console.log(`  ✅ 피드백: ${profFeedback ? '있음' : '없음'}`);
             }
+            
+            console.log(`  📌 최종 점수: AI=${aiScore}, 교수=${profScore}`);
+            
           } catch (err) {
-            console.error(`제출물 ${s.submission_id} 점수 조회 실패:`, err)
+            console.error(`❌ 제출물 ${s.submission_id} 점수 조회 실패:`, err)
           }
           
           return {
@@ -110,6 +123,9 @@ export default function StudentGradingPage() {
       )
       mapped.sort((a, b) => a.problemId - b.problemId)
       
+      console.log(`\n===== 최종 결과 =====`);
+      console.log(`문제 수: ${mapped.length}개`);
+      
       setSubmissions(mapped)
       
       if (mapped.length > 0) {
@@ -122,7 +138,10 @@ export default function StudentGradingPage() {
         const targetIndex = mapped.findIndex(sub => sub.problemId === targetProblemId)
         
         if (targetIndex !== -1) {
+          console.log(`🎯 URL 파라미터로 문제 ${targetProblemId} 선택 (인덱스: ${targetIndex})`)
           setCurrentIdx(targetIndex)
+        } else {
+          console.warn(`⚠️ 문제 ID ${targetProblemId}를 찾을 수 없습니다.`)
         }
       }
     } catch (err) {
@@ -141,6 +160,7 @@ export default function StudentGradingPage() {
       }
       setPointsByProblem(map)
       setAllProblems(list as any[])
+      console.log("📚 문제 목록 로드 완료:", list)
     } catch (e) {
       console.error("배점 불러오기 실패:", e)
       setPointsByProblem({})
@@ -167,6 +187,9 @@ export default function StudentGradingPage() {
         grp?.owner?.user_id
       
       setGroupOwnerId(ownerId)
+      
+      console.log("👤 본인 ID:", me?.user_id)
+      console.log("👑 그룹장 ID:", ownerId)
     } catch (err) {
       console.error("사용자 정보 조회 실패:", err)
     }
@@ -203,6 +226,8 @@ export default function StudentGradingPage() {
     const foundProblem = allProblems.find(
       (prob: any) => prob.problem_id === current.problemId
     )
+    
+    console.log(`🔍 문제 ${current.problemId} 찾기:`, foundProblem)
     
     if (foundProblem) {
       setCurrentProblem(foundProblem)
@@ -260,6 +285,12 @@ export default function StudentGradingPage() {
       const num = Number(editedProfScore)
       const clamped = Number.isNaN(num) ? 0 : Math.max(0, Math.min(num, maxScore || num))
 
+      console.log(`\n💾 저장 전 상태:`);
+      console.log(`  제출 ID: ${current.submissionId}`);
+      console.log(`  현재 AI 점수: ${current.aiScore}`);
+      console.log(`  현재 교수 점수: ${current.profScore}`);
+      console.log(`  저장할 교수 점수: ${clamped}`);
+
       await grading_api.post_submission_score(
         current.submissionId,
         clamped,
@@ -267,7 +298,10 @@ export default function StudentGradingPage() {
         myUserId ?? undefined
       )
 
+      console.log(`✅ 저장 API 호출 완료`);
+      
       const updatedScore = await grading_api.get_submission_scores(current.submissionId);
+      console.log(`\n📊 저장 후 점수:`, updatedScore);
       
       let updatedAiScore = current.aiScore;
       let updatedProfScore = clamped;
@@ -275,16 +309,25 @@ export default function StudentGradingPage() {
       if (updatedScore) {
         updatedAiScore = updatedScore.ai_score ?? current.aiScore;
         updatedProfScore = updatedScore.prof_score ?? clamped;
+        
+        console.log(`  ✅ AI 점수: ${updatedAiScore}`);
+        console.log(`  ✅ 교수 점수: ${updatedProfScore}`);
       }
 
       setSubmissions((prev) => {
         const next = [...prev]
+        
+        console.log(`\n🔄 로컬 상태 업데이트:`);
+        console.log(`  AI 점수: ${updatedAiScore}`);
+        console.log(`  교수 점수: ${updatedProfScore}`);
+        
         next[currentIdx] = { 
           ...next[currentIdx], 
           aiScore: updatedAiScore,
           profScore: updatedProfScore,
           profFeedback: editedProfFeedback
         }
+        
         return next
       })
       
@@ -379,6 +422,8 @@ export default function StudentGradingPage() {
     try {
       const data: any = await ai_feedback_api.get_ai_feedback(submissionId)
       
+      console.log("📝 AI 피드백 원본 데이터:", data)
+      
       if (data?.ai_feedback && typeof data.ai_feedback === "string" && data.ai_feedback.trim()) {
         setAiFeedback(data.ai_feedback)
         return
@@ -404,6 +449,7 @@ export default function StudentGradingPage() {
         return
       }
       
+      console.log("⚠️ AI 피드백 필드를 찾을 수 없음")
       setAiFeedback("AI 피드백이 없습니다.")
       
     } catch (e: any) {
@@ -425,6 +471,9 @@ export default function StudentGradingPage() {
       cancelled = true
     }
   }, [current?.submissionId, fetchAiFeedback])
+
+  const finalScore = current?.profScore ?? current?.aiScore ?? 0
+  const passedCondition = finalScore >= (maxScore ?? 0)
 
   if (submissions.length === 0) {
     return (
@@ -701,7 +750,7 @@ export default function StudentGradingPage() {
               <div className="px-4 py-3 border-b bg-green-50">
                 <h3 className="font-semibold text-green-600">교수 피드백</h3>
               </div>
-              <div className="p-4 flex-1 overflow-auto">
+              <div className="p-4 flex-1 overflow-auto flex flex-col">
                 {!isEditingProfessor ? (
                   <>
                     <div className="prose prose-sm max-w-none flex-1 overflow-auto">
