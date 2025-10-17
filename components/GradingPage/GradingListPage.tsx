@@ -42,6 +42,8 @@ export default function GradingListPage() {
 
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [gradedAbsentStudents, setGradedAbsentStudents] = useState<Set<string>>(new Set());
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const fetchProblemRefs = useCallback(async () => {
     try {
@@ -276,6 +278,10 @@ export default function GradingListPage() {
         newSet.delete(userId);
       } else {
         newSet.add(userId);
+        // 토스트 메시지 표시
+        setToastMessage("결시처리되었습니다");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
       }
       return newSet;
     });
@@ -743,6 +749,15 @@ export default function GradingListPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* 토스트 알림 */}
+      {showToast && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-green-500 text-white px-8 py-4 rounded-lg shadow-lg font-semibold text-lg animate-in fade-in slide-in-from-bottom-5 duration-300">
+            ✓ {toastMessage}
           </div>
         </div>
       )}
