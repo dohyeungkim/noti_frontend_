@@ -382,7 +382,7 @@ export default function GradingListPage() {
               <th className="border-r-2 border-blue-600 px-4 py-4 text-center font-bold text-gray-700 min-w-[120px]">
                 <div className="flex flex-col items-center space-y-1">
                   <div className="text-sm font-bold text-gray-800">총점</div>
-                  <div className="text-xs text-gray-500">교수 / AI</div>
+                  <div className="text-xs text-gray-500">획득 / 배점</div>
                 </div>
               </th>
               {visibleProblems.map((prob, idx) => (
@@ -438,6 +438,12 @@ export default function GradingListPage() {
                 }
               }
               
+              // 배점 계산: 문제 수 * 20
+              const totalMaxPoints = stu.problemScores.length * 20;
+              
+              // 획득 점수 (교수점수 + AI점수)
+              const totalObtainedScore = totalProfScore + totalAiScore;
+              
               const hasAnySubmission = visibleScores.some(data => data.submissions.length > 0);
               
               const allGraded = hasAnySubmission && visibleScores.every((data) => {
@@ -474,11 +480,11 @@ export default function GradingListPage() {
                   <td className="border-r-2 border-blue-600 px-4 py-4">
                     <div className="flex items-center justify-center">
                       <span className="text-base font-bold text-blue-600">
-                        {totalProfScore}
+                        {totalObtainedScore}
                       </span>
                       <span className="text-gray-400 mx-1">/</span>
                       <span className="text-base font-bold text-green-600">
-                        {totalAiScore}
+                        {totalMaxPoints}
                       </span>
                     </div>
                   </td>
