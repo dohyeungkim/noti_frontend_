@@ -71,6 +71,9 @@ function getTitle(
 	if (pathname.endsWith("finder")) {
 		return "📂 Problem Finder"
 	}
+	if (pathname.includes("/grading")) {
+		return "✏️ 채점하기"
+	}
 	
 
 	// console.log("Debug:", { pathname, userName, problem, exam, group })
