@@ -207,7 +207,7 @@ export default function GradingListPage() {
 
         // 결시생 처리
         const absentList: Array<{ userId: string; userName: string; studentNo: string }> = [];
-        const seenStudentNos = new Set<string>(); // 중복 학번 체크용
+        const absentSeenUserIds = new Set<string>(); // 중복 user_id 체크용
         
         for (const member of groupMembers as any[]) {
           const memberId = String(member.user_id);
@@ -218,9 +218,9 @@ export default function GradingListPage() {
             continue;
           }
           
-          // 이미 처리된 학번이면 건너뛰기
-          if (seenStudentNos.has(studentNo)) {
-            console.log(`⏭️  중복 학번 ${studentNo} 제외`);
+          // 이미 처리된 user_id면 건너뛰기
+          if (absentSeenUserIds.has(memberId)) {
+            console.log(`⏭️  중복 user_id ${memberId} 제외 (결시생)`);
             continue;
           }
           
@@ -231,7 +231,7 @@ export default function GradingListPage() {
               userName: member.username || "이름 없음",
               studentNo: studentNo,
             });
-            seenStudentNos.add(studentNo); // 학번 기록
+            absentSeenUserIds.add(memberId); // user_id 기록
           }
         }
 
