@@ -250,10 +250,12 @@ export default function GradingListPage() {
 
   return (
     <div className="pb-10 px-4">
-      <div className="flex flex-col items-center mb-6 space-y-4">
-        <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-center mb-4">학생 제출물 채점</h1>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center justify-between">
+          <div className="flex-1"></div>
+          
           {showScrollButtons && (
             <div className="flex items-center gap-4 bg-white px-6 py-3 rounded-lg border shadow-md">
               <button
@@ -284,19 +286,23 @@ export default function GradingListPage() {
             </div>
           )}
           
-          <div className="flex items-center gap-4 bg-white px-4 py-3 rounded-lg border shadow-md">
-            <span className="text-sm font-semibold text-gray-700">점수 기준:</span>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-              <span className="text-sm text-gray-600">9-10점</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">5-8점</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-              <span className="text-sm text-gray-600">0-4점</span>
+          {!showScrollButtons && <div className="flex-1"></div>}
+          
+          <div className="flex-1 flex justify-end">
+            <div className="flex items-center gap-4 bg-white px-4 py-3 rounded-lg border shadow-md">
+              <span className="text-sm font-semibold text-gray-700">점수 기준:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                <span className="text-sm text-gray-600">9-10점</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span className="text-sm text-gray-600">5-8점</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                <span className="text-sm text-gray-600">0-4점</span>
+              </div>
             </div>
           </div>
         </div>
