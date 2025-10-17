@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/stores/auth";
-import { group_api, grading_api, group_member_api, problem_ref_api, auth_api } from "@/lib/api";
+import { group_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
 import type { SubmissionSummary, ProblemRef } from "@/lib/api";
 
 interface SubmissionRecord {
@@ -67,7 +67,7 @@ export default function GradingListPage() {
         console.log("===== 채점 데이터 로딩 시작 (최적화) =====");
 
         // 그룹 멤버 조회
-        const groupMembers = await group_member_api.group_get_member(Number(groupId));
+        const groupMembers = await group_api.group_get_members(Number(groupId));
         console.log('\n👥 그룹 멤버 전체:', groupMembers);
 
         const submissions = await grading_api.get_all_submissions(
@@ -106,7 +106,6 @@ export default function GradingListPage() {
         });
 
         const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
-        const seenStudentNos = new Set<string>(); // 중복 학번 체크용
 
         for (const sub of submissions) {
           const userId = String(sub.user_id);
@@ -119,15 +118,8 @@ export default function GradingListPage() {
           const userName = sub.user_name || "이름 없음";
           const studentNo = String(sub.user_id);
 
-          // 이미 처리된 학번이면 건너뛰기
-          if (seenStudentNos.has(studentNo)) {
-            console.log(`⏭️  중복 학번 ${studentNo} 제외 (제출 학생)`);
-            continue;
-          }
-
           if (!byUser.has(userId)) {
             byUser.set(userId, { name: userName, studentNo, items: [] });
-            seenStudentNos.add(studentNo); // 학번 기록
           }
           byUser.get(userId)!.items.push(sub);
         }
