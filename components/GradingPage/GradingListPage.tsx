@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useLayoutEffect } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+} from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/stores/auth";
 import {
@@ -51,12 +57,12 @@ export default function GradingListPage() {
   const frameRef = useRef<HTMLDivElement | null>(null);
 
   // 컬럼 폭(고정) & 레이아웃 상수
-  const NAME_COL_W = 180;
-  const STUNO_COL_W = 140;
-  const TOTAL_COL_W = 140; // 총점 칩 고정 폭
-  const RIGHT_STATUS_W = 140; // 상태 열
-  const H_PADDING = 32; // 프레임 내부 여유
-  const MIN_PROBLEM_COL_W = 160; // 문제 한 칸 최소 폭
+  const NAME_COL_W = 70; // 180 → 140
+  const STUNO_COL_W = 80; // 140 → 110
+  const TOTAL_COL_W = 130; // (옵션) 140 → 130
+  const RIGHT_STATUS_W = 130; // (옵션) 140 → 130
+  const H_PADDING = 24; // (옵션) 32 → 24
+  const MIN_PROBLEM_COL_W = 160; // 그대로
 
   // 보이는 범위 파생
   const totalProblems = problemRefs.length;
@@ -72,7 +78,7 @@ export default function GradingListPage() {
     if (!el) return;
 
     const containerW = el.clientWidth;
-    const scrollbarW = el.offsetWidth - el.clientWidth; // 일반적으로 0~16px
+    const scrollbarW = el.offsetWidth - el.clientWidth;
     const used =
       NAME_COL_W + STUNO_COL_W + TOTAL_COL_W + RIGHT_STATUS_W + H_PADDING;
 
@@ -165,8 +171,9 @@ export default function GradingListPage() {
 
   // ===============================================================
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
-  const [gradedAbsentStudents, setGradedAbsentStudents] =
-    useState<Set<string>>(new Set());
+  const [gradedAbsentStudents, setGradedAbsentStudents] = useState<Set<string>>(
+    new Set()
+  );
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -408,32 +415,22 @@ export default function GradingListPage() {
         <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
 
         {/* 점수 기준 범례 */}
-        <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border shadow-sm">
-          <span className="text-sm font-semibold text-gray-700">점수 기준:</span>
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-600" />
             <span className="text-xs text-gray-600">9–10점</span>
           </div>
+
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-yellow-500" />
             <span className="text-xs text-gray-600">5–8점</span>
           </div>
+
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-red-600" />
             <span className="text-xs text-gray-600">0–4점</span>
           </div>
         </div>
-      </div>
-
-      {/* 안내 배너 */}
-      {showScrollButtons && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-          💡 문제가 {totalProblems}개 있어. 아래 컨트롤로 다른 문제도 확인해봐. (현재{" "}
-          {startIdx + 1}–{endIdx} 번 표시 중)
-        </div>
-      )}
-      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700">
-        ✏️ <strong>채점 방법:</strong> 셀을 클릭하면 해당 학생·문제 채점 페이지로 이동한다.
       </div>
 
       {/* 표 프레임 */}
@@ -455,12 +452,20 @@ export default function GradingListPage() {
               }`}
             >
               {/* ← */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="w-4 h-4" fill="currentColor" aria-hidden>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                className="w-4 h-4"
+                fill="currentColor"
+                aria-hidden
+              >
                 <path d="M12.293 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L8.414 9H16a1 1 0 110 2H8.414l3.879 3.879a1 1 0 010 1.414z" />
               </svg>
             </button>
             <div className="text-xs text-gray-600 tabular-nums w-[110px] text-center">
-              {totalProblems > 0 ? `${startIdx + 1}–${endIdx} / ${totalProblems}` : "0 / 0"}
+              {totalProblems > 0
+                ? `${startIdx + 1}–${endIdx} / ${totalProblems}`
+                : "0 / 0"}
             </div>
             <button
               type="button"
@@ -475,7 +480,13 @@ export default function GradingListPage() {
               }`}
             >
               {/* → */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" className="w-4 h-4" fill="currentColor" aria-hidden>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                className="w-4 h-4"
+                fill="currentColor"
+                aria-hidden
+              >
                 <path d="M7.707 4.293a1 1 0 010 1.414L11.586 9H4a1 1 0 100 2h7.586l-3.879 3.879a1 1 0 101.414 1.414l5-5a1 1 0 000-1.414l-5-5a1 1 0 10-1.414 0z" />
               </svg>
             </button>
@@ -491,18 +502,29 @@ export default function GradingListPage() {
               <col style={{ width: `${STUNO_COL_W}px` }} />
               <col style={{ width: `${TOTAL_COL_W}px` }} />
               {visibleProblems.map((_p, i) => (
-                <col key={`pcol-${i}`} style={{ width: `${MIN_PROBLEM_COL_W}px` }} />
+                <col
+                  key={`pcol-${i}`}
+                  style={{ width: `${MIN_PROBLEM_COL_W}px` }}
+                />
               ))}
               <col style={{ width: `${RIGHT_STATUS_W}px` }} />
             </colgroup>
 
             <thead className="bg-gray-50">
               <tr className="border-b">
-                <th className="px-4 py-3 text-left sticky left-0 bg-gray-50 z-10">이름</th>
-                <th className="px-4 py-3 text-left sticky bg-gray-50 z-10" style={{ left: NAME_COL_W }}>
+                <th className="px-4 py-3 text-left sticky left-0 bg-gray-50 z-10">
+                  이름
+                </th>
+                <th
+                  className="px-4 py-3 text-left sticky bg-gray-50 z-10"
+                  style={{ left: NAME_COL_W }}
+                >
                   학번
                 </th>
-                <th className="px-4 py-3 text-center sticky bg-gray-50 z-10" style={{ left: NAME_COL_W + STUNO_COL_W }}>
+                <th
+                  className="px-4 py-3 text-center sticky bg-gray-50 z-10"
+                  style={{ left: NAME_COL_W + STUNO_COL_W }}
+                >
                   <div className="flex flex-col items-center gap-1">
                     <div className="text-sm font-bold text-gray-800">총점</div>
                     <div className="text-[11px] text-gray-500">획득 / 배점</div>
@@ -510,17 +532,31 @@ export default function GradingListPage() {
                 </th>
 
                 {visibleProblems.map((prob, idx) => (
-                  <th key={prob.problem_id} className="px-2 py-3 text-center whitespace-nowrap">
-                    <div className="font-medium max-w-[220px] mx-auto truncate">문제 {startIdx + idx + 1}</div>
-                    <div className="text-[11px] text-gray-500 truncate" title={prob.title}>
+                  <th
+                    key={prob.problem_id}
+                    className="px-2 py-3 text-center whitespace-nowrap"
+                  >
+                    <div className="font-medium max-w-[220px] mx-auto truncate">
+                      문제 {startIdx + idx + 1}
+                    </div>
+                    <div
+                      className="text-[11px] text-gray-500 truncate"
+                      title={prob.title}
+                    >
                       {prob.title}
                     </div>
-                    <div className="text-[11px] text-gray-500">(배점: {prob.points ?? 20}점)</div>
-                    <div className="text-[11px] text-gray-400">교수점수 / AI점수</div>
+                    <div className="text-[11px] text-gray-500">
+                      (배점: {prob.points ?? 20}점)
+                    </div>
+                    <div className="text-[11px] text-gray-400">
+                      교수점수 / AI점수
+                    </div>
                   </th>
                 ))}
 
-                <th className="px-3 py-3 text-center whitespace-nowrap">상태</th>
+                <th className="px-3 py-3 text-center whitespace-nowrap">
+                  상태
+                </th>
               </tr>
             </thead>
 
@@ -534,31 +570,52 @@ export default function GradingListPage() {
                 for (const data of stu.problemScores) {
                   if (data.submissions.length > 0) {
                     const latestSub = data.submissions[0];
-                    if (latestSub.profScore !== null) totalProfScore += latestSub.profScore;
-                    if (latestSub.aiScore !== null) totalAiScore += latestSub.aiScore;
+                    if (latestSub.profScore !== null)
+                      totalProfScore += latestSub.profScore;
+                    if (latestSub.aiScore !== null)
+                      totalAiScore += latestSub.aiScore;
                   }
                 }
                 const totalMaxPoints = stu.problemScores.length * 20;
                 const totalObtainedScore = totalProfScore + totalAiScore;
 
-                const hasAnySubmission = visibleScores.some((d) => d.submissions.length > 0);
+                const hasAnySubmission = visibleScores.some(
+                  (d) => d.submissions.length > 0
+                );
 
                 return (
-                  <tr key={stu.studentId} className={`border-b ${stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                  <tr
+                    key={stu.studentId}
+                    className={`border-b ${
+                      stuIdx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    }`}
+                  >
                     {/* 이름 */}
                     <td className="px-4 py-3 sticky left-0 bg-inherit z-10">
-                      <span className="font-medium text-gray-800">{stu.studentName}</span>
+                      <span className="font-medium text-gray-800">
+                        {stu.studentName}
+                      </span>
                     </td>
                     {/* 학번 */}
-                    <td className="px-4 py-3 sticky bg-inherit z-10" style={{ left: NAME_COL_W }}>
+                    <td
+                      className="px-4 py-3 sticky bg-inherit z-10"
+                      style={{ left: NAME_COL_W }}
+                    >
                       <span className="text-gray-600">{stu.studentNo}</span>
                     </td>
                     {/* 총점 */}
-                    <td className="px-4 py-3 text-center sticky bg-inherit z-10" style={{ left: NAME_COL_W + STUNO_COL_W }}>
+                    <td
+                      className="px-4 py-3 text-center sticky bg-inherit z-10"
+                      style={{ left: NAME_COL_W + STUNO_COL_W }}
+                    >
                       <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200">
-                        <span className="text-blue-700 font-semibold">{totalObtainedScore}</span>
+                        <span className="text-blue-700 font-semibold">
+                          {totalObtainedScore}
+                        </span>
                         <span className="text-gray-400">/</span>
-                        <span className="text-emerald-700 font-semibold">{totalMaxPoints}</span>
+                        <span className="text-emerald-700 font-semibold">
+                          {totalMaxPoints}
+                        </span>
                       </div>
                     </td>
 
@@ -567,7 +624,8 @@ export default function GradingListPage() {
                       const globalIdx = startIdx + localIdx;
                       const cellKey = `${stu.studentId}-${globalIdx}`;
                       const isExpanded = expandedCells.has(cellKey);
-                      const hasMultipleSubmissions = data.submissions.length > 1;
+                      const hasMultipleSubmissions =
+                        data.submissions.length > 1;
                       const latestSubmission = data.submissions[0];
 
                       const colorClassProf =
@@ -591,80 +649,115 @@ export default function GradingListPage() {
                       return (
                         <td
                           key={cellKey}
-                          className={`px-2 py-3 text-center ${data.submissions.length > 0 ? "cursor-pointer hover:bg-gray-50" : ""}`}
+                          className={`px-2 py-3 text-center ${
+                            data.submissions.length > 0
+                              ? "cursor-pointer hover:bg-gray-50"
+                              : ""
+                          }`}
                           onClick={() => {
                             if (data.submissions.length > 0) {
-                              handleProblemCellClick(stu.studentId, data.problemId);
+                              handleProblemCellClick(
+                                stu.studentId,
+                                data.problemId
+                              );
                             }
                           }}
-                          title={data.submissions.length > 0 ? "클릭하여 채점 페이지로 이동" : undefined}
+                          title={
+                            data.submissions.length > 0
+                              ? "클릭하여 채점 페이지로 이동"
+                              : undefined
+                          }
                         >
                           {data.submissions.length === 0 ? (
                             <div className="text-gray-300 font-bold">-</div>
                           ) : (
                             <div className="flex flex-col items-center gap-2">
                               <div className="flex items-center justify-center gap-1">
-                                <span className={`text-base font-bold ${colorClassProf}`}>{latestSubmission.profScore ?? "-"}</span>
+                                <span
+                                  className={`text-base font-bold ${colorClassProf}`}
+                                >
+                                  {latestSubmission.profScore ?? "-"}
+                                </span>
                                 <span className="text-gray-400">/</span>
-                                <span className={`text-base font-bold ${colorClassAI}`}>{latestSubmission.aiScore ?? "-"}</span>
+                                <span
+                                  className={`text-base font-bold ${colorClassAI}`}
+                                >
+                                  {latestSubmission.aiScore ?? "-"}
+                                </span>
                               </div>
 
                               {hasMultipleSubmissions && (
                                 <>
                                   <button
-                                    onClick={(e) => toggleExpanded(stu.studentId, globalIdx, e)}
+                                    onClick={(e) =>
+                                      toggleExpanded(
+                                        stu.studentId,
+                                        globalIdx,
+                                        e
+                                      )
+                                    }
                                     className="text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline z-10"
                                   >
-                                    {isExpanded ? "접기 ▲" : `이전 제출 ${data.submissions.length - 1}건 보기 ▼`}
+                                    {isExpanded
+                                      ? "접기 ▲"
+                                      : `이전 제출 ${
+                                          data.submissions.length - 1
+                                        }건 보기 ▼`}
                                   </button>
 
                                   {isExpanded && (
                                     <div className="w-full mt-1 pt-2 border-t border-gray-200 space-y-1 text-left">
-                                      {data.submissions.slice(1).map((sub, idx) => (
-                                        <div
-                                          key={sub.submissionId}
-                                          className="flex items-center justify-between text-[11px] bg-gray-50 px-2 py-1 rounded"
-                                        >
-                                          <span className="text-gray-500">
-                                            {idx + 2}차 •{" "}
-                                            {new Date(sub.submittedAt).toLocaleString("ko-KR", {
-                                              month: "short",
-                                              day: "numeric",
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                            })}
-                                          </span>
-                                          <div className="flex items-center gap-1">
-                                            <span
-                                              className={
-                                                sub.profScore != null
-                                                  ? sub.profScore >= 9
-                                                    ? "text-green-600"
-                                                    : sub.profScore >= 5
-                                                    ? "text-yellow-600"
-                                                    : "text-red-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {sub.profScore ?? "-"}
+                                      {data.submissions
+                                        .slice(1)
+                                        .map((sub, idx) => (
+                                          <div
+                                            key={sub.submissionId}
+                                            className="flex items-center justify-between text-[11px] bg-gray-50 px-2 py-1 rounded"
+                                          >
+                                            <span className="text-gray-500">
+                                              {idx + 2}차 •{" "}
+                                              {new Date(
+                                                sub.submittedAt
+                                              ).toLocaleString("ko-KR", {
+                                                month: "short",
+                                                day: "numeric",
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              })}
                                             </span>
-                                            <span className="text-gray-400">/</span>
-                                            <span
-                                              className={
-                                                sub.aiScore != null
-                                                  ? sub.aiScore >= 9
-                                                    ? "text-green-600"
-                                                    : sub.aiScore >= 5
-                                                    ? "text-yellow-600"
-                                                    : "text-red-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {sub.aiScore ?? "-"}
-                                            </span>
+                                            <div className="flex items-center gap-1">
+                                              <span
+                                                className={
+                                                  sub.profScore != null
+                                                    ? sub.profScore >= 9
+                                                      ? "text-green-600"
+                                                      : sub.profScore >= 5
+                                                      ? "text-yellow-600"
+                                                      : "text-red-600"
+                                                    : "text-gray-300"
+                                                }
+                                              >
+                                                {sub.profScore ?? "-"}
+                                              </span>
+                                              <span className="text-gray-400">
+                                                /
+                                              </span>
+                                              <span
+                                                className={
+                                                  sub.aiScore != null
+                                                    ? sub.aiScore >= 9
+                                                      ? "text-green-600"
+                                                      : sub.aiScore >= 5
+                                                      ? "text-yellow-600"
+                                                      : "text-red-600"
+                                                    : "text-gray-300"
+                                                }
+                                              >
+                                                {sub.aiScore ?? "-"}
+                                              </span>
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        ))}
                                     </div>
                                   )}
                                 </>
@@ -681,52 +774,88 @@ export default function GradingListPage() {
                         <div
                           className={`w-10 h-10 rounded-full border-2 grid place-items-center
                           ${
-                            visibleScores.some((d) => d.submissions.length > 0) &&
+                            visibleScores.some(
+                              (d) => d.submissions.length > 0
+                            ) &&
                             visibleScores.every((d) =>
-                              d.submissions.length === 0 ? true : d.submissions[0].profScore !== null
+                              d.submissions.length === 0
+                                ? true
+                                : d.submissions[0].profScore !== null
                             )
                               ? "bg-emerald-500 border-emerald-600"
                               : visibleScores.some(
-                                  (d) => d.submissions.length > 0 && d.submissions[0].profScore !== null
+                                  (d) =>
+                                    d.submissions.length > 0 &&
+                                    d.submissions[0].profScore !== null
                                 )
                               ? "bg-amber-500 border-amber-600"
                               : "bg-gray-300 border-gray-400"
                           }`}
                           title={
-                            visibleScores.some((d) => d.submissions.length > 0) &&
+                            visibleScores.some(
+                              (d) => d.submissions.length > 0
+                            ) &&
                             visibleScores.every((d) =>
-                              d.submissions.length === 0 ? true : d.submissions[0].profScore !== null
+                              d.submissions.length === 0
+                                ? true
+                                : d.submissions[0].profScore !== null
                             )
                               ? "완료"
                               : visibleScores.some(
-                                  (d) => d.submissions.length > 0 && d.submissions[0].profScore !== null
+                                  (d) =>
+                                    d.submissions.length > 0 &&
+                                    d.submissions[0].profScore !== null
                                 )
                               ? "검토중"
                               : "대기"
                           }
                         >
-                          {visibleScores.some((d) => d.submissions.length > 0) &&
-                            visibleScores.every((d) =>
-                              d.submissions.length === 0 ? true : d.submissions[0].profScore !== null
-                            ) && <span className="text-white text-lg font-bold">✓</span>}
                           {visibleScores.some(
-                            (d) => d.submissions.length > 0 && d.submissions[0].profScore !== null
+                            (d) => d.submissions.length > 0
+                          ) &&
+                            visibleScores.every((d) =>
+                              d.submissions.length === 0
+                                ? true
+                                : d.submissions[0].profScore !== null
+                            ) && (
+                              <span className="text-white text-lg font-bold">
+                                ✓
+                              </span>
+                            )}
+                          {visibleScores.some(
+                            (d) =>
+                              d.submissions.length > 0 &&
+                              d.submissions[0].profScore !== null
                           ) &&
                             !(
-                              visibleScores.some((d) => d.submissions.length > 0) &&
+                              visibleScores.some(
+                                (d) => d.submissions.length > 0
+                              ) &&
                               visibleScores.every((d) =>
-                                d.submissions.length === 0 ? true : d.submissions[0].profScore !== null
+                                d.submissions.length === 0
+                                  ? true
+                                  : d.submissions[0].profScore !== null
                               )
-                            ) && <span className="text-white text-lg font-bold">!</span>}
+                            ) && (
+                              <span className="text-white text-lg font-bold">
+                                !
+                              </span>
+                            )}
                         </div>
                         <span className="text-[11px] text-gray-600">
-                          {visibleScores.some((d) => d.submissions.length > 0) &&
+                          {visibleScores.some(
+                            (d) => d.submissions.length > 0
+                          ) &&
                           visibleScores.every((d) =>
-                            d.submissions.length === 0 ? true : d.submissions[0].profScore !== null
+                            d.submissions.length === 0
+                              ? true
+                              : d.submissions[0].profScore !== null
                           )
                             ? "완료"
                             : visibleScores.some(
-                                (d) => d.submissions.length > 0 && d.submissions[0].profScore !== null
+                                (d) =>
+                                  d.submissions.length > 0 &&
+                                  d.submissions[0].profScore !== null
                               )
                             ? "검토중"
                             : "대기"}
@@ -743,7 +872,9 @@ export default function GradingListPage() {
 
       {/* 제출 학생 없을 때 */}
       {students.length === 0 && !loading && (
-        <div className="text-center py-16 text-gray-400 text-lg">제출한 학생이 없습니다.</div>
+        <div className="text-center py-16 text-gray-400 text-lg">
+          제출한 학생이 없습니다.
+        </div>
       )}
 
       {/* 결시생 섹션 */}
@@ -766,17 +897,25 @@ export default function GradingListPage() {
                   return (
                     <tr key={student.userId} className="border-b">
                       <td className="px-4 py-3">
-                        <span className="text-base font-medium text-gray-800">{student.userName}</span>
+                        <span className="text-base font-medium text-gray-800">
+                          {student.userName}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-gray-600">{student.studentNo}</span>
+                        <span className="text-gray-600">
+                          {student.studentNo}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
                           {isGraded ? (
-                            <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full font-semibold text-xs">0점 처리</span>
+                            <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full font-semibold text-xs">
+                              0점 처리
+                            </span>
                           ) : (
-                            <span className="px-3 py-1.5 bg-rose-100 text-rose-700 rounded-full font-semibold text-xs">결시</span>
+                            <span className="px-3 py-1.5 bg-rose-100 text-rose-700 rounded-full font-semibold text-xs">
+                              결시
+                            </span>
                           )}
                         </div>
                       </td>
@@ -784,11 +923,15 @@ export default function GradingListPage() {
                         <div className="flex justify-center">
                           {isGraded ? (
                             <div className="text-center">
-                              <span className="text-lg font-bold text-blue-600">0</span>
+                              <span className="text-lg font-bold text-blue-600">
+                                0
+                              </span>
                             </div>
                           ) : (
                             <button
-                              onClick={() => handleGradeAbsentStudent(student.userId)}
+                              onClick={() =>
+                                handleGradeAbsentStudent(student.userId)
+                              }
                               className="px-4 py-2 rounded-lg font-semibold bg-rose-600 text-white hover:bg-rose-700 transition-colors"
                             >
                               채점
