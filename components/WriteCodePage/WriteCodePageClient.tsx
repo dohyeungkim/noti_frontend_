@@ -305,6 +305,7 @@ export default function WriteCodePageClient({
   // 유저
   const [userId, setUserId] = useState("");
   const [userNickname, setUserNickname] = useState("");
+  const [studentNo, setStudentNo] = useState<string>("");
 
   // 모나코
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -367,7 +368,9 @@ export default function WriteCodePageClient({
         const me = live?.students?.find(
           (s: any) => String(s.student_id) === String(userId)
         );
-
+        if (me?.student_id && String(me.student_id) !== studentNo) {
+          setStudentNo(String(me.student_id)); // ✅ 학번 저장
+        }
         // problem_id -> 상태 매핑(correct|wrong)
         const statusMap = new Map<number, "correct" | "wrong" | "pending">();
 
@@ -1121,6 +1124,15 @@ export default function WriteCodePageClient({
         </div>
         {/* ✅ 가운데: 학생 이름 + 진행 동그라미(4개 창) */}
         <div className="hidden md:flex items-center gap-3 mx-2">
+          {/* 학번 뱃지 */}
+          {studentNo && (
+            <span
+               className="text-xl md:text-2xl lg:text-3xl text-gray-800 font-bold leading-tight truncate max-w-[30vw]"
+              title="학번"
+            >
+              {studentNo}
+            </span>
+          )}
           <span
             className="text-xl md:text-2xl lg:text-3xl text-gray-800 font-bold leading-tight truncate max-w-[30vw]"
             title={userNickname}
@@ -1171,7 +1183,6 @@ export default function WriteCodePageClient({
         {/* ========== 코딩 / 디버깅 / 객관식 : 좌우 분할 ========== */}
         {(isCodingOrDebugging || isMultiple) && (
           <>
-            
             <div
               className="min-h-0 overflow-y-auto p-2 pr-2 flex-none min-w-0"
               style={{ flexBasis: leftWidth, willChange: "flex-basis" }}
