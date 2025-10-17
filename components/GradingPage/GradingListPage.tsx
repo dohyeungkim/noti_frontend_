@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/stores/auth";
-import { group_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
+import { group_api, group_member_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
 import type { SubmissionSummary, ProblemRef } from "@/lib/api";
 
 interface SubmissionRecord {
@@ -33,6 +33,7 @@ export default function GradingListPage() {
   const { groupId, examId } = useParams<{ groupId: string; examId: string }>();
 
   const [students, setStudents] = useState<GradingStudentSummary[]>([]);
+  const [absentStudents, setAbsentStudents] = useState<Array<{ userId: string; userName: string; studentNo: string }>>([]);
   const [problemRefs, setProblemRefs] = useState<ProblemRef[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,6 +66,10 @@ export default function GradingListPage() {
         setLoading(true);
         console.log("===== 채점 데이터 로딩 시작 (최적화) =====");
 
+        // 그룹 멤버 조회
+        const groupMembers = await group_member_api.group_get_member(Number(groupId));
+        console.log('\n👥 그룹 멤버 전체:', groupMembers);
+
         const submissions = await grading_api.get_all_submissions(
           Number(groupId),
           Number(examId)
@@ -93,6 +98,12 @@ export default function GradingListPage() {
         } catch (err) {
           console.warn("그룹장 정보 조회 실패:", err);
         }
+
+        // 제출한 학생 ID 집합
+        const submittedUserIds = new Set<string>();
+        submissions.forEach(sub => {
+          submittedUserIds.add(String(sub.user_id));
+        });
 
         const byUser = new Map<string, { name: string; studentNo: string; items: SubmissionSummary[] }>();
 
@@ -182,12 +193,42 @@ export default function GradingListPage() {
 
         console.log(`\n===== 최종 결과 =====`);
         console.log(`학생 수: ${rows.length}명`);
-        console.log(`총 API 호출 횟수: 1회 (get_all_submissions)`);
+        console.log(`총 API 호출 횟수: 2회 (group_member_get, get_all_submissions)`);
 
         setStudents(rows);
+
+        // 결시생 처리
+        const absentList: Array<{ userId: string; userName: string; studentNo: string }> = [];
+        
+        for (const member of groupMembers as any[]) {
+          const memberId = String(member.user_id);
+          
+          // 그룹장 제외
+          if (ownerId && memberId === String(ownerId)) {
+            continue;
+          }
+          
+          // 제출하지 않은 학생만 추가
+          if (!submittedUserIds.has(memberId)) {
+            absentList.push({
+              userId: memberId,
+              userName: member.username || "이름 없음",
+              studentNo: memberId,
+            });
+          }
+        }
+
+        absentList.sort((a, b) =>
+          a.userName.localeCompare(b.userName, "ko-KR", { sensitivity: "base" })
+        );
+
+        console.log(`\n❌ 결시생 수: ${absentList.length}명`);
+        setAbsentStudents(absentList);
+
       } catch (err) {
         console.error("❌ 제출 목록 로드 실패:", err);
         setStudents([]);
+        setAbsentStudents([]);
       } finally {
         setLoading(false);
       }
@@ -594,6 +635,59 @@ export default function GradingListPage() {
       {students.length === 0 && !loading && (
         <div className="text-center py-16">
           <div className="text-gray-400 text-lg">제출한 학생이 없습니다.</div>
+        </div>
+      )}
+
+      {absentStudents.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4 text-red-600">결시생</h2>
+          <div className="overflow-x-auto border-2 border-red-600 rounded-lg shadow-lg">
+            <table className="w-full border-collapse bg-white">
+              <thead className="bg-red-50">
+                <tr>
+                  <th className="border-r-2 border-red-600 px-4 py-4 text-left font-bold text-gray-700 min-w-[200px]">
+                    이름
+                  </th>
+                  <th className="border-r-2 border-red-600 px-4 py-4 text-left font-bold text-gray-700 min-w-[200px]">
+                    학번
+                  </th>
+                  <th className="px-4 py-4 text-center font-bold text-gray-700 min-w-[150px]">
+                    상태
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {absentStudents.map((student, idx) => (
+                  <tr
+                    key={student.userId}
+                    className={`
+                      border-t-2 border-red-600 
+                      transition-all duration-200
+                      ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    `}
+                  >
+                    <td className="border-r-2 border-red-600 px-4 py-4">
+                      <span className="text-base font-medium text-gray-800">
+                        {student.userName}
+                      </span>
+                    </td>
+                    <td className="border-r-2 border-red-600 px-4 py-4">
+                      <span className="text-sm text-gray-600">
+                        {student.studentNo}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-center">
+                        <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full font-semibold text-sm">
+                          결시
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
