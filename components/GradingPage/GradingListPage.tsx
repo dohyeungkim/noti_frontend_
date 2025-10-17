@@ -253,35 +253,53 @@ export default function GradingListPage() {
       <div className="flex flex-col items-center mb-6 space-y-4">
         <h1 className="text-2xl font-bold">학생 제출물 채점</h1>
 
-        {showScrollButtons && (
-          <div className="flex items-center gap-4 bg-white px-6 py-3 rounded-lg border shadow-md">
-            <button
-              onClick={goLeft}
-              disabled={!canLeft}
-              className={`px-6 py-3 rounded-lg border font-bold text-base transition-all ${
-                canLeft
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              ← 이전
-            </button>
-            <span className="text-base font-bold text-gray-700 min-w-[100px] text-center">
-              {startIdx + 1}-{endIdx} / {totalProblems}
-            </span>
-            <button
-              onClick={goRight}
-              disabled={!canRight}
-              className={`px-6 py-3 rounded-lg border font-bold text-base transition-all ${
-                canRight
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-              }`}
-            >
-              다음 →
-            </button>
+        <div className="flex items-center gap-6">
+          {showScrollButtons && (
+            <div className="flex items-center gap-4 bg-white px-6 py-3 rounded-lg border shadow-md">
+              <button
+                onClick={goLeft}
+                disabled={!canLeft}
+                className={`px-6 py-3 rounded-lg border font-bold text-base transition-all ${
+                  canLeft
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                ← 이전
+              </button>
+              <span className="text-base font-bold text-gray-700 min-w-[100px] text-center">
+                {startIdx + 1}-{endIdx} / {totalProblems}
+              </span>
+              <button
+                onClick={goRight}
+                disabled={!canRight}
+                className={`px-6 py-3 rounded-lg border font-bold text-base transition-all ${
+                  canRight
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                다음 →
+              </button>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-4 bg-white px-4 py-3 rounded-lg border shadow-md">
+            <span className="text-sm font-semibold text-gray-700">점수 기준:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+              <span className="text-sm text-gray-600">9-10점</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">5-8점</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+              <span className="text-sm text-gray-600">0-4점</span>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {showScrollButtons && (
@@ -439,8 +457,10 @@ export default function GradingListPage() {
                                 className={`text-base font-bold ${
                                   latestSubmission.profScore === null
                                     ? "text-gray-300"
-                                    : latestSubmission.profScore >= 7
+                                    : latestSubmission.profScore >= 9
                                     ? "text-green-600"
+                                    : latestSubmission.profScore >= 5
+                                    ? "text-yellow-600"
                                     : "text-red-600"
                                 }`}
                               >
@@ -451,8 +471,10 @@ export default function GradingListPage() {
                                 className={`text-base font-bold ${
                                   latestSubmission.aiScore === null
                                     ? "text-gray-300"
-                                    : latestSubmission.aiScore >= 7
+                                    : latestSubmission.aiScore >= 9
                                     ? "text-green-600"
+                                    : latestSubmission.aiScore >= 5
+                                    ? "text-yellow-600"
                                     : "text-red-600"
                                 }`}
                               >
@@ -491,8 +513,10 @@ export default function GradingListPage() {
                                           <span
                                             className={
                                               sub.profScore !== null
-                                                ? sub.profScore >= 7
+                                                ? sub.profScore >= 9
                                                   ? "text-green-600"
+                                                  : sub.profScore >= 5
+                                                  ? "text-yellow-600"
                                                   : "text-red-600"
                                                 : "text-gray-300"
                                             }
@@ -503,8 +527,10 @@ export default function GradingListPage() {
                                           <span
                                             className={
                                               sub.aiScore !== null
-                                                ? sub.aiScore >= 7
+                                                ? sub.aiScore >= 9
                                                   ? "text-green-600"
+                                                  : sub.aiScore >= 5
+                                                  ? "text-yellow-600"
                                                   : "text-red-600"
                                                 : "text-gray-300"
                                             }
