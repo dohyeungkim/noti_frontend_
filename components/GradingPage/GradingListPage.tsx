@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/stores/auth";
-import { group_api, grading_api, problem_ref_api, auth_api } from "@/lib/api";
+import { group_api, grading_api, group_member_api, problem_ref_api, auth_api } from "@/lib/api";
 import type { SubmissionSummary, ProblemRef } from "@/lib/api";
 
 interface SubmissionRecord {
@@ -67,7 +67,7 @@ export default function GradingListPage() {
         console.log("===== 채점 데이터 로딩 시작 (최적화) =====");
 
         // 그룹 멤버 조회
-        const groupMembers = await group_api.group_get_members(Number(groupId));
+        const groupMembers = await group_member_api.group_get_member(Number(groupId));
         console.log('\n👥 그룹 멤버 전체:', groupMembers);
 
         const submissions = await grading_api.get_all_submissions(
