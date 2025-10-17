@@ -41,6 +41,7 @@ export default function GradingListPage() {
   const MAX_VISIBLE = 6;
 
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
+  const [gradedAbsentStudents, setGradedAbsentStudents] = useState<Set<string>>(new Set());
 
   const fetchProblemRefs = useCallback(async () => {
     try {
@@ -263,6 +264,18 @@ export default function GradingListPage() {
         newSet.delete(key);
       } else {
         newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+
+  const handleGradeAbsentStudent = (userId: string) => {
+    setGradedAbsentStudents((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
       }
       return newSet;
     });
@@ -666,40 +679,68 @@ export default function GradingListPage() {
                   <th className="border-r-2 border-red-600 px-4 py-4 text-left font-bold text-gray-700 min-w-[200px]">
                     학번
                   </th>
+                  <th className="border-r-2 border-red-600 px-4 py-4 text-center font-bold text-gray-700 min-w-[150px]">
+                    출결상황
+                  </th>
                   <th className="px-4 py-4 text-center font-bold text-gray-700 min-w-[150px]">
-                    상태
+                    채점
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {absentStudents.map((student, idx) => (
-                  <tr
-                    key={student.userId}
-                    className={`
-                      border-t-2 border-red-600 
-                      transition-all duration-200
-                      ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                    `}
-                  >
-                    <td className="border-r-2 border-red-600 px-4 py-4">
-                      <span className="text-base font-medium text-gray-800">
-                        {student.userName}
-                      </span>
-                    </td>
-                    <td className="border-r-2 border-red-600 px-4 py-4">
-                      <span className="text-sm text-gray-600">
-                        {student.studentNo}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex justify-center">
-                        <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full font-semibold text-sm">
-                          결시
+                {absentStudents.map((student, idx) => {
+                  const isGraded = gradedAbsentStudents.has(student.userId);
+                  return (
+                    <tr
+                      key={student.userId}
+                      className={`
+                        border-t-2 border-red-600 
+                        transition-all duration-200
+                        ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      `}
+                    >
+                      <td className="border-r-2 border-red-600 px-4 py-4">
+                        <span className="text-base font-medium text-gray-800">
+                          {student.userName}
                         </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="border-r-2 border-red-600 px-4 py-4">
+                        <span className="text-sm text-gray-600">
+                          {student.studentNo}
+                        </span>
+                      </td>
+                      <td className="border-r-2 border-red-600 px-4 py-4">
+                        <div className="flex justify-center">
+                          {isGraded ? (
+                            <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-semibold text-sm">
+                              0점 처리
+                            </span>
+                          ) : (
+                            <span className="px-4 py-2 bg-red-100 text-red-700 rounded-full font-semibold text-sm">
+                              결시
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex justify-center">
+                          {isGraded ? (
+                            <div className="text-center">
+                              <span className="text-lg font-bold text-blue-600">0</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleGradeAbsentStudent(student.userId)}
+                              className="px-6 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                            >
+                              채점
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
