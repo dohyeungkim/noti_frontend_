@@ -51,14 +51,14 @@ export function useDataFetch(groupId: unknown, examId: unknown, problemId: unkno
 		async function fetchProblem() {
 			if (!problemId) return
 			try {
-				const data = await problem_api.problem_get_by_id(Number(problemId))
+				const data = await problem_api.problem_get_by_id_group(Number(groupId),Number(examId),Number(problemId))
 				setProblem(data)
 			} catch (error) {
 				console.error("!!!!!!!!1문제 정보 가져오기 실패:", error)
 			}
 		}
 		fetchProblem()
-	}, [problemId])
+	}, [problemId, groupId, examId])
 
 	return { group, exam, problem, loading, error }
 }

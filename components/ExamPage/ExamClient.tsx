@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 
 import ExamGallery from "@/components/ExamPage/ExamGallery";
 import ExamTable from "@/components/ExamPage/ExamTable";
@@ -30,6 +30,12 @@ interface WorkbookType {
   workbook_total_points: number;
 }
 
+// ✅ 시험 접근 가능 여부를 판단하는 타입
+interface WorkbookWithAccess extends WorkbookType {
+  canAccessTest: boolean; // 시험에 접근 가능한지 (제출 기간 내)
+  isPublished: boolean; // 게시 기간 내인지
+}
+
 export default function ExamsClient() {
   const router = useRouter();
   const { userId } = useAuth();
@@ -47,10 +53,16 @@ export default function ExamsClient() {
   const [workBookDescription, setWorkBookDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"gallery" | "table">("gallery");
-  const [filteredWorkbooks, setFilteredWorkbooks] = useState<WorkbookType[]>(
+  const [filteredWorkbooks, setFilteredWorkbooks] = useState<WorkbookWithAccess[]>(
     []
   );
   const [refresh, setRefresh] = useState(false);
+  
+  // ✅ 현재 시간을 1초마다 업데이트하는 상태 추가
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // ✅ 이전 필터링 결과를 저장하는 ref
+  const prevFilteredRef = useRef<string>("");
 
   // 시험 모드 아닌 것과 시험 모드인 것 분리 - 위아래 다르게 랜더링
   const normalList = filteredWorkbooks.filter((wb) => !wb.is_test_mode);
@@ -69,7 +81,6 @@ export default function ExamsClient() {
   const fetchMyOwner = useCallback(async () => {
     try {
       const data = await group_api.my_group_get();
-      console.log(data);
       const currentGroup = data.find(
         (group: { group_id: number }) => group.group_id === Number(groupId)
       );
@@ -109,35 +120,112 @@ export default function ExamsClient() {
     router.push(`/manage/${groupId}`);
   };
 
+  // ✅ 1초마다 현재 시간 업데이트 (실시간 체크)
+  // ✅ 모달이 열려있을 때는 타이머 중지
+  useEffect(() => {
+    // 모달이 열려있으면 타이머를 설정하지 않음
+    if (isModalOpen) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // 1초마다 업데이트
+
+    return () => clearInterval(timer);
+  }, [isModalOpen]); // ✅ isModalOpen 의존성 추가
+
   useEffect(() => {
     fetchWorkbooks(); // 혹은 fetchProblemRefs()
     fetchMyOwner();
   }, [groupId, isGroupOwner, refresh]);
 
-  // 최종적으로 화면에 보여줄 문제지만 필터링
+  // ✅ 최종적으로 화면에 보여줄 문제지만 필터링 (게시 기간 & 제출 기간 체크)
+  // ✅ currentTime을 의존성 배열에 추가하여 1초마다 재계산
   useEffect(() => {
-    const filteredWorkbooksdata = workbooks;
-    const now = new Date();
+    // ✅ 모달이 열려있으면 필터링 로직 실행하지 않음
+    if (isModalOpen) {
+      return;
+    }
+
+    const now = currentTime; // 실시간 업데이트되는 시간 사용
+    
     const filtered = workbooks
-      // 1) 같은 그룹의 문제지만…
+      // 1) 같은 그룹의 문제지만
       .filter((wb) => wb.group_id === Number(groupId))
       // 2) 검색어 일치
       .filter((wb) =>
         wb.workbook_name.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      // 3) 그룹장일 땐 모두, 아니면…
+      // 3) 그룹장일 땐 모두 보이지만, 아니면 게시 기간 체크
       .filter((wb) => {
         if (isGroupOwner) return true;
-        // 시험 모드 꺼진 문제지는 항상
+        
+        // 일반 문제지는 항상 보임
         if (!wb.is_test_mode) return true;
-        // 시험 모드 켜진 문제지는 게시 기간 내일 때만
+        
+        // ✅ 시험 모드 문제지는 게시 기간 내에만 보임
+        if (!wb.publication_start_time || !wb.publication_end_time) {
+          return false;
+        }
+        
         const pubStart = new Date(wb.publication_start_time);
         const pubEnd = new Date(wb.publication_end_time);
-        return now >= pubStart && now <= pubEnd;
+        
+        const isPublished = now >= pubStart && now <= pubEnd;
+        
+        return isPublished;
+      })
+      // 4) ✅ 접근 가능 여부 추가 (제출 기간 체크)
+      .map((wb): WorkbookWithAccess => {
+        // 일반 문제지는 항상 접근 가능
+        if (!wb.is_test_mode) {
+          return {
+            ...wb,
+            canAccessTest: true,
+            isPublished: true,
+          };
+        }
+        
+        // ✅ 시험 모드 문제지의 접근 가능 여부 체크
+        const pubStart = wb.publication_start_time ? new Date(wb.publication_start_time) : null;
+        const pubEnd = wb.publication_end_time ? new Date(wb.publication_end_time) : null;
+        const testStart = wb.test_start_time ? new Date(wb.test_start_time) : null;
+        const testEnd = wb.test_end_time ? new Date(wb.test_end_time) : null;
+        
+        // 게시 기간 체크
+        const isPublished = pubStart && pubEnd 
+          ? now >= pubStart && now <= pubEnd 
+          : false;
+        
+        // ✅ 제출 기간(시험 기간) 체크
+        const canAccessTest = testStart && testEnd 
+          ? now >= testStart && now <= testEnd 
+          : false;
+        
+        return {
+          ...wb,
+          canAccessTest: isGroupOwner || canAccessTest, // 그룹장은 항상 접근 가능
+          isPublished,
+        };
       });
-    console.log("▶ raw workbooks:", workbooks);
-    setFilteredWorkbooks(filtered);
-  }, [searchQuery, workbooks, groupId, isGroupOwner]);
+    
+    // ✅ 필터링 결과를 문자열로 변환하여 비교 (실제 변경이 있을 때만 업데이트)
+    const filteredString = JSON.stringify(
+      filtered.map((wb) => ({
+        id: wb.workbook_id,
+        canAccess: wb.canAccessTest,
+        isPublished: wb.isPublished,
+      }))
+    );
+    
+    // ✅ 이전 결과와 다를 때만 상태 업데이트
+    if (filteredString !== prevFilteredRef.current) {
+      prevFilteredRef.current = filteredString;
+      setFilteredWorkbooks(filtered);
+      console.log("✅ 필터링된 문제지 업데이트:", filtered.length, "개");
+    }
+  }, [searchQuery, workbooks, groupId, isGroupOwner, currentTime, isModalOpen]); // ✅ isModalOpen 추가
 
   useEffect(() => {
     if (!groupId) return;
@@ -237,7 +325,9 @@ export default function ExamsClient() {
             </section>
           ) : (
             <p className="text-center text-gray-500 text-lg mt-10">
-              현재 시험모드인 문제지가 없습니다.
+              {isGroupOwner 
+                ? "현재 시험모드인 문제지가 없습니다."
+                : "현재 게시 기간 내 시험모드 문제지가 없습니다."}
             </p>
           )}
         </motion.div>

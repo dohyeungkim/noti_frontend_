@@ -28,6 +28,7 @@ import {
   run_code_api,
   problem_ref_api,
   live_api,
+  workbook_api,
   ProblemType,
   SolveRequest,
 } from "@/lib/api";
@@ -231,6 +232,11 @@ export default function WriteCodePageClient({
   const problem_id = Number(params.problemId);
   const [progressStatuses, setProgressStatuses] = useState<DotStatus[]>([]);
   const [progressStartIdx, setProgressStartIdx] = useState(0);
+  const [testEndTime, setTestEndTime] = useState<string | null>(null);
+  const [isTestExpired, setIsTestExpired] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [isTestMode, setIsTestMode] = useState(false);
+
   // ★ CHANGE: submittingRef는 컴포넌트 내부로 이동
   const submittingRef = useRef(false);
 
@@ -665,6 +671,85 @@ export default function WriteCodePageClient({
     }
   }, [code]);
 
+  const fetchWorkbookTimes = useCallback(async () => {
+  try {
+    const workbooks = await workbook_api.workbook_get(Number(params.groupId));
+    console.log("📋 모든 Workbook 정보:", workbooks);
+    
+    const workbook = Array.isArray(workbooks)
+      ? workbooks.find((wb: any) => wb.workbook_id === workbook_id)
+      : workbooks;
+
+    if (!workbook) {
+      console.warn("⚠️ 해당 workbook을 찾을 수 없습니다:", workbook_id);
+      return;
+    }
+
+    console.log("📋 현재 Workbook 정보:", workbook);
+    
+    // ✅ is_test_mode 저장
+    if (typeof workbook.is_test_mode === 'boolean') {
+      setIsTestMode(workbook.is_test_mode);
+      console.log("🧪 테스트 모드:", workbook.is_test_mode);
+    }
+    
+    if (workbook.test_end_time) {
+      setTestEndTime(workbook.test_end_time);
+      
+      const now = new Date();
+      const endTime = new Date(workbook.test_end_time);
+      
+      if (now > endTime) {
+        setIsTestExpired(true);
+        console.log("⏰ 시험 시간이 종료되었습니다.");
+      } else {
+        setIsTestExpired(false);
+      }
+    }
+
+  } catch (error) {
+    console.error("Workbook 정보 가져오기 실패:", error);
+  }
+}, [workbook_id, params.groupId]);
+
+  // ✅ 남은 시간 계산 (1초마다 업데이트)
+  useEffect(() => {
+    if (!testEndTime) return;
+
+    const updateRemainingTime = () => {
+      const now = new Date();
+      const endTime = new Date(testEndTime);
+      const diff = endTime.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setIsTestExpired(true);
+        setTimeRemaining("시험 시간 종료");
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeRemaining(
+        `남은 시간: ${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+      );
+    };
+
+    updateRemainingTime();
+    const interval = setInterval(updateRemainingTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [testEndTime]);
+
+  // ✅ 컴포넌트 마운트 시 workbook 정보 가져오기
+  useEffect(() => {
+    if (!mounted || !pageVisible) return;
+    fetchWorkbookTimes();
+  }, [mounted, pageVisible, fetchWorkbookTimes]);
+
   // ===== 현재 코드 즉시 실행 =====
   const handleRunCurrentCode = async () => {
     if (!isCodingOrDebugging) return;
@@ -751,143 +836,169 @@ export default function WriteCodePageClient({
 
   // ===== 제출 =====
   const handleSubmit = async () => {
-    // 중복 클릭 방지
-    if (submittingRef.current) return;
+  // 중복 클릭 방지
+  if (isTestExpired) {
+    alert("⏰ 시험 시간이 종료되어 제출할 수 없습니다.");
+    return;
+  }
 
-    if (!params.groupId || !params.examId || !params.problemId) {
-      alert("❌ 오류: 필요한 값이 없습니다!");
+  if (submittingRef.current) return;
+
+  if (!params.groupId || !params.examId || !params.problemId) {
+    alert("❌ 오류: 필요한 값이 없습니다!");
+    return;
+  }
+  if (!problem) {
+    alert("문제 정보가 없습니다.");
+    return;
+  }
+
+  if (testEndTime) {
+    const now = new Date();
+    const endTime = new Date(testEndTime);
+    
+    if (now > endTime) {
+      setIsTestExpired(true);
+      alert("⏰ 시험 시간이 종료되어 제출할 수 없습니다.");
       return;
     }
-    if (!problem) {
-      alert("문제 정보가 없습니다.");
-      return;
-    }
+  }
 
-    // ✅ 코딩/디버깅에서만 사용할 로그 변수 (기본은 빈 배열)
-    let newCodeLogs: string[] = [];
-    let newTimeStamps: string[] = [];
+  // ✅ 코딩/디버깅에서만 사용할 로그 변수 (기본은 빈 배열)
+  let newCodeLogs: string[] = [];
+  let newTimeStamps: string[] = [];
 
-    const pType = problem.problemType as SolveRequest["problemType"];
-    const normalizedLang = (language || "").toLowerCase();
-    let request: SolveRequest;
+  const pType = problem.problemType as SolveRequest["problemType"];
+  const normalizedLang = (language || "").toLowerCase();
+  let request: SolveRequest;
 
-    switch (pType) {
-      case "코딩":
-      case "디버깅": {
-        if (!code.trim()) {
-          alert("코드를 입력해주세요.");
-          return;
-        }
-        if (!normalizedLang) {
-          alert("언어를 선택해주세요.");
-          return;
-        }
-        // 🔒 언어 불일치 가드
-        if (expectedLang && normalizedLang !== expectedLang) {
-          alert(
-            `이 문제는 ${expectedLang.toUpperCase()}로만 제출할 수 있어. 현재 선택: ${normalizedLang.toUpperCase()}`
-          );
-          return;
-        }
-
-        request = {
-          problemType: pType,
-          codes: code,
-          code_language: normalizedLang,
-        };
-
-        const logs = collectLogs();
-        newCodeLogs = logs.newCodeLogs;
-        newTimeStamps = logs.newTimeStamps;
-        break;
-      }
-
-      case "객관식": {
-        const selections = allowMultiple
-          ? selectedMultiple
-          : selectedSingle !== null
-          ? [selectedSingle]
-          : [];
-        if (!selections.length) {
-          alert("객관식 답안을 선택해주세요.");
-          return;
-        }
-        request = {
-          problemType: pType,
-          selected_options: selections,
-        };
-        break;
-      }
-
-      case "단답형": {
-        if (!shortAnswer.trim()) {
-          alert("단답형 답안을 입력해주세요.");
-          return;
-        }
-        request = {
-          problemType: pType,
-          answer_text: [shortAnswer],
-        };
-        break;
-      }
-
-      case "주관식": {
-        if (!subjectiveAnswer.trim()) {
-          alert("주관식 답안을 입력해주세요.");
-          return;
-        }
-        request = {
-          problemType: pType,
-          written_text: subjectiveAnswer,
-        };
-        break;
-      }
-
-      default: {
-        alert("알 수 없는 문제 유형입니다.");
+  switch (pType) {
+    case "코딩":
+    case "디버깅": {
+      if (!code.trim()) {
+        alert("코드를 입력해주세요.");
         return;
       }
+      if (!normalizedLang) {
+        alert("언어를 선택해주세요.");
+        return;
+      }
+      // 🔒 언어 불일치 가드
+      if (expectedLang && normalizedLang !== expectedLang) {
+        alert(
+          `이 문제는 ${expectedLang.toUpperCase()}로만 제출할 수 있어. 현재 선택: ${normalizedLang.toUpperCase()}`
+        );
+        return;
+      }
+
+      request = {
+        problemType: pType,
+        codes: code,
+        code_language: normalizedLang,
+      };
+
+      const logs = collectLogs();
+      newCodeLogs = logs.newCodeLogs;
+      newTimeStamps = logs.newTimeStamps;
+      break;
     }
 
-    // ✅ 로딩 시작 + 중복 클릭 가드 on
-    start();
-    submittingRef.current = true;
+    case "객관식": {
+      const selections = allowMultiple
+        ? selectedMultiple
+        : selectedSingle !== null
+        ? [selectedSingle]
+        : [];
+      if (!selections.length) {
+        alert("객관식 답안을 선택해주세요.");
+        return;
+      }
+      request = {
+        problemType: pType,
+        selected_options: selections,
+      };
+      break;
+    }
 
-    try {
-      const data = await solve_api.solve_create(
-        Number(params.groupId),
-        Number(params.examId),
-        Number(params.problemId),
-        userId,
-        request
-      );
+    case "단답형": {
+      if (!shortAnswer.trim()) {
+        alert("단답형 답안을 입력해주세요.");
+        return;
+      }
+      request = {
+        problemType: pType,
+        answer_text: [shortAnswer],
+      };
+      break;
+    }
 
-      await code_log_api.code_log_create(
-        Number(data.solve_id),
-        userId,
-        newCodeLogs,
-        newTimeStamps
-      );
+    case "주관식": {
+      if (!subjectiveAnswer.trim()) {
+        alert("주관식 답안을 입력해주세요.");
+        return;
+      }
+      request = {
+        problemType: pType,
+        written_text: subjectiveAnswer,
+      };
+      break;
+    }
 
-      // 실패해도 무시
-      ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch(() => {});
+    default: {
+      alert("알 수 없는 문제 유형입니다.");
+      return;
+    }
+  }
 
-      // ✅ 성공: 로딩 해제하지 않고 바로 이동(버튼 회색 유지)
+  // ✅ 로딩 시작 + 중복 클릭 가드 on
+  start();
+  submittingRef.current = true;
+
+  try {
+    const data = await solve_api.solve_create(
+      Number(params.groupId),
+      Number(params.examId),
+      Number(params.problemId),
+      userId,
+      request
+    );
+
+    await code_log_api.code_log_create(
+      Number(data.solve_id),
+      userId,
+      newCodeLogs,
+      newTimeStamps
+    );
+
+    // 실패해도 무시
+    ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch(() => {});
+
+    // ✅ is_test_mode에 따라 분기 처리
+    if (isTestMode) {
+      // 🧪 테스트 모드: 문제지 페이지로 이동
+      console.log("🧪 테스트 모드: 문제지 페이지로 이동");
+      router.push(`/mygroups/${groupId}/exams/${params.examId}`);
+    } else {
+      // 📊 일반 모드: 결과 페이지로 이동
+      console.log("📊 일반 모드: 결과 페이지로 이동");
       router.push(
         `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`
       );
-      // 여기서 setLoading(false)/stop() 호출하지 않음
-    } catch (err) {
-      // ✅ 실패: 즉시 버튼 풀림
-      alert(
-        `❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`
-      );
-      stop();
-      submittingRef.current = false;
     }
+    
+    // 여기서 setLoading(false)/stop() 호출하지 않음
+  } catch (err) {
+    // ✅ 실패: 즉시 버튼 풀림
+    console.error("❌ 제출 실패:", err);
+    alert(
+      `❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`
+    );
+    stop();
+    submittingRef.current = false;
+  }
 
-    // ❌ finally 블록/딜레이 삭제 (성공 시에는 절대 로딩 풀지 않기!)
-  };
+  // ❌ finally 블록/딜레이 삭제 (성공 시에는 절대 로딩 풀지 않기!)
+};
 
   const collectLogs = () => {
     const newCode = editorRef.current?.getValue() || "";
@@ -1139,6 +1250,19 @@ export default function WriteCodePageClient({
           >
             {userNickname || "학생"}
           </span>
+
+          {timeRemaining && (
+            <span
+              className={`text-sm px-3 py-1 rounded-full font-semibold ${
+                isTestExpired
+                  ? "bg-red-100 text-red-700"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {timeRemaining}
+            </span>
+          )}
+
           <ProgressDots
             statuses={progressStatuses}
             startIdx={progressStartIdx}
@@ -1150,22 +1274,26 @@ export default function WriteCodePageClient({
         <div className="flex items-center gap-2">
           <motion.button
             onClick={handleSubmit}
-            disabled={submittingRef.current || langMismatch}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            disabled={submittingRef.current || langMismatch || isTestExpired}
+            whileHover={{ scale: isTestExpired ? 1 : 1.05 }}
+            whileTap={{ scale: isTestExpired ? 1 : 0.95 }}
             title={
-              langMismatch
+              isTestExpired
+                ? "시험 시간이 종료되었습니다"
+                : langMismatch
                 ? `이 문제는 ${expectedLang.toUpperCase()}로만 제출 가능해`
                 : undefined
             }
             className={`${
-              submittingRef.current || langMismatch
+              submittingRef.current || langMismatch || isTestExpired
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-black hover:bg-gray-500"
             } text-white px-16 py-1.5 rounded-xl text-md`}
           >
             {submittingRef.current
               ? "제출 중..."
+              : isTestExpired
+              ? "시험 종료"
               : langMismatch
               ? "언어 불일치"
               : "제출하기"}
@@ -1174,6 +1302,13 @@ export default function WriteCodePageClient({
       </motion.div>
 
       {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+
+      {isTestExpired && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mx-3 mb-3">
+          <p className="font-bold">⏰ 시험 시간이 종료되었습니다</p>
+          <p className="text-sm">더 이상 답안을 제출할 수 없습니다.</p>
+        </div>
+      )}
 
       {/* 메인: 남은 높이 전부 차지, 배경 스크롤 금지 */}
       <main
