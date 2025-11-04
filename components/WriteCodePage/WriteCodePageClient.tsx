@@ -236,6 +236,9 @@ export default function WriteCodePageClient({
   const [isTestExpired, setIsTestExpired] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [isTestMode, setIsTestMode] = useState(false);
+  
+  // 🆕 제출 확인 모달 상태
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   // ★ CHANGE: submittingRef는 컴포넌트 내부로 이동
   const submittingRef = useRef(false);
@@ -834,171 +837,210 @@ export default function WriteCodePageClient({
     }
   };
 
-  // ===== 제출 =====
-  const handleSubmit = async () => {
-  // 중복 클릭 방지
-  if (isTestExpired) {
-    alert("⏰ 시험 시간이 종료되어 제출할 수 없습니다.");
-    return;
-  }
-
-  if (submittingRef.current) return;
-
-  if (!params.groupId || !params.examId || !params.problemId) {
-    alert("❌ 오류: 필요한 값이 없습니다!");
-    return;
-  }
-  if (!problem) {
-    alert("문제 정보가 없습니다.");
-    return;
-  }
-
-  if (testEndTime) {
-    const now = new Date();
-    const endTime = new Date(testEndTime);
-    
-    if (now > endTime) {
-      setIsTestExpired(true);
+  // 🆕 제출하기 버튼 클릭 핸들러 (모달 띄우기)
+  const handleSubmitClick = () => {
+    if (isTestExpired) {
       alert("⏰ 시험 시간이 종료되어 제출할 수 없습니다.");
       return;
     }
-  }
 
-  // ✅ 코딩/디버깅에서만 사용할 로그 변수 (기본은 빈 배열)
-  let newCodeLogs: string[] = [];
-  let newTimeStamps: string[] = [];
+    if (submittingRef.current) return;
 
-  const pType = problem.problemType as SolveRequest["problemType"];
-  const normalizedLang = (language || "").toLowerCase();
-  let request: SolveRequest;
-
-  switch (pType) {
-    case "코딩":
-    case "디버깅": {
-      if (!code.trim()) {
-        alert("코드를 입력해주세요.");
-        return;
-      }
-      if (!normalizedLang) {
-        alert("언어를 선택해주세요.");
-        return;
-      }
-      // 🔒 언어 불일치 가드
-      if (expectedLang && normalizedLang !== expectedLang) {
-        alert(
-          `이 문제는 ${expectedLang.toUpperCase()}로만 제출할 수 있어. 현재 선택: ${normalizedLang.toUpperCase()}`
-        );
-        return;
-      }
-
-      request = {
-        problemType: pType,
-        codes: code,
-        code_language: normalizedLang,
-      };
-
-      const logs = collectLogs();
-      newCodeLogs = logs.newCodeLogs;
-      newTimeStamps = logs.newTimeStamps;
-      break;
-    }
-
-    case "객관식": {
-      const selections = allowMultiple
-        ? selectedMultiple
-        : selectedSingle !== null
-        ? [selectedSingle]
-        : [];
-      if (!selections.length) {
-        alert("객관식 답안을 선택해주세요.");
-        return;
-      }
-      request = {
-        problemType: pType,
-        selected_options: selections,
-      };
-      break;
-    }
-
-    case "단답형": {
-      if (!shortAnswer.trim()) {
-        alert("단답형 답안을 입력해주세요.");
-        return;
-      }
-      request = {
-        problemType: pType,
-        answer_text: [shortAnswer],
-      };
-      break;
-    }
-
-    case "주관식": {
-      if (!subjectiveAnswer.trim()) {
-        alert("주관식 답안을 입력해주세요.");
-        return;
-      }
-      request = {
-        problemType: pType,
-        written_text: subjectiveAnswer,
-      };
-      break;
-    }
-
-    default: {
-      alert("알 수 없는 문제 유형입니다.");
+    if (!params.groupId || !params.examId || !params.problemId) {
+      alert("❌ 오류: 필요한 값이 없습니다!");
       return;
     }
-  }
-
-  // ✅ 로딩 시작 + 중복 클릭 가드 on
-  start();
-  submittingRef.current = true;
-
-  try {
-    const data = await solve_api.solve_create(
-      Number(params.groupId),
-      Number(params.examId),
-      Number(params.problemId),
-      userId,
-      request
-    );
-
-    await code_log_api.code_log_create(
-      Number(data.solve_id),
-      userId,
-      newCodeLogs,
-      newTimeStamps
-    );
-
-    // 실패해도 무시
-    ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch(() => {});
-
-    // ✅ is_test_mode에 따라 분기 처리
-    if (isTestMode) {
-      // 🧪 테스트 모드: 문제지 페이지로 이동
-      console.log("🧪 테스트 모드: 문제지 페이지로 이동");
-      router.push(`/mygroups/${groupId}/exams/${params.examId}`);
-    } else {
-      // 📊 일반 모드: 결과 페이지로 이동
-      console.log("📊 일반 모드: 결과 페이지로 이동");
-      router.push(
-        `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`
-      );
+    if (!problem) {
+      alert("문제 정보가 없습니다.");
+      return;
     }
-    
-    // 여기서 setLoading(false)/stop() 호출하지 않음
-  } catch (err) {
-    // ✅ 실패: 즉시 버튼 풀림
-    console.error("❌ 제출 실패:", err);
-    alert(
-      `❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`
-    );
-    stop();
-    submittingRef.current = false;
-  }
 
-  // ❌ finally 블록/딜레이 삭제 (성공 시에는 절대 로딩 풀지 않기!)
-};
+    if (testEndTime) {
+      const now = new Date();
+      const endTime = new Date(testEndTime);
+      
+      if (now > endTime) {
+        setIsTestExpired(true);
+        alert("⏰ 시험 시간이 종료되어 제출할 수 없습니다.");
+        return;
+      }
+    }
+
+    // 기본 유효성 검사
+    const pType = problem.problemType as SolveRequest["problemType"];
+    const normalizedLang = (language || "").toLowerCase();
+
+    switch (pType) {
+      case "코딩":
+      case "디버깅": {
+        if (!code.trim()) {
+          alert("코드를 입력해주세요.");
+          return;
+        }
+        if (!normalizedLang) {
+          alert("언어를 선택해주세요.");
+          return;
+        }
+        if (expectedLang && normalizedLang !== expectedLang) {
+          alert(
+            `이 문제는 ${expectedLang.toUpperCase()}로만 제출할 수 있어. 현재 선택: ${normalizedLang.toUpperCase()}`
+          );
+          return;
+        }
+        break;
+      }
+      case "객관식": {
+        const selections = allowMultiple
+          ? selectedMultiple
+          : selectedSingle !== null
+          ? [selectedSingle]
+          : [];
+        if (!selections.length) {
+          alert("객관식 답안을 선택해주세요.");
+          return;
+        }
+        break;
+      }
+      case "단답형": {
+        if (!shortAnswer.trim()) {
+          alert("단답형 답안을 입력해주세요.");
+          return;
+        }
+        break;
+      }
+      case "주관식": {
+        if (!subjectiveAnswer.trim()) {
+          alert("주관식 답안을 입력해주세요.");
+          return;
+        }
+        break;
+      }
+      default: {
+        alert("알 수 없는 문제 유형입니다.");
+        return;
+      }
+    }
+
+    // 🆕 모든 검사 통과하면 모달 띄우기
+    if (isTestMode) {
+    setShowSubmitModal(true);
+    } else {
+    handleSubmitConfirm();
+    }
+  };
+
+  // 🆕 실제 제출 처리 함수 (모달에서 "제출하기" 버튼 클릭 시 실행)
+  const handleSubmitConfirm = async () => {
+    // 모달 닫기
+    setShowSubmitModal(false);
+
+    // ✅ 코딩/디버깅에서만 사용할 로그 변수 (기본은 빈 배열)
+    let newCodeLogs: string[] = [];
+    let newTimeStamps: string[] = [];
+
+    const pType = problem!.problemType as SolveRequest["problemType"];
+    const normalizedLang = (language || "").toLowerCase();
+    let request: SolveRequest;
+
+    switch (pType) {
+      case "코딩":
+      case "디버깅": {
+        request = {
+          problemType: pType,
+          codes: code,
+          code_language: normalizedLang,
+        };
+
+        const logs = collectLogs();
+        newCodeLogs = logs.newCodeLogs;
+        newTimeStamps = logs.newTimeStamps;
+        break;
+      }
+
+      case "객관식": {
+        const selections = allowMultiple
+          ? selectedMultiple
+          : selectedSingle !== null
+          ? [selectedSingle]
+          : [];
+        request = {
+          problemType: pType,
+          selected_options: selections,
+        };
+        break;
+      }
+
+      case "단답형": {
+        request = {
+          problemType: pType,
+          answer_text: [shortAnswer],
+        };
+        break;
+      }
+
+      case "주관식": {
+        request = {
+          problemType: pType,
+          written_text: subjectiveAnswer,
+        };
+        break;
+      }
+
+      default: {
+        alert("알 수 없는 문제 유형입니다.");
+        return;
+      }
+    }
+
+    // ✅ 로딩 시작 + 중복 클릭 가드 on
+    start();
+    submittingRef.current = true;
+
+    try {
+      const data = await solve_api.solve_create(
+        Number(params.groupId),
+        Number(params.examId),
+        Number(params.problemId),
+        userId,
+        request
+      );
+
+      await code_log_api.code_log_create(
+        Number(data.solve_id),
+        userId,
+        newCodeLogs,
+        newTimeStamps
+      );
+
+      // 실패해도 무시
+      ai_feedback_api.get_ai_feedback(Number(data.solve_id)).catch(() => {});
+
+      // ✅ is_test_mode에 따라 분기 처리
+      if (isTestMode) {
+        // 🧪 테스트 모드: 문제지 페이지로 이동
+        console.log("🧪 테스트 모드: 문제지 페이지로 이동");
+        router.push(`/mygroups/${groupId}/exams/${params.examId}`);
+      } else {
+        // 📊 일반 모드: 결과 페이지로 이동
+        console.log("📊 일반 모드: 결과 페이지로 이동");
+        router.push(
+          `/mygroups/${groupId}/exams/${params.examId}/problems/${params.problemId}/result/${data.solve_id}`
+        );
+      }
+      
+      // 여기서 setLoading(false)/stop() 호출하지 않음
+    } catch (err) {
+      // ✅ 실패: 즉시 버튼 풀림
+      console.error("❌ 제출 실패:", err);
+      alert(
+        `❌ 제출 오류: ${err instanceof Error ? err.message : String(err)}`
+      );
+      stop();
+      submittingRef.current = false;
+    }
+
+    // ❌ finally 블록/딜레이 삭제 (성공 시에는 절대 로딩 풀지 않기!)
+  };
 
   const collectLogs = () => {
     const newCode = editorRef.current?.getValue() || "";
@@ -1204,6 +1246,42 @@ export default function WriteCodePageClient({
     <div>로딩 중...</div>
   ) : (
     <div className="h-screen overflow-hidden flex flex-col">
+      {/* 🆕 제출 확인 모달 */}
+      {showSubmitModal && isTestMode && ( 
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              정말로 제출하시겠습니까?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              제출 후에는 답안을 수정할 수 없습니다.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowSubmitModal(false)}
+                className="px-6 py-2.5 rounded-xl border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
+              >
+                취소
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSubmitConfirm}
+                className="px-6 py-2.5 rounded-xl bg-black text-white font-medium hover:bg-gray-800"
+              >
+                제출하기
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* 상단영역: 제출버튼*/}
       <motion.div
         className="flex items-center justify-between px-3 pt-3 mb-6 shrink-0"
@@ -1270,10 +1348,10 @@ export default function WriteCodePageClient({
             windowSize={4}
           />
         </div>
-        {/* 오른쪽: 제출 버튼 (기존 그대로) */}
+        {/* 오른쪽: 제출 버튼 */}
         <div className="flex items-center gap-2">
           <motion.button
-            onClick={handleSubmit}
+            onClick={handleSubmitClick}
             disabled={submittingRef.current || langMismatch || isTestExpired}
             whileHover={{ scale: isTestExpired ? 1 : 1.05 }}
             whileTap={{ scale: isTestExpired ? 1 : 0.95 }}
