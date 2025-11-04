@@ -418,7 +418,7 @@ export default function GradingListPage() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-600" />
-            <span className="text-xs text-gray-600">9–10점</span>
+            <span className="text-xs text-gray-600">10–9점</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -434,9 +434,9 @@ export default function GradingListPage() {
       </div>
 
       {/* 표 프레임 */}
-      <div ref={frameRef} className="rounded-2xl border relative bg-white">
+      <div ref={frameRef} className="rounded-2xl border relative bg-white overflow-hidden">
         {/* 헤더 바: ← [범위] → */}
-        <div className="border-b px-4 py-3 bg-gray-50 font-semibold flex items-center justify-between">
+         <div className="border-b px-4 py-3 bg-gray-50 font-semibold flex items-center justify-between rounded-t-2xl">
           <span>채점 테이블</span>
           <div className="flex items-center gap-2">
             <button
@@ -495,8 +495,8 @@ export default function GradingListPage() {
         </div>
 
         {/* 테이블 */}
-        <div className="overflow-auto">
-          <table className="w-full table-fixed text-sm">
+        <div className="overflow-auto bg-white">
+          <table className="w-full table-fixed text-sm border-separate border-spacing-0">
             <colgroup>
               <col style={{ width: `${NAME_COL_W}px` }} />
               <col style={{ width: `${STUNO_COL_W}px` }} />
@@ -512,7 +512,7 @@ export default function GradingListPage() {
 
             <thead className="bg-gray-50">
               <tr className="border-b">
-                <th className="px-4 py-3 text-left sticky left-0 bg-gray-50 z-10">
+                <th className="px-4 py-3 text-left sticky left-0 bg-gray-50 z-10 rounded-tl-2xl">
                   이름
                 </th>
                 <th
@@ -554,7 +554,7 @@ export default function GradingListPage() {
                   </th>
                 ))}
 
-                <th className="px-3 py-3 text-center whitespace-nowrap">
+                <th className="px-3 py-3 text-center whitespace-nowrap rounded-tr-2xl">
                   상태
                 </th>
               </tr>
@@ -878,7 +878,7 @@ export default function GradingListPage() {
       )}
 
       {/* 결시생 섹션 */}
-      {absentStudents.length > 0 && (
+      {/* {absentStudents.length > 0 && (
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-3">결시생</h2>
           <div className="rounded-2xl border bg-white overflow-hidden">
@@ -946,7 +946,7 @@ export default function GradingListPage() {
             </table>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* 토스트 */}
       {showToast && (
