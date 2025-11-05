@@ -1481,6 +1481,10 @@ export default function WriteCodePageClient({
                 prose-pre:border-gray-200 prose-pre:rounded-xl prose-code:text-pink-700
                 prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
                 prose-img:rounded-lg mb-6"
+                onCopy={(e) => e.preventDefault()}
+  onContextMenu={(e) => e.preventDefault()}
+  onMouseDown={(e) => e.preventDefault()}
+  onDragStart={(e) => e.preventDefault()}
                   >
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkBreaks]}
