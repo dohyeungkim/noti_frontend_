@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 
 interface ExamCardProps {
 	workbook: {
@@ -23,6 +23,18 @@ interface ExamCardProps {
 }
 
 export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardProps) {
+	// ✅ 실시간 현재 시간 상태 추가
+	const [currentTime, setCurrentTime] = useState(new Date())
+
+	// ✅ 1초마다 현재 시간 업데이트
+	useEffect(() => {
+		const timer = setInterval(() => {
+			setCurrentTime(new Date())
+		}, 1000) // 1초마다 업데이트
+
+		return () => clearInterval(timer)
+	}, [])
+
 	// 시간 포맷 함수
 	const dateTimeFormatter = useMemo(
 		() =>
@@ -36,21 +48,22 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 			}),
 		[]
 	)
+	
 	const pubStartDate = useMemo(() => new Date(workbook.publication_start_time), [workbook.publication_start_time])
 	const pubEndDate = useMemo(() => new Date(workbook.publication_end_time), [workbook.publication_end_time])
 	const testStartDate = useMemo(() => new Date(workbook.test_start_time), [workbook.test_start_time])
 	const testEndDate = useMemo(() => new Date(workbook.test_end_time), [workbook.test_end_time])
-	const now = useMemo(() => new Date(), [])
 
 	// 표시용 문자열
-	const pubStartStr = dateTimeFormatter.format(pubStartDate) // "2025.08.04. 19:00" 같은
+	const pubStartStr = dateTimeFormatter.format(pubStartDate)
 	const pubEndStr = dateTimeFormatter.format(pubEndDate)
 	const testStartStr = dateTimeFormatter.format(testStartDate)
 	const testEndStr = dateTimeFormatter.format(testEndDate)
 
-	const inPublication = workbook.is_test_mode ? now >= pubStartDate && now <= pubEndDate : true
-	const inTestPeriod = workbook.is_test_mode ? now >= testStartDate && now <= testEndDate : true
-	const isBeforeTest = workbook.is_test_mode && now <= testStartDate // 학생입장일 때 버튼 막기
+	// ✅ currentTime을 사용하여 실시간 체크
+	const inPublication = workbook.is_test_mode ? currentTime >= pubStartDate && currentTime <= pubEndDate : true
+	const inTestPeriod = workbook.is_test_mode ? currentTime >= testStartDate && currentTime <= testEndDate : true
+	const isBeforeTest = workbook.is_test_mode && currentTime < testStartDate // ✅ <= 대신 < 사용
 
 	const isButtonDisabled = !isGroupOwner && workbook.is_test_mode && isBeforeTest
 	const buttonLabel = !workbook.is_test_mode
@@ -62,9 +75,6 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 		: inTestPeriod
 		? "시험 보러가기 →"
 		: "결과 보러가기 →"
-
-	// 카드 자체 클릭도 막고 싶다면(학생 + 시험 시작 전) 카드 onClick을 비활성화
-	const cardOnClick = !isButtonDisabled ? onClick : undefined
 
 	const showTestBanner = workbook.is_test_mode && (isGroupOwner || inPublication)
 
@@ -81,7 +91,6 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 			</div>
 
 			{/* 설명 + 문제 수 */}
-			{/* 문제지 정보 - 문제지 설명 + 문제 수 <- 일반학생만 보이게*/}
 			<div>
 				<p
 					title={workbook.description}
@@ -108,7 +117,12 @@ export default function ExamCard({ workbook, onClick, isGroupOwner }: ExamCardPr
 				</div>
 			)}
 
-			{/*  =========== 시험모드 배너 (학생) =========== */}
+			{/* ✅ 시험 시작 전일 때 카운트다운 표시 (선택사항) */}
+			{!isGroupOwner && workbook.is_test_mode && isBeforeTest && (
+				<div className="text-xs text-center text-gray-500 mb-2">
+					시험 시작: {testStartStr}
+				</div>
+			)}
 
 			<button
 				onClick={(e) => {

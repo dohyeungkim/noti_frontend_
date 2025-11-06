@@ -980,7 +980,163 @@ export const problem_like_api = {
 		return res.json()
 	},
 }
+// ====================== chatting_message 타입 ===========================
+export interface ChatMessageGetResponse {
+  message_id: number;
+  from_user_id: string;
+  to_user_id: string;
+  context_msg: string;
+  title: string | number;
+  workbook_name: string | number;
+  submission_id: number;
+  group_name: string | number;
+  is_read: boolean;
+}
 
+export type ChatMessageListResponse = ChatMessageGetResponse[];
+
+export interface ChatMessagePostRequest {
+  from_user_id: string;
+  to_user_id: string;
+  context_msg: string;
+  problem_id: number;
+  workbook_id: number;
+  /** 서버가 submssion_id 로 받을 수도 있으니 방어적으로 둘 다 보냄 */
+  submission_id: number;
+  group_id: number;
+}
+
+export interface ChatMessagePostResponse {
+  message_id: number;
+  message: string;        // "잘 전달되었습니다."
+  workbook_name: string;  // "문제지이름"
+  group_name: string;     // "C프로그래밍"
+  title: string;          // "문제이름"
+}
+
+// ====================== chatting_message API ===========================
+export const chatting_message_api = {
+  /**
+   * POST /api/proxy/chatting/message
+   * 요청: ChatMessagePostRequest
+   * 응답: ChatMessagePostResponse
+   */
+  async message_post(payload: ChatMessagePostRequest): Promise<ChatMessagePostResponse> {
+    const url = `/api/proxy/chatting/message`;
+
+    // 🔐 서버가 오타 키 `submssion_id` 를 받을 가능성 대비: 둘 다 보냄
+    const bodyToSend: any = {
+      ...payload,
+      submssion_id: payload.submission_id, // 방어적 중복 키
+    };
+
+    const res = await fetchWithAuth(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyToSend),
+    });
+
+    // 안전 파싱
+    let text = "";
+    try { text = await res.text(); } catch {}
+    let body: any = {};
+    try { body = text ? JSON.parse(text) : {}; } catch { body = {}; }
+
+    if (!res.ok) {
+      const msg = Array.isArray(body?.detail)
+        ? body.detail.map((d: any) => {
+            const loc = Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc;
+            return `${loc}: ${d.msg}`;
+          }).join("\n")
+        : body?.detail?.msg || body?.detail || body?.message || `메시지 전송 실패 (${res.status}) [POST ${url}]`;
+      throw new Error(msg);
+    }
+
+    // 최소 필드 보장
+    if (typeof body?.message_id !== "number") {
+      throw new Error("서버 응답에 message_id가 없습니다.");
+    }
+    if (typeof body?.message !== "string") {
+      throw new Error("서버 응답에 message가 없습니다.");
+    }
+
+    return body as ChatMessagePostResponse;
+  },
+
+  /**
+   * GET /api/proxy/chatting/message/{message_id}
+   * 응답: ChatMessageGetResponse
+   */
+  async message_get(message_id: number): Promise<ChatMessageGetResponse> {
+    const mid = encodeURIComponent(String(message_id));
+    const url = `/api/proxy/chatting/message/${mid}`;
+
+    const res = await fetchWithAuth(url, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    let text = "";
+    try { text = await res.text(); } catch {}
+    let body: any = {};
+    try { body = text ? JSON.parse(text) : {}; } catch { body = {}; }
+
+    if (!res.ok) {
+      const msg = Array.isArray(body?.detail)
+        ? body.detail.map((d: any) => {
+            const loc = Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc;
+            return `${loc}: ${d.msg}`;
+          }).join("\n")
+        : body?.detail?.msg || body?.detail || body?.message || `메시지 조회 실패 (${res.status}) [GET ${url}]`;
+      throw new Error(msg);
+    }
+
+    // 최소 필드 체크(핵심만)
+    if (typeof body?.message_id !== "number") {
+      throw new Error("서버 응답에 message_id가 없습니다.");
+    }
+    if (typeof body?.from_user_id !== "string" || typeof body?.to_user_id !== "string") {
+      throw new Error("서버 응답에 from_user_id/to_user_id가 없습니다.");
+    }
+
+    return body as ChatMessageGetResponse;
+  },
+
+  /**
+   * GET /api/proxy/chatting/message/all
+   * 응답: ChatMessageListResponse
+   */
+  async message_get_all(): Promise<ChatMessageListResponse> {
+    const url = `/api/proxy/chatting/message/all`;
+
+    const res = await fetchWithAuth(url, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    let text = "";
+    try { text = await res.text(); } catch {}
+    let body: any = {};
+    try { body = text ? JSON.parse(text) : {}; } catch { body = {}; }
+
+    if (!res.ok) {
+      const msg = Array.isArray(body?.detail)
+        ? body.detail.map((d: any) => {
+            const loc = Array.isArray(d.loc) ? d.loc.join(" > ") : d.loc;
+            return `${loc}: ${d.msg}`;
+          }).join("\n")
+        : body?.detail?.msg || body?.detail || body?.message || `메시지 목록 조회 실패 (${res.status}) [GET ${url}]`;
+      throw new Error(msg);
+    }
+
+    if (!Array.isArray(body)) {
+      throw new Error("서버 응답이 배열이 아닙니다.");
+    }
+
+    return body as ChatMessageListResponse;
+  },
+};
 // ====================== group 관련 API ===========================
 
 export const group_api = {
@@ -1527,25 +1683,7 @@ async get_submission_scores(solve_id: number): Promise<SubmissionScore> {
 		credentials: "include",
 	})
 	if (!res.ok) throw new Error("채점 기록 조회 실패")
-	
-	const data = await res.json()
-
-	const latest = data.length > 0 
-		? data.reduce((prev: any, curr: any) => 
-			curr.submission_score_id > prev.submission_score_id ? curr : prev
-		)
-		: null
-
-	console.log('GET scores:', {
-		solve_id,
-		count: data.length,
-		latest: latest,
-		ai_score: latest?.ai_score,
-		prof_score: latest?.prof_score,
-		prof_feedback: latest?.prof_feedback,
-		types: { score: typeof latest?.prof_score, feedback: typeof latest?.prof_feedback }
-	})
-	return data
+	return res.json()
 },
 
 async post_submission_score(

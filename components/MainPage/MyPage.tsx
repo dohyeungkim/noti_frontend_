@@ -168,7 +168,7 @@ export default function MyPage() {
                   </div>
 
                   <h2 className="text-xl font-bold mb-2 text-gray-800">
-                    {group.group_name.length > 8 ? `${group.group_name.slice(0, 8)}...` : group.group_name}
+                    {group.group_name.length > 15 ? `${group.group_name.slice(0, 20)}...` : group.group_name}
                   </h2>
 
                   <p className="mb-1 text-gray-600">

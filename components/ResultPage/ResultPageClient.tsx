@@ -2,16 +2,22 @@
 // 채점 기능 관련, 현재 목데이터로 진행중.
 
 import { useEffect, useState, useCallback } from "react";
-import { workbook_api, group_api, chating_ai,problem_ref_api } from "@/lib/api";
 import { motion } from "framer-motion";
 import CodeLogReplay, { CodeLog } from "@/components/ResultPage/CodeLogReplay";
+
 import {
   code_log_api,
   problem_api,
   solve_api,
   ai_feedback_api,
   auth_api,
+  workbook_api,
+  chating_ai,
+  group_api,
+  problem_ref_api,
+  chatting_message_api,
 } from "@/lib/api";
+
 import type { ProblemDetail } from "@/lib/api";
 import ResultPageProblemDetail from "./ResultPageProblemDetail";
 // import { ProblemDetail } from "../ProblemPage/ProblemModal/ProblemSelectorModal"
@@ -108,7 +114,66 @@ export default function FeedbackWithSubmissionPageClient({
     content: string;
     ts: number;
   }
+  //개발자 하드코딩
+  const DEV_RECIPIENTS: string[] = ["20225263"];
+  const [devSending, setDevSending] = useState(false);
 
+  async function sendBugReportToDevelopers() {
+    if (!userId) {
+      alert("로그인이 필요해.");
+      return;
+    }
+
+    setDevSending(true);
+    try {
+      const gid = Number(params.groupId);
+      const wid = Number(params.examId);
+      const pid = Number(params.problemId);
+      const sid = Number(params.resultId);
+
+      const payloadText = `[버그 리포트]
+        ${(devMsg || "").trim() || "(재현 단계/기대/실제 결과를 적어주세요.)"}
+
+        ---
+        [문맥정보]
+        - 그룹: ${groupLabel || params.groupId}
+        - 시험지: ${workbookLabel || params.examId}
+        - 문제: ${problemLabel || params.problemId}
+        - 제출ID: ${params.resultId}
+        - 신고자(로그인): ${userId}
+        - 언어: ${solveData?.code_language ?? "-"}
+        - 브라우저: ${navigator.userAgent}`;
+
+      // 수신자별로 개별 전송
+      for (const to_user_id of DEV_RECIPIENTS) {
+        await chatting_message_api.message_post({
+          from_user_id: userId,
+          to_user_id,
+          context_msg: payloadText,
+          problem_id: pid,
+          workbook_id: wid,
+          submission_id: sid,
+          group_id: gid,
+        });
+      }
+
+      alert(`오류 보고 전송 완료! (${DEV_RECIPIENTS.length}명)`);
+    } catch (e: any) {
+      alert(`전송 실패: ${e?.message || e}`);
+    } finally {
+      setDevSending(false);
+    }
+  }
+  async function getProfessorUserId(groupId: number): Promise<string | null> {
+    try {
+      const g = await group_api.group_get_by_id(groupId);
+      const candidates: any[] = [g?.group_owner];
+      const found = candidates.find((v) => typeof v === "string" && v.trim());
+      return found ?? null;
+    } catch {
+      return null;
+    }
+  }
   const [chatMsgs, setChatMsgs] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -172,10 +237,65 @@ export default function FeedbackWithSubmissionPageClient({
     params.problemId,
     params.resultId,
   ]);
+  const [profSending, setProfSending] = useState(false);
 
-  const DISABLE_PROF = true; //제거해
-  const DISABLE_DEV = true; //지워 제거해
+  async function sendQuestionToProfessor() {
+    if (!userId) {
+      alert("로그인이 필요해.");
+      return;
+    }
+    if (!profMsg.trim()) {
+      alert("질문 내용을 입력해줘.");
+      return;
+    }
 
+    setProfSending(true);
+    try {
+      const gid = Number(params.groupId);
+      const wid = Number(params.examId);
+      const pid = Number(params.problemId);
+      const sid = Number(params.resultId);
+
+      const professorId = await getProfessorUserId(gid);
+      if (!professorId) {
+        alert("교수님 계정을 찾지 못했어. 관리자에게 문의해줘.");
+        return;
+      }
+
+      const contextMsg = `[교수님께 질문]
+${profMsg.trim()}
+
+---
+[문맥정보]
+- 그룹: ${groupLabel || params.groupId}
+- 시험지: ${workbookLabel || params.examId}
+- 문제: ${problemLabel || params.problemId}
+- 제출ID: ${params.resultId}
+- 질문자(로그인): ${userId}
+- 언어: ${solveData?.code_language ?? "-"}`;
+
+      const res = await chatting_message_api.message_post({
+        from_user_id: userId,
+        to_user_id: professorId,
+        context_msg: contextMsg,
+        problem_id: pid,
+        workbook_id: wid,
+        submission_id: sid,
+        group_id: gid,
+      });
+
+      alert(
+        `전송 완료! (message_id=${res.message_id})\n` +
+          `[${res.group_name}] ${res.workbook_name} - ${res.title}\n` +
+          `${res.message ?? "메시지가 접수되었습니다."}`
+      );
+      setProfMsg(""); // (선택) 초기화
+    } catch (e: any) {
+      alert(`전송 실패: ${e?.message || e}`);
+    } finally {
+      setProfSending(false);
+    }
+  }
   const [isConditionLoaded, setIsConditionLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "prof" | "dev">("ai");
   // 추가: 탭 내 텍스트 입력 상태 (필요 최소만)
@@ -922,7 +1042,7 @@ export default function FeedbackWithSubmissionPageClient({
                   AI 피드백
                 </button>
 
-                {/* <button
+                <button
                   className={`px-6 py-3 text-sm font-medium ${
                     activeTab === "prof"
                       ? "text-yellow-600 border-b-2 border-yellow-500 bg-yellow-50"
@@ -931,31 +1051,11 @@ export default function FeedbackWithSubmissionPageClient({
                   onClick={() => setActiveTab("prof")}
                 >
                   교수님께 질문하기
-                </button> */}
-
-                <button //제거해 지울 것
-                  className={`px-6 py-3 text-sm font-medium ${
-                    activeTab === "prof"
-                      ? "text-yellow-600 border-b-2 border-yellow-500 bg-yellow-50"
-                      : "text-gray-500"
-                  } ${
-                    DISABLE_PROF
-                      ? "opacity-50 cursor-not-allowed pointer-events-none"
-                      : "hover:text-gray-700"
-                  }`}
-                  disabled={DISABLE_PROF}
-                  aria-disabled={DISABLE_PROF}
-                  onClick={() => !DISABLE_PROF && setActiveTab("prof")}
-                  title={
-                    DISABLE_PROF ? "지금은 이 탭을 사용할 수 없어" : undefined
-                  }
-                >
-                  교수님께 질문하기
                 </button>
               </div>
 
               {/* 오른쪽 단독: 개발자에게 물어보기 */}
-              {/* <button
+              <button
                 className={`ml-auto px-6 py-3 text-sm font-medium inline-flex items-center gap-2 ${
                   activeTab === "dev"
                     ? "text-red-600 border-b-2 border-red-600 bg-red-50"
@@ -963,28 +1063,6 @@ export default function FeedbackWithSubmissionPageClient({
                 }`}
                 onClick={() => setActiveTab("dev")}
                 title="개발자에게 물어보기"
-              >
-                오류 보고 <span aria-hidden>🔧</span>
-              </button> */}
-
-              <button
-                className={`ml-auto px-6 py-3 text-sm font-medium inline-flex items-center gap-2 ${
-                  activeTab === "dev"
-                    ? "text-red-600 border-b-2 border-red-600 bg-red-50"
-                    : "text-gray-500"
-                } ${
-                  DISABLE_DEV
-                    ? "opacity-50 cursor-not-allowed pointer-events-none"
-                    : "hover:text-gray-700"
-                }`}
-                disabled={DISABLE_DEV}
-                aria-disabled={DISABLE_DEV}
-                onClick={() => !DISABLE_DEV && setActiveTab("dev")}
-                title={
-                  DISABLE_DEV
-                    ? "지금은 이 탭을 사용할 수 없어"
-                    : "개발자에게 물어보기"
-                }
               >
                 오류 보고 <span aria-hidden>🔧</span>
               </button>
@@ -1153,39 +1231,25 @@ export default function FeedbackWithSubmissionPageClient({
             {activeTab === "prof" && (
               <div className="space-y-3">
                 <p className="text-sm text-gray-600">
-                  아래에 질문을 작성하면 기본 메일 앱이 열려. (문제/제출 정보는
-                  본문에 자동 포함돼)
+                  아래에 질문을 작성하면 담당자에게 메시지로 전달돼. (문제/제출
+                  정보가 함께 전송됨)
                 </p>
+
                 <textarea
                   className="w-full h-40 resize-none rounded-md border p-3 text-sm focus:outline-none focus:ring-2 focus:ring-mygreen"
                   placeholder="질문 내용을 자세히 적어줘. (문제 번호, 어떤 입력에서 에러인지, 기대/실제 결과 등)"
                   value={profMsg}
                   onChange={(e) => setProfMsg(e.target.value)}
                 />
+
                 <div className="flex justify-end">
                   <button
-                    className="px-4 py-2 rounded-lg shadow text-white bg-mygreen hover:bg-mydarkgreen"
-                    onClick={() => {
-                      const profEmail = ""; // TODO: 교수님 이메일 있으면 채워넣기
-                      const subject = `질문: ${problemLabel} (#${params.problemId})`;
-                      const body = `${profMsg}
-
----
-문맥정보
-- 그룹: ${groupLabel}
-- 시험지: ${workbookLabel}
-- 문제: ${problemLabel} (#${params.problemId})
-- 제출ID: ${params.resultId}
-- 사용자ID: ${userId}
-- 언어: ${solveData?.code_language ?? "-"}
-`;
-                      const mailto = `mailto:${profEmail}?subject=${encodeURIComponent(
-                        subject
-                      )}&body=${encodeURIComponent(body)}`;
-                      window.location.href = mailto;
-                    }}
+                    className="px-4 py-2 rounded-lg shadow text-white bg-mygreen hover:bg-mydarkgreen disabled:bg-gray-300"
+                    onClick={sendQuestionToProfessor}
+                    disabled={profSending || !profMsg.trim()}
+                    title="교수님께 메시지를 보냅니다."
                   >
-                    메일 열기
+                    질문 보내기
                   </button>
                 </div>
               </div>
@@ -1194,21 +1258,18 @@ export default function FeedbackWithSubmissionPageClient({
             {/* 3) 개발자에게 물어보기 */}
             {activeTab === "dev" && (
               <div className="space-y-3">
-                <p className="text-sm text-gray-600">
-                  아래 템플릿을 채우고 <b>복사</b>해서 이슈
-                  트래커/슬랙/디스코드에 붙여넣어줘.
-                </p>
+                {/* 👇 context_msg 입력창 추가 */}
                 <textarea
-                  className="w-full h-48 resize-none rounded-md border p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-mygreen"
-                  placeholder={`재현 단계:
-                      1) ...
-                      2) ...
-                      기대 결과:
-                      실제 결과:
-                      에러 메시지/스크린샷:`}
+                  className="w-full h-40 resize-none rounded-md border p-3 text-sm focus:outline-none focus:ring-2 focus:ring-mygreen"
+                  placeholder={`오류 내용을 자세히 적어주시면 오류를 수정하는데 도움이됩니다 ^^.
+          - 재현 단계:
+          - 기대 결과:
+          - 실제 결과:
+          - 에러 메시지:`}
                   value={devMsg}
                   onChange={(e) => setDevMsg(e.target.value)}
                 />
+
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <div className="leading-5">
                     <div>
@@ -1220,49 +1281,17 @@ export default function FeedbackWithSubmissionPageClient({
                       / 제출ID {params.resultId} / 사용자 {userId}
                     </div>
                   </div>
-                  <button
-                    className="px-3 py-2 rounded-lg shadow text-white bg-mygreen hover:bg-mydarkgreen"
-                    onClick={async () => {
-                      const payload = `# 버그 리포트
 
-## 요약
-(한 줄 요약)
-
-## 재현 단계
-${devMsg || "(여기에 재현 단계를 적어줘)"}
-
-## 기대 결과
-(기대했던 동작)
-
-## 실제 결과
-(실제 관찰한 동작/에러)
-
-## 환경 정보
-- 그룹: ${groupLabel}
-- 시험지: ${workbookLabel}
-- 문제: ${problemLabel} (#${params.problemId})
-- 제출ID: ${params.resultId}
-- 사용자ID: ${userId}
-- 언어: ${solveData?.code_language ?? "-"}
-- 브라우저: ${navigator.userAgent}`;
-                      try {
-                        await navigator.clipboard.writeText(payload);
-                        alert(
-                          "버그 리포트 템플릿을 복사했어. 이슈/채팅에 붙여넣어줘!"
-                        );
-                      } catch {
-                        const ta = document.createElement("textarea");
-                        ta.value = payload;
-                        document.body.appendChild(ta);
-                        ta.select();
-                        document.execCommand("copy");
-                        document.body.removeChild(ta);
-                        alert("복사 완료!");
-                      }
-                    }}
-                  >
-                    템플릿 복사
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 py-2 rounded-lg shadow text-white bg-mygreen hover:bg-mydarkgreen disabled:bg-gray-300"
+                      onClick={sendBugReportToDevelopers}
+                      disabled={devSending || !devMsg.trim()} // 내용 없으면 비활성화
+                      title="프론트에서 지정한 개발자(들)에게 메시지를 보냅니다."
+                    >
+                      오류보고 전송
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

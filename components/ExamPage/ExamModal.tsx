@@ -311,7 +311,7 @@ export default function WorkBookCreateModal({
 
                 {/* 설명 */}
                 <p className="text-xs text-gray-600 bg-white p-3 rounded-md">
-                  게시 기간 안에서만 시험(제출 기간)을 둘 수 있어. 제출 기간은 게시 시작 이후, 게시 종료 이전이어야 해.
+                  제출 시간은 게시 기간 안에 넣어주셔야합니다!!
                 </p>
 
                 {/* 타임라인 요약 */}
@@ -413,10 +413,13 @@ export default function WorkBookCreateModal({
         ) : (
           // 확인 단계
           <div className="text-center my-6">
-            <h3 className="text-lg font-semibold mb-4">&quot;{WorkBookName}&quot; 문제지를 생성할까?</h3>
+            <h3 className="text-lg font-semibold mb-4">&quot;{WorkBookName}&quot; 문제지를 생성하시겠습니까?</h3>
             {isExamMode && (
-              <div className="text-sm text-blue-700 mb-4">
-                시험 모드: 게시 {publication_start_time} → {publication_end_time} / 제출 {test_start_time} → {test_end_time}
+              <div className="text-sm text-blue-700 mb-4 whitespace-pre-line">
+                {`시험 모드
+                게시시간 ${publication_start_time} → ${publication_end_time} 
+                제출시간 ${test_start_time} → ${test_end_time}`
+                }
               </div>
             )}
             <div className="flex justify-center gap-4">

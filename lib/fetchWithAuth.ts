@@ -21,7 +21,7 @@ export async function fetchWithAuth(
   opts: SimpleFetchOpts = {}
 ): Promise<Response> {
   const { start, stop } = useLoadingStore.getState();
-  const { timeoutMs = 30000 } = opts; //만약 너무 짧으면 오류문을 뱉을 수도있다...
+  const { timeoutMs = 60000 } = opts; //만약 너무 짧으면 오류문을 뱉을 수도있다...
 
   // 타임아웃용 AbortController
   const controller = new AbortController();
